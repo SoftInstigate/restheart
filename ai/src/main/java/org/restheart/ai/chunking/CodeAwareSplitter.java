@@ -93,16 +93,16 @@ public final class CodeAwareSplitter {
      * returns to {@code targetDepth} after having been deeper.
      */
     private static List<String> splitAtDepth(String[] lines, int targetDepth) {
-        List<String> blocks  = new ArrayList<>();
+        List<String> blocks = new ArrayList<>();
         List<String> current = new ArrayList<>();
 
-        int     depth          = targetDepth;
+        int depth = targetDepth;
         boolean inBlockComment = false;
-        boolean insideBlock    = false;
+        boolean insideBlock = false;
 
         for (var line : lines) {
-            int[] result   = braceChange(line, inBlockComment);
-            int   change   = result[0];
+            int[] result = braceChange(line, inBlockComment);
+            int change = result[0];
             inBlockComment = result[1] == 1;
 
             int prevDepth = depth;
@@ -143,42 +143,61 @@ public final class CodeAwareSplitter {
      * @return int[2] { netChange, inBlockComment_after (0 or 1) }
      */
     private static int[] braceChange(String line, boolean startInBlockComment) {
-        int     change         = 0;
+        int change = 0;
         boolean inBlockComment = startInBlockComment;
-        boolean inDoubleQuote  = false;
-        boolean inSingleQuote  = false;
+        boolean inDoubleQuote = false;
+        boolean inSingleQuote = false;
 
-        for (int i = 0; i < line.length(); i++) {
-            char c    = line.charAt(i);
+        for (int i = 0;i < line.length();i++) {
+            char c = line.charAt(i);
             char next = (i + 1 < line.length()) ? line.charAt(i + 1) : 0;
 
             if (inBlockComment) {
-                if (c == '*' && next == '/') { inBlockComment = false; i++; }
+                if (c == '*' && next == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
                 continue;
             }
 
             if (inDoubleQuote) {
-                if (c == '\\') { i++; continue; }   // escape sequence
-                if (c == '"')  inDoubleQuote = false;
+                if (c == '\\') {
+                    i++;
+                    continue;
+                }   // escape sequence
+                if (c == '"') inDoubleQuote = false;
                 continue;
             }
 
             if (inSingleQuote) {
-                if (c == '\\') { i++; continue; }   // escape sequence
+                if (c == '\\') {
+                    i++;
+                    continue;
+                }   // escape sequence
                 if (c == '\'') inSingleQuote = false;
                 continue;
             }
 
             // Outside any comment or string literal
-            if (c == '/' && next == '/')  break;                          // line comment
-            if (c == '/' && next == '*') { inBlockComment = true; i++; continue; }
-            if (c == '"')                { inDoubleQuote  = true; continue; }
-            if (c == '\'')               { inSingleQuote  = true; continue; }
+            if (c == '/' && next == '/') break;                          // line comment
+            if (c == '/' && next == '*') {
+                inBlockComment = true;
+                i++;
+                continue;
+            }
+            if (c == '"') {
+                inDoubleQuote = true;
+                continue;
+            }
+            if (c == '\'') {
+                inSingleQuote = true;
+                continue;
+            }
             if (c == '{') change++;
             if (c == '}') change--;
         }
 
-        return new int[]{ change, inBlockComment ? 1 : 0 };
+        return new int[]{change, inBlockComment ? 1 : 0};
     }
 
     // =========================================================================
@@ -190,8 +209,8 @@ public final class CodeAwareSplitter {
      * {@code async def} declarations (lines starting at column 0).
      */
     private static List<String> splitByIndent(String text) {
-        var          lines   = text.split("\n", -1);
-        List<String> blocks  = new ArrayList<>();
+        var lines = text.split("\n", -1);
+        List<String> blocks = new ArrayList<>();
         List<String> current = new ArrayList<>();
 
         for (var line : lines) {
@@ -231,18 +250,21 @@ public final class CodeAwareSplitter {
         int openLine = -1;
         int depth = 0;
         boolean inBlockComment = false;
-        for (int i = 0; i < lines.length; i++) {
+        for (int i = 0;i < lines.length;i++) {
             int[] r = braceChange(lines[i], inBlockComment);
             inBlockComment = r[1] == 1;
             int prev = depth;
             depth += r[0];
-            if (prev == 0 && depth == 1) { openLine = i; break; }
+            if (prev == 0 && depth == 1) {
+                openLine = i;
+                break;
+            }
         }
 
         if (openLine >= 0 && openLine < lines.length - 1) {
-            var header     = String.join("\n", Arrays.copyOfRange(lines, 0, openLine + 1));
+            var header = String.join("\n", Arrays.copyOfRange(lines, 0, openLine + 1));
             var innerLines = Arrays.copyOfRange(lines, openLine + 1, lines.length - 1);
-            var inner      = splitAtDepth(innerLines, 0);
+            var inner = splitAtDepth(innerLines, 0);
 
             if (inner.size() > 1) {
                 var result = new ArrayList<String>();
@@ -281,9 +303,9 @@ public final class CodeAwareSplitter {
      * Last-resort line-by-line chunking with character-level overlap.
      */
     private static List<String> splitByLines(String block, int maxChunkSize, int overlap) {
-        var          lines   = block.split("\n", -1);
-        List<String> result  = new ArrayList<>();
-        var          current = new StringBuilder();
+        var lines = block.split("\n", -1);
+        List<String> result = new ArrayList<>();
+        var current = new StringBuilder();
 
         for (var line : lines) {
             int needed = (current.length() > 0 ? 1 : 0) + line.length();

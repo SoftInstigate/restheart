@@ -70,13 +70,30 @@ public final class McpResource {
         this.examples = List.copyOf(b.examples);
     }
 
-    public String uri() { return uri; }
-    public String kind() { return kind; }
-    public String description() { return description; }
-    public Map<String, Action> actions() { return actions; }
-    public List<Example> examples() { return examples; }
+    public String uri() {
+        return uri;
+    }
+
+    public String kind() {
+        return kind;
+    }
+
+    public String description() {
+        return description;
+    }
+
+    public Map<String, Action> actions() {
+        return actions;
+    }
+
+    public List<Example> examples() {
+        return examples;
+    }
+
     /** Kind-specific top-level fields (e.g. Mongo's {@code pipeline_summary}, {@code warnings}) the generic framework doesn't model. */
-    public Map<String, Object> extra() { return extra; }
+    public Map<String, Object> extra() {
+        return extra;
+    }
 
     /** Transports that carry the given action, in declaration order; empty if the action is unknown to every transport. */
     public List<Transport> transportsFor(String actionName) {
@@ -89,7 +106,9 @@ public final class McpResource {
         return result;
     }
 
-    public static Builder builder() { return new Builder(); }
+    public static Builder builder() {
+        return new Builder();
+    }
 
     /** Renders the exact JSON shape (as nested {@link Map}/{@link List}/scalars) sent to MCP clients. */
     public Map<String, Object> toMap() {
@@ -151,9 +170,17 @@ public final class McpResource {
             this.mediaType = mediaType;
         }
 
-        public String wireName() { return wireName; }
-        public String urlScheme() { return urlScheme; }
-        public String mediaType() { return mediaType; }
+        public String wireName() {
+            return wireName;
+        }
+
+        public String urlScheme() {
+            return urlScheme;
+        }
+
+        public String mediaType() {
+            return mediaType;
+        }
     }
 
     /** One invokable action of a resource (e.g. {@code query}, {@code create}, {@code execute}). */
@@ -165,10 +192,25 @@ public final class McpResource {
         private String description;
         private boolean readable;
 
-        public Action method(String method) { this.method = method; return this; }
-        public Action pathTemplate(String pathTemplate) { this.pathTemplate = pathTemplate; return this; }
-        public Action bodySchema(Map<String, Object> bodySchema) { this.bodySchema = bodySchema; return this; }
-        public Action description(String description) { this.description = description; return this; }
+        public Action method(String method) {
+            this.method = method;
+            return this;
+        }
+
+        public Action pathTemplate(String pathTemplate) {
+            this.pathTemplate = pathTemplate;
+            return this;
+        }
+
+        public Action bodySchema(Map<String, Object> bodySchema) {
+            this.bodySchema = bodySchema;
+            return this;
+        }
+
+        public Action description(String description) {
+            this.description = description;
+            return this;
+        }
 
         /**
          * Marks this action servable by {@code resources/read} (#617) — the framework calls
@@ -179,8 +221,14 @@ public final class McpResource {
          * GET-shaped action (e.g. {@code query}, {@code get}); the framework doesn't enforce
          * that, it's the plugin's own choice.
          */
-        public Action readable(boolean readable) { this.readable = readable; return this; }
-        public boolean readable() { return readable; }
+        public Action readable(boolean readable) {
+            this.readable = readable;
+            return this;
+        }
+
+        public boolean readable() {
+            return readable;
+        }
 
         public Action param(String name, String type, boolean required) {
             params.put(name, new Param(type, null, required, null, null));
@@ -192,11 +240,25 @@ public final class McpResource {
             return this;
         }
 
-        public Map<String, Param> params() { return params; }
-        public String method() { return method; }
-        public String pathTemplate() { return pathTemplate; }
-        public String description() { return description; }
-        public Map<String, Object> bodySchema() { return bodySchema; }
+        public Map<String, Param> params() {
+            return params;
+        }
+
+        public String method() {
+            return method;
+        }
+
+        public String pathTemplate() {
+            return pathTemplate;
+        }
+
+        public String description() {
+            return description;
+        }
+
+        public Map<String, Object> bodySchema() {
+            return bodySchema;
+        }
 
         Map<String, Object> toMap() {
             var m = new LinkedHashMap<String, Object>();
@@ -231,7 +293,7 @@ public final class McpResource {
      * full {@code body_schema}, which is for the request body, not a query/path param's value.
      */
     public record Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue,
-            Map<String, Param> properties) {
+                        Map<String, Param> properties) {
 
         public Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue) {
             this(type, description, required, enumValues, defaultValue, null);
@@ -286,10 +348,25 @@ public final class McpResource {
         private final List<Example> examples = new ArrayList<>();
         private final Map<String, Object> extra = new LinkedHashMap<>();
 
-        public Builder uri(String uri) { this.uri = uri; return this; }
-        public Builder kind(String kind) { this.kind = kind; return this; }
-        public Builder description(String description) { this.description = description; return this; }
-        public Builder auth(Map<String, Object> auth) { this.auth = auth; return this; }
+        public Builder uri(String uri) {
+            this.uri = uri;
+            return this;
+        }
+
+        public Builder kind(String kind) {
+            this.kind = kind;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder auth(Map<String, Object> auth) {
+            this.auth = auth;
+            return this;
+        }
 
         public Builder action(String name, Consumer<Action> spec) {
             var action = actions.computeIfAbsent(name, n -> new Action());

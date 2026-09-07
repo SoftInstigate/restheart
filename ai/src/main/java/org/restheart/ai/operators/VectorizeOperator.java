@@ -98,8 +98,8 @@ public class VectorizeOperator implements CustomOperator {
         var providerName = RequestOverrides.str(request, RequestOverrides.EMBEDDING_PROVIDER, defaultProviderName);
         if (providerName.isBlank()) {
             throw new IllegalStateException(
-                "$vectorize used but no embedding-provider is configured (vectorizeOperator or " +
-                RequestOverrides.EMBEDDING_PROVIDER + ")");
+                    "$vectorize used but no embedding-provider is configured (vectorizeOperator or " +
+                            RequestOverrides.EMBEDDING_PROVIDER + ")");
         }
 
         var model = resolveEmbeddingModel(providerName);
@@ -124,8 +124,8 @@ public class VectorizeOperator implements CustomOperator {
 
     private EmbeddingModel resolveEmbeddingModel(String providerName) {
         return PluginModelResolver.resolve(registry, resolvedModels, providerName, EmbeddingModel.class)
-            .orElseThrow(() -> new IllegalStateException(
-                "$vectorize: embedding provider '" + providerName + "' not found, not enabled, "
-                + "or does not supply an EmbeddingModel"));
+                .orElseThrow(() -> new IllegalStateException(
+                        "$vectorize: embedding provider '" + providerName + "' not found, not enabled, "
+                                + "or does not supply an EmbeddingModel"));
     }
 }

@@ -71,7 +71,7 @@ public class DocumentChunkingInterceptorTest {
     @Test
     public void embedChunks_appendsVectorToEachDocumentInOrder() throws Exception {
         EmbeddingModel model = (texts, request) -> List.of(
-            new float[] {0.1f, 0.2f}, new float[] {0.3f, 0.4f});
+                new float[]{0.1f, 0.2f}, new float[]{0.3f, 0.4f});
         var interceptor = newInterceptor(registryWithProvider("openAIEmbeddingProvider", true, model));
 
         var docs = List.of(chunkDoc("first"), chunkDoc("second"));
@@ -90,13 +90,13 @@ public class DocumentChunkingInterceptorTest {
             @Override
             public List<float[]> embed(List<String> texts, Request<?> request) {
                 plainCalled = true;
-                return List.of(new float[] {9f}, new float[] {9f});
+                return List.of(new float[]{9f}, new float[]{9f});
             }
 
             @Override
             public List<float[]> embedChunks(List<String> chunksOfSameDocument, Request<?> request) {
                 contextualCalled = true;
-                return List.of(new float[] {0.1f}, new float[] {0.2f});
+                return List.of(new float[]{0.1f}, new float[]{0.2f});
             }
         }
 
@@ -126,7 +126,9 @@ public class DocumentChunkingInterceptorTest {
 
     @Test
     public void embedChunks_embeddingCallThrows_leavesDocumentsWithoutVector() throws Exception {
-        EmbeddingModel model = (texts, request) -> { throw new RuntimeException("boom"); };
+        EmbeddingModel model = (texts, request) -> {
+            throw new RuntimeException("boom");
+        };
         var interceptor = newInterceptor(registryWithProvider("p", true, model));
 
         var docs = List.of(chunkDoc("first"));
@@ -142,32 +144,32 @@ public class DocumentChunkingInterceptorTest {
         // at the class boundary the way CodeAwareSplitter does; assert dispatch happened
         // by checking the code-aware result directly matches chunkText's output.
         assertEquals(
-            org.restheart.ai.chunking.CodeAwareSplitter.splitBraceBased(code, 1000, 200),
-            DocumentChunkingInterceptor.chunkText(code, "Foo.java", 1000, 200));
+                org.restheart.ai.chunking.CodeAwareSplitter.splitBraceBased(code, 1000, 200),
+                DocumentChunkingInterceptor.chunkText(code, "Foo.java", 1000, 200));
     }
 
     @Test
     public void chunkText_pythonFilename_usesIndentBasedSplitting() {
         var code = "def a():\n    pass\ndef b():\n    pass\n";
         assertEquals(
-            org.restheart.ai.chunking.CodeAwareSplitter.splitIndentBased(code, 1000, 200),
-            DocumentChunkingInterceptor.chunkText(code, "script.py", 1000, 200));
+                org.restheart.ai.chunking.CodeAwareSplitter.splitIndentBased(code, 1000, 200),
+                DocumentChunkingInterceptor.chunkText(code, "script.py", 1000, 200));
     }
 
     @Test
     public void chunkText_nonCodeFilename_fallsBackToPlainSplitting() {
         var text = "aaaa bbbb cccc dddd";
         assertEquals(
-            DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3),
-            DocumentChunkingInterceptor.chunkText(text, "notes.txt", 10, 3));
+                DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3),
+                DocumentChunkingInterceptor.chunkText(text, "notes.txt", 10, 3));
     }
 
     @Test
     public void chunkText_nullFilename_fallsBackToPlainSplitting() {
         var text = "aaaa bbbb cccc dddd";
         assertEquals(
-            DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3),
-            DocumentChunkingInterceptor.chunkText(text, null, 10, 3));
+                DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3),
+                DocumentChunkingInterceptor.chunkText(text, null, 10, 3));
     }
 
     @Test
@@ -227,7 +229,7 @@ public class DocumentChunkingInterceptorTest {
         // every word from the source text must appear in at least one chunk
         for (var word : text.split(" ")) {
             assertTrue(chunks.stream().anyMatch(c -> c.contains(word)),
-                "word '" + word + "' missing from chunks " + chunks);
+                    "word '" + word + "' missing from chunks " + chunks);
         }
     }
 

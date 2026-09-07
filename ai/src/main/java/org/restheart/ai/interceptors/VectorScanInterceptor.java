@@ -133,11 +133,11 @@ import com.mongodb.client.MongoClient;
  * }</pre>
  */
 @RegisterPlugin(
-    name = "vectorScanInterceptor",
-    description = "Executes $vectorScan: brute-force vector similarity search requiring no mongot or index",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-    priority = Integer.MIN_VALUE,
-    enabledByDefault = false
+        name = "vectorScanInterceptor",
+        description = "Executes $vectorScan: brute-force vector similarity search requiring no mongot or index",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+        priority = Integer.MIN_VALUE,
+        enabledByDefault = false
 )
 public class VectorScanInterceptor implements MongoInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(VectorScanInterceptor.class);
@@ -226,16 +226,16 @@ public class VectorScanInterceptor implements MongoInterceptor {
         }
 
         var similarity = scanArgs.containsKey("similarity") && scanArgs.get("similarity").isString()
-            ? scanArgs.getString("similarity").getValue()
-            : VectorSimilarity.COSINE;
+                ? scanArgs.getString("similarity").getValue()
+                : VectorSimilarity.COSINE;
 
         var maxCandidates = scanArgs.containsKey("maxCandidates") && scanArgs.get("maxCandidates").isNumber()
-            ? scanArgs.get("maxCandidates").asNumber().intValue()
-            : defaultMaxCandidates;
+                ? scanArgs.get("maxCandidates").asNumber().intValue()
+                : defaultMaxCandidates;
 
         var limit = scanArgs.containsKey("limit") && scanArgs.get("limit").isNumber()
-            ? scanArgs.get("limit").asNumber().intValue()
-            : defaultLimit;
+                ? scanArgs.get("limit").asNumber().intValue()
+                : defaultLimit;
 
         var beforeStages = new ArrayList<>(stages.subList(0, scanIndex));
         beforeStages.add(new BsonDocument("$limit", new BsonInt32(maxCandidates)));
@@ -243,9 +243,9 @@ public class VectorScanInterceptor implements MongoInterceptor {
         List<BsonDocument> candidates;
         try {
             candidates = mclient.getDatabase(dbName)
-                .getCollection(collName, BsonDocument.class)
-                .aggregate(beforeStages)
-                .into(new ArrayList<>());
+                    .getCollection(collName, BsonDocument.class)
+                    .aggregate(beforeStages)
+                    .into(new ArrayList<>());
         } catch (Exception e) {
             LOGGER.error("vectorScanInterceptor: candidate fetch failed for {}/{}: {}", dbName, collName, e.getMessage(), e);
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "$vectorScan candidate fetch failed: " + e.getMessage());
@@ -261,8 +261,8 @@ public class VectorScanInterceptor implements MongoInterceptor {
             afterPipeline.addAll(stages.subList(scanIndex + 1, stages.size()));
             try {
                 var afterResult = mclient.getDatabase(dbName)
-                    .aggregate(afterPipeline, BsonDocument.class)
-                    .into(new ArrayList<BsonDocument>());
+                        .aggregate(afterPipeline, BsonDocument.class)
+                        .into(new ArrayList<BsonDocument>());
                 finalResult = new BsonArray();
                 afterResult.forEach(finalResult::add);
             } catch (Exception e) {
@@ -323,7 +323,7 @@ public class VectorScanInterceptor implements MongoInterceptor {
 
     static float[] toFloatArray(BsonArray array) {
         var result = new float[array.size()];
-        for (int i = 0; i < array.size(); i++) {
+        for (int i = 0;i < array.size();i++) {
             result[i] = (float) array.get(i).asNumber().doubleValue();
         }
         return result;
@@ -364,7 +364,7 @@ public class VectorScanInterceptor implements MongoInterceptor {
     }
 
     static int indexOfVectorScanStage(List<BsonDocument> stages) {
-        for (int i = 0; i < stages.size(); i++) {
+        for (int i = 0;i < stages.size();i++) {
             var s = stages.get(i);
             if (s.size() == 1 && STAGE_NAME.equals(s.keySet().iterator().next())) {
                 return i;
@@ -374,7 +374,7 @@ public class VectorScanInterceptor implements MongoInterceptor {
     }
 
     static int indexOfVectorScanStage(BsonArray stages) {
-        for (int i = 0; i < stages.size(); i++) {
+        for (int i = 0;i < stages.size();i++) {
             var item = stages.get(i);
             if (item.isDocument()) {
                 var s = item.asDocument();

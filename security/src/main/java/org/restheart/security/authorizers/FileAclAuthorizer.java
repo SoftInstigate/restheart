@@ -48,7 +48,6 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer;
 import org.restheart.security.BaseAclPermission;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;

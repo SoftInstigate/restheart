@@ -52,7 +52,7 @@ public interface DescriptorAwareAuthorizer extends Authorizer {
      * permission travelling with the decision, those two would silently not apply, and a
      * principal restricted to their own rows would read everyone's through {@code /mcp}.
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     AttachmentKey<List<Decision>> AUTHORIZED_OPERATIONS = (AttachmentKey) AttachmentKey.create(List.class);
 
     /**

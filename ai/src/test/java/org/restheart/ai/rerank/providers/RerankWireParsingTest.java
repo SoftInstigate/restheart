@@ -30,9 +30,9 @@ public class RerankWireParsingTest {
     @Test
     public void parsesCohereShapedResponse() {
         var body = "{\"results\":["
-            + "{\"index\":2,\"relevance_score\":0.9},"
-            + "{\"index\":0,\"relevance_score\":0.5}"
-            + "],\"id\":\"abc\"}";
+                + "{\"index\":2,\"relevance_score\":0.9},"
+                + "{\"index\":0,\"relevance_score\":0.5}"
+                + "],\"id\":\"abc\"}";
 
         var results = RerankWireParsing.parse(body, "results");
 
@@ -46,9 +46,9 @@ public class RerankWireParsingTest {
     @Test
     public void parsesVoyageShapedResponse() {
         var body = "{\"object\":\"list\",\"data\":["
-            + "{\"relevance_score\":0.455,\"index\":0},"
-            + "{\"relevance_score\":0.439,\"index\":1}"
-            + "],\"model\":\"rerank-2.5-lite\",\"usage\":{\"total_tokens\":8}}";
+                + "{\"relevance_score\":0.455,\"index\":0},"
+                + "{\"relevance_score\":0.439,\"index\":1}"
+                + "],\"model\":\"rerank-2.5-lite\",\"usage\":{\"total_tokens\":8}}";
 
         var results = RerankWireParsing.parse(body, "data");
 

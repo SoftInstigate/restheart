@@ -106,7 +106,7 @@ public class McpProtocolIT extends AbstactIT {
 
         var reportedFailure = envelope.containsKey("error")
                 || (envelope.getDocument("result").containsKey("isError")
-                        && envelope.getDocument("result").getBoolean("isError").getValue());
+                && envelope.getDocument("result").getBoolean("isError").getValue());
 
         assertTrue(reportedFailure, "an unknown tool must fail, not return a result: " + envelope.toJson());
     }

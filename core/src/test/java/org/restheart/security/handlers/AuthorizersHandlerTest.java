@@ -41,10 +41,25 @@ import io.undertow.util.HttpString;
 public class AuthorizersHandlerTest {
 
     private static class PlainService implements Service<ServiceRequest<?>, ServiceResponse<?>> {
-        @Override public Consumer<HttpServerExchange> requestInitializer() { return null; }
-        @Override public Consumer<HttpServerExchange> responseInitializer() { return null; }
-        @Override public Function<HttpServerExchange, ServiceRequest<?>> request() { return null; }
-        @Override public Function<HttpServerExchange, ServiceResponse<?>> response() { return null; }
+        @Override
+        public Consumer<HttpServerExchange> requestInitializer() {
+            return null;
+        }
+
+        @Override
+        public Consumer<HttpServerExchange> responseInitializer() {
+            return null;
+        }
+
+        @Override
+        public Function<HttpServerExchange, ServiceRequest<?>> request() {
+            return null;
+        }
+
+        @Override
+        public Function<HttpServerExchange, ServiceResponse<?>> response() {
+            return null;
+        }
     }
 
     private static final class OverridingService extends PlainService {

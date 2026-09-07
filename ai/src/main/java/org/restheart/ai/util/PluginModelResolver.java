@@ -54,9 +54,9 @@ public final class PluginModelResolver {
         }
 
         var providerRecord = registry.getProviders().stream()
-            .filter(p -> providerName.equals(p.getName()))
-            .findFirst()
-            .orElse(null);
+                .filter(p -> providerName.equals(p.getName()))
+                .findFirst()
+                .orElse(null);
 
         if (providerRecord == null || !providerRecord.isEnabled()) {
             return Optional.empty();

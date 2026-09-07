@@ -225,7 +225,7 @@ public class SseWildcardInterceptorsExecutorTest {
             assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied by test interceptor"),
                     "the denial body must be sent to the client");
             assertTrue(exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE) != null
-                            && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
+                    && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
                     "the denial body must be sent with an application/json content type");
         }
     }
@@ -290,7 +290,7 @@ public class SseWildcardInterceptorsExecutorTest {
             assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied before auth"),
                     "the body set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth, not lost");
             assertTrue(exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE) != null
-                            && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
+                    && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
                     "the deferred denial body must still be sent with an application/json content type");
         }
     }
@@ -329,7 +329,7 @@ public class SseWildcardInterceptorsExecutorTest {
             assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied before auth"),
                     "the body set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth, not lost");
             assertTrue(exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE) != null
-                            && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
+                    && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
                     "the deferred denial body must still be sent with an application/json content type");
         }
     }

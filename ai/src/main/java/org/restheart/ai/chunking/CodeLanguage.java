@@ -51,7 +51,7 @@ public enum CodeLanguage {
         return switch (filename.substring(dot + 1).toLowerCase()) {
             case "py" -> INDENT_BASED;
             case "java", "kt", "js", "mjs", "jsx", "ts", "tsx",
-                 "go", "rs", "swift", "cs", "c", "h", "cpp", "cc", "cxx", "hpp" -> BRACE_BASED;
+                "go", "rs", "swift", "cs", "c", "h", "cpp", "cc", "cxx", "hpp" -> BRACE_BASED;
             default -> null;
         };
     }

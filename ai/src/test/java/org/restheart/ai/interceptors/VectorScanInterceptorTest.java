@@ -55,14 +55,14 @@ public class VectorScanInterceptorTest {
     @Test
     public void toFloatArray_convertsInOrder() {
         var result = VectorScanInterceptor.toFloatArray(vector(1.0, 2.5, -3.0));
-        assertArrayEquals(new float[] {1.0f, 2.5f, -3.0f}, result);
+        assertArrayEquals(new float[]{1.0f, 2.5f, -3.0f}, result);
     }
 
     @Test
     public void indexOfVectorScanStage_bsonArray_findsSoleKeyMatch() {
         var stages = new BsonArray(List.of(
-            stage("$match", new BsonDocument("status", new BsonString("published"))),
-            stage("$vectorScan", new BsonDocument("path", new BsonString("embedding")))));
+                stage("$match", new BsonDocument("status", new BsonString("published"))),
+                stage("$vectorScan", new BsonDocument("path", new BsonString("embedding")))));
 
         assertEquals(1, VectorScanInterceptor.indexOfVectorScanStage(stages));
         assertTrue(VectorScanInterceptor.containsVectorScanStage(stages));
@@ -71,7 +71,7 @@ public class VectorScanInterceptorTest {
     @Test
     public void indexOfVectorScanStage_bsonArray_absentReturnsNegativeOne() {
         var stages = new BsonArray(List.of(
-            stage("$match", new BsonDocument("status", new BsonString("published")))));
+                stage("$match", new BsonDocument("status", new BsonString("published")))));
 
         assertEquals(-1, VectorScanInterceptor.indexOfVectorScanStage(stages));
         assertFalse(VectorScanInterceptor.containsVectorScanStage(stages));
@@ -82,7 +82,7 @@ public class VectorScanInterceptorTest {
         // a stage with $vectorScan as one of several keys must not match --
         // real $vectorScan usage is always a single-key stage object
         var multiKey = new BsonDocument("$vectorScan", new BsonDocument())
-            .append("somethingElse", new BsonString("x"));
+                .append("somethingElse", new BsonString("x"));
         var stages = new BsonArray(List.of(multiKey));
 
         assertEquals(-1, VectorScanInterceptor.indexOfVectorScanStage(stages));
@@ -91,9 +91,9 @@ public class VectorScanInterceptorTest {
     @Test
     public void indexOfVectorScanStage_list_findsSoleKeyMatch() {
         List<BsonDocument> stages = List.of(
-            stage("$match", new BsonDocument()),
-            stage("$sort", new BsonDocument()),
-            stage("$vectorScan", new BsonDocument()));
+                stage("$match", new BsonDocument()),
+                stage("$sort", new BsonDocument()),
+                stage("$vectorScan", new BsonDocument()));
 
         assertEquals(2, VectorScanInterceptor.indexOfVectorScanStage(stages));
     }
@@ -103,8 +103,8 @@ public class VectorScanInterceptorTest {
         var request = mock(MongoRequest.class);
         var stagesArray = new BsonArray(List.of(stage("$vectorScan", new BsonDocument())));
         var aggrs = new BsonArray(List.of(
-            new BsonDocument("uri", new BsonString("other")).append("stages", new BsonArray()),
-            new BsonDocument("uri", new BsonString("semantic-search")).append("stages", stagesArray)));
+                new BsonDocument("uri", new BsonString("other")).append("stages", new BsonArray()),
+                new BsonDocument("uri", new BsonString("semantic-search")).append("stages", stagesArray)));
         var collProps = new BsonDocument("aggrs", aggrs);
 
         when(request.getCollectionProps()).thenReturn(collProps);
@@ -123,7 +123,7 @@ public class VectorScanInterceptorTest {
         var request = mock(MongoRequest.class);
         var escapedStages = new BsonArray(List.of(stage("_$match", new BsonDocument()), stage("_$vectorScan", new BsonDocument())));
         var aggrs = new BsonArray(List.of(
-            new BsonDocument("uri", new BsonString("semantic-search")).append("stages", escapedStages)));
+                new BsonDocument("uri", new BsonString("semantic-search")).append("stages", escapedStages)));
         var collProps = new BsonDocument("aggrs", aggrs);
 
         when(request.getCollectionProps()).thenReturn(collProps);
@@ -138,7 +138,7 @@ public class VectorScanInterceptorTest {
     public void findStagesArray_noMatchingUri_returnsNull() {
         var request = mock(MongoRequest.class);
         var aggrs = new BsonArray(List.of(
-            new BsonDocument("uri", new BsonString("other")).append("stages", new BsonArray())));
+                new BsonDocument("uri", new BsonString("other")).append("stages", new BsonArray())));
         var collProps = new BsonDocument("aggrs", aggrs);
 
         when(request.getCollectionProps()).thenReturn(collProps);
@@ -163,7 +163,7 @@ public class VectorScanInterceptorTest {
         var far = new BsonDocument("_id", new BsonString("far")).append("embedding", vector(0.0, 1.0));
 
         var result = VectorScanInterceptor.scoreAndRank(
-            List.of(far, near, mid), "embedding", new float[] {1.0f, 0.0f}, VectorSimilarity.COSINE, 2);
+                List.of(far, near, mid), "embedding", new float[]{1.0f, 0.0f}, VectorSimilarity.COSINE, 2);
 
         assertEquals(2, result.size());
         assertEquals("near", result.get(0).asDocument().getString("_id").getValue());
@@ -178,7 +178,7 @@ public class VectorScanInterceptorTest {
         var withVector = new BsonDocument("_id", new BsonString("has-vector")).append("embedding", vector(1.0, 0.0));
 
         var result = VectorScanInterceptor.scoreAndRank(
-            List.of(noVector, withVector), "embedding", new float[] {1.0f, 0.0f}, VectorSimilarity.COSINE, 10);
+                List.of(noVector, withVector), "embedding", new float[]{1.0f, 0.0f}, VectorSimilarity.COSINE, 10);
 
         assertEquals(1, result.size());
         assertEquals("has-vector", result.get(0).asDocument().getString("_id").getValue());
@@ -190,7 +190,7 @@ public class VectorScanInterceptorTest {
         var correct = new BsonDocument("_id", new BsonString("correct")).append("embedding", vector(1.0, 0.0));
 
         var result = VectorScanInterceptor.scoreAndRank(
-            List.of(wrongLength, correct), "embedding", new float[] {1.0f, 0.0f}, VectorSimilarity.COSINE, 10);
+                List.of(wrongLength, correct), "embedding", new float[]{1.0f, 0.0f}, VectorSimilarity.COSINE, 10);
 
         assertEquals(1, result.size());
         assertEquals("correct", result.get(0).asDocument().getString("_id").getValue());
@@ -200,14 +200,14 @@ public class VectorScanInterceptorTest {
     public void scoreAndRank_doesNotMutateOriginalDocuments() {
         var doc = new BsonDocument("_id", new BsonString("d")).append("embedding", vector(1.0, 0.0));
 
-        VectorScanInterceptor.scoreAndRank(List.of(doc), "embedding", new float[] {1.0f, 0.0f}, VectorSimilarity.COSINE, 10);
+        VectorScanInterceptor.scoreAndRank(List.of(doc), "embedding", new float[]{1.0f, 0.0f}, VectorSimilarity.COSINE, 10);
 
         assertFalse(doc.containsKey("score"), "the input document must not be mutated -- scoreAndRank must clone before appending 'score'");
     }
 
     @Test
     public void scoreAndRank_emptyCandidates_returnsEmptyArray() {
-        var result = VectorScanInterceptor.scoreAndRank(List.of(), "embedding", new float[] {1.0f}, VectorSimilarity.COSINE, 10);
+        var result = VectorScanInterceptor.scoreAndRank(List.of(), "embedding", new float[]{1.0f}, VectorSimilarity.COSINE, 10);
         assertEquals(0, result.size());
     }
 }

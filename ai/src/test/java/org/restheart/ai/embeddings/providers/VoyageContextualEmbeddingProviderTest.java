@@ -35,7 +35,7 @@ public class VoyageContextualEmbeddingProviderTest {
     @Test
     public void independentTexts_eachSentAsItsOwnGroup() {
         var payload = VoyageContextualEmbeddingProvider.buildPayload(
-            "voyage-context-4", List.of(List.of("a"), List.of("b"), List.of("c")), null, 0);
+                "voyage-context-4", List.of(List.of("a"), List.of("b"), List.of("c")), null, 0);
 
         var parsed = BsonDocument.parse(payload);
         var inputs = parsed.getArray("inputs");
@@ -47,7 +47,7 @@ public class VoyageContextualEmbeddingProviderTest {
     @Test
     public void chunksOfOneDocument_sentAsSingleGroup() {
         var payload = VoyageContextualEmbeddingProvider.buildPayload(
-            "voyage-context-4", List.of(List.of("chunk1", "chunk2", "chunk3")), null, 0);
+                "voyage-context-4", List.of(List.of("chunk1", "chunk2", "chunk3")), null, 0);
 
         var parsed = BsonDocument.parse(payload);
         var inputs = parsed.getArray("inputs");
@@ -82,11 +82,11 @@ public class VoyageContextualEmbeddingProviderTest {
     @Test
     public void parseIndependent_reordersByOuterIndex() {
         var response = """
-            {"data": [
-                {"index": 1, "data": [{"index": 0, "embedding": [2.0, 2.0]}]},
-                {"index": 0, "data": [{"index": 0, "embedding": [1.0, 1.0]}]}
-            ], "model": "voyage-context-4"}
-            """;
+                {"data": [
+                    {"index": 1, "data": [{"index": 0, "embedding": [2.0, 2.0]}]},
+                    {"index": 0, "data": [{"index": 0, "embedding": [1.0, 1.0]}]}
+                ], "model": "voyage-context-4"}
+                """;
 
         var result = VoyageContextualWireEmbeddings.parseIndependent(response);
         assertEquals(2, result.size());
@@ -97,14 +97,14 @@ public class VoyageContextualEmbeddingProviderTest {
     @Test
     public void parseChunksOfOneDocument_reordersByInnerIndex() {
         var response = """
-            {"data": [
-                {"index": 0, "data": [
-                    {"index": 2, "embedding": [3.0]},
-                    {"index": 0, "embedding": [1.0]},
-                    {"index": 1, "embedding": [2.0]}
-                ]}
-            ], "model": "voyage-context-4"}
-            """;
+                {"data": [
+                    {"index": 0, "data": [
+                        {"index": 2, "embedding": [3.0]},
+                        {"index": 0, "embedding": [1.0]},
+                        {"index": 1, "embedding": [2.0]}
+                    ]}
+                ], "model": "voyage-context-4"}
+                """;
 
         var result = VoyageContextualWireEmbeddings.parseChunksOfOneDocument(response);
         assertEquals(3, result.size());

@@ -41,7 +41,6 @@ import io.undertow.server.HttpUpgradeListener;
 import io.undertow.server.ServerConnection;
 import io.undertow.server.ServerConnection.CloseListener;
 import io.undertow.server.handlers.CookieImpl;
-import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 
 import org.xnio.ChannelListener;

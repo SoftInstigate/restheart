@@ -50,7 +50,7 @@ public final class ListApisTool {
      * @throws UnknownResourceException if {@code resourceUri} matches no known resource
      */
     public Map<String, Object> list(BaseAccount principal, String baseUrl, String resourceUri,
-            String query, String kind, Integer limit, String cursor) {
+                                    String query, String kind, Integer limit, String cursor) {
         if (resourceUri != null) {
             return lookup.find(principal, baseUrl, resourceUri)
                     .map(McpResource::toMap)

@@ -52,13 +52,13 @@ public final class VectorSimilarity {
             case DOT_PRODUCT -> dotProduct(a, b);
             case EUCLIDEAN -> -euclideanDistance(a, b);
             default -> throw new IllegalArgumentException(
-                "unknown similarity '" + similarity + "', expected one of: cosine, dotProduct, euclidean");
+                    "unknown similarity '" + similarity + "', expected one of: cosine, dotProduct, euclidean");
         };
     }
 
     static double dotProduct(float[] a, float[] b) {
         double sum = 0;
-        for (int i = 0; i < a.length; i++) {
+        for (int i = 0;i < a.length;i++) {
             sum += (double) a[i] * b[i];
         }
         return sum;
@@ -76,7 +76,7 @@ public final class VectorSimilarity {
 
     static double euclideanDistance(float[] a, float[] b) {
         double sum = 0;
-        for (int i = 0; i < a.length; i++) {
+        for (int i = 0;i < a.length;i++) {
             var diff = (double) a[i] - b[i];
             sum += diff * diff;
         }

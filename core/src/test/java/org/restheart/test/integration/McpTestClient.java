@@ -118,11 +118,11 @@ final class McpTestClient {
 
         var body = paramsJson == null
                 ? """
-                        {"jsonrpc":"2.0","id":%d,"method":"%s"}
-                        """.formatted(nextId.getAndIncrement(), method)
+                {"jsonrpc":"2.0","id":%d,"method":"%s"}
+                """.formatted(nextId.getAndIncrement(), method)
                 : """
-                        {"jsonrpc":"2.0","id":%d,"method":"%s","params":%s}
-                        """.formatted(nextId.getAndIncrement(), method, paramsJson);
+                {"jsonrpc":"2.0","id":%d,"method":"%s","params":%s}
+                """.formatted(nextId.getAndIncrement(), method, paramsJson);
 
         return send(body, sessionId);
     }

@@ -54,7 +54,7 @@ final class OpenAiWireEmbeddings {
             var idx = doc.getInt32("index").getValue();
             var vector = doc.getArray("embedding");
             var embedding = new float[vector.size()];
-            for (int i = 0; i < vector.size(); i++) {
+            for (int i = 0;i < vector.size();i++) {
                 embedding[i] = (float) vector.get(i).asNumber().doubleValue();
             }
             ordered[idx] = embedding;

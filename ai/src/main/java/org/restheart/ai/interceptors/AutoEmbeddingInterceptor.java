@@ -88,11 +88,11 @@ import org.slf4j.LoggerFactory;
  * provider can look up its own overrides.
  */
 @RegisterPlugin(
-    name = "autoEmbeddingInterceptor",
-    description = "Automatically generates embeddings for documents on write, via a configured EmbeddingModel provider",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-    requiresContent = true,
-    enabledByDefault = false
+        name = "autoEmbeddingInterceptor",
+        description = "Automatically generates embeddings for documents on write, via a configured EmbeddingModel provider",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+        requiresContent = true,
+        enabledByDefault = false
 )
 public class AutoEmbeddingInterceptor implements MongoInterceptor {
 
@@ -120,17 +120,17 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
 
         if (!enabled) {
             LOGGER.warn("autoEmbeddingInterceptor: no embedding-provider configured, interceptor is a no-op "
-                + "unless every request overrides it via {}", RequestOverrides.EMBEDDING_PROVIDER);
+                    + "unless every request overrides it via {}", RequestOverrides.EMBEDDING_PROVIDER);
         }
     }
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
-            && request.isWriteDocument()
-            && !response.isInError()
-            && !effectiveProviderName(request).isBlank()
-            && findVectorSearchConfig(request.getCollectionProps()) != null;
+                && request.isWriteDocument()
+                && !response.isInError()
+                && !effectiveProviderName(request).isBlank()
+                && findVectorSearchConfig(request.getCollectionProps()) != null;
     }
 
     @Override
@@ -169,7 +169,7 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
             vectors = model.embed(texts, request);
         } catch (Exception e) {
             LOGGER.error("autoEmbeddingInterceptor: failed to generate embeddings via '{}': {}",
-                providerName, e.getMessage(), e);
+                    providerName, e.getMessage(), e);
             response.addWarning("auto-embedding failed: " + e.getMessage());
             return;
         }
@@ -249,7 +249,7 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
      * content, just without an embedding.
      */
     static void collectEmbeddableTexts(List<BsonDocument> docs, String textField,
-            List<BsonDocument> targets, List<String> texts) {
+                                       List<BsonDocument> targets, List<String> texts) {
         for (var doc : docs) {
             var tv = doc.get(textField);
             if (tv != null && tv.isString()) {
@@ -265,7 +265,7 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
      * (a provider returning fewer vectors than requested) are left untouched.
      */
     static void applyEmbeddings(List<BsonDocument> targets, List<float[]> vectors, String embeddingField) {
-        for (int i = 0; i < targets.size() && i < vectors.size(); i++) {
+        for (int i = 0;i < targets.size() && i < vectors.size();i++) {
             var vector = vectors.get(i);
             if (vector == null) {
                 continue;
@@ -290,7 +290,7 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
         var model = PluginModelResolver.resolve(registry, resolvedModels, providerName, EmbeddingModel.class);
         if (model.isEmpty()) {
             LOGGER.warn("autoEmbeddingInterceptor: embedding provider '{}' not found, not enabled, "
-                + "or does not supply an EmbeddingModel", providerName);
+                    + "or does not supply an EmbeddingModel", providerName);
         }
         return model.orElse(null);
     }

@@ -61,7 +61,7 @@ public record McpContext(
 
     /** Without an authorization decision — for describing a resource, which reads no data. */
     public McpContext(BaseAccount principal, String baseUrl, String pluginName, String pluginUri,
-            Map<String, Object> pluginConfiguration) {
+                      Map<String, Object> pluginConfiguration) {
         this(principal, baseUrl, pluginName, pluginUri, pluginConfiguration, null);
     }
 }

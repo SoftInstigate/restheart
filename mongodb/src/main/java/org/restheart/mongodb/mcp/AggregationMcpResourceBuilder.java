@@ -70,7 +70,7 @@ public final class AggregationMcpResourceBuilder {
      *         {@code mcp.enabled == false}, or a missing required {@code description}
      */
     public static Optional<McpResource> build(String collectionUri, String aggrUri, BsonValue stages, BsonDocument mcp,
-            String dbName, AggregationPipelineSecurityChecker securityChecker) {
+                                              String dbName, AggregationPipelineSecurityChecker securityChecker) {
         if (mcp == null || isExplicitlyDisabled(mcp) || description(mcp) == null) {
             return Optional.empty();
         }

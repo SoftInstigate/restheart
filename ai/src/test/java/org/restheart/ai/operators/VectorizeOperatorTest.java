@@ -57,7 +57,7 @@ public class VectorizeOperatorTest {
 
     @Test
     public void resolve_callsConfiguredProvider_returnsVectorAsBsonArray() {
-        EmbeddingModel model = (texts, request) -> List.of(new float[] {0.1f, 0.2f});
+        EmbeddingModel model = (texts, request) -> List.of(new float[]{0.1f, 0.2f});
         var registry = registryWithProvider("openAIEmbeddingProvider", true, model);
 
         var operator = new VectorizeOperator(registry, "openAIEmbeddingProvider");
@@ -96,7 +96,7 @@ public class VectorizeOperatorTest {
 
     @Test
     public void resolve_usesRequestOverrideProviderNameOverStaticDefault() {
-        EmbeddingModel model = (texts, request) -> List.of(new float[] {1.0f});
+        EmbeddingModel model = (texts, request) -> List.of(new float[]{1.0f});
         var registry = registryWithProvider("overriddenProvider", true, model);
 
         var operator = new VectorizeOperator(registry, "defaultProvider");

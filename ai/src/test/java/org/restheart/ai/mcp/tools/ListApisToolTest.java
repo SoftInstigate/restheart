@@ -38,7 +38,8 @@ import org.restheart.plugins.mcp.McpResource;
 public class ListApisToolTest {
 
     private static CachedResourceLookup lookup(RegisteredMcpAware... entries) {
-        return new CachedResourceLookup(McpAwareRegistry.of(List.of(entries)), Duration.ofMinutes(5), () -> {});
+        return new CachedResourceLookup(McpAwareRegistry.of(List.of(entries)), Duration.ofMinutes(5), () -> {
+        });
     }
 
     private static McpAware fixed(McpResource... resources) {

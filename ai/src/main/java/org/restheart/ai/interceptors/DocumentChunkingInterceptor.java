@@ -126,19 +126,19 @@ import com.mongodb.client.model.InsertManyOptions;
  * }</pre>
  */
 @RegisterPlugin(
-    name = "documentChunkingInterceptor",
-    description = "Extracts text from uploaded files using Tika, chunks it and stores segments for vector search",
-    interceptPoint = InterceptPoint.RESPONSE,
-    requiresContent = false,
-    enabledByDefault = false
+        name = "documentChunkingInterceptor",
+        description = "Extracts text from uploaded files using Tika, chunks it and stores segments for vector search",
+        interceptPoint = InterceptPoint.RESPONSE,
+        requiresContent = false,
+        enabledByDefault = false
 )
 public class DocumentChunkingInterceptor implements MongoInterceptor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentChunkingInterceptor.class);
 
     // static, single-tenant defaults; overridden per request via RequestOverrides
-    private int defaultChunkSize        = 1000;
-    private int defaultChunkOverlap     = 200;
+    private int defaultChunkSize = 1000;
+    private int defaultChunkOverlap = 200;
     private String defaultTargetCollection = "_chunks";
     private String defaultEmbeddingProviderName = "";
 
@@ -156,8 +156,8 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
     @OnInit
     public void setup() {
-        this.defaultChunkSize        = argOrDefault(config, "chunk-size", 1000);
-        this.defaultChunkOverlap     = argOrDefault(config, "chunk-overlap", 200);
+        this.defaultChunkSize = argOrDefault(config, "chunk-size", 1000);
+        this.defaultChunkOverlap = argOrDefault(config, "chunk-overlap", 200);
         this.defaultTargetCollection = argOrDefault(config, "target-collection", "_chunks");
         this.defaultEmbeddingProviderName = argOrDefault(config, "embedding-provider", "");
     }
@@ -166,17 +166,17 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return (request.isFilesBucket() && request.isPost()
                 || request.isFile() && request.isPut())
-            && !response.isInError()
-            && (response.getStatusCode() == 201 || response.getStatusCode() == 200);
+                && !response.isInError()
+                && (response.getStatusCode() == 201 || response.getStatusCode() == 200);
     }
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var dbName     = request.getDBName();
-        var collName   = request.getCollectionName(); // e.g. "fs.files"
+        var dbName = request.getDBName();
+        var collName = request.getCollectionName(); // e.g. "fs.files"
         var bucketName = collName.endsWith(".files")
-            ? collName.substring(0, collName.length() - 6)
-            : collName;
+                ? collName.substring(0, collName.length() - 6)
+                : collName;
 
         BsonValue fileId = resolveFileId(request, response);
         if (fileId == null) {
@@ -190,27 +190,27 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
         try {
             var bucket = GridFSBuckets.create(mclient.getDatabase(dbName), bucketName);
             try (var in = bucket.openDownloadStream(fileId)) {
-                filename  = in.getGridFSFile().getFilename();
+                filename = in.getGridFSFile().getFilename();
                 fileBytes = in.readAllBytes();
             }
         } catch (Exception e) {
             LOGGER.warn("documentChunkingInterceptor: could not download file {} from {}/{}: {}",
-                fileId, dbName, bucketName, e.getMessage());
+                    fileId, dbName, bucketName, e.getMessage());
             return;
         }
 
         // Extract plain text using Apache Tika.
         String text;
         try {
-            var parser   = new AutoDetectParser();
-            var handler  = new BodyContentHandler(-1);
+            var parser = new AutoDetectParser();
+            var handler = new BodyContentHandler(-1);
             var metadata = new Metadata();
-            var context  = new ParseContext();
+            var context = new ParseContext();
             parser.parse(new ByteArrayInputStream(fileBytes), handler, metadata, context);
             text = handler.toString();
         } catch (Exception e) {
             LOGGER.warn("documentChunkingInterceptor: Tika could not extract text from file {} in {}/{}: {}",
-                fileId, dbName, bucketName, e.getMessage());
+                    fileId, dbName, bucketName, e.getMessage());
             return;
         }
 
@@ -228,13 +228,13 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
         var sourceRef = dbName + "/" + collName + "/" + fileId;
         var documents = new ArrayList<BsonDocument>(chunks.size());
-        for (int i = 0; i < chunks.size(); i++) {
+        for (int i = 0;i < chunks.size();i++) {
             documents.add(new BsonDocument()
-                .append("_id",        new BsonObjectId(new ObjectId()))
-                .append("source",     new BsonString(sourceRef))
-                .append("fileId",     fileId)
-                .append("chunkIndex", new BsonInt32(i))
-                .append("text",       new BsonString(chunks.get(i))));
+                    .append("_id", new BsonObjectId(new ObjectId()))
+                    .append("source", new BsonString(sourceRef))
+                    .append("fileId", fileId)
+                    .append("chunkIndex", new BsonInt32(i))
+                    .append("text", new BsonString(chunks.get(i))));
         }
 
         var embeddingProviderName = RequestOverrides.str(request, RequestOverrides.EMBEDDING_PROVIDER, defaultEmbeddingProviderName);
@@ -244,14 +244,14 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
         try {
             mclient.getDatabase(dbName)
-                .getCollection(targetCollection, BsonDocument.class)
-                .insertMany(documents, new InsertManyOptions().ordered(false));
+                    .getCollection(targetCollection, BsonDocument.class)
+                    .insertMany(documents, new InsertManyOptions().ordered(false));
 
             LOGGER.info("documentChunkingInterceptor: stored {} chunks from file {} into {}/{}",
-                documents.size(), fileId, dbName, targetCollection);
+                    documents.size(), fileId, dbName, targetCollection);
         } catch (Exception e) {
             LOGGER.error("documentChunkingInterceptor: failed to store chunks for file {} in {}: {}",
-                fileId, dbName, e.getMessage(), e);
+                    fileId, dbName, e.getMessage(), e);
         }
     }
 
@@ -265,12 +265,12 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
      * exactly as if no {@code embedding-provider} were configured.
      */
     void embedChunks(List<BsonDocument> documents, List<String> chunkTexts,
-            String providerName, MongoRequest request, BsonValue fileId, String dbName) {
+                     String providerName, MongoRequest request, BsonValue fileId, String dbName) {
         var model = PluginModelResolver.resolve(registry, resolvedModels, providerName, EmbeddingModel.class);
         if (model.isEmpty()) {
             LOGGER.warn("documentChunkingInterceptor: embedding provider '{}' not found, not enabled, "
-                + "or does not supply an EmbeddingModel — storing chunks for file {} in {} without vectors",
-                providerName, fileId, dbName);
+                    + "or does not supply an EmbeddingModel — storing chunks for file {} in {} without vectors",
+                    providerName, fileId, dbName);
             return;
         }
 
@@ -281,15 +281,15 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
             // contextualized chunk embeddings, prefer it over the plain independent
             // embed() call for better retrieval quality (see ContextualEmbeddingModel)
             vectors = resolved instanceof ContextualEmbeddingModel contextual
-                ? contextual.embedChunks(chunkTexts, request)
-                : resolved.embed(chunkTexts, request);
+                    ? contextual.embedChunks(chunkTexts, request)
+                    : resolved.embed(chunkTexts, request);
         } catch (Exception e) {
             LOGGER.error("documentChunkingInterceptor: embedding call to '{}' failed for file {} in {}: {} "
-                + "— storing chunks without vectors", providerName, fileId, dbName, e.getMessage(), e);
+                    + "— storing chunks without vectors", providerName, fileId, dbName, e.getMessage(), e);
             return;
         }
 
-        for (int i = 0; i < documents.size() && i < vectors.size(); i++) {
+        for (int i = 0;i < documents.size() && i < vectors.size();i++) {
             var vector = vectors.get(i);
             if (vector == null) {
                 continue;
@@ -323,9 +323,9 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
      */
     static List<String> chunkText(String text, String filename, int size, int overlap) {
         return switch (CodeLanguage.fromFilename(filename)) {
-            case BRACE_BASED  -> CodeAwareSplitter.splitBraceBased(text, size, 0);
+            case BRACE_BASED -> CodeAwareSplitter.splitBraceBased(text, size, 0);
             case INDENT_BASED -> CodeAwareSplitter.splitIndentBased(text, size, 0);
-            case null         -> splitIntoChunks(text, size, overlap);
+            case null -> splitIntoChunks(text, size, overlap);
         };
     }
 
@@ -338,7 +338,7 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
         if (text == null || text.isEmpty() || size <= 0) return chunks;
 
         int start = 0;
-        int len   = text.length();
+        int len = text.length();
         while (start < len) {
             int end = Math.min(start + size, len);
             if (end < len) {

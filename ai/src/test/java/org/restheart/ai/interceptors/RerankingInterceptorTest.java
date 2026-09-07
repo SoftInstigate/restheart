@@ -62,7 +62,7 @@ public class RerankingInterceptorTest {
         var request = mock(MongoRequest.class);
         when(request.getAggregationVars()).thenReturn(new BsonDocument());
         var rerankConfig = new BsonDocument("query",
-            new BsonDocument("$var", new BsonArray(List.of(new BsonString("q"), new BsonString("fallback")))));
+                new BsonDocument("$var", new BsonArray(List.of(new BsonString("q"), new BsonString("fallback")))));
 
         assertEquals("fallback", RerankingInterceptor.resolveQuery(rerankConfig, request));
     }
@@ -72,7 +72,7 @@ public class RerankingInterceptorTest {
         var request = mock(MongoRequest.class);
         when(request.getAggregationVars()).thenReturn(new BsonDocument("q", new BsonString("bound value")));
         var rerankConfig = new BsonDocument("query",
-            new BsonDocument("$var", new BsonArray(List.of(new BsonString("q"), new BsonString("fallback")))));
+                new BsonDocument("$var", new BsonArray(List.of(new BsonString("q"), new BsonString("fallback")))));
 
         assertEquals("bound value", RerankingInterceptor.resolveQuery(rerankConfig, request));
     }
@@ -100,10 +100,10 @@ public class RerankingInterceptorTest {
         // must unescape it, or resolveQuery() would never recognize the "$var" key.
         var request = mock(MongoRequest.class);
         var escapedRerank = new BsonDocument("model", new BsonString("rerank-2.5"))
-            .append("query", new BsonDocument("_$var", new BsonString("q")))
-            .append("topK", new BsonInt32(3));
+                .append("query", new BsonDocument("_$var", new BsonString("q")))
+                .append("topK", new BsonInt32(3));
         var aggrs = new BsonArray(List.of(
-            new BsonDocument("uri", new BsonString("semantic-search")).append("rerank", escapedRerank)));
+                new BsonDocument("uri", new BsonString("semantic-search")).append("rerank", escapedRerank)));
         var collProps = new BsonDocument("aggrs", aggrs);
 
         when(request.getCollectionProps()).thenReturn(collProps);

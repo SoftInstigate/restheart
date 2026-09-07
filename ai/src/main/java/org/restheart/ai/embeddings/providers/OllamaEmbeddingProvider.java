@@ -62,9 +62,9 @@ import org.slf4j.LoggerFactory;
  * point different tenants at different Ollama servers/models.
  */
 @RegisterPlugin(
-    name = "ollamaEmbeddingProvider",
-    description = "Provides text embeddings via a local or self-hosted Ollama server",
-    enabledByDefault = false
+        name = "ollamaEmbeddingProvider",
+        description = "Provides text embeddings via a local or self-hosted Ollama server",
+        enabledByDefault = false
 )
 public class OllamaEmbeddingProvider implements Provider<EmbeddingModel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(OllamaEmbeddingProvider.class);
@@ -104,7 +104,7 @@ public class OllamaEmbeddingProvider implements Provider<EmbeddingModel> {
         var baseUrl = RequestOverrides.str(request, RequestOverrides.OLLAMA_BASE_URL, defaultBaseUrl);
 
         var inputJson = new StringBuilder("[");
-        for (int i = 0; i < texts.size(); i++) {
+        for (int i = 0;i < texts.size();i++) {
             inputJson.append("\"").append(escape(texts.get(i))).append("\"");
             if (i < texts.size() - 1) {
                 inputJson.append(",");
@@ -116,17 +116,17 @@ public class OllamaEmbeddingProvider implements Provider<EmbeddingModel> {
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "api/embed";
 
         var httpReq = HttpRequest.newBuilder()
-            .uri(URI.create(endpoint))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build();
+                .uri(URI.create(endpoint))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
 
         try {
             var httpResp = httpClient.send(httpReq, HttpResponse.BodyHandlers.ofString());
 
             if (httpResp.statusCode() != 200) {
                 throw new RuntimeException("Ollama embeddings endpoint " + endpoint + " returned HTTP "
-                    + httpResp.statusCode() + ": " + httpResp.body());
+                        + httpResp.statusCode() + ": " + httpResp.body());
             }
 
             return parseEmbeddings(httpResp.body());
@@ -152,7 +152,7 @@ public class OllamaEmbeddingProvider implements Provider<EmbeddingModel> {
         for (var item : embeddings) {
             var vector = item.asArray();
             var embedding = new float[vector.size()];
-            for (int i = 0; i < vector.size(); i++) {
+            for (int i = 0;i < vector.size();i++) {
                 embedding[i] = (float) vector.get(i).asNumber().doubleValue();
             }
             result.add(embedding);

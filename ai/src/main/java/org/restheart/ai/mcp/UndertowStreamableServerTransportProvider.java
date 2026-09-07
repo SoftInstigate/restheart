@@ -80,7 +80,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     private static final Logger LOGGER = LoggerFactory.getLogger(UndertowStreamableServerTransportProvider.class);
 
     static final String TEXT_EVENT_STREAM = "text/event-stream; charset=utf-8";
-    static final String APPLICATION_JSON  = "application/json";
+    static final String APPLICATION_JSON = "application/json";
     static final String MESSAGE_EVENT_TYPE = "message";
 
     private final McpJsonMapper jsonMapper;
@@ -99,9 +99,9 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     @Override
     public List<String> protocolVersions() {
         return List.of(
-            ProtocolVersions.MCP_2024_11_05,
-            ProtocolVersions.MCP_2025_03_26,
-            ProtocolVersions.MCP_2025_06_18
+                ProtocolVersions.MCP_2024_11_05,
+                ProtocolVersions.MCP_2025_03_26,
+                ProtocolVersions.MCP_2025_06_18
         );
     }
 
@@ -114,30 +114,30 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     public Mono<Void> notifyClients(String method, Object params) {
         if (sessions.isEmpty()) return Mono.empty();
         return Mono.fromRunnable(() ->
-            sessions.values().parallelStream().forEach(session -> {
-                try {
-                    session.sendNotification(method, params).block();
-                } catch (Exception e) {
-                    if (isMissingStream(e)) {
-                        // Expected, not exceptional: a Streamable HTTP session can exist between
-                        // requests with no currently open GET/SSE stream (e.g. a client that only
-                        // opens one while a call is in flight) — the MCP SDK signals this by
-                        // routing the session through its internal MissingMcpTransportSession,
-                        // whose sendNotification/sendRequest always fail with a plain
-                        // IllegalStateException("Stream unavailable for session ...") (confirmed by
-                        // decompiling mcp-core's MissingMcpTransportSession — no dedicated exception
-                        // type exists for it, unlike McpTransportSessionNotFoundException/
-                        // McpTransportSessionClosedException for the other two session states).
-                        // list_changed notifications are best-effort per spec; the client simply
-                        // learns of the change on its next request instead. Logging this at ERROR
-                        // would spam the log on every catalog TTL expiry for every non-streaming
-                        // session — which is the common case.
-                        LOGGER.debug("Skipped notifying session {} (no active stream): {}", session.getId(), e.getMessage());
-                    } else {
-                        LOGGER.error("Failed to notify session {}: {}", session.getId(), e.getMessage());
+                sessions.values().parallelStream().forEach(session -> {
+                    try {
+                        session.sendNotification(method, params).block();
+                    } catch (Exception e) {
+                        if (isMissingStream(e)) {
+                            // Expected, not exceptional: a Streamable HTTP session can exist between
+                            // requests with no currently open GET/SSE stream (e.g. a client that only
+                            // opens one while a call is in flight) — the MCP SDK signals this by
+                            // routing the session through its internal MissingMcpTransportSession,
+                            // whose sendNotification/sendRequest always fail with a plain
+                            // IllegalStateException("Stream unavailable for session ...") (confirmed by
+                            // decompiling mcp-core's MissingMcpTransportSession — no dedicated exception
+                            // type exists for it, unlike McpTransportSessionNotFoundException/
+                            // McpTransportSessionClosedException for the other two session states).
+                            // list_changed notifications are best-effort per spec; the client simply
+                            // learns of the change on its next request instead. Logging this at ERROR
+                            // would spam the log on every catalog TTL expiry for every non-streaming
+                            // session — which is the common case.
+                            LOGGER.debug("Skipped notifying session {} (no active stream): {}", session.getId(), e.getMessage());
+                        } else {
+                            LOGGER.error("Failed to notify session {}: {}", session.getId(), e.getMessage());
+                        }
                     }
-                }
-            })
+                })
         );
     }
 
@@ -150,7 +150,10 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         return Mono.fromRunnable(() -> {
             isClosing = true;
             sessions.values().parallelStream().forEach(session -> {
-                try { session.closeGracefully().block(); } catch (Exception ignored) {}
+                try {
+                    session.closeGracefully().block();
+                } catch (Exception ignored) {
+                }
             });
             sessions.clear();
         });
@@ -165,7 +168,10 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
      * notifications and responses (202 Accepted).
      */
     public void handlePost(ByteArrayRequest req, ByteArrayResponse res, McpTransportContext ctx) {
-        if (isClosing) { res.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE); return; }
+        if (isClosing) {
+            res.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
+            return;
+        }
 
         byte[] body = req.getContent();
         if (body == null || body.length == 0) {
@@ -195,7 +201,8 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             }
 
             try {
-                var initReq = jsonMapper.convertValue(rpcReq.params(), new TypeRef<McpSchema.InitializeRequest>() {});
+                var initReq = jsonMapper.convertValue(rpcReq.params(), new TypeRef<McpSchema.InitializeRequest>() {
+                });
                 var init = sessionFactory.startSession(initReq);
                 sessions.put(init.session().getId(), init.session());
 
@@ -285,7 +292,11 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 });
 
                 drainQueueToExchange(transport, exchange);
-                try { vt.join(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                try {
+                    vt.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             });
         } else {
             res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
@@ -298,7 +309,10 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
      * notifications on an existing session.
      */
     public void handleGet(ByteArrayRequest req, ByteArrayResponse res, McpTransportContext ctx) {
-        if (isClosing) { res.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE); return; }
+        if (isClosing) {
+            res.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
+            return;
+        }
 
         String accept = req.getHeader("Accept");
         if (accept == null || !accept.contains("text/event-stream")) {
@@ -343,7 +357,10 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
      * Handles DELETE requests: terminates and removes an existing session.
      */
     public void handleDelete(ByteArrayRequest req, ByteArrayResponse res, McpTransportContext ctx) {
-        if (isClosing) { res.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE); return; }
+        if (isClosing) {
+            res.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
+            return;
+        }
 
         String sessionId = req.getHeader(HttpHeaders.MCP_SESSION_ID);
         if (sessionId == null || sessionId.isBlank()) {

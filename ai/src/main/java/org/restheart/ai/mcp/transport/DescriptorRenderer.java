@@ -74,7 +74,7 @@ public final class DescriptorRenderer {
      * @param transportPreference optional; must be one of {@code resource.transportsFor(actionName)} to take effect
      */
     public static Map<String, Object> render(McpResource resource, String actionName, Map<String, Object> args,
-            String transportPreference) {
+                                             String transportPreference) {
         var action = resource.actions().get(actionName);
         if (action == null) {
             throw new IllegalArgumentException("unknown action '" + actionName + "' for resource " + resource.uri());

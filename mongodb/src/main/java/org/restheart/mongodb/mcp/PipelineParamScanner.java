@@ -91,7 +91,7 @@ public final class PipelineParamScanner {
                 // elements 1+ (then/else stage bodies): descend as conditional — nothing in here
                 // can throw QueryVariableNotBoundException, since the whole stage is skipped
                 // when the condition variable is missing
-                for (var i = 1; i < elements.size(); i++) {
+                for (var i = 1;i < elements.size();i++) {
                     scan(elements.get(i), names, required, true);
                 }
                 return;

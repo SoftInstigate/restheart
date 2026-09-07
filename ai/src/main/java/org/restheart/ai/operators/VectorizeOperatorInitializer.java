@@ -50,10 +50,10 @@ import org.slf4j.LoggerFactory;
  * different provider, the same override key {@code autoEmbeddingInterceptor} reads.
  */
 @RegisterPlugin(
-    name = "vectorizeOperator",
-    description = "Registers the $vectorize custom aggregation operator (text to embedding vector, inline in pipelines)",
-    initPoint = InitPoint.BEFORE_STARTUP,
-    enabledByDefault = false
+        name = "vectorizeOperator",
+        description = "Registers the $vectorize custom aggregation operator (text to embedding vector, inline in pipelines)",
+        initPoint = InitPoint.BEFORE_STARTUP,
+        enabledByDefault = false
 )
 public class VectorizeOperatorInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VectorizeOperatorInitializer.class);
@@ -73,7 +73,7 @@ public class VectorizeOperatorInitializer implements Initializer {
 
         if (defaultProviderName.isBlank()) {
             LOGGER.warn("vectorizeOperator: no embedding-provider configured; $vectorize will only work "
-                + "for requests that attach an override-ai-embedding-provider");
+                    + "for requests that attach an override-ai-embedding-provider");
         }
 
         // let a registration failure (e.g. another plugin already registered $vectorize)

@@ -44,10 +44,10 @@ import com.mongodb.client.MongoClient;
  * Atlas Search (e.g. Community Edition without Atlas Search enabled).
  */
 @RegisterPlugin(
-    name = "vectorSearchIndexListInterceptor",
-    description = "Appends Atlas Vector Search indexes to GET /_indexes responses",
-    interceptPoint = InterceptPoint.RESPONSE,
-    requiresContent = true
+        name = "vectorSearchIndexListInterceptor",
+        description = "Appends Atlas Vector Search indexes to GET /_indexes responses",
+        interceptPoint = InterceptPoint.RESPONSE,
+        requiresContent = true
 )
 public class VectorSearchIndexListInterceptor implements MongoInterceptor {
 
@@ -59,8 +59,8 @@ public class VectorSearchIndexListInterceptor implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isCollectionIndexes()
-            && request.isGet()
-            && !response.isInError();
+                && request.isGet()
+                && !response.isInError();
     }
 
     @Override
@@ -72,24 +72,24 @@ public class VectorSearchIndexListInterceptor implements MongoInterceptor {
 
         try {
             mclient.getDatabase(request.getDBName())
-                .getCollection(request.getCollectionName(), BsonDocument.class)
-                .listSearchIndexes()
-                .forEach(doc -> {
-                    var bi = BsonDocument.parse(doc.toJson());
-                    var name = bi.remove("name");
-                    if (name != null) {
-                        bi.put("_id", name);
-                    }
-                    bi.put("type", new BsonString("vectorSearch"));
-                    indexes.asArray().add(bi);
-                });
+                    .getCollection(request.getCollectionName(), BsonDocument.class)
+                    .listSearchIndexes()
+                    .forEach(doc -> {
+                        var bi = BsonDocument.parse(doc.toJson());
+                        var name = bi.remove("name");
+                        if (name != null) {
+                            bi.put("_id", name);
+                        }
+                        bi.put("type", new BsonString("vectorSearch"));
+                        indexes.asArray().add(bi);
+                    });
 
             response.setCount(indexes.asArray().size());
         } catch (Exception e) {
             // listSearchIndexes is only available on Atlas / MongoDB >= 8.2 with Atlas Search.
             // Skip so that standard index listing still works on Community Edition.
             LOGGER.warn("Could not list vector search indexes for {}/{}: {}",
-                request.getDBName(), request.getCollectionName(), e.getMessage());
+                    request.getDBName(), request.getCollectionName(), e.getMessage());
         }
     }
 }

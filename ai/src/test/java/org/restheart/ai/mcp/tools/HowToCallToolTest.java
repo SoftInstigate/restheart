@@ -48,7 +48,8 @@ public class HowToCallToolTest {
 
     private static HowToCallTool toolFor(McpResource resource) {
         var registry = McpAwareRegistry.of(List.of(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of())));
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {});
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        });
         return new HowToCallTool(lookup);
     }
 

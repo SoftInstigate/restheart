@@ -35,8 +35,8 @@ public class OllamaEmbeddingProviderTest {
         var embeddings = OllamaEmbeddingProvider.parseEmbeddings(body);
 
         assertEquals(2, embeddings.size());
-        assertArrayEquals(new float[] {0.1f, 0.2f}, embeddings.get(0), 1e-6f);
-        assertArrayEquals(new float[] {0.3f, 0.4f}, embeddings.get(1), 1e-6f);
+        assertArrayEquals(new float[]{0.1f, 0.2f}, embeddings.get(0), 1e-6f);
+        assertArrayEquals(new float[]{0.3f, 0.4f}, embeddings.get(1), 1e-6f);
     }
 
     @Test
@@ -46,7 +46,7 @@ public class OllamaEmbeddingProviderTest {
         var embeddings = OllamaEmbeddingProvider.parseEmbeddings(body);
 
         assertEquals(1, embeddings.size());
-        assertArrayEquals(new float[] {1.0f, 2.0f, 3.0f}, embeddings.get(0), 1e-6f);
+        assertArrayEquals(new float[]{1.0f, 2.0f, 3.0f}, embeddings.get(0), 1e-6f);
     }
 
     @Test

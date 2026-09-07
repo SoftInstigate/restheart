@@ -138,7 +138,7 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
      *                      {@value #DEFAULT_PASSWORD_PROPERTY}
      */
     public DefaultJwtIssuer(Algorithm algo, String issuer, String[] audience,
-                     List<String> defaultClaims, String passwordProperty) {
+                            List<String> defaultClaims, String passwordProperty) {
         this(algo, issuer, audience, defaultClaims, null, passwordProperty);
     }
 
@@ -148,7 +148,7 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
      *                       none
      */
     public DefaultJwtIssuer(Algorithm algo, String issuer, String[] audience,
-                     List<String> defaultClaims, List<String> requiredClaims, String passwordProperty) {
+                            List<String> defaultClaims, List<String> requiredClaims, String passwordProperty) {
         this(algo, issuer, audience, defaultClaims, requiredClaims, passwordProperty, DEFAULT_TTL);
     }
 
@@ -158,8 +158,8 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
      *                   passing its own {@code ttl}, or its own {@code expires}, is unaffected.
      */
     public DefaultJwtIssuer(Algorithm algo, String issuer, String[] audience,
-                     List<String> defaultClaims, List<String> requiredClaims, String passwordProperty,
-                     Duration defaultTtl) {
+                            List<String> defaultClaims, List<String> requiredClaims, String passwordProperty,
+                            Duration defaultTtl) {
         this.algo = algo;
         this.issuer = issuer;
         this.audience = audience;

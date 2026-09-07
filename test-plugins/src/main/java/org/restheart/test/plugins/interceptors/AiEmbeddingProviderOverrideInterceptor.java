@@ -86,6 +86,6 @@ public class AiEmbeddingProviderOverrideInterceptor implements WildcardIntercept
     public boolean resolve(ServiceRequest<?> req, ServiceResponse<?> res) {
         var params = req.getExchange().getQueryParameters();
         return (params.containsKey(EMBEDDING_QPARAM) && !params.get(EMBEDDING_QPARAM).isEmpty())
-            || (params.containsKey(RERANK_QPARAM) && !params.get(RERANK_QPARAM).isEmpty());
+                || (params.containsKey(RERANK_QPARAM) && !params.get(RERANK_QPARAM).isEmpty());
     }
 }

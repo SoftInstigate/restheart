@@ -67,9 +67,9 @@ import org.slf4j.LoggerFactory;
  * into another tenant's call.
  */
 @RegisterPlugin(
-    name = "openAIEmbeddingProvider",
-    description = "Provides text embeddings via any OpenAI-compatible /v1/embeddings endpoint",
-    enabledByDefault = false
+        name = "openAIEmbeddingProvider",
+        description = "Provides text embeddings via any OpenAI-compatible /v1/embeddings endpoint",
+        enabledByDefault = false
 )
 public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIEmbeddingProvider.class);
@@ -96,7 +96,7 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
 
         if (defaultApiKey == null || defaultApiKey.isBlank()) {
             LOGGER.warn("openAIEmbeddingProvider: no api-key configured, embedding calls will fail "
-                + "unless every request overrides it via {}", RequestOverrides.OPENAI_API_KEY);
+                    + "unless every request overrides it via {}", RequestOverrides.OPENAI_API_KEY);
         }
 
         this.instance = this::embed;
@@ -117,7 +117,7 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
         var baseUrl = RequestOverrides.str(request, RequestOverrides.OPENAI_BASE_URL, defaultBaseUrl);
 
         var inputJson = new StringBuilder("[");
-        for (int i = 0; i < texts.size(); i++) {
+        for (int i = 0;i < texts.size();i++) {
             inputJson.append("\"").append(OpenAiWireEmbeddings.escape(texts.get(i))).append("\"");
             if (i < texts.size() - 1) {
                 inputJson.append(",");
@@ -129,18 +129,18 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "embeddings";
 
         var httpReq = HttpRequest.newBuilder()
-            .uri(URI.create(endpoint))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + apiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build();
+                .uri(URI.create(endpoint))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
 
         try {
             var httpResp = httpClient.send(httpReq, HttpResponse.BodyHandlers.ofString());
 
             if (httpResp.statusCode() != 200) {
                 throw new RuntimeException("Embeddings endpoint " + endpoint + " returned HTTP "
-                    + httpResp.statusCode() + ": " + httpResp.body());
+                        + httpResp.statusCode() + ": " + httpResp.body());
             }
 
             return parseEmbeddings(httpResp.body());

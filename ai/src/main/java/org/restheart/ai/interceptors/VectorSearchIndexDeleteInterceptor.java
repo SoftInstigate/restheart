@@ -46,10 +46,10 @@ import com.mongodb.client.MongoClient;
  * <p>Requires MongoDB Atlas or MongoDB >= 8.2 with Atlas Search enabled.
  */
 @RegisterPlugin(
-    name = "vectorSearchIndexDeleteInterceptor",
-    description = "Drops Atlas Vector Search indexes via DELETE /_indexes/{name}",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-    priority = Integer.MIN_VALUE
+        name = "vectorSearchIndexDeleteInterceptor",
+        description = "Drops Atlas Vector Search indexes via DELETE /_indexes/{name}",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+        priority = Integer.MIN_VALUE
 )
 public class VectorSearchIndexDeleteInterceptor implements MongoInterceptor {
 
@@ -65,19 +65,19 @@ public class VectorSearchIndexDeleteInterceptor implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var indexName  = request.getIndexId();
+        var indexName = request.getIndexId();
         var collection = mclient.getDatabase(request.getDBName())
-            .getCollection(request.getCollectionName(), BsonDocument.class);
+                .getCollection(request.getCollectionName(), BsonDocument.class);
 
         boolean isVectorSearchIndex;
         try {
             isVectorSearchIndex = collection.listSearchIndexes()
-                .name(indexName)
-                .first() != null;
+                    .name(indexName)
+                    .first() != null;
         } catch (Exception e) {
             // Atlas Search not available on this deployment – let the standard handler run.
             LOGGER.warn("Could not check vector search indexes for {}/{}: {}",
-                request.getDBName(), request.getCollectionName(), e.getMessage());
+                    request.getDBName(), request.getCollectionName(), e.getMessage());
             return;
         }
 
@@ -89,7 +89,7 @@ public class VectorSearchIndexDeleteInterceptor implements MongoInterceptor {
         try {
             collection.dropSearchIndex(indexName);
             LOGGER.info("Dropped vector search index '{}' on {}/{}", indexName,
-                request.getDBName(), request.getCollectionName());
+                    request.getDBName(), request.getCollectionName());
         } catch (Exception e) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "error dropping vector search index", e);
             return;

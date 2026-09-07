@@ -28,7 +28,6 @@ import com.intuit.karate.RuntimeHook;
 import com.intuit.karate.Suite;
 import com.intuit.karate.core.FeatureRuntime;
 import com.intuit.karate.core.ScenarioRuntime;
-import com.intuit.karate.core.StepResult;
 
 /**
  * Replaces Karate's normal firehose of per-request debug logging with a single progress

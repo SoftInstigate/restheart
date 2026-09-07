@@ -56,12 +56,12 @@ public class CodeLanguageTest {
 
     @Test
     public void braceFamilyLanguages_areBraceBased() {
-        for (var filename : new String[] {
+        for (var filename : new String[]{
                 "Main.java", "App.kt", "index.js", "index.mjs", "component.jsx",
                 "app.ts", "component.tsx", "main.go", "lib.rs", "App.swift",
                 "Program.cs", "lib.c", "lib.h", "lib.cpp", "lib.cc", "lib.cxx", "lib.hpp"}) {
             assertEquals(CodeLanguage.BRACE_BASED, CodeLanguage.fromFilename(filename),
-                "expected BRACE_BASED for " + filename);
+                    "expected BRACE_BASED for " + filename);
         }
     }
 

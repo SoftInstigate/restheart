@@ -78,7 +78,7 @@ final class VoyageContextualWireEmbeddings {
 
     private static float[] toFloatArray(BsonArray vector) {
         var embedding = new float[vector.size()];
-        for (int i = 0; i < vector.size(); i++) {
+        for (int i = 0;i < vector.size();i++) {
             embedding[i] = (float) vector.get(i).asNumber().doubleValue();
         }
         return embedding;

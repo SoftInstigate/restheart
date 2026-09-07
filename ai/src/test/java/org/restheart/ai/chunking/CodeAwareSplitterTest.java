@@ -109,7 +109,7 @@ public class CodeAwareSplitterTest {
         var chunks = split(code, 350);
         assertTrue(chunks.size() >= 2);
 
-        var chunkWithFirst  = chunks.stream().filter(c -> c.contains("void first()")).findFirst();
+        var chunkWithFirst = chunks.stream().filter(c -> c.contains("void first()")).findFirst();
         var chunkWithSecond = chunks.stream().filter(c -> c.contains("void second()")).findFirst();
 
         assertTrue(chunkWithFirst.isPresent());
@@ -210,7 +210,7 @@ public class CodeAwareSplitterTest {
         // (not a repeating pattern) so any accidental duplication is detectable --
         // a repeating pattern could make two consecutive chunks coincide by chance.
         var source = new StringBuilder();
-        for (int i = 0; i < 40; i++) {
+        for (int i = 0;i < 40;i++) {
             source.append("line ").append(i).append('\n');
         }
 
@@ -225,7 +225,7 @@ public class CodeAwareSplitterTest {
         }
 
         var expectedLines = new ArrayList<String>();
-        for (int i = 0; i < 40; i++) expectedLines.add("line " + i);
+        for (int i = 0;i < 40;i++) expectedLines.add("line " + i);
 
         // with overlap=0 every source line must appear exactly once, in order --
         // no line duplicated across chunk boundaries, none dropped

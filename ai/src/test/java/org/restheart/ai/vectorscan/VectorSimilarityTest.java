@@ -50,14 +50,14 @@ public class VectorSimilarityTest {
 
     @Test
     public void cosine_zeroVector_scoresZeroRatherThanDivideByZero() {
-        var zero = new float[] {0f, 0f, 0f};
+        var zero = new float[]{0f, 0f, 0f};
         assertEquals(0.0, VectorSimilarity.score(VectorSimilarity.COSINE, A, zero), 1e-9);
     }
 
     @Test
     public void dotProduct_matchesPlainDotProduct() {
-        var a = new float[] {1f, 2f, 3f};
-        var b = new float[] {4f, 5f, 6f};
+        var a = new float[]{1f, 2f, 3f};
+        var b = new float[]{4f, 5f, 6f};
         // 1*4 + 2*5 + 3*6 = 32
         assertEquals(32.0, VectorSimilarity.score(VectorSimilarity.DOT_PRODUCT, a, b), 1e-9);
     }
@@ -70,8 +70,8 @@ public class VectorSimilarityTest {
 
     @Test
     public void euclidean_isNegatedSoHigherScoreMeansCloser() {
-        var near = new float[] {1f, 0.1f, 0f};
-        var far = new float[] {1f, 5f, 0f};
+        var near = new float[]{1f, 0.1f, 0f};
+        var far = new float[]{1f, 5f, 0f};
 
         var nearScore = VectorSimilarity.score(VectorSimilarity.EUCLIDEAN, A, near);
         var farScore = VectorSimilarity.score(VectorSimilarity.EUCLIDEAN, A, far);
@@ -86,7 +86,7 @@ public class VectorSimilarityTest {
 
     @Test
     public void mismatchedLengths_throws() {
-        var shorter = new float[] {1f, 0f};
+        var shorter = new float[]{1f, 0f};
         assertThrows(IllegalArgumentException.class, () -> VectorSimilarity.score(VectorSimilarity.COSINE, A, shorter));
     }
 }

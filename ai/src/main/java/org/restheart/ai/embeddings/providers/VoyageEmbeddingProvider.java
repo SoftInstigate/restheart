@@ -63,9 +63,9 @@ import org.slf4j.LoggerFactory;
  * to use different values for that tenant.
  */
 @RegisterPlugin(
-    name = "voyageEmbeddingProvider",
-    description = "Provides text embeddings via the Voyage AI API",
-    enabledByDefault = false
+        name = "voyageEmbeddingProvider",
+        description = "Provides text embeddings via the Voyage AI API",
+        enabledByDefault = false
 )
 public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(VoyageEmbeddingProvider.class);
@@ -94,7 +94,7 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
 
         if (defaultApiKey == null || defaultApiKey.isBlank()) {
             LOGGER.warn("voyageEmbeddingProvider: no api-key configured, embedding calls will fail "
-                + "unless every request overrides it via {}", RequestOverrides.VOYAGE_API_KEY);
+                    + "unless every request overrides it via {}", RequestOverrides.VOYAGE_API_KEY);
         }
 
         this.instance = this::embed;
@@ -119,18 +119,18 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "embeddings";
 
         var httpReq = HttpRequest.newBuilder()
-            .uri(URI.create(endpoint))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + apiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build();
+                .uri(URI.create(endpoint))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
 
         try {
             var httpResp = httpClient.send(httpReq, HttpResponse.BodyHandlers.ofString());
 
             if (httpResp.statusCode() != 200) {
                 throw new RuntimeException("Voyage embeddings endpoint " + endpoint + " returned HTTP "
-                    + httpResp.statusCode() + ": " + httpResp.body());
+                        + httpResp.statusCode() + ": " + httpResp.body());
             }
 
             return OpenAiWireEmbeddings.parse(httpResp.body());
@@ -151,7 +151,7 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
      */
     static String buildPayload(String model, List<String> texts, String inputType) {
         var inputJson = new StringBuilder("[");
-        for (int i = 0; i < texts.size(); i++) {
+        for (int i = 0;i < texts.size();i++) {
             inputJson.append("\"").append(OpenAiWireEmbeddings.escape(texts.get(i))).append("\"");
             if (i < texts.size() - 1) {
                 inputJson.append(",");
@@ -160,9 +160,9 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
         inputJson.append("]");
 
         var payload = new StringBuilder("{\"model\":\"")
-            .append(OpenAiWireEmbeddings.escape(model))
-            .append("\",\"input\":")
-            .append(inputJson);
+                .append(OpenAiWireEmbeddings.escape(model))
+                .append("\",\"input\":")
+                .append(inputJson);
 
         if (inputType != null && !inputType.isBlank()) {
             payload.append(",\"input_type\":\"").append(OpenAiWireEmbeddings.escape(inputType)).append("\"");

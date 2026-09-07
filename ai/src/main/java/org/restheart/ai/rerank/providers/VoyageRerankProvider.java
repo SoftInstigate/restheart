@@ -65,9 +65,9 @@ import org.slf4j.LoggerFactory;
  * use a different Voyage key/model for reranking than for embeddings.
  */
 @RegisterPlugin(
-    name = "voyageRerankProvider",
-    description = "Re-ranks documents against a query via the Voyage AI Reranker API",
-    enabledByDefault = false
+        name = "voyageRerankProvider",
+        description = "Re-ranks documents against a query via the Voyage AI Reranker API",
+        enabledByDefault = false
 )
 public class VoyageRerankProvider implements Provider<RerankModel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(VoyageRerankProvider.class);
@@ -94,7 +94,7 @@ public class VoyageRerankProvider implements Provider<RerankModel> {
 
         if (defaultApiKey == null || defaultApiKey.isBlank()) {
             LOGGER.warn("voyageRerankProvider: no api-key configured, rerank calls will fail "
-                + "unless every request overrides it via {}", RequestOverrides.VOYAGE_RERANK_API_KEY);
+                    + "unless every request overrides it via {}", RequestOverrides.VOYAGE_RERANK_API_KEY);
         }
 
         this.instance = this::rerank;
@@ -118,18 +118,18 @@ public class VoyageRerankProvider implements Provider<RerankModel> {
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "rerank";
 
         var httpReq = HttpRequest.newBuilder()
-            .uri(URI.create(endpoint))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + apiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build();
+                .uri(URI.create(endpoint))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
 
         try {
             var httpResp = httpClient.send(httpReq, HttpResponse.BodyHandlers.ofString());
 
             if (httpResp.statusCode() != 200) {
                 throw new RuntimeException("Voyage rerank endpoint " + endpoint + " returned HTTP "
-                    + httpResp.statusCode() + ": " + httpResp.body());
+                        + httpResp.statusCode() + ": " + httpResp.body());
             }
 
             return RerankWireParsing.parse(httpResp.body(), "data");
@@ -148,7 +148,7 @@ public class VoyageRerankProvider implements Provider<RerankModel> {
      */
     static String buildPayload(String model, String query, List<String> documents, int topK) {
         var docsJson = new StringBuilder("[");
-        for (int i = 0; i < documents.size(); i++) {
+        for (int i = 0;i < documents.size();i++) {
             docsJson.append("\"").append(RerankWireParsing.escape(documents.get(i))).append("\"");
             if (i < documents.size() - 1) {
                 docsJson.append(",");
@@ -157,11 +157,11 @@ public class VoyageRerankProvider implements Provider<RerankModel> {
         docsJson.append("]");
 
         var payload = new StringBuilder("{\"model\":\"")
-            .append(RerankWireParsing.escape(model))
-            .append("\",\"query\":\"")
-            .append(RerankWireParsing.escape(query))
-            .append("\",\"documents\":")
-            .append(docsJson);
+                .append(RerankWireParsing.escape(model))
+                .append("\",\"query\":\"")
+                .append(RerankWireParsing.escape(query))
+                .append("\",\"documents\":")
+                .append(docsJson);
 
         if (topK > 0) {
             payload.append(",\"top_k\":").append(topK);

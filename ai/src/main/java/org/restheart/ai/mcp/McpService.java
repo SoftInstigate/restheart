@@ -237,7 +237,8 @@ public class McpService implements ByteArrayService {
 
     private void notifyToolsListChanged() {
         provider.notifyClients("notifications/tools/list_changed", null)
-                .subscribe(v -> {}, err -> LOGGER.warn("Failed to notify clients of tools/list_changed: {}", err.getMessage()));
+                .subscribe(v -> {
+                }, err -> LOGGER.warn("Failed to notify clients of tools/list_changed: {}", err.getMessage()));
     }
 
     // -------------------------------------------------------------------------
@@ -456,7 +457,7 @@ public class McpService implements ByteArrayService {
      * would make it unreadable.
      */
     static McpResourceTemplate paramsTemplate(McpResource resource, String literalSuffix, String name, String uriTemplate,
-            List<String> queryParams, Set<String> pathVars, List<String> requiredParams) {
+                                              List<String> queryParams, Set<String> pathVars, List<String> requiredParams) {
         // "inventory", or "inventory size" for an action that addresses something of its own —
         // whose name then already says what it yields, so the title goes straight to the params
         var subject = resourceName(resource) + literalSuffix.replace("-", " ");

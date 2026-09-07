@@ -110,17 +110,17 @@ import org.slf4j.LoggerFactory;
  * {@link RequestOverrides#RERANK_PROVIDER} to use different values for that tenant.
  */
 @RegisterPlugin(
-    name = "rerankingInterceptor",
-    description = "Re-ranks $vectorSearch aggregation results using the Atlas Reranking API",
-    interceptPoint = InterceptPoint.RESPONSE,
-    requiresContent = true,
-    enabledByDefault = false
+        name = "rerankingInterceptor",
+        description = "Re-ranks $vectorSearch aggregation results using the Atlas Reranking API",
+        interceptPoint = InterceptPoint.RESPONSE,
+        requiresContent = true,
+        enabledByDefault = false
 )
 public class RerankingInterceptor implements MongoInterceptor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RerankingInterceptor.class);
 
-    static final String RERANK_ELEMENT_NAME      = "rerank";
+    static final String RERANK_ELEMENT_NAME = "rerank";
     static final String AGGREGATIONS_ELEMENT_NAME = "aggrs";
 
     // static, single-tenant defaults; overridden per request via RequestOverrides
@@ -142,9 +142,9 @@ public class RerankingInterceptor implements MongoInterceptor {
 
     @OnInit
     public void setup() {
-        this.defaultAtlasApiKey  = argOrDefault(config, "atlas-api-key", "");
+        this.defaultAtlasApiKey = argOrDefault(config, "atlas-api-key", "");
         this.defaultRerankApiUrl = argOrDefault(config, "rerank-api-url",
-            "https://api.atlas.mongodb.com/api/v1/vectorSearch/rerank");
+                "https://api.atlas.mongodb.com/api/v1/vectorSearch/rerank");
         this.defaultRerankProviderName = argOrDefault(config, "rerank-provider", "");
     }
 
@@ -165,12 +165,12 @@ public class RerankingInterceptor implements MongoInterceptor {
         if (content == null || !content.isArray() || content.asArray().isEmpty()) return;
 
         var modelName = rerankConfig.getString("model", new BsonString("voyage-rerank-2")).getValue();
-        var topK  = rerankConfig.getInt32("topK", new BsonInt32(content.asArray().size())).getValue();
+        var topK = rerankConfig.getInt32("topK", new BsonInt32(content.asArray().size())).getValue();
         var query = resolveQuery(rerankConfig, request);
 
         if (query == null || query.isBlank()) {
             LOGGER.warn("rerankingInterceptor: cannot rerank – no query resolved for aggregation '{}'",
-                request.getAggregationOperation());
+                    request.getAggregationOperation());
             return;
         }
 
@@ -215,7 +215,7 @@ public class RerankingInterceptor implements MongoInterceptor {
         var model = PluginModelResolver.resolve(registry, resolvedRerankModels, providerName, RerankModel.class);
         if (model.isEmpty()) {
             LOGGER.warn("rerankingInterceptor: rerank provider '{}' not found, not enabled, "
-                + "or does not supply a RerankModel", providerName);
+                    + "or does not supply a RerankModel", providerName);
         }
         return model.orElse(null);
     }
@@ -273,7 +273,10 @@ public class RerankingInterceptor implements MongoInterceptor {
     private List<String> extractTexts(BsonArray results) {
         var texts = new ArrayList<String>(results.size());
         for (var item : results) {
-            if (!item.isDocument()) { texts.add(""); continue; }
+            if (!item.isDocument()) {
+                texts.add("");
+                continue;
+            }
             var doc = item.asDocument();
             BsonValue tv = doc.get("text");
             texts.add(tv != null && tv.isString() ? tv.asString().getValue() : doc.toJson());
@@ -282,33 +285,33 @@ public class RerankingInterceptor implements MongoInterceptor {
     }
 
     private BsonArray callRerankApi(
-        String model, String query, int topK,
-        BsonArray originalResults, List<String> documents,
-        String atlasApiKey, String rerankApiUrl) throws Exception {
+            String model, String query, int topK,
+            BsonArray originalResults, List<String> documents,
+            String atlasApiKey, String rerankApiUrl) throws Exception {
 
         var docsJson = new StringBuilder("[");
-        for (int i = 0; i < documents.size(); i++) {
+        for (int i = 0;i < documents.size();i++) {
             docsJson.append("\"").append(escape(documents.get(i))).append("\"");
             if (i < documents.size() - 1) docsJson.append(",");
         }
         docsJson.append("]");
 
         var payload = "{\"model\":\"" + escape(model) + "\""
-            + ",\"query\":\"" + escape(query) + "\""
-            + ",\"topK\":" + topK
-            + ",\"documents\":" + docsJson + "}";
+                + ",\"query\":\"" + escape(query) + "\""
+                + ",\"topK\":" + topK
+                + ",\"documents\":" + docsJson + "}";
 
         var httpReq = HttpRequest.newBuilder()
-            .uri(URI.create(rerankApiUrl))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + atlasApiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build();
+                .uri(URI.create(rerankApiUrl))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + atlasApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
 
         var httpResp = httpClient.send(httpReq, HttpResponse.BodyHandlers.ofString());
         if (httpResp.statusCode() != 200) {
             throw new RuntimeException("Rerank API returned HTTP " + httpResp.statusCode()
-                + ": " + httpResp.body());
+                    + ": " + httpResp.body());
         }
 
         return applyRanking(originalResults, httpResp.body());
@@ -322,7 +325,7 @@ public class RerankingInterceptor implements MongoInterceptor {
      * the response-parsing logic can be unit-tested without an HTTP round-trip.
      */
     static BsonArray applyRanking(BsonArray originalResults, String rerankResponseBody) {
-        var respDoc  = BsonDocument.parse("{\"results\":" + rerankResponseBody + "}");
+        var respDoc = BsonDocument.parse("{\"results\":" + rerankResponseBody + "}");
         var rankings = respDoc.getArray("results");
 
         var reranked = new BsonArray();
@@ -334,7 +337,7 @@ public class RerankingInterceptor implements MongoInterceptor {
             if (doc.isDocument()) {
                 var enriched = doc.asDocument().clone();
                 enriched.append("_rerankScore",
-                    r.asDocument().getOrDefault("score", new BsonDouble(0)));
+                        r.asDocument().getOrDefault("score", new BsonDouble(0)));
                 reranked.add(enriched);
             }
         }

@@ -79,9 +79,9 @@ import org.slf4j.LoggerFactory;
  * {@link RequestOverrides#VOYAGE_CONTEXTUAL_OUTPUT_DIMENSION} to use different values for that tenant.
  */
 @RegisterPlugin(
-    name = "voyageContextualEmbeddingProvider",
-    description = "Provides contextualized chunk embeddings via the Voyage AI API (voyage-context-4)",
-    enabledByDefault = false
+        name = "voyageContextualEmbeddingProvider",
+        description = "Provides contextualized chunk embeddings via the Voyage AI API (voyage-context-4)",
+        enabledByDefault = false
 )
 public class VoyageContextualEmbeddingProvider implements Provider<EmbeddingModel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(VoyageContextualEmbeddingProvider.class);
@@ -112,7 +112,7 @@ public class VoyageContextualEmbeddingProvider implements Provider<EmbeddingMode
 
         if (defaultApiKey == null || defaultApiKey.isBlank()) {
             LOGGER.warn("voyageContextualEmbeddingProvider: no api-key configured, embedding calls will fail "
-                + "unless every request overrides it via {}", RequestOverrides.VOYAGE_CONTEXTUAL_API_KEY);
+                    + "unless every request overrides it via {}", RequestOverrides.VOYAGE_CONTEXTUAL_API_KEY);
         }
 
         this.instance = new Model();
@@ -152,23 +152,23 @@ public class VoyageContextualEmbeddingProvider implements Provider<EmbeddingMode
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "contextualizedembeddings";
 
         var httpReq = HttpRequest.newBuilder()
-            .uri(URI.create(endpoint))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + apiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build();
+                .uri(URI.create(endpoint))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
 
         try {
             var httpResp = httpClient.send(httpReq, HttpResponse.BodyHandlers.ofString());
 
             if (httpResp.statusCode() != 200) {
                 throw new RuntimeException("Voyage contextualized embeddings endpoint " + endpoint + " returned HTTP "
-                    + httpResp.statusCode() + ": " + httpResp.body());
+                        + httpResp.statusCode() + ": " + httpResp.body());
             }
 
             return grouped
-                ? VoyageContextualWireEmbeddings.parseChunksOfOneDocument(httpResp.body())
-                : VoyageContextualWireEmbeddings.parseIndependent(httpResp.body());
+                    ? VoyageContextualWireEmbeddings.parseChunksOfOneDocument(httpResp.body())
+                    : VoyageContextualWireEmbeddings.parseIndependent(httpResp.body());
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -186,10 +186,10 @@ public class VoyageContextualEmbeddingProvider implements Provider<EmbeddingMode
      */
     static String buildPayload(String model, List<List<String>> groups, String inputType, int outputDimension) {
         var inputsJson = new StringBuilder("[");
-        for (int g = 0; g < groups.size(); g++) {
+        for (int g = 0;g < groups.size();g++) {
             var group = groups.get(g);
             inputsJson.append("[");
-            for (int i = 0; i < group.size(); i++) {
+            for (int i = 0;i < group.size();i++) {
                 inputsJson.append("\"").append(OpenAiWireEmbeddings.escape(group.get(i))).append("\"");
                 if (i < group.size() - 1) {
                     inputsJson.append(",");
@@ -203,9 +203,9 @@ public class VoyageContextualEmbeddingProvider implements Provider<EmbeddingMode
         inputsJson.append("]");
 
         var payload = new StringBuilder("{\"model\":\"")
-            .append(OpenAiWireEmbeddings.escape(model))
-            .append("\",\"inputs\":")
-            .append(inputsJson);
+                .append(OpenAiWireEmbeddings.escape(model))
+                .append("\",\"inputs\":")
+                .append(inputsJson);
 
         if (inputType != null && !inputType.isBlank()) {
             payload.append(",\"input_type\":\"").append(OpenAiWireEmbeddings.escape(inputType)).append("\"");

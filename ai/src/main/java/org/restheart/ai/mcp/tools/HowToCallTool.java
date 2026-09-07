@@ -48,7 +48,7 @@ public final class HowToCallTool {
      * @throws ValidationFailedException if {@code args} fails param or body-schema validation
      */
     public Map<String, Object> call(BaseAccount principal, String baseUrl, String resourceUri, String actionName,
-            Map<String, Object> args, String transportPreference) {
+                                    Map<String, Object> args, String transportPreference) {
         var resource = lookup.find(principal, baseUrl, resourceUri)
                 .orElseThrow(() -> new UnknownResourceException(resourceUri));
 

@@ -69,7 +69,8 @@ public class CachedResourceLookupTest {
     public void withinTtl_secondCallDoesNotRecompute() {
         var callCount = new AtomicInteger();
         var registry = countingRegistry(callCount, McpResource.builder().uri("https://host/a").build());
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {}, new MutableTicker(), Scheduler.disabledScheduler());
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        }, new MutableTicker(), Scheduler.disabledScheduler());
 
         lookup.all(null, "https://host");
         lookup.all(null, "https://host");
@@ -113,7 +114,8 @@ public class CachedResourceLookupTest {
     public void differentBaseUrls_cachedIndependently() {
         var callCount = new AtomicInteger();
         var registry = countingRegistry(callCount, McpResource.builder().uri("https://host/a").build());
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {}, new MutableTicker(), Scheduler.disabledScheduler());
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        }, new MutableTicker(), Scheduler.disabledScheduler());
 
         lookup.all(null, "https://host1");
         lookup.all(null, "https://host2");
@@ -131,7 +133,8 @@ public class CachedResourceLookupTest {
                         return List.of(resource);
                     }
                 }, "p1", "/x", Map.of())));
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {});
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        });
 
         assertEquals("https://host/a", lookup.find(null, "https://host", "https://host/a").orElseThrow().uri());
         assertTrue(lookup.find(null, "https://host", "https://host/missing").isEmpty());

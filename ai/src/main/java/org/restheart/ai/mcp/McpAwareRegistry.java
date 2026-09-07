@@ -81,7 +81,7 @@ public final class McpAwareRegistry {
         return new McpAwareRegistry(result);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static void addIfEligible(List<RegisteredMcpAware> result, PluginRecord<Service<?, ?>> record) {
         if (!(record.getInstance() instanceof McpAware mcpAware)) {
             return;

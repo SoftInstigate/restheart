@@ -30,30 +30,30 @@ public class OpenAIEmbeddingProviderTest {
     @Test
     public void parsesEmbeddingsInRequestOrder() {
         var body = "{\"data\":["
-            + "{\"embedding\":[0.1,0.2],\"index\":0},"
-            + "{\"embedding\":[0.3,0.4],\"index\":1}"
-            + "],\"model\":\"text-embedding-3-small\"}";
+                + "{\"embedding\":[0.1,0.2],\"index\":0},"
+                + "{\"embedding\":[0.3,0.4],\"index\":1}"
+                + "],\"model\":\"text-embedding-3-small\"}";
 
         var embeddings = OpenAIEmbeddingProvider.parseEmbeddings(body);
 
         assertEquals(2, embeddings.size());
-        assertArrayEquals(new float[] {0.1f, 0.2f}, embeddings.get(0), 1e-6f);
-        assertArrayEquals(new float[] {0.3f, 0.4f}, embeddings.get(1), 1e-6f);
+        assertArrayEquals(new float[]{0.1f, 0.2f}, embeddings.get(0), 1e-6f);
+        assertArrayEquals(new float[]{0.3f, 0.4f}, embeddings.get(1), 1e-6f);
     }
 
     @Test
     public void reordersEntriesReturnedOutOfOrder() {
         // the API does not guarantee response order matches request order
         var body = "{\"data\":["
-            + "{\"embedding\":[9.0],\"index\":1},"
-            + "{\"embedding\":[1.0],\"index\":0}"
-            + "]}";
+                + "{\"embedding\":[9.0],\"index\":1},"
+                + "{\"embedding\":[1.0],\"index\":0}"
+                + "]}";
 
         var embeddings = OpenAIEmbeddingProvider.parseEmbeddings(body);
 
         assertEquals(2, embeddings.size());
-        assertArrayEquals(new float[] {1.0f}, embeddings.get(0), 1e-6f);
-        assertArrayEquals(new float[] {9.0f}, embeddings.get(1), 1e-6f);
+        assertArrayEquals(new float[]{1.0f}, embeddings.get(0), 1e-6f);
+        assertArrayEquals(new float[]{9.0f}, embeddings.get(1), 1e-6f);
     }
 
     @Test
