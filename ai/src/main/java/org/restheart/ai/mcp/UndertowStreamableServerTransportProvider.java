@@ -88,6 +88,17 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     private final ConcurrentHashMap<String, McpStreamableServerSession> sessions = new ConcurrentHashMap<>();
     private volatile boolean isClosing = false;
 
+    /**
+     * Told when a session ends. A subscription lives on its session, and the SDK forgets its own
+     * without saying so, so whatever is being held on that session's behalf — a change stream, for
+     * one — has to be released here (#617).
+     */
+    private volatile java.util.function.Consumer<String> onSessionEnded;
+
+    public void onSessionEnded(java.util.function.Consumer<String> listener) {
+        this.onSessionEnded = listener;
+    }
+
     public UndertowStreamableServerTransportProvider(McpJsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
     }
@@ -373,6 +384,12 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         if (session == null) {
             res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;
+        }
+
+        // the session is where a subscription actually lives: the SDK forgets its own without
+        // saying so, and anything still watching on its behalf has to stop (#617)
+        if (onSessionEnded != null) {
+            onSessionEnded.accept(sessionId);
         }
 
         try {

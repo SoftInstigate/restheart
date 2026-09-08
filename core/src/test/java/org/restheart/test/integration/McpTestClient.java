@@ -204,6 +204,78 @@ final class McpTestClient {
         return BsonDocument.parse(text);
     }
 
+    /**
+     * Opens the server-to-client stream and collects the notifications that arrive on it.
+     *
+     * <p>{@code GET /mcp} is the channel the MCP spec gives a server for messages nobody asked
+     * for — {@code notifications/resources/updated} among them — so a test that wants to see one
+     * has to hold it open, which request/response calls cannot do.
+     */
+    Notifications openNotificationStream() throws Exception {
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(mcpUrl))
+                .header("Accept", "text/event-stream")
+                .header("Authorization", basicAuth)
+                .header("Mcp-Session-Id", sessionId)
+                .header("Mcp-Protocol-Version", "2025-03-26")
+                .GET()
+                .build();
+
+        var received = new java.util.concurrent.CopyOnWriteArrayList<BsonDocument>();
+
+        var stream = http.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
+                .thenAccept(response -> response.body()
+                        .filter(line -> line.startsWith("data:"))
+                        .forEach(line -> {
+                            try {
+                                received.add(BsonDocument.parse(line.substring("data:".length()).strip()));
+                            } catch (Exception ignored) {
+                                // a frame that is not a JSON-RPC message is not this test's business
+                            }
+                        }));
+
+        return new Notifications(received, stream);
+    }
+
+    /** The notifications seen so far on the server-to-client stream. */
+    record Notifications(java.util.List<BsonDocument> received, java.util.concurrent.CompletableFuture<Void> stream) {
+
+        /** Waits for a notification with this method, returning it, or fails once {@code timeout} has passed. */
+        BsonDocument await(String method, java.time.Duration timeout) throws Exception {
+            var deadline = System.currentTimeMillis() + timeout.toMillis();
+
+            while (System.currentTimeMillis() < deadline) {
+                var found = matching(method);
+                if (!found.isEmpty()) {
+                    return found.get(0);
+                }
+                Thread.sleep(50);
+            }
+
+            throw new AssertionError("no " + method + " within " + timeout + "; saw " + received);
+        }
+
+        /** Asserts none arrives in {@code window} — for proving a subscription really ended. */
+        void awaitNone(String method, java.time.Duration window) throws Exception {
+            Thread.sleep(window.toMillis());
+
+            var found = matching(method);
+            if (!found.isEmpty()) {
+                throw new AssertionError("unexpected " + method + ": " + found);
+            }
+        }
+
+        java.util.List<BsonDocument> matching(String method) {
+            return received.stream()
+                    .filter(n -> method.equals(n.getString("method", new org.bson.BsonString("")).getValue()))
+                    .toList();
+        }
+
+        void close() {
+            stream.cancel(true);
+        }
+    }
+
     private HttpResponse<String> send(String jsonRpcBody, String sessionIdHeader) throws Exception {
         var builder = HttpRequest.newBuilder()
                 .uri(URI.create(mcpUrl))

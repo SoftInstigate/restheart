@@ -145,6 +145,11 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     }
 
     @Override
+    public Optional<AutoCloseable> watch(McpContext ctx, String resourceUri, Runnable onChange) {
+        return mcpAware.watch(ctx, resourceUri, onChange);
+    }
+
+    @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         // Handle OPTIONS requests for CORS preflight
         if (request.isOptions()) {

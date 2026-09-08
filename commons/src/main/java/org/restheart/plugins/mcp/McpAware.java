@@ -65,6 +65,31 @@ public interface McpAware {
     }
 
     /**
+     * Starts watching a resource's content, so the framework can tell subscribed clients it
+     * changed (#617, {@code notifications/resources/updated}).
+     *
+     * <p>Default: not watchable. A plugin that cannot tell when its data changed says so by not
+     * overriding this, and {@code resources/subscribe} on such a resource is refused — accepting a
+     * subscription that will never fire is worse than declining it, because the client waits
+     * instead of polling.
+     *
+     * <p>{@code onChange} is a bare signal, not an event: the MCP notification carries no payload,
+     * it only tells a client to re-read. So an implementation is free — and expected — to collapse
+     * a burst of underlying changes into one call, and the framework rate-limits it again on the
+     * way out. A collection taking a thousand writes a second must not produce a thousand of
+     * anything.
+     *
+     * @param ctx         the calling context
+     * @param resourceUri the resource to watch
+     * @param onChange    invoked, on any thread, whenever the resource's content may have changed
+     * @return a handle whose {@code close()} stops the watch, or empty if this resource cannot be
+     *         watched
+     */
+    default Optional<AutoCloseable> watch(McpContext ctx, String resourceUri, Runnable onChange) {
+        return Optional.empty();
+    }
+
+    /**
      * Optional default MCP configuration baked into the plugin code, used exclusively by
      * the default {@link #describeMcp(McpContext)} to build a resource without requiring
      * operator YAML (e.g. a built-in {@code /ping} service that should just work).

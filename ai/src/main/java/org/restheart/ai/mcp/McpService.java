@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -77,6 +78,7 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -164,6 +166,7 @@ public class McpService implements ByteArrayService {
         var schemaValidator = new JacksonJsonSchemaValidatorSupplier().get();
 
         provider = new UndertowStreamableServerTransportProvider(jsonMapper);
+        provider.onSessionEnded(this::sessionEnded);
 
         publicBaseUrl = config != null && config.get("public-base-url") instanceof String s && !s.isBlank() ? s : null;
 
@@ -171,6 +174,9 @@ public class McpService implements ByteArrayService {
         // McpAware implementation's own data source (a MongoDB write, a config change, ...) —
         // one uniform mechanism for all of them, trading instant consistency for a bounded
         // staleness window. On expiry, connected agents are told to refetch.
+        var notifyIntervalSeconds = argOrDefault(config, "subscription-notify-interval-seconds", DEFAULT_NOTIFY_INTERVAL_SECONDS);
+        subscriptions = new ResourceSubscriptions(Duration.ofSeconds(notifyIntervalSeconds), this::notifyResourceUpdated);
+
         var catalogTtlSeconds = argOrDefault(config, "catalog-ttl-seconds", DEFAULT_CATALOG_TTL_SECONDS);
         resourceLookup = new CachedResourceLookup(mcpAwareRegistry, Duration.ofSeconds(catalogTtlSeconds), this::onCatalogExpired);
         listApisTool = new ListApisTool(resourceLookup);
@@ -214,11 +220,98 @@ public class McpService implements ByteArrayService {
         }
     }
 
+    /**
+     * Starts watching a resource the client is subscribing to, if nothing watches it yet.
+     *
+     * <p>Read off the request rather than from the SDK, which keeps its subscription map private.
+     * Unsubscribes are read here too, and the transport reports a session ending, so a watch lives
+     * exactly as long as somebody wants the resource. The one case that escapes this is a client
+     * that vanishes without the {@code DELETE} that closes its session: its watch survives until
+     * the resource leaves the catalog or the server stops.
+     */
+    private void watchIfSubscribing(ByteArrayRequest req, McpTransportContext ctx) {
+        try {
+            var body = req.getContent();
+            if (body == null || body.length == 0) {
+                return;
+            }
+
+            if (!(McpSchema.deserializeJsonRpcMessage(jsonMapper, new String(body, StandardCharsets.UTF_8))
+                    instanceof McpSchema.JSONRPCRequest rpc)
+                    || !(rpc.params() instanceof Map<?, ?> params)
+                    || !(params.get("uri") instanceof String uri)) {
+                return;
+            }
+
+            var sessionId = req.getHeader(HttpHeaders.MCP_SESSION_ID);
+            if (sessionId == null || sessionId.isBlank()) {
+                return;
+            }
+
+            if (McpSchema.METHOD_RESOURCES_SUBSCRIBE.equals(rpc.method())) {
+                if (demand.subscribed(uri, sessionId)) {
+                    startWatching(principal(ctx), uri);
+                }
+            } else if (McpSchema.METHOD_RESOURCES_UNSUBSCRIBE.equals(rpc.method())
+                    && demand.unsubscribed(uri, sessionId)) {
+                releaseWatchesFor(List.of(uri));
+            }
+        } catch (Exception e) {
+            LOGGER.warn("could not inspect a /mcp request for a resource subscription", e);
+        }
+    }
+
+    /**
+     * Releases what a session was keeping alive. Called by the transport, which is where a session
+     * actually ends — the SDK drops its own subscriptions for it without saying so, and a watch
+     * left behind would keep a change stream open for a client that has gone.
+     */
+    void sessionEnded(String sessionId) {
+        releaseWatchesFor(demand.sessionEnded(sessionId));
+    }
+
+    /** One watch per resource URI; the owning plugin decides what that costs — for a collection, one shared change stream. */
+    private synchronized void startWatching(BaseAccount principal, String uri) {
+        if (watches.containsKey(uri)) {
+            return;
+        }
+
+        var owner = resourceLookup.findOwner(principal, publicBaseUrl, uri);
+        if (owner.isEmpty()) {
+            return;
+        }
+
+        var watchCtx = new McpContext(principal, publicBaseUrl, owner.get().pluginName(),
+                owner.get().pluginUri(), owner.get().pluginConfiguration());
+
+        owner.get().instance().watch(watchCtx, uri, () -> subscriptions.changed(uri))
+                .ifPresentOrElse(handle -> watches.put(uri, handle),
+                        () -> LOGGER.debug("resource {} cannot be watched; subscribers to it are never notified", uri));
+    }
+
+    /** Stops watching what is no longer in the catalog — a collection that lost its {@code mcp} block, or was dropped. */
+    private void releaseWatchesFor(Collection<String> goneUris) {
+        goneUris.forEach(uri -> {
+            var handle = watches.remove(uri);
+            if (handle != null) {
+                subscriptions.forget(uri);
+                try {
+                    handle.close();
+                } catch (Exception e) {
+                    LOGGER.warn("failed to stop watching {}", uri, e);
+                }
+            }
+        });
+    }
+
+    private void notifyResourceUpdated(String uri) {
+        server.notifyResourcesUpdated(new McpSchema.ResourcesUpdatedNotification(uri));
+    }
+
     private McpSchema.ServerCapabilities capabilities() {
         var builder = McpSchema.ServerCapabilities.builder().tools(true);
         if (publicBaseUrl != null) {
-            // subscribe not yet implemented (#617 phase 5) — listChanged only for now
-            builder.resources(false, true);
+            builder.resources(true, true);
         }
         return builder.build();
     }
@@ -250,7 +343,11 @@ public class McpService implements ByteArrayService {
     // database container, a change stream, an aggregation a security check
     // rejected, ...) is therefore never registered as an MCP resource — it
     // stays reachable through list_apis/how_to_call only.
-    // resources/subscribe is still a later phase.
+    //
+    // resources/subscribe: the SDK owns the protocol side — it keeps uri -> sessions, cleans it
+    // up when a session ends, and delivers notifyResourcesUpdated only to subscribers. What is
+    // ours is knowing when a resource's data changed, which the owning plugin answers through
+    // McpAware.watch(), and rate-limiting the result (ResourceSubscriptions).
     // -------------------------------------------------------------------------
 
     /**
@@ -259,6 +356,22 @@ public class McpService implements ByteArrayService {
      * otherwise argument-free resource into template-only registration below.
      */
     private static final Set<String> COSMETIC_PARAMS = Set.of("jsonMode");
+
+    /**
+     * How often at most a subscriber hears that one resource changed. The notification carries no
+     * payload — it says "re-read" — so telling a client again before it has read teaches it
+     * nothing, and a busy collection would otherwise turn every write into a message.
+     */
+    private static final int DEFAULT_NOTIFY_INTERVAL_SECONDS = 5;
+
+    /** Rate-limits resources/updated; one entry per URI something is subscribed to. */
+    private ResourceSubscriptions subscriptions;
+
+    /** Open watches, by resource URI — see {@link #startWatching}. */
+    private final Map<String, AutoCloseable> watches = new ConcurrentHashMap<>();
+
+    /** Who still wants each resource, so a watch outlives no one — see {@link ResourceDemand}. */
+    private final ResourceDemand demand = new ResourceDemand();
 
     private static final Pattern PATH_VARIABLE = Pattern.compile("\\{([^?][^}]*)\\}");
 
@@ -370,12 +483,19 @@ public class McpService implements ByteArrayService {
 
         var changed = false;
 
+        var gone = new ArrayList<String>();
+
         for (var uri : currentResourceUris) {
             if (!desiredResources.containsKey(uri)) {
                 server.removeResource(uri);
+                gone.add(uri);
                 changed = true;
             }
         }
+
+        // a resource that left the catalog — its collection dropped, or its mcp block removed —
+        // has nothing left to watch, and nobody to tell about it
+        releaseWatchesFor(gone);
 
         for (var uriTemplate : currentTemplateUris) {
             if (!desiredTemplates.containsKey(uriTemplate)) {
@@ -1009,6 +1129,10 @@ public class McpService implements ByteArrayService {
         var ctx = buildContext(req);
 
         if (req.isPost()) {
+            // Opened on demand, before the SDK records the subscription: the SDK keeps that map
+            // private, so this is how we learn a resource is wanted. Watching every exposed
+            // collection instead would pay for streams nobody asked for.
+            watchIfSubscribing(req, ctx);
             provider.handlePost(req, res, ctx);
         } else if (req.isGet()) {
             provider.handleGet(req, res, ctx);

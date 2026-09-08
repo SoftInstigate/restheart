@@ -399,6 +399,39 @@ public final class MongoMcpAwareImpl {
         return new McpReadResult(new McpReadResult.RawJson("{\"error\":\"" + escaped + "\"}"));
     }
 
+    /**
+     * Watches the collection a resource reads from (#617). Several resources map to one collection
+     * — its documents, one document, its {@code _size} — and they all share the one change stream
+     * {@link CollectionWatchers} keeps for it.
+     *
+     * <p>Empty for an aggregation: its result is a computation over a pipeline, and there is no
+     * change stream for a computation. Refusing the subscription is better than accepting one that
+     * would only fire when the underlying collection changed, which is a different question than
+     * the one the client asked.
+     */
+    public Optional<AutoCloseable> watch(McpContext ctx, String resourceUri, Runnable onChange) {
+        if (databases == null || resourceUri.contains("/_aggrs/") || resourceUri.contains("/_streams/")) {
+            return Optional.empty();
+        }
+
+        var resolved = resolveMount(resourceUri);
+        if (resolved == null) {
+            return Optional.empty();
+        }
+
+        return Optional.of(watchers().watch(resolved.database(), resolved.collection(), onChange));
+    }
+
+    private volatile CollectionWatchers watchers;
+
+    private synchronized CollectionWatchers watchers() {
+        if (watchers == null) {
+            watchers = new CollectionWatchers(
+                    (db, coll) -> databases.collection(Optional.empty(), db, coll));
+        }
+        return watchers;
+    }
+
     private MongoMountResolver.ResolvedContext resolveMount(String resourceUri) {
         try {
             var path = new URI(resourceUri).getPath();
