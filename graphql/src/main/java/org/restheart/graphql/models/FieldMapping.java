@@ -27,11 +27,19 @@ import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.exchange.Request;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.utils.BsonUtils;
 import graphql.schema.DataFetchingEnvironment;
 
 public abstract class FieldMapping {
+    /**
+     * Where {@code GraphQLService} puts the request it is serving, so a mapping can resolve the
+     * {@code @} variables that depend on it (restheart#727). graphql-java's {@code GraphQLContext}
+     * holds arbitrary objects; {@code localContext} is a {@code BsonDocument} and cannot.
+     */
+    public static final String REQUEST_CONTEXT_KEY = "restheart-request";
+
     protected final String fieldName;
 
     public FieldMapping(String fieldName) {
@@ -57,11 +65,23 @@ public abstract class FieldMapping {
      *   <li>the field's arguments, by name</li>
      *   <li>{@code rootDoc} — the parent document, only from path level 2 down
      *       (see <a href="https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument">the docs</a>)</li>
-     *   <li>{@code @user} — the authenticated account's properties, {@code null} when there are
-     *       none — and {@code @user.<property>} for each of them, so a mapping can restrict what
-     *       it reads to the caller without any of it being expressed outside the app definition</li>
      * </ul>
+     *
+     * <p>{@code @}-prefixed variables are deliberately <b>not</b> here. They are resolved by their
+     * registered {@link org.restheart.security.VarResolver}, from the request — one source, the
+     * same one an ACL predicate uses. This used to hold a hand-copied {@code @user}, which is why
+     * {@code @user} was the only variable a mapping could name.
      */
+    /**
+     * The request being served, or {@code null} where there is none — a unit test, or any caller
+     * that builds an execution without one. Without it the {@code @} variables simply do not
+     * resolve; nothing else changes.
+     */
+    protected static Request<?> request(DataFetchingEnvironment env) {
+        var graphQLContext = env.getGraphQlContext();
+        return graphQLContext == null ? null : graphQLContext.get(REQUEST_CONTEXT_KEY);
+    }
+
     protected static BsonDocument contextValues(DataFetchingEnvironment env) {
         var values = BsonUtils.toBsonDocument(env.getArguments());
 
@@ -74,10 +94,6 @@ public abstract class FieldMapping {
         if (rootDoc != null) {
             values.put("rootDoc", rootDoc);
         }
-
-        var user = localContext.get("@user") instanceof BsonDocument u ? u : new BsonDocument();
-        values.put("@user", user.isEmpty() ? BsonNull.VALUE : user);
-        user.forEach((key, value) -> values.put("@user.".concat(key), value));
 
         return values;
     }

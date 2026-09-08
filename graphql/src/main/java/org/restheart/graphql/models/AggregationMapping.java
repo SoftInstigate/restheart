@@ -93,7 +93,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
         var values = contextValues(env);
 
         try {
-            var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values);
+            var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values, request(env));
             var argAndFkInterpolated = new ArrayList<BsonDocument>();
 
             for (var s : argInterpolated) {

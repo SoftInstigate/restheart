@@ -27,6 +27,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
 
@@ -137,6 +138,34 @@ public class VarsInterpolator {
      *        GraphQL mapping interpolation)
      * @since 9.10.0
      */
+    /**
+     * The value bound to {@code name} (restheart#727).
+     *
+     * <p>A name a {@link org.restheart.security.VarResolver} claims is answered by that resolver
+     * and by nothing else — the supplied values are not even consulted for it. That precedence is
+     * the security-relevant part, not a preference: an aggregation's {@code $var}s are bound from
+     * {@code avars}, which come from the caller's own query string, so consulting those first
+     * would let {@code ?avars={"@user":{"userid":"admin"}}} override the identity a pipeline
+     * written as {@code {"$var": "@user.userid"}} is meant to scope itself by. A {@code @} name is
+     * resolved by the server or not at all.
+     *
+     * <p>Which is also why a resolver with no request to work from leaves the variable unbound
+     * rather than falling back: the fallback would be exactly the value a caller supplied.
+     *
+     * <p>Everything else resolves from the supplied values as before, and a {@code @} name nobody
+     * registered stays unbound rather than becoming the literal string — a mistyped
+     * {@code @usr._id} must fail, not match a document.
+     */
+    static Optional<BsonValue> lookup(BsonDocument values, String name, Request<?> request) {
+        if (name != null && name.startsWith("@")) {
+            return AclVarsInterpolator.isRegisteredVar(name)
+                    ? AclVarsInterpolator.resolveRegisteredVar(request, name)
+                    : Optional.empty();
+        }
+
+        return values == null ? Optional.empty() : BsonUtils.get(values, name);
+    }
+
     public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {
         if (bson == null) {
             return null;
@@ -158,21 +187,12 @@ public class VarsInterpolator {
 
                     var name = _name.asString().getValue();
 
-                    if (values == null) {
-                        return defaultValue;
-                    } else {
-                        var value = BsonUtils.get(values, name);
-
-                        return value.isPresent() ? value.get() : defaultValue;
-                    }
+                    return lookup(values, name, request).orElse(defaultValue);
                 } else if (v.isString()) { // case { "$var": "name" }, i.e. var without defaul value
-                    if (values == null || BsonUtils.get(values, v.asString().getValue()).isEmpty()) {
-                        throw new QueryVariableNotBoundException("variable " + v.asString().getValue() + " not bound");
-                    }
+                    var name = v.asString().getValue();
 
-                    var value = BsonUtils.get(values, v.asString().getValue());
-
-                    return value.isPresent() ? value.get() : null;
+                    return lookup(values, name, request)
+                            .orElseThrow(() -> new QueryVariableNotBoundException("variable " + name + " not bound"));
                 } else {
                     throw new InvalidMetadataException("wrong variable name " + v.toString());
                 }

@@ -21,12 +21,12 @@
 package org.restheart.graphql.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 
 import org.bson.BsonDocument;
-import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
@@ -74,23 +74,15 @@ public class ContextValuesTest {
     }
 
     @Test
-    public void theAuthenticatedAccountIsAvailableWholeAndPropertyByProperty() {
-        var user = BsonDocument.parse("{ \"_id\": \"alice\", \"team\": \"red\" }");
+    public void atVariablesAreNotSuppliedHere() {
+        // They are resolved from the request by their registered VarResolver, one source for all
+        // of them. Putting @user here as well would give a caller-supplied value a chance to stand
+        // in for a server-resolved one — see VarsInterpolatorResolversTest.
+        var user = BsonDocument.parse("{ \"_id\": \"alice\" }");
         var values = new Probe().values(env(Map.of(), new BsonDocument("@user", user)));
 
-        assertEquals(user, values.get("@user"));
-        // the per-property form is what a mapping actually writes: {"$arg": "@user._id"}
-        assertEquals(new BsonString("alice"), values.get("@user._id"));
-        assertEquals(new BsonString("red"), values.get("@user.team"));
-    }
-
-    @Test
-    public void anUnauthenticatedCallerResolvesToNull_notToAnEmptyDocument() {
-        // a mapping matching on {"$arg": "@user._id"} must not match everything when nobody is
-        // authenticated; null matches no document, an empty document would be a wildcard
-        var values = new Probe().values(env(Map.of(), new BsonDocument("@user", new BsonDocument())));
-
-        assertEquals(BsonNull.VALUE, values.get("@user"));
+        assertFalse(values.containsKey("@user"), values.toJson());
+        assertFalse(values.containsKey("@user._id"), values.toJson());
     }
 
     @Test

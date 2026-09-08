@@ -51,6 +51,7 @@ import org.restheart.graphql.dataloaders.AggregationBatchLoader;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
 import org.restheart.graphql.instrumentation.MaxQueryTimeInstrumentation;
 import org.restheart.graphql.mcp.GraphqlMcpAwareImpl;
+import org.restheart.graphql.models.FieldMapping;
 import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
@@ -226,6 +227,11 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
         var inputBuilder = ExecutionInput.newExecutionInput()
                 .query(req.getQuery())
                 .localContext(localContext.get())
+                // The request itself, not a BSON copy of parts of it: it is what the @-variable
+                // resolvers need to answer who is asking (restheart#727). localContext cannot carry
+                // it — it is a BsonDocument — which is why only @user, copied in as BSON above, used
+                // to be available inside a mapping.
+                .graphQLContext(ctx -> ctx.put(FieldMapping.REQUEST_CONTEXT_KEY, req))
                 .dataLoaderRegistry(dataLoaderRegistry);
 
         inputBuilder.operationName(req.getOperationName());

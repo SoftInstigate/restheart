@@ -136,7 +136,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
 
             if (value instanceof BsonDocument bsonDoc) {
                 try {
-                    var argInterpolated = VarsInterpolator.interpolate(VAR_OPERATOR.$arg, bsonDoc, values);
+                    var argInterpolated = VarsInterpolator.interpolate(VAR_OPERATOR.$arg, bsonDoc, values, request(env));
                     var argAndFkIntepolated = argInterpolated;
 
                     if (argInterpolated.isDocument()) {

@@ -229,6 +229,18 @@
         projectResponse: >
           {"secret": 0}
 
+    # karate/graphql/vars — the route permission the general security model requires; what the
+    # query then reads is decided by the app definition's own @ variables, not here.
+    - role: aclreader
+      predicate: method(POST) and path[path="/graphql/test-vars"]
+      priority: 0
+
+    # the same feature reaches the aggregation from the REST side, to prove ?avars cannot
+    # supply a value for a server-resolved @ variable
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-graphql/test-vars"]
+      priority: 0
+
     - role: poweruser
       predicate: path-prefix[path="/testmytmpdb"]
       priority: 0

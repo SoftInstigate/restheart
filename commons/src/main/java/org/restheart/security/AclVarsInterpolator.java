@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Objects;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -334,6 +335,40 @@ public class AclVarsInterpolator {
         return resolverOpt.isEmpty()
                 ? new BsonString(value)
                 : resolveWithCache(request, resolverOpt.get(), value);
+    }
+
+    /**
+     * Resolves a {@code @}-prefixed expression, but only when a {@link VarResolver} is actually
+     * registered for it (restheart#727).
+     *
+     * <p>The difference from {@link #resolveVar} is the answer for an unknown name.
+     * {@code resolveVar} returns the expression itself as a string, which is right for an ACL
+     * predicate — that was the behaviour before the SPI existed and the comparison simply fails.
+     * It is wrong anywhere the caller needs to distinguish "resolved to nothing" from "nobody
+     * knows this name": a mistyped {@code @usr._id} in a GraphQL mapping would silently become the
+     * literal string {@code "@usr._id"} and match a document, instead of failing as an unbound
+     * variable.
+     *
+     * @return the resolved value, or empty when {@code var} is not a {@code @} expression or no
+     *         resolver claims its name
+     */
+    public static Optional<BsonValue> resolveRegisteredVar(Request<?> request, String var) {
+        if (request == null || !isRegisteredVar(var)) {
+            return Optional.empty();
+        }
+
+        return AclVarsRegistryImpl.getInstance().resolver(varName(var))
+                .map(resolver -> resolveWithCache(request, resolver, var));
+    }
+
+    /**
+     * Whether some {@link VarResolver} claims {@code var}'s name — asked without resolving it, so
+     * a caller can tell "this is a server-resolved variable" from "this is an ordinary name" even
+     * when it has no request to resolve against.
+     */
+    public static boolean isRegisteredVar(String var) {
+        return var != null && var.startsWith("@") && var.length() > 1
+                && AclVarsRegistryImpl.getInstance().resolver(varName(var)).isPresent();
     }
 
     /**
