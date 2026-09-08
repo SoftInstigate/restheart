@@ -4,7 +4,8 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <!-- %ex{5}: bound stack traces so intentionally-triggered test exceptions don't dump the full JUnit/Surefire chain -->
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%ex{5}</pattern>
         </encoder>
     </appender>
 
