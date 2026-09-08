@@ -1,0 +1,4 @@
+[
+  { "_id": "p1", "name": "ada",  "salary": 100, "ssn": "AAA-1" },
+  { "_id": "p2", "name": "borg", "salary": 200, "ssn": "BBB-2" }
+]

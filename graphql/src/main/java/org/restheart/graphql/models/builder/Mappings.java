@@ -40,7 +40,7 @@ import io.undertow.predicate.PredicateParser;
 
 abstract class Mappings {
     protected static TypeDefinitionRegistry typeDefinitionRegistry(String schema) throws SchemaProblem {
-        var schemaWithBsonScalars = BsonScalars.getBsonScalarHeader() + schema;
+        var schemaWithBsonScalars = BsonScalars.getSchemaHeader() + schema;
         return new SchemaParser().parse(schemaWithBsonScalars);
     }
 

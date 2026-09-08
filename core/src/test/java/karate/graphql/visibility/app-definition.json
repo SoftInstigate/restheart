@@ -1,0 +1,16 @@
+{
+  "_id": "test-visible",
+  "descriptor": {
+    "name": "test-visible",
+    "description": "Field visibility by role (restheart#478)",
+    "enabled": true,
+    "uri": "test-visible"
+  },
+  "schema": "type Person { name: String salary: Int @visible(roles: [\"hr\", \"admin\"]) ssn: String @visible(roles: [\"admin\"]) } type Query { people: [Person] audit: [Person] @visible(roles: [\"admin\"]) }",
+  "mappings": {
+    "Query": {
+      "people": { "db": "test-graphql", "collection": "test-visible", "find": {}, "sort": { "name": 1 } },
+      "audit":  { "db": "test-graphql", "collection": "test-visible", "find": {}, "sort": { "name": 1 } }
+    }
+  }
+}

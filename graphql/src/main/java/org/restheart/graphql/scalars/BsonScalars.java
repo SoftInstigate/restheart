@@ -71,11 +71,29 @@ public class BsonScalars {
         return bsonScalars;
     }
 
-    public static String getBsonScalarHeader() {
-        var header = "";
+    /**
+     * Everything an app's SDL may use without declaring it: RESTHeart's BSON scalars, and the
+     * {@code @visible} directive that controls which roles see a field (restheart#478).
+     *
+     * <p>Prepended to every app schema wherever it is parsed, so an app author writes
+     * {@code @visible(roles: ["admin"])} without a {@code directive} declaration of their own —
+     * and cannot declare a conflicting one.
+     */
+    public static String getSchemaHeader() {
+        var header = new StringBuilder();
+
         for (var scalar : BSON_SCALARS) {
-            header += "scalar " + scalar.getName() + " ";
+            header.append("scalar ").append(scalar.getName()).append(" ");
         }
-        return header;
+
+        header.append(VISIBLE_DIRECTIVE_DECLARATION).append(" ");
+
+        return header.toString();
     }
+
+    /** The name of the field-visibility directive, without the {@code @}. */
+    public static final String VISIBLE_DIRECTIVE = "visible";
+
+    private static final String VISIBLE_DIRECTIVE_DECLARATION =
+            "directive @" + VISIBLE_DIRECTIVE + "(roles: [String!]!) on FIELD_DEFINITION";
 }

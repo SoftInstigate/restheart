@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -167,6 +168,12 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
 
     private static final Parser GQL_PARSER = new Parser();
 
+    /** The caller's roles, empty when unauthenticated — which sees only the fields no {@code @visible} restricts. */
+    private static Set<String> rolesOf(GraphQLRequest req) {
+        var account = req.getAuthenticatedAccount();
+        return account == null || account.getRoles() == null ? Set.of() : account.getRoles();
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public void handle(GraphQLRequest req, GraphQLResponse res) throws Exception {
@@ -243,7 +250,9 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
         var chainedInstrumentations = new ArrayList<Instrumentation>();
         chainedInstrumentations.add(new MaxQueryTimeInstrumentation(this.queryTimeLimit));
 
-        gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
+        // the schema this caller may see: a field their roles exclude is not in it at all, so
+        // asking for it is a validation error and introspection never mentions it (restheart#478)
+        gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema(rolesOf(req)))
                 .valueUnboxer((Object object) -> object instanceof BsonNull ? null : ValueUnboxer.DEFAULT.unbox(object))
                 .instrumentation(new ChainedInstrumentation(chainedInstrumentations))
                 .build();

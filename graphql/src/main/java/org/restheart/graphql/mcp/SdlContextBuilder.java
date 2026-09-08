@@ -47,7 +47,7 @@ import org.restheart.graphql.scalars.BsonScalars;
  * via MCP would advertise an operation that fails whenever an agent actually tries it.
  *
  * <p>Mirrors {@code GraphQLApp.Builder.build()}: the app's raw SDL is prefixed with
- * {@link BsonScalars#getBsonScalarHeader()} before parsing, since app schemas routinely
+ * {@link BsonScalars#getSchemaHeader()} before parsing, since app schemas routinely
  * reference RESTHeart's custom BSON scalar types (e.g. {@code BsonObjectId}) that don't resolve
  * without it.
  */
@@ -72,7 +72,7 @@ public final class SdlContextBuilder {
 
         TypeDefinitionRegistry registry;
         try {
-            registry = new SchemaParser().parse(BsonScalars.getBsonScalarHeader() + sdl);
+            registry = new SchemaParser().parse(BsonScalars.getSchemaHeader() + sdl);
         } catch (RuntimeException e) {
             return List.of();
         }

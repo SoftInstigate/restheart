@@ -127,6 +127,12 @@
       password: secret
       roles: [ aclreader ]
 
+    # karate/graphql/visibility — same route permission as aclowner1, one extra role, so the
+    # only difference between the two callers is what @visible lets them see
+    - userid: hruser
+      password: secret
+      roles: [ hr, aclreader ]
+
 /mongoRealmAuthenticator/users-db: restheart-test
 
 /fileAclAuthorizer:
@@ -239,6 +245,11 @@
     # supply a value for a server-resolved @ variable
     - role: aclreader
       predicate: method(GET) and path-prefix[path="/test-graphql/test-vars"]
+      priority: 0
+
+    # karate/graphql/visibility
+    - role: aclreader
+      predicate: method(POST) and path[path="/graphql/test-visible"]
       priority: 0
 
     - role: poweruser
