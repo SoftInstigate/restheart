@@ -77,6 +77,11 @@ public final class GraphqlAppMcpResourceBuilder {
             a.bodySchema(bodySchema());
         });
 
+        // Introspection first: a caller that has just read "return_type": "[Book]" needs to know
+        // what a Book has before it can write a selection set, and these are the two requests that
+        // tell it.
+        introspectionExamples().forEach(ex -> builder.example(ex.description(), "execute", ex.args()));
+
         examples(mcp).forEach(ex -> builder.example(
                 stringOrNull(ex, "description"),
                 "execute",
@@ -86,10 +91,43 @@ public final class GraphqlAppMcpResourceBuilder {
         if (!queries.isEmpty()) {
             var operations = new LinkedHashMap<String, Object>();
             operations.put("queries", queries.stream().map(GraphqlAppMcpResourceBuilder::toMap).toList());
+            operations.put("resolve_types_with", RESOLVE_TYPES_WITH);
             builder.extra("operations", operations);
         }
 
         return Optional.of(builder.build());
+    }
+
+    /**
+     * Told where it is needed: right beside the {@code return_type} names it explains.
+     *
+     * <p>A GraphQL query has to name the fields it wants — there is no {@code SELECT *} — and this
+     * catalog lists each query's arguments and the <em>name</em> of the type it returns, never that
+     * type's fields. Introspection is how the caller gets them, and it is also the only answer that
+     * stays true per caller: a field hidden from their roles by {@code @visible} is absent from the
+     * schema they introspect, so what they see is exactly what they may ask for.
+     */
+    private static final String RESOLVE_TYPES_WITH =
+            "A GraphQL query must name the fields it selects. The 'return_type' above is only a type name; "
+            + "introspect this same endpoint to get its fields, e.g. "
+            + "{ __type(name: \"TypeName\") { fields { name type { name kind ofType { name } } } } }. "
+            + "The schema you introspect is the one your roles may see, so anything it lists you may select.";
+
+    /** One example per introspection step: what this app answers, and what a type contains. */
+    private static List<Example> introspectionExamples() {
+        return List.of(
+                new Example("List the queries this app answers, with the type each returns",
+                        query("{ __schema { queryType { fields { name type { name kind ofType { name } } } } } }")),
+                new Example("List the fields of a type, to know what a query can select",
+                        query("{ __type(name: \"TypeName\") { fields { name type { name kind ofType { name } } } } }")));
+    }
+
+    private record Example(String description, Map<String, Object> args) {
+    }
+
+    /** Body-taking actions take their body under {@code args.body} — see the framework's how_to_call convention. */
+    private static Map<String, Object> query(String document) {
+        return Map.of("body", Map.of("query", document));
     }
 
     private static Map<String, Object> bodySchema() {

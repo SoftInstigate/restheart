@@ -45,3 +45,32 @@ Background:
     When method GET
     Then status 200
     And match $[*].name == ['alpha', 'bravo']
+
+  Scenario: nor through the flat query-parameter shorthand
+
+    # Since 9.9 any non-reserved query param is merged into avars, so ?@user=... reaches exactly
+    # the same map as ?avars={"@user":...}. It is a second spelling of the same attempt, not a
+    # second door, and it must be refused by the same rule.
+    Given path '/test-graphql/test-vars/_aggrs/mine'
+    And header Authorization = owner1
+    And param rep = 's'
+    And param @user = '{"userid": "aclowner2"}'
+    When method GET
+    Then status 200
+    And match $[*].name == ['alpha', 'bravo']
+
+  Scenario: the rule covers every registered variable, not a list of known names
+
+    # The protection is keyed on "does a resolver claim this name", so a plugin registering its
+    # own — @subscription, say — is covered the day it registers, with nobody remembering to add
+    # it anywhere. Here the pipeline does not even use @now; what matters is that supplying it
+    # cannot bind anything, so it cannot displace a resolver's answer.
+    Given path '/test-graphql/test-vars/_aggrs/mine'
+    And header Authorization = owner1
+    And param rep = 's'
+    And param @now = '"not a date"'
+    And param @subscription = '{"plan": "enterprise"}'
+    And param @roles = '["admin"]'
+    When method GET
+    Then status 200
+    And match $[*].name == ['alpha', 'bravo']
