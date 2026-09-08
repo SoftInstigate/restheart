@@ -22,6 +22,7 @@ package org.restheart.mongodb.mcp;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -527,15 +528,9 @@ public final class MongoMcpAwareImpl {
         }
     }
 
-    /** {@code $and} of the two, skipping the wrapper when either side is empty — a filter of {@code {}} matches everything. */
+    /** How a caller's filter and the ACL's are combined — the same composition {@code ?filter} uses when it repeats. */
     private static BsonDocument and(BsonDocument requested, BsonDocument acl) {
-        if (acl == null || acl.isEmpty()) {
-            return requested;
-        }
-        if (requested == null || requested.isEmpty()) {
-            return acl;
-        }
-        return new BsonDocument("$and", new BsonArray(List.of(requested, acl)));
+        return BsonUtils.and(Arrays.asList(requested, acl));
     }
 
     private static BsonValue idValue(String id) {

@@ -886,6 +886,44 @@ public class BsonUtils {
      * @param map the map to convert to BSON document
      * @return the BsonDocument representation of the map, or null if map is null
      */
+    /**
+     * Composes several filters into the one query that satisfies all of them.
+     *
+     * <p>The rule is small but it is a rule, and it was written twice: once for the {@code ?filter}
+     * query parameters, which may repeat, and once for combining an ACL read filter with a
+     * caller's own. Two copies of how a query is narrowed are two chances to narrow it differently,
+     * and one of the two callers is applying a security restriction.
+     *
+     * <p>Empty and {@code null} filters are dropped rather than wrapped: {@code {}} matches
+     * everything, so carrying it into an {@code $and} adds nothing but noise. A single remaining
+     * filter is returned as itself — copied, so the caller may modify the result without reaching
+     * back into what it passed in — and only two or more become an {@code $and}.
+     *
+     * @param filters the filters to combine, in order; {@code null} entries are ignored
+     * @return a new document matching every one of them, empty when there is nothing to narrow by
+     */
+    public static BsonDocument and(final List<BsonDocument> filters) {
+        if (filters == null) {
+            return new BsonDocument();
+        }
+
+        var significant = filters.stream()
+                .filter(f -> f != null && !f.isEmpty())
+                .toList();
+
+        return switch (significant.size()) {
+            case 0 -> new BsonDocument();
+            case 1 -> copyOf(significant.get(0));
+            default -> new BsonDocument("$and", new BsonArray(significant));
+        };
+    }
+
+    private static BsonDocument copyOf(BsonDocument doc) {
+        var copy = new BsonDocument();
+        copy.putAll(doc);
+        return copy;
+    }
+
     public static BsonDocument toBsonDocument(final Map<String, ? super Object> map) {
         if (map == null) {
             return null;

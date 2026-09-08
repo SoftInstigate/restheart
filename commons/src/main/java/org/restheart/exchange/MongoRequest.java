@@ -20,6 +20,8 @@
 package org.restheart.exchange;
 
 import static org.restheart.exchange.ExchangeKeys.*;
+import org.restheart.utils.BsonUtils;
+
 import static org.restheart.utils.BsonUtils.array;
 import static org.restheart.utils.BsonUtils.document;
 import static org.restheart.utils.URLUtils.removeTrailingSlashes;
@@ -908,24 +910,13 @@ public class MongoRequest extends BsonRequest {
      * @return the $and composed filter qparam values
      */
     public BsonDocument getFiltersDocument() throws JsonParseException {
-        final var filterQuery = new BsonDocument();
-
-        if (filter != null) {
-            if (filter.size() > 1) {
-                var _filters = new BsonArray();
-
-                filter.stream().forEach(f -> _filters.add(BsonDocument.parse(f)));
-
-                filterQuery.put("$and", _filters);
-            } else if (filter.size() == 1) {
-                // this can throw JsonParseException for invalid filter parameters
-                filterQuery.putAll(BsonDocument.parse(filter.getFirst()));
-            } else {
-                return filterQuery;
-            }
+        if (filter == null) {
+            return new BsonDocument();
         }
 
-        return filterQuery;
+        // parse can throw JsonParseException for an invalid filter parameter — the caller's
+        // problem to report, so it is not caught here
+        return BsonUtils.and(filter.stream().map(BsonDocument::parse).toList());
     }
 
     /**
