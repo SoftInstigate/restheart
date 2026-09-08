@@ -121,6 +121,39 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         this.sessionFactory = sessionFactory;
     }
 
+    /**
+     * Sends a notification to one session — what {@code resources/subscribe} needs (#617).
+     *
+     * <p>The SDK routes {@code notifications/resources/updated} through here, to the sessions it
+     * has recorded as subscribed to that URI, rather than broadcasting: a subscription is a
+     * promise made to one client. The interface's default implementation refuses with
+     * {@code UnsupportedOperationException}, and {@code notifyResourcesUpdated} swallows that
+     * error, so a provider that does not override this advertises subscriptions and then silently
+     * delivers nothing.
+     */
+    @Override
+    public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+        var session = sessions.get(sessionId);
+
+        if (session == null) {
+            // it ended between the change and this notification; nothing to deliver it to
+            return Mono.empty();
+        }
+
+        return Mono.fromRunnable(() -> {
+            try {
+                session.sendNotification(method, params).block();
+            } catch (Exception e) {
+                if (isMissingStream(e)) {
+                    // the session exists but has no open GET stream right now — see notifyClients
+                    LOGGER.debug("Skipped notifying session {} (no active stream): {}", sessionId, e.getMessage());
+                } else {
+                    LOGGER.error("Failed to notify session {}: {}", sessionId, e.getMessage());
+                }
+            }
+        });
+    }
+
     @Override
     public Mono<Void> notifyClients(String method, Object params) {
         if (sessions.isEmpty()) return Mono.empty();
