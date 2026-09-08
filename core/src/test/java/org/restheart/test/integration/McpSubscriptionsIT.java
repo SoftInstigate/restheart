@@ -77,6 +77,21 @@ public class McpSubscriptionsIT extends AbstactIT {
         }
     }
 
+    /** {@code subscription-notify-interval-seconds} in conf-overrides.yml. */
+    private static final Duration NOTIFY_INTERVAL = Duration.ofSeconds(1);
+
+    /** One request, many documents — a burst of change events with no HTTP round trips between them. */
+    private static void writeMany(int count) {
+        var docs = new StringBuilder("[");
+        for (var i = 0; i < count; i++) {
+            docs.append(i == 0 ? "" : ",").append("{\"item\":\"burst-").append(i).append("\"}");
+        }
+        docs.append("]");
+
+        Unirest.post(TEST_COLL).basicAuth("admin", "secret").contentType("application/json")
+                .body(docs.toString()).asEmpty();
+    }
+
     private static void write(String item) {
         Unirest.post(TEST_COLL).basicAuth("admin", "secret").contentType("application/json")
                 .body("{\"item\":\"" + item + "\"}").asEmpty();
@@ -97,16 +112,27 @@ public class McpSubscriptionsIT extends AbstactIT {
     public void aBurstOfWritesDoesNotBecomeABurstOfNotifications() throws Exception {
         mcp.rpc("resources/subscribe", "{ \"uri\": \"" + TEST_COLL + "\" }");
 
-        for (var i = 0; i < 50; i++) {
-            write("burst-" + i);
-        }
+        // one request, fifty documents: fifty change events inside a few milliseconds, which is
+        // the shape this is about. Fifty separate POSTs would spread the burst over seconds and
+        // measure the speed of the HTTP client rather than the rate limiting.
+        var start = System.currentTimeMillis();
+        writeMany(50);
 
         notifications.await(UPDATED, Duration.ofSeconds(10));
         // let the rate-limiting interval pass, so any trailing notification has been sent
-        Thread.sleep(3_000);
+        Thread.sleep(NOTIFY_INTERVAL.toMillis() * 3);
+
+        // What is bounded is notifications per unit of time, not per write: one sent immediately
+        // plus at most one closing each interval the burst spanned. Derived rather than guessed,
+        // so a slower machine widens the bound instead of failing.
+        var intervalsSpanned = (System.currentTimeMillis() - start) / NOTIFY_INTERVAL.toMillis() + 1;
+        var max = intervalsSpanned + 1;
 
         var count = notifications.matching(UPDATED).size();
-        assertTrue(count <= 3, "50 writes produced " + count + " notifications; the point is that they do not");
+        assertTrue(count <= max,
+                "50 writes produced " + count + " notifications over " + intervalsSpanned
+                        + " interval(s); at most " + max + " is the point of rate-limiting them");
+        assertTrue(count < 50, "the writes were not coalesced at all");
     }
 
     @Test
