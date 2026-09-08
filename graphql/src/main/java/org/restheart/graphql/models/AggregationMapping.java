@@ -27,7 +27,6 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
@@ -91,18 +90,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     }
 
     public List<BsonDocument> interpolateArgs(DataFetchingEnvironment env) throws QueryVariableNotBoundException, GraphQLIllegalAppDefinitionException {
-        var values = BsonUtils.toBsonDocument(env.getArguments());
-        // add the rootDoc arg see https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument
-        BsonDocument locaLContext = env.getLocalContext();
-        BsonValue rootDoc = locaLContext.get("rootDoc");
-        if (rootDoc != null) { // rootDoc is only available at path level >= 2
-            values.put("rootDoc", rootDoc);
-        }
-
-        // add the @user args
-        var user = locaLContext.getDocument("@user");
-        values.put("@user", user.isEmpty() ? BsonNull.VALUE : user);
-        user.entrySet().stream().forEach(e -> values.put("@user.".concat(e.getKey()), e.getValue()));
+        var values = contextValues(env);
 
         try {
             var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values);

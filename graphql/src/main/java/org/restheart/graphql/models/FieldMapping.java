@@ -28,6 +28,7 @@ import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.utils.BsonUtils;
 import graphql.schema.DataFetchingEnvironment;
 
 public abstract class FieldMapping {
@@ -42,6 +43,44 @@ public abstract class FieldMapping {
     }
 
     public abstract GraphQLDataFetcher getDataFetcher();
+
+    /**
+     * The values a mapping's {@code $arg} references can resolve against: the field's own GraphQL
+     * arguments, plus the variables RESTHeart makes available to an app definition.
+     *
+     * <p>Shared by every mapping on purpose. These two lists had drifted — an aggregation mapping
+     * could write {@code {"$arg": "@user._id"}} and a query mapping could not, for no reason an
+     * app author could have guessed from the documentation. Which variables an app definition may
+     * use is one decision, so it is made in one place.
+     *
+     * <ul>
+     *   <li>the field's arguments, by name</li>
+     *   <li>{@code rootDoc} — the parent document, only from path level 2 down
+     *       (see <a href="https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument">the docs</a>)</li>
+     *   <li>{@code @user} — the authenticated account's properties, {@code null} when there are
+     *       none — and {@code @user.<property>} for each of them, so a mapping can restrict what
+     *       it reads to the caller without any of it being expressed outside the app definition</li>
+     * </ul>
+     */
+    protected static BsonDocument contextValues(DataFetchingEnvironment env) {
+        var values = BsonUtils.toBsonDocument(env.getArguments());
+
+        BsonDocument localContext = env.getLocalContext();
+        if (localContext == null) {
+            return values;
+        }
+
+        var rootDoc = localContext.get("rootDoc");
+        if (rootDoc != null) {
+            values.put("rootDoc", rootDoc);
+        }
+
+        var user = localContext.get("@user") instanceof BsonDocument u ? u : new BsonDocument();
+        values.put("@user", user.isEmpty() ? BsonNull.VALUE : user);
+        user.forEach((key, value) -> values.put("@user.".concat(key), value));
+
+        return values;
+    }
 
     public BsonValue interpolateFkOperator(BsonDocument source, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
         if (source.containsKey("$fk")) {

@@ -36,7 +36,6 @@ import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
 import org.restheart.mongodb.utils.VarsInterpolator;
 import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
-import org.restheart.utils.BsonUtils;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -127,20 +126,15 @@ public class QueryMapping extends FieldMapping implements Batchable {
     public BsonDocument interpolateArgs(DataFetchingEnvironment env) throws IllegalAccessException, QueryVariableNotBoundException, GraphQLIllegalAppDefinitionException {
         var result = new BsonDocument();
 
+        // one set of values for every field of this mapping — find, sort, limit, skip all resolve
+        // their $arg references against the same thing
+        var values = contextValues(env);
+
         var fields = (QueryMapping.class).getDeclaredFields();
         for (var field : fields) {
             var value = field.get(this);
 
             if (value instanceof BsonDocument bsonDoc) {
-                var values = BsonUtils.toBsonDocument(env.getArguments());
-
-                // add the rootDoc arg see https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument
-                BsonDocument locaLContext = env.getLocalContext();
-                BsonValue rootDoc = locaLContext.get("rootDoc");
-                if (rootDoc != null) { // rootDoc is only available at path level >= 2
-                    values.put("rootDoc", rootDoc);
-                }
-
                 try {
                     var argInterpolated = VarsInterpolator.interpolate(VAR_OPERATOR.$arg, bsonDoc, values);
                     var argAndFkIntepolated = argInterpolated;
