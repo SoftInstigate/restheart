@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.mcp;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -102,19 +103,47 @@ public final class CollectionWatchers {
                 .start(() -> run(key, watch));
     }
 
+    /** First retry delay; doubles up to {@link #MAX_BACKOFF} while the stream cannot be opened. */
+    private static final Duration INITIAL_BACKOFF = Duration.ofSeconds(1);
+
+    private static final Duration MAX_BACKOFF = Duration.ofSeconds(30);
+
+    /**
+     * Reads the stream, reopening it for as long as somebody is subscribed.
+     *
+     * <p>A change stream ends for reasons that have nothing to do with the subscriber: the
+     * collection is dropped and recreated, a primary steps down, a connection drops. Letting the
+     * watch die then would leave every subscriber silently unnotified for the rest of the
+     * server's life — the failure would be invisible, because nothing is supposed to arrive when
+     * nothing changes. So the watch outlives its stream, and only the last subscriber leaving
+     * ends it.
+     */
     private void run(Key key, Watch watch) {
-        try (var cursor = collections.apply(key.db(), key.collection()).watch().cursor()) {
-            while (!watch.stopped && cursor.hasNext()) {
-                cursor.next();
-                notifyListeners(watch);
+        var backoff = INITIAL_BACKOFF;
+
+        try {
+            while (!watch.stopped) {
+                try (var cursor = collections.apply(key.db(), key.collection()).watch().cursor()) {
+                    backoff = INITIAL_BACKOFF;
+
+                    while (!watch.stopped && cursor.hasNext()) {
+                        cursor.next();
+                        notifyListeners(watch);
+                    }
+                } catch (Exception e) {
+                    if (watch.stopped || Thread.currentThread().isInterrupted()) {
+                        return;
+                    }
+
+                    LOGGER.debug("MCP change stream on {}.{} failed, retrying in {}",
+                            key.db(), key.collection(), backoff, e);
+
+                    Thread.sleep(backoff);
+                    backoff = backoff.multipliedBy(2).compareTo(MAX_BACKOFF) > 0 ? MAX_BACKOFF : backoff.multipliedBy(2);
+                }
             }
-        } catch (Exception e) {
-            if (!watch.stopped) {
-                // the stream is gone and nobody is going to reopen it: say so rather than leaving
-                // subscribers waiting for notifications that will never come again
-                LOGGER.warn("MCP change stream on {}.{} stopped; subscribers to it will no longer be "
-                        + "notified until they resubscribe", key.db(), key.collection(), e);
-            }
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
         } finally {
             watches.remove(key, watch);
         }

@@ -249,9 +249,15 @@ public class McpService implements ByteArrayService {
             }
 
             if (McpSchema.METHOD_RESOURCES_SUBSCRIBE.equals(rpc.method())) {
-                if (demand.subscribed(uri, sessionId)) {
-                    startWatching(principal(ctx), uri);
-                }
+                demand.subscribed(uri, sessionId);
+
+                // On every subscribe, not only the first: a change stream can die on its own —
+                // its collection dropped, a primary stepping down, a network blip — and
+                // CollectionWatchers drops the watch when it does. Keying this on "is anyone
+                // already subscribed" would then leave the resource unwatched for good, with the
+                // subscribers still recorded and never told anything again. startWatching is a
+                // no-op when a live watch is already there.
+                startWatching(principal(ctx), uri);
             } else if (McpSchema.METHOD_RESOURCES_UNSUBSCRIBE.equals(rpc.method())
                     && demand.unsubscribed(uri, sessionId)) {
                 releaseWatchesFor(List.of(uri));
