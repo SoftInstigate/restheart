@@ -49,6 +49,19 @@ jwtConfigProvider:
   issuer: restheart.org
   audience: null   # null or array of audience strings
 
+# Issues signed JWTs on behalf of other plugins, which inject it as @Inject("jwtIssuer").
+# Key, algorithm, issuer, audience and claim policy all come from jwtConfigProvider above: a token
+# minted here is the same JWT this deployment issues at login or on /token, and is verified by the
+# same jwtAuthenticationMechanism. This exists so that a plugin in a module that cannot see
+# restheart-security doesn't have to carry its own copy of the issuance logic and a second copy of
+# the signing key.
+# ttl is the default lifetime for callers that state none; each caller may ask for its own — the
+# MCP server, for instance, asks for 60 seconds for the token how_to_call embeds in the request it
+# composes, so that a leaked one is worthless within the minute.
+jwtIssuer:
+  enabled: true
+  ttl: 15 # in minutes
+
 # JSON Web Token Authentication
 # See https://restheart.org/docs/security/authentication#jwt-authentication
 jwtAuthenticationMechanism:
@@ -445,6 +458,43 @@ csvLoader:
 #  - max-queue-size (optional, default 0) Controls the number of connections to create per thread.
 #  - connections-ttl (optional, default -1) Connections Time to Live in seconds.
 #  - problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
+
+# restheart-ai requires MongoDB (and, for $vectorSearch itself, mongot) - not available
+# in standalone mode. See https://restheart.org/docs/ai
+vectorSearchIndexCreateInterceptor:
+  enabled: false
+vectorSearchIndexListInterceptor:
+  enabled: false
+vectorSearchIndexDeleteInterceptor:
+  enabled: false
+documentChunkingInterceptor:
+  enabled: false
+autoEmbeddingInterceptor:
+  enabled: false
+vectorizeOperator:
+  enabled: false
+rerankingInterceptor:
+  enabled: false
+vectorScanInterceptor:
+  enabled: false
+openAIEmbeddingProvider:
+  enabled: false
+voyageEmbeddingProvider:
+  enabled: false
+voyageContextualEmbeddingProvider:
+  enabled: false
+ollamaEmbeddingProvider:
+  enabled: false
+# McpService itself doesn't strictly require MongoDB (it can serve any McpAware plugin, e.g.
+# PingService), but it ships as part of restheart-ai like everything else above, so it's off
+# here too for consistency — enable it manually via an override if you want MCP without Mongo.
+mcpService:
+  enabled: false
+cohereRerankProvider:
+  enabled: false
+voyageRerankProvider:
+  enabled: false
+
 proxies:
 #   - location: /anything
 #     proxy-pass: https://httpbin.org/anything

@@ -1,18 +1,24 @@
 <project basedir=".">
     <target name="start-server">
-        <echo level="info">***** Initializing MongoDB as Replica Set</echo>
+        <!--
+            mongodb/mongodb-atlas-local (the default "mongodb" profile's image) self-
+            initializes its own single-node replica set — the rs.initiate() call below
+            is a no-op safety net for it (reports "already initialized"; no
+            failonerror, so this never fails the build). For the official mongo image
+            (the "mongodb-classic" profile, used by CI's compatibility matrix), this
+            call is NOT a no-op — it's the only thing that actually initializes the
+            replica set, since that image does not self-initialize. Either way,
+            ${mongodb.image} matches whichever profile actually started the server.
+        -->
+        <echo level="info">***** Checking MongoDB Replica Set</echo>
         <sleep seconds="3" />
-        <!-- mongo shell command is mongo for v <=5.x then mongosh -->
-        <condition property="mongoshellcmd" value="mongo" else="mongosh">
-            <matches string="${mongodb.version}" pattern="^[1-5].*" />
-        </condition>
         <exec executable="docker">
             <arg value="run" />
             <arg value="--rm" />
             <arg value="--net" />
             <arg value="host" />
-            <arg value="mongo:${mongodb.version}" />
-            <arg value="${mongoshellcmd}" />
+            <arg value="${mongodb.image}:${mongodb.version}" />
+            <arg value="mongosh" />
             <arg value="--eval" />
             <arg value="rs.initiate()" />
         </exec>
@@ -22,8 +28,8 @@
             <arg value="--rm" />
             <arg value="--net" />
             <arg value="host" />
-            <arg value="mongo:${mongodb.version}" />
-            <arg value="${mongoshellcmd}" />
+            <arg value="${mongodb.image}:${mongodb.version}" />
+            <arg value="mongosh" />
             <arg value="--eval" />
             <arg value="rs.status()" />
         </exec>
@@ -37,9 +43,27 @@
             <arg value="--fork" />
         </exec>
         <echo level="info">***** Waiting RESTHeart process to start...</echo>
-        <waitfor maxwait="10" maxwaitunit="second" checkevery="500">
+        <!--
+            60s, not 10s: with restheart-ai's providers/interceptors now enabled by
+            default in conf-overrides.yml (voyageEmbeddingProvider,
+            voyageContextualEmbeddingProvider, autoEmbeddingInterceptor,
+            vectorizeOperator, aiEmbeddingProviderOverrideInterceptor — on top of the
+            plugin count every other test config already carries), startup got slow
+            enough to blow through the old 10s ceiling on CI, which <waitfor> doesn't
+            treat as fatal by itself — it silently gives up and lets the build carry on
+            straight into karate, producing a cascade of "Connection refused" scenario
+            failures with no clear signal that the server never actually came up. The
+            explicit <fail> below turns that into an immediate, readable error instead.
+        -->
+        <waitfor maxwait="60" maxwaitunit="second" checkevery="500">
             <http url="http://localhost:8080/ping" />
         </waitfor>
+        <condition property="restheart.not.responding">
+            <not>
+                <http url="http://localhost:8080/ping" />
+            </not>
+        </condition>
+        <fail if="restheart.not.responding">RESTHeart did not respond to /ping within 60 seconds — check core/restheart.log for the actual startup error.</fail>
         <echo level="info">***** RESTHeart process started</echo>
     </target>
 </project>

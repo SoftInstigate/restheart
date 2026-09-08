@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -49,6 +50,7 @@ import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.AggregationBatchLoader;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
 import org.restheart.graphql.instrumentation.MaxQueryTimeInstrumentation;
+import org.restheart.graphql.mcp.GraphqlMcpAwareImpl;
 import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
@@ -61,6 +63,10 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.plugins.mcp.McpAware;
+import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpResource;
+import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.WithProperties;
@@ -93,7 +99,7 @@ import graphql.parser.Parser;
 import io.undertow.server.HttpServerExchange;
 
 @RegisterPlugin(name = "graphql", description = "Service that handles GraphQL requests", secure = true, enabledByDefault = true, defaultURI = "/graphql")
-public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> {
+public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>, McpAware {
     public static final String DEFAULT_APP_DEF_DB = "restheart";
     public static final String DEFAULT_APP_DEF_COLLECTION = "gqlapps";
     public static final Boolean DEFAULT_VERBOSE = false;
@@ -117,6 +123,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
 
     @Inject("rh-config")
     private Configuration rhConfig;
+
+    private GraphqlMcpAwareImpl mcpAware;
 
     @OnInit
     public void init() throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
@@ -148,6 +156,18 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         AppBuilder.setDefaultLimit(defaultLimit);
         AppBuilder.setMaxLimit(maxLimit);
         QueryMapping.setMaxLimit(maxLimit);
+
+        this.mcpAware = GraphqlMcpAwareImpl.create(mclient, defaultAppDefDb, collection);
+    }
+
+    @Override
+    public List<McpResource> describeMcp(McpContext ctx) {
+        return mcpAware.describeMcp(ctx);
+    }
+
+    @Override
+    public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
+        return mcpAware.describeTemplates(ctx);
     }
 
     private static final Parser GQL_PARSER = new Parser();

@@ -41,14 +41,13 @@ import org.restheart.utils.PluginUtils;
  * <p>
  * Example configuration in restheart.yml:
  * <pre>
- * plugins-args:
- *   myPlugin:
- *     enabled: true
- *     apiKey: "secret-key"
- *     timeout: 30
- *     endpoints:
- *       - "/api/v1"
- *       - "/api/v2"
+ * myPlugin:
+ *   enabled: true
+ *   apiKey: "secret-key"
+ *   timeout: 30
+ *   endpoints:
+ *     - "/api/v1"
+ *     - "/api/v2"
  * </pre>
  * </p>
  * <p>

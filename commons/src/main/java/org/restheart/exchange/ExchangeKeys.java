@@ -63,7 +63,14 @@ public interface ExchangeKeys {
     /** Query parameter for providing query optimization hints to MongoDB. */
     public static final String HINT_QPARAM_KEY = "hint";
 
-    /** Query parameter for passing variables to aggregation pipelines. */
+    /**
+     * Query parameter for passing variables to aggregation pipelines, as a single JSON object,
+     * e.g. {@code ?avars={"status":"A"}}. Any other, non-reserved query parameter is also bound as
+     * an aggregation variable (e.g. a bare {@code ?status=A} satisfies a pipeline's {@code
+     * {"$var": "status"}}), so single variables need not be wrapped in this object; on a name
+     * clash between the two, the explicit {@code avars} value wins. See {@code
+     * MongoRequestPropsInjector}.
+     */
     public static final String AGGREGATION_VARIABLES_QPARAM_KEY = "avars";
 
     /** Query parameter for specifying which document fields to include/exclude. */

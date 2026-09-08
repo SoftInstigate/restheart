@@ -146,7 +146,7 @@ public class AclVarsInterpolator {
      * @throws IllegalArgumentException if request is null
      * @see #
      */
-    public static BsonValue interpolateBson(final MongoRequest request, final BsonValue bson) {
+    public static BsonValue interpolateBson(final Request<?> request, final BsonValue bson) {
         if (bson.isDocument()) {
             var ret = new BsonDocument();
             var doc = bson.asDocument();
@@ -293,9 +293,9 @@ public class AclVarsInterpolator {
      *            The string value potentially containing variables to interpolate
      * @return The interpolated BSON value. Returns BsonNull.VALUE if the variable cannot be resolved
      *         or if the value parameter is null. For non-variable strings, returns a BsonString
-     * @see #interpolateBson(MongoRequest, BsonValue)
+     * @see #interpolateBson(Request, BsonValue)
      */
-    public static BsonValue interpolatePropValue(MongoRequest request, String key, String value) {
+    public static BsonValue interpolatePropValue(Request<?> request, String key, String value) {
         if (value == null) {
             return BsonNull.VALUE;
         } else if ("%USER".equals(value)) {

@@ -315,6 +315,48 @@ public class PluginsFactory {
         return providersTypes;
     }
 
+    /** Logged at most once: this is a shape problem of the configuration file, not a per-plugin one. */
+    private boolean pluginsArgsWarningIssued = false;
+
+    /**
+     * Warns when the configuration nests plugin arguments under a top-level {@code plugins-args}
+     * key (restheart#723).
+     *
+     * <p>That key was never handled: each plugin's arguments are looked up as a top-level key
+     * named after the plugin, so everything nested under {@code plugins-args} is read by nobody.
+     * The failure mode is the worst kind — the plugin starts, runs entirely on its defaults, and
+     * nothing says a setting was ignored. It deserves a warning rather than silence precisely
+     * because the key cannot mean anything else: no plugin is named {@code plugins-args}, so its
+     * presence is always a misconfiguration.
+     */
+    private void warnAboutPluginsArgsWrapper(Configuration conf) {
+        if (pluginsArgsWarningIssued || conf == null) {
+            return;
+        }
+
+        pluginsArgsWarningIssued = true;
+
+        var ignored = unreadPluginsArgsKeys(conf.toMap());
+
+        if (!ignored.isEmpty()) {
+            LOGGER.warn("Configuration contains a top-level 'plugins-args' key. It is not a supported "
+                    + "configuration key, and everything nested under it is ignored: {}. A plugin is "
+                    + "configured with a top-level key named after it — 'myPlugin:' at the root of the "
+                    + "configuration file — not 'plugins-args:' followed by 'myPlugin:'.", ignored);
+        }
+    }
+
+    /**
+     * The plugin names a {@code plugins-args} wrapper would silently swallow — empty when the
+     * configuration has no such key. Package-visible so the detection can be tested without
+     * building a {@link Configuration} or capturing a log line.
+     */
+    static Set<String> unreadPluginsArgsKeys(Map<String, Object> conf) {
+        return conf != null && conf.get("plugins-args") instanceof Map<?, ?> nested
+                ? nested.keySet().stream().map(String::valueOf).collect(Collectors.toCollection(LinkedHashSet::new))
+                : Set.of();
+    }
+
     /**
      * Creates plugin instances from their descriptors.
      * 
@@ -332,6 +374,8 @@ public class PluginsFactory {
     @SuppressWarnings("unchecked")
     private <T extends Plugin> Set<PluginRecord<T>> createPlugins(List<PluginDescriptor> pluginDescriptors, String type, Configuration conf) {
         var ret = new LinkedHashSet<PluginRecord<T>>();
+
+        warnAboutPluginsArgsWrapper(conf);
 
         // sort by priority
         pluginDescriptors.sort((PluginDescriptor cd1, PluginDescriptor cd2) -> {

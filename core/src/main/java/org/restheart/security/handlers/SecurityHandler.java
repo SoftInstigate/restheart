@@ -26,6 +26,7 @@ import java.util.Set;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.injectors.TokenInjector;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
@@ -43,6 +44,7 @@ public class SecurityHandler extends PipelinedHandler {
     private final Set<PluginRecord<AuthMechanism>> mechanisms;
     private final Set<PluginRecord<Authorizer>> authorizers;
     private final PluginRecord<TokenManager> tokenManager;
+    private final Service<?, ?> service;
 
     // Cached security handler chain components (created once, reused across all services)
     private static volatile SecurityChainComponents cachedComponents = null;
@@ -63,8 +65,10 @@ public class SecurityHandler extends PipelinedHandler {
             var startTime = System.currentTimeMillis();
             BootstrapLogger.startPhase(SecurityHandler.LOGGER, "SECURITY HANDLERS INITIALIZATION");
 
-            // Build the reusable components (without linking them yet)
-            this.authorizersHandler = new ReusableAuthorizersHandler(authorizers);
+            // Build the reusable components (without linking them yet). No Service here: this
+            // object only exists to trigger the one-time logging below (see preInitialize) —
+            // its authorizersHandler is never actually used to handle a request.
+            this.authorizersHandler = new ReusableAuthorizersHandler(authorizers, null);
             this.tokenInjector = new ReusableTokenInjector(tokenManager);
             this.callHandler = new ReusableAuthenticationCallHandler();
             this.constraintHandler = new ReusableAuthenticationConstraintHandler(authorizers);
@@ -131,8 +135,8 @@ public class SecurityHandler extends PipelinedHandler {
     }
 
     private static class ReusableAuthorizersHandler extends AuthorizersHandler {
-        ReusableAuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers) {
-            super(authorizers, null);
+        ReusableAuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, Service<?, ?> service) {
+            super(authorizers, service, null);
         }
 
         @Override
@@ -170,11 +174,24 @@ public class SecurityHandler extends PipelinedHandler {
      * @param tokenManager
      */
     public SecurityHandler(final Set<PluginRecord<AuthMechanism>> mechanisms, final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
+        this(mechanisms, authorizers, tokenManager, null);
+    }
+
+    /**
+     *
+     * @param mechanisms
+     * @param authorizers
+     * @param tokenManager
+     * @param service the {@link Service} this security chain protects, or {@code null} when not
+     *                applicable (e.g. an SSE service) — see restheart#722
+     */
+    public SecurityHandler(final Set<PluginRecord<AuthMechanism>> mechanisms, final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager, final Service<?, ?> service) {
         super();
 
         this.mechanisms = mechanisms;
         this.authorizers = authorizers;
         this.tokenManager = tokenManager;
+        this.service = service;
     }
 
     @Override
@@ -184,7 +201,7 @@ public class SecurityHandler extends PipelinedHandler {
 
     @Override
     protected void setNext(PipelinedHandler next) {
-        super.setNext(buildSecurityHandlersChain(next, mechanisms, authorizers, tokenManager));
+        super.setNext(buildSecurityHandlersChain(next, mechanisms, authorizers, tokenManager, service));
     }
 
     /**
@@ -218,7 +235,8 @@ public class SecurityHandler extends PipelinedHandler {
             PipelinedHandler next,
             final Set<PluginRecord<AuthMechanism>> mechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,
-            final PluginRecord<TokenManager> tokenManager) {
+            final PluginRecord<TokenManager> tokenManager,
+            final Service<?, ?> service) {
         if (authorizers == null || authorizers.isEmpty()) {
             throw new IllegalArgumentException("Error, authorizers cannot "
                     + "be null or empty. "
@@ -241,7 +259,7 @@ public class SecurityHandler extends PipelinedHandler {
             }
 
             // Create NEW handler instances for each service (cannot reuse because of 'next' pointer)
-            var authorizersHandler = new ReusableAuthorizersHandler(authorizers);
+            var authorizersHandler = new ReusableAuthorizersHandler(authorizers, service);
             var tokenInjector = new ReusableTokenInjector(tokenManager != null ? tokenManager.getInstance() : null);
             var callHandler = new ReusableAuthenticationCallHandler();
             var constraintHandler = new ReusableAuthenticationConstraintHandler(authorizers);
@@ -261,7 +279,7 @@ public class SecurityHandler extends PipelinedHandler {
             // just pipe the authorizers
             // this will make the request to be authorized without any authentication mechanism
             // see https://github.com/SoftInstigate/restheart/discussions/417
-            return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, new AuthorizersHandler(authorizers, next));
+            return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, new AuthorizersHandler(authorizers, service, next));
         } else {
             return next;
         }

@@ -20,10 +20,9 @@ Thank you for your interest in contributing to RESTHeart! This guide covers ever
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| Java | 25 | Use [SDKMAN](https://sdkman.io/): `sdk install java 25-tem` |
+| Java | 25 (GraalVM) | Use [SDKMAN](https://sdkman.io/): `sdk install java 25-graalce`. RESTHeart's official Docker image runs on GraalVM, and a local GraalVM is what lets you build native images and run the polyglot/JS-plugin karate tests (`@requires-graalvm`) — a plain JDK 25 builds and tests fine otherwise, but silently skips those. |
 | Maven | via wrapper | No separate installation needed — use `./mvnw` |
 | Docker | any recent | Required only for integration tests, which start a MongoDB container |
-| GraalVM | 25-graal | Required only for native-image builds: `sdk install java 25-graalce` |
 
 The project uses the Maven Wrapper (`./mvnw` / `mvnw.cmd`), so you do **not** need a global Maven installation.
 
@@ -53,7 +52,7 @@ The main artifact is produced at `core/target/restheart.jar`.
 
 The integration tests need a MongoDB instance and a running RESTHeart, and `verify` provides both automatically — two profiles activate whenever `-DskipTests` is *not* passed:
 
-- **`mongodb`** starts a `mongo:${mongodb.version}` container (fabric8 `docker-maven-plugin`) in `pre-integration-test` and stops it afterwards. Docker must be running. If you already have MongoDB on `localhost:27017`, disable it with `-P-mongodb`.
+- **`mongodb`** starts a `mongodb/mongodb-atlas-local:${mongodb.version}` container (fabric8 `docker-maven-plugin`) in `pre-integration-test` and stops it afterwards — bundles mongod + mongot as a self-initializing single-node replica set, so `$vectorSearch`/`createSearchIndexes` (restheart-ai) work without extra setup. Docker must be running. If you already have MongoDB on `localhost:27017`, disable it with `-P-mongodb`.
 - **`start-server`** builds and starts RESTHeart before the tests and stops it after.
 
 All integration tests live in the `core` module.
@@ -76,6 +75,22 @@ All integration tests live in the `core` module.
 ./mvnw clean verify -DskipTests
 ```
 
+### Speed up dev builds
+
+```bash
+./mvnw clean install -Dquick
+```
+
+`-Dquick` skips build steps that only matter for release packaging — license-header
+processing and the `.zip`/`.tar.gz` distribution archive in `core` — while leaving
+everything needed for the dev/test cycle untouched (including copying built plugin jars
+into `core/target/plugins/` for a live RESTHeart to reload). It does not skip tests;
+combine it with `-DskipTests`/`-DskipUTs`/`-DskipITs` for that:
+
+```bash
+./mvnw clean install -Dquick -DskipTests
+```
+
 ### Run a single unit test class
 
 ```bash
@@ -91,7 +106,7 @@ All integration tests live in the `core` module.
 Alternatively, select them by file pattern with `it.includes` (default `**/*IT.java`):
 
 ```bash
-./mvnw verify -Dit.includes=**/RunnerIT.java
+./mvnw verify -Dit.includes="**/RunnerIT.java"
 ```
 
 ### Run only the Karate suite
@@ -99,7 +114,7 @@ Alternatively, select them by file pattern with `it.includes` (default `**/*IT.j
 The BDD tests under `core/src/test/java/karate/` are all driven by a single JUnit class, `RunnerIT`. Excluding the other integration test classes cuts the cycle down considerably while working on a feature file:
 
 ```bash
-./mvnw clean verify -Dit.includes=**/RunnerIT.java
+./mvnw clean verify -Dit.includes="**/RunnerIT.java"
 ```
 
 ### Run specific Karate features
@@ -108,15 +123,28 @@ The BDD tests under `core/src/test/java/karate/` are all driven by a single JUni
 
 ```bash
 # a single feature
-./mvnw clean verify -Dit.includes=**/RunnerIT.java \
+./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
   -Dkarate.path=classpath:karate/stripe/subscription-acl-variable.feature
 
 # a whole directory, or several
-./mvnw clean verify -Dit.includes=**/RunnerIT.java \
+./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
   -Dkarate.path=classpath:karate/stripe,classpath:karate/accounts
 ```
 
 Note that features are not fully independent: some rely on data created by others, and helpers under `karate/accounts/helpers/` are called explicitly by the features that need them. A feature that passes in the full suite can fail when run alone — that is usually a missing fixture, not a regression.
+
+### Run the live embedding-provider tests
+
+`karate/ai/embedding-provider.feature` makes real HTTP calls to a `Provider<EmbeddingModel>` (Voyage AI), so it needs a real API key and is skipped by default (`@requires-embedding-provider` tag). restheart-ai's embedding plugins (`voyageEmbeddingProvider`, `voyageContextualEmbeddingProvider`, `autoEmbeddingInterceptor`, `vectorizeOperator`) are already enabled in `conf-overrides.yml` with no static API key or default provider — each scenario activates the one it needs via a **per-request** override (`?_ai-embedding-override=<providerName>`), read by test-plugins' `aiEmbeddingProviderOverrideInterceptor`, which also attaches the API key from the `VOYAGE_API_KEY` environment variable — never written to any file. This keeps live API calls (tokens, rate-limit budget) scoped to exactly the requests that opt in; no other test in the suite is affected.
+
+```bash
+export VOYAGE_API_KEY=<your-key>
+./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
+  -Dkarate.path=classpath:karate/ai/embedding-provider.feature \
+  -Dkarate.embeddingProvider=true
+```
+
+CI's atlas-local matrix leg does the same automatically, but only when a `VOYAGE_API_KEY` repository secret is configured — otherwise the feature stays skipped and the build stays green.
 
 Karate writes an HTML report to `core/target/karate-reports/karate-summary.html`, and the server log for the run is `core/restheart.log` (rotated at 5 MB into `core/restheart.log-N.log.zip`, so a long run's earlier output ends up in those archives).
 
@@ -127,7 +155,7 @@ Each `verify` rebuilds, then starts MongoDB and RESTHeart, runs the tests, and s
 First, drop `clean` — the build is incremental, so unchanged sources are not recompiled:
 
 ```bash
-./mvnw verify -o -DskipUTs -DskipUpdateLicense=true -Dit.includes=**/RunnerIT.java
+./mvnw verify -o -DskipUTs -DskipUpdateLicense=true -Dit.includes="**/RunnerIT.java"
 ```
 
 To skip the rebuild entirely, keep MongoDB and RESTHeart running between runs and tell Maven not to manage them with `-DskipTestEnv=true`.
@@ -135,18 +163,21 @@ To skip the rebuild entirely, keep MongoDB and RESTHeart running between runs an
 Start the environment once:
 
 ```bash
-docker run -d --rm --name rh-mongo -p 27017:27017 mongo:8.3 --bind_ip_all --replSet rs0
-docker exec rh-mongo mongosh --eval 'rs.initiate()'
+docker run -d --rm --name rh-mongo -p 27017:27017 -e DO_NOT_TRACK=1 mongodb/mongodb-atlas-local:preview
 
 cd core && bin/start.sh -o src/test/resources/etc/conf-overrides.yml --fork
 ```
+
+No manual `rs.initiate()` needed — this image self-initializes its own single-node
+replica set. Do not pass a custom command to it (no `--bind_ip_all --replSet rs0`, unlike
+the old plain `mongo` image) — that overrides its entrypoint and breaks it.
 
 Then re-run the tests as many times as needed, invoking failsafe directly so nothing before `integration-test` executes:
 
 ```bash
 ./mvnw -pl core failsafe:integration-test failsafe:verify \
   -DskipTestEnv=true \
-  -Dit.includes=**/RunnerIT.java \
+  -Dit.includes="**/RunnerIT.java" \
   -Dkarate.path=classpath:karate/stripe/subscription-acl-variable.feature
 ```
 
@@ -157,10 +188,10 @@ Stop the environment with `core/bin/stop.sh` and `docker stop rh-mongo`.
 ### Test against a specific MongoDB version
 
 ```bash
-./mvnw clean verify -Dmongodb.version="7.0"
+./mvnw clean verify -Dmongodb.version="8.0"
 ```
 
-Any published `mongo` image tag works; the default is set by the `mongodb.version` property in the root POM.
+Any published `mongodb/mongodb-atlas-local` tag works (`latest`, `preview`, `8.0`, `7.0`, or a pinned `<major>.<minor>.<patch>-<timestamp>` build); the default is set by the `mongodb.version` property in the root POM.
 
 ### Skip updating license headers (faster iteration)
 

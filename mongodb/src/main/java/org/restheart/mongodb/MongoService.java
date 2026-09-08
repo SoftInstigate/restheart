@@ -28,6 +28,9 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WH
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -44,12 +47,17 @@ import org.restheart.mongodb.handlers.ErrorHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
+import org.restheart.mongodb.mcp.MongoMcpAwareImpl;
 import org.restheart.mongodb.utils.MongoMountResolverImpl;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.plugins.mcp.McpAware;
+import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpReadResult;
+import org.restheart.plugins.mcp.McpResource;
 import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
@@ -77,7 +85,7 @@ import io.undertow.util.PathTemplateMatcher;
         enabledByDefault = true,
         defaultURI = "/",
         priority = Integer.MIN_VALUE)
-public class MongoService implements Service<MongoRequest, MongoResponse> {
+public class MongoService implements Service<MongoRequest, MongoResponse>, McpAware {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoService.class);
 
     private String myURI = null;
@@ -94,6 +102,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
      */
     private PathMatcher<MongoMount> mongoMounts = null;
     private PathTemplateMatcher<MongoMount> templateMongoMounts = null;
+
+    private MongoMcpAwareImpl mcpAware;
 
     @OnInit
     public void init() {
@@ -115,6 +125,23 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
             this.templateMongoMounts = new PathTemplateMatcher<>();
             getMongoMounts().stream().forEachOrdered(mm -> templateMongoMounts.add(mm.uri, mm));
         }
+
+        this.mcpAware = MongoMcpAwareImpl.create();
+    }
+
+    @Override
+    public List<McpResource> describeMcp(McpContext ctx) {
+        return mcpAware.describeMcp(ctx);
+    }
+
+    // No describeTemplates() override: McpService.syncResourceRegistry() now derives a
+    // resource-specific template directly from each readable action's own declared params, so
+    // there's no mount-wide shape left to contribute here — falls through to McpAware's own
+    // default (no templates). See MongoMcpAwareImpl's comment for the full reasoning.
+
+    @Override
+    public Optional<McpReadResult> readResource(McpContext ctx, String resource, String action, Map<String, Object> args) {
+        return mcpAware.readResource(ctx, resource, action, args);
     }
 
     @Override

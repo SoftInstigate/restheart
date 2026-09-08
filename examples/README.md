@@ -5,6 +5,7 @@ This collection showcases various RESTHeart plugins, each serving a specific pur
 ## Configuration files
 
 - **[Example Configuration Files](example-conf-files/README.md)**: Provides a collection of sample configuration files for RESTHeart.
+- **[MCP over MongoDB & GraphQL](mcp-mongodb/README.md)**: A worked example exposing a collection, an aggregation, a change stream, and a GraphQL app through `restheart-ai`'s MCP server.
 
 ## Java Plugins
 
