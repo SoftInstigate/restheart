@@ -24,25 +24,40 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.Set;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import static org.restheart.exchange.ExchangeKeys.AGGREGATION_VARIABLES_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.CACHE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
+import static org.restheart.exchange.ExchangeKeys.COUNT_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_QPARAM_KEY;
 import static org.restheart.exchange.ExchangeKeys.FILTER_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
 import static org.restheart.exchange.ExchangeKeys.HAL_QPARAM_KEY;
 import static org.restheart.exchange.ExchangeKeys.HINT_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.JSON_MODE_QPARAM_KEY;
 import static org.restheart.exchange.ExchangeKeys.KEYS_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.NO_CACHE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.NO_PROPS_KEY;
 import static org.restheart.exchange.ExchangeKeys.PAGESIZE_QPARAM_KEY;
 import static org.restheart.exchange.ExchangeKeys.PAGE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.READ_CONCERN_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.READ_PREFERENCE_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import static org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
 import static org.restheart.exchange.ExchangeKeys.SHARDKEY_QPARAM_KEY;
 import static org.restheart.exchange.ExchangeKeys.SORT_BY_QPARAM_KEY;
 import static org.restheart.exchange.ExchangeKeys.SORT_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.TXNID_KEY;
 import org.restheart.exchange.ExchangeKeys.TYPE;
+import static org.restheart.exchange.ExchangeKeys.WRITE_CONCERN_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
@@ -61,6 +76,16 @@ import org.restheart.utils.BsonUtils;
 public class MongoRequestPropsInjector {
     private static final int DEFAULT_PAGESIZE = MongoServiceConfiguration.get().getDefaultPagesize();
     private static final int MAX_PAGESIZE = MongoServiceConfiguration.get().getMaxPagesize();
+
+    // qparams with framework-defined meaning; everything else is eligible to be folded into
+    // aggregation variables (avars) as a flat key=value binding
+    private static final Set<String> RESERVED_QPARAM_KEYS = Set.of(
+            PAGE_QPARAM_KEY, PAGESIZE_QPARAM_KEY, COUNT_QPARAM_KEY, SORT_BY_QPARAM_KEY, SORT_QPARAM_KEY,
+            FILTER_QPARAM_KEY, HINT_QPARAM_KEY, AGGREGATION_VARIABLES_QPARAM_KEY, KEYS_QPARAM_KEY,
+            CACHE_QPARAM_KEY, HAL_QPARAM_KEY, DOC_ID_TYPE_QPARAM_KEY, ETAG_CHECK_QPARAM_KEY,
+            SHARDKEY_QPARAM_KEY, NO_PROPS_KEY, REPRESENTATION_FORMAT_KEY, CLIENT_SESSION_KEY, TXNID_KEY,
+            JSON_MODE_QPARAM_KEY, NO_CACHE_QPARAM_KEY, WRITE_MODE_QPARAM_KEY, WRITE_MODE_SHORT_QPARAM_KEY,
+            WRITE_CONCERN_QPARAM_KEY, READ_CONCERN_QPARAM_KEY, READ_PREFERENCE_QPARAM_KEY);
 
     /**
      *
@@ -288,6 +313,8 @@ public class MongoRequestPropsInjector {
         // get and check avars parameter
         var avars = exchange.getQueryParameters().get(AGGREGATION_VARIABLES_QPARAM_KEY);
 
+        var qvars = new BsonDocument();
+
         if (avars != null) {
             Optional<String> _qvars = avars.stream().findFirst();
 
@@ -297,8 +324,6 @@ public class MongoRequestPropsInjector {
             }
 
             try {
-                BsonDocument qvars;
-
                 try {
                     qvars = BsonDocument.parse(_qvars.get());
                 } catch (JsonParseException jpe) {
@@ -310,12 +335,34 @@ public class MongoRequestPropsInjector {
                 if (MongoServiceConfiguration.get().getAggregationCheckOperators()) {
                     StagesInterpolator.shouldNotContainOperators(qvars);
                 }
-
-                request.setAggregationVars(qvars);
             } catch (SecurityException t) {
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal avars parameter: " + _qvars.get(), t);
                 return;
             }
+        }
+
+        // also bind any other, non-reserved query parameter as an aggregation variable, so a
+        // caller can pass flat qparams (e.g. ?status=A, or ?coords=[1,2,3], or ?opts={"a":1})
+        // instead of a single ?avars={"status":"A"} blob; a pipeline only reads the $var names it
+        // actually declares, so extra keys here are harmless, and an explicit avars entry always
+        // wins over a same-named flat qparam
+        for (var entry : exchange.getQueryParameters().entrySet()) {
+            var key = entry.getKey();
+            if (!RESERVED_QPARAM_KEYS.contains(key) && !qvars.containsKey(key) && !entry.getValue().isEmpty()) {
+                var raw = entry.getValue().getFirst();
+                BsonValue value;
+                try {
+                    value = BsonUtils.parse(raw);
+                } catch (JsonParseException jpe) {
+                    value = null;
+                }
+                // not JSON (e.g. a bare word like "A"), or blank — bind it as a plain string
+                qvars.put(key, value != null ? value : new BsonString(raw));
+            }
+        }
+
+        if (!qvars.isEmpty()) {
+            request.setAggregationVars(qvars);
         }
 
         // get and check the doc id type parameter
