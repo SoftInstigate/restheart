@@ -26,9 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -100,6 +102,16 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
     private HttpRequest sseFor(String tenantId) {
         return HttpRequest.newBuilder()
                 .uri(URI.create(STREAM_URI + "?tid=" + tenantId))
+                .header("Accept", "text/event-stream")
+                .header("Authorization", ADMIN_BASIC)
+                .build();
+    }
+
+    /** Same subscription, with the variable bound through the {@code avars} blob instead. */
+    private HttpRequest sseForViaAvars(String tenantId) {
+        var avars = URLEncoder.encode("{\"tid\":\"" + tenantId + "\"}", StandardCharsets.UTF_8);
+        return HttpRequest.newBuilder()
+                .uri(URI.create(STREAM_URI + "?avars=" + avars))
                 .header("Accept", "text/event-stream")
                 .header("Authorization", ADMIN_BASIC)
                 .build();
@@ -196,6 +208,76 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
                 "Client-B must receive the tenant-B insert event; got: " + linesB);
 
         // Client B must NOT have received the tenant-A event
+        assertFalse(linesB.stream().anyMatch(l -> l.contains("tenant-A")),
+                "Client-B must NOT receive the tenant-A event; got: " + linesB);
+    }
+
+    /**
+     * The variable can be bound through {@code avars} as well as through a flat query
+     * parameter: two clients binding {@code tid} that way still receive only their own events.
+     *
+     * <p>That they also share one cursor — the point of {@code notify_when} — is covered by
+     * {@code GetChangeStreamHandlerTest}: the worker registry lives in the RESTHeart process,
+     * which these tests drive over HTTP from outside.
+     */
+    @Test
+    void avarsBoundVariableFilters() throws Exception {
+        var respA = CLIENT.send(sseForViaAvars("tenant-A"), BodyHandlers.ofInputStream());
+        var respB = CLIENT.send(sseForViaAvars("tenant-B"), BodyHandlers.ofInputStream());
+        var isA = respA.body();
+        var isB = respB.body();
+
+        var linesA = Collections.synchronizedList(new ArrayList<String>());
+        var linesB = Collections.synchronizedList(new ArrayList<String>());
+
+        var readerA = CompletableFuture.runAsync(() -> {
+            try (var br = new BufferedReader(new InputStreamReader(isA))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (!line.isBlank()) linesA.add(line);
+                }
+            } catch (Exception ignored) {
+            }
+        });
+        var readerB = CompletableFuture.runAsync(() -> {
+            try (var br = new BufferedReader(new InputStreamReader(isB))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (!line.isBlank()) linesB.add(line);
+                }
+            } catch (Exception ignored) {
+            }
+        });
+
+        Thread.sleep(500); // let the ChangeStreamWorker enter its forEach loop
+
+        Unirest.post(TEST_COLL)
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"tenantId\": \"tenant-A\", \"msg\": \"for-A\"}")
+                .asEmpty();
+
+        Thread.sleep(1_500);
+
+        Unirest.post(TEST_COLL)
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"tenantId\": \"tenant-B\", \"msg\": \"for-B\"}")
+                .asEmpty();
+
+        Thread.sleep(1_500);
+
+        isA.close();
+        isB.close();
+        readerA.get(2, TimeUnit.SECONDS);
+        readerB.get(2, TimeUnit.SECONDS);
+
+        assertTrue(linesA.stream().anyMatch(l -> l.contains("tenant-A")),
+                "Client-A must receive the tenant-A insert event; got: " + linesA);
+        assertFalse(linesA.stream().anyMatch(l -> l.contains("tenant-B")),
+                "Client-A must NOT receive the tenant-B event; got: " + linesA);
+        assertTrue(linesB.stream().anyMatch(l -> l.contains("tenant-B")),
+                "Client-B must receive the tenant-B insert event; got: " + linesB);
         assertFalse(linesB.stream().anyMatch(l -> l.contains("tenant-A")),
                 "Client-B must NOT receive the tenant-A event; got: " + linesB);
     }

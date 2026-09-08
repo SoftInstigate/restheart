@@ -79,8 +79,20 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     private final AggregationPipelineSecurityChecker securityChecker;
 
     public static final AttachmentKey<BsonDocument> AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
+    /**
+     * The avars that identify the cursor: {@link #AVARS_ATTACHMENT_KEY} minus the variable
+     * bound per-client by {@code notify_when}.
+     *
+     * <p>A variable used by {@code notify_when} selects which events a session receives, not
+     * which cursor serves it: every client of the stream is served by the same shared cursor
+     * and the predicate is applied per session at dispatch time. Leaving it in the
+     * {@link ChangeStreamWorkerKey} would give each distinct value its own worker — one
+     * MongoDB cursor, and one connection from the pool, per client — which is precisely what
+     * {@code notify_when} exists to avoid.
+     */
+    public static final AttachmentKey<BsonDocument> KEY_AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
     public static final AttachmentKey<JsonMode> JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
-    /** Bound query-parameter variables for {@code notify_when} filtering, keyed by variable name. */
+    /** Bound variables for {@code notify_when} filtering, keyed by variable name. */
     public static final AttachmentKey<Map<String, String>> BOUND_VARS_EXCHANGE_KEY = AttachmentKey.create(Map.class);
 
     private static final HttpHandler WEBSOCKET_HANDLER = Handlers.websocket((exchange, channel) -> {
@@ -123,31 +135,19 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             // Resolve the stream operation early — needed for notify_when and bound vars
             var operation = findOperation(request);
             var evaluator = NotifyWhenEvaluator.from(operation.getNotifyWhen());
-            var boundVars = extractBoundVars(exchange, evaluator);
+            var boundVars = extractBoundVars(exchange, request, evaluator);
             exchange.putAttachment(BOUND_VARS_EXCHANGE_KEY, boundVars);
 
             if (isWebSocketHandshakeRequest(exchange)) {
                 exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, request.getJsonMode());
-
-                var _avars = request.getAggregationVars();
-                if (_avars == null) {
-                    _avars = new BsonDocument();
-                }
-                StagesInterpolator.injectAvars(request, _avars);
-                exchange.putAttachment(AVARS_ATTACHMENT_KEY, _avars);
+                injectAvarsAttachments(exchange, request, evaluator);
 
                 initChangeStreamWorker(exchange, null, evaluator);
                 WEBSOCKET_HANDLER.handleRequest(exchange);
 
             } else if (isSseRequest(exchange)) {
                 exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, request.getJsonMode());
-
-                var _avars = request.getAggregationVars();
-                if (_avars == null) {
-                    _avars = new BsonDocument();
-                }
-                StagesInterpolator.injectAvars(request, _avars);
-                exchange.putAttachment(AVARS_ATTACHMENT_KEY, _avars);
+                injectAvarsAttachments(exchange, request, evaluator);
 
                 // Last-Event-ID is not supported when notify_when is defined
                 BsonDocument resumeToken = null;
@@ -289,16 +289,58 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     }
 
     /**
-     * Extracts the single query-parameter variable required by the {@code notify_when}
-     * evaluator. Returns an empty map when {@code evaluator} is {@code null} or the
-     * parameter is absent.
+     * Extracts the single variable required by the {@code notify_when} evaluator. Returns an
+     * empty map when {@code evaluator} is {@code null} or the variable is not bound.
+     *
+     * <p>The variable is an ordinary aggregation variable, so both binding forms work:
+     * {@code ?tid=acme} and {@code ?avars={"tid":"acme"}}. The raw query parameter wins when
+     * both are present, and only a string avar is used: {@code notify_when} compares strings,
+     * and an avar goes through JSON parsing (so {@code ?avars={"tid":42}} is a number), while
+     * the raw query parameter is always the verbatim value the client sent.
      */
-    private static Map<String, String> extractBoundVars(HttpServerExchange exchange, NotifyWhenEvaluator evaluator) {
+    private static Map<String, String> extractBoundVars(HttpServerExchange exchange, MongoRequest request, NotifyWhenEvaluator evaluator) {
         if (evaluator == null) return Map.of();
         var varName = evaluator.getVarName();
+
         var params = exchange.getQueryParameters().get(varName);
-        if (params == null || params.isEmpty()) return Map.of();
-        return Map.of(varName, params.getFirst());
+        if (params != null && !params.isEmpty()) {
+            return Map.of(varName, params.getFirst());
+        }
+
+        var avars = request.getAggregationVars();
+        if (avars != null && avars.containsKey(varName) && avars.get(varName).isString()) {
+            return Map.of(varName, avars.getString(varName).getValue());
+        }
+
+        return Map.of();
+    }
+
+    /**
+     * Resolves the aggregation variables of the request and attaches them, both as they are
+     * (for stage interpolation) and stripped of the {@code notify_when} variable
+     * (for the {@link ChangeStreamWorkerKey} — see {@link #KEY_AVARS_ATTACHMENT_KEY}).
+     */
+    private static void injectAvarsAttachments(HttpServerExchange exchange, MongoRequest request, NotifyWhenEvaluator evaluator) {
+        var avars = request.getAggregationVars();
+        if (avars == null) {
+            avars = new BsonDocument();
+        }
+        StagesInterpolator.injectAvars(request, avars);
+
+        exchange.putAttachment(AVARS_ATTACHMENT_KEY, avars);
+        exchange.putAttachment(KEY_AVARS_ATTACHMENT_KEY, keyAvars(avars, evaluator));
+    }
+
+    /** The avars minus the {@code notify_when} variable, or the avars themselves when it is not bound. */
+    static BsonDocument keyAvars(BsonDocument avars, NotifyWhenEvaluator evaluator) {
+        if (evaluator == null || !avars.containsKey(evaluator.getVarName())) {
+            return avars;
+        }
+
+        var ret = new BsonDocument();
+        ret.putAll(avars);
+        ret.remove(evaluator.getVarName());
+        return ret;
     }
 
     /**

@@ -59,15 +59,28 @@ public class ChangeStreamWorkerKey {
             this.url = encode(exchange.getRequestURI());
         }
 
-        this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
+        this.avars = keyAvars(exchange.getAttachment(GetChangeStreamHandler.KEY_AVARS_ATTACHMENT_KEY),
+                exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY));
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
     }
 
     public ChangeStreamWorkerKey(HttpServerExchange exchange) {
         this.url = encode(exchange.getRequestPath());
 
-        this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
+        this.avars = keyAvars(exchange.getAttachment(GetChangeStreamHandler.KEY_AVARS_ATTACHMENT_KEY),
+                exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY));
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
+    }
+
+    /**
+     * The avars that identify the cursor. This is
+     * {@link GetChangeStreamHandler#KEY_AVARS_ATTACHMENT_KEY} — the request avars without the
+     * variable bound per-client by {@code notify_when}, so that clients differing only by that
+     * variable share one worker, hence one MongoDB cursor. Falls back to the full avars, which
+     * is what a stream without {@code notify_when} attaches anyway.
+     */
+    private static BsonDocument keyAvars(BsonDocument keyAvars, BsonDocument avars) {
+        return keyAvars != null ? keyAvars : avars;
     }
 
     @Override
