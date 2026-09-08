@@ -47,7 +47,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -79,7 +81,8 @@ import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
  */
 public class MqttMessageRouterTest {
 
-    private static Method privateMethod(String name, Class<?>... parameterTypes) throws Exception {
+    private static Method privateMethod(String name, Class<?>... parameterTypes)
+        throws NoSuchMethodException {
         Method method = MqttMessageRouter.class.getDeclaredMethod(name, parameterTypes);
         method.setAccessible(true);
         return method;
@@ -184,7 +187,7 @@ public class MqttMessageRouterTest {
     }
 
     @Test
-    void testFanoutOrderingAndDispatch() throws Exception {
+    void testFanoutOrderingAndDispatch() throws ReflectiveOperationException {
         // We will simulate `dispatchMessage` and verify listeners are called in order.
         List<String> invocationOrder = new ArrayList<>();
 
@@ -214,7 +217,8 @@ public class MqttMessageRouterTest {
     // --- A1: no duplicate fanout on overlapping topic filters (the regression test for the whole task) ---
 
     @Test
-    void testOverlappingFiltersDeliverReceivedMessageExactlyOnceToEachListener() throws Exception {
+    void testOverlappingFiltersDeliverReceivedMessageExactlyOnceToEachListener()
+        throws ReflectiveOperationException, InterruptedException {
         Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
         MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
 
@@ -252,7 +256,7 @@ public class MqttMessageRouterTest {
     // --- A9: token-bucket rate limiter ---
 
     @Test
-    void testRateLimitAdmitsExactlyConfiguredCountPerWindow() throws Exception {
+    void testRateLimitAdmitsExactlyConfiguredCountPerWindow() throws ReflectiveOperationException {
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 3, true, 1000);
         Method checkRateLimit = privateMethod("checkRateLimit");
 
@@ -264,7 +268,7 @@ public class MqttMessageRouterTest {
     }
 
     @Test
-    void testRateLimitRefillsOverTime() throws Exception {
+    void testRateLimitRefillsOverTime() throws ReflectiveOperationException, InterruptedException {
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 2, true, 1000);
         Method checkRateLimit = privateMethod("checkRateLimit");
 
@@ -278,7 +282,7 @@ public class MqttMessageRouterTest {
     }
 
     @Test
-    void testRateLimitDisabledWhenMaxMessagesPerSecondIsNonPositive() throws Exception {
+    void testRateLimitDisabledWhenMaxMessagesPerSecondIsNonPositive() throws ReflectiveOperationException {
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 0, true, 1000);
         Method checkRateLimit = privateMethod("checkRateLimit");
 
@@ -367,7 +371,7 @@ public class MqttMessageRouterTest {
     // --- A4: last-message cache ---
 
     @Test
-    void testGetLastMessageKeepsExactTopicSemantics() throws Exception {
+    void testGetLastMessageKeepsExactTopicSemantics() throws ReflectiveOperationException {
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 1000);
 
         Method updateCache = privateMethod("updateCache", MqttMessage.class);
@@ -384,7 +388,7 @@ public class MqttMessageRouterTest {
     }
 
     @Test
-    void testGetLastMessagesMatchesWildcardFilterOrderedByReceivedAt() throws Exception {
+    void testGetLastMessagesMatchesWildcardFilterOrderedByReceivedAt() throws ReflectiveOperationException {
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 1000);
         Method updateCache = privateMethod("updateCache", MqttMessage.class);
 
@@ -407,7 +411,7 @@ public class MqttMessageRouterTest {
     }
 
     @Test
-    void testCacheEvictsLeastRecentlyUsedEntryAtCapacity() throws Exception {
+    void testCacheEvictsLeastRecentlyUsedEntryAtCapacity() throws ReflectiveOperationException {
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 2);
         Method updateCache = privateMethod("updateCache", MqttMessage.class);
 
@@ -427,7 +431,8 @@ public class MqttMessageRouterTest {
     }
 
     @Test
-    void testConcurrentCacheUpdatesDoNotExceedCapacityOrThrow() throws Exception {
+    void testConcurrentCacheUpdatesDoNotExceedCapacityOrThrow()
+        throws InterruptedException, ExecutionException, TimeoutException, NoSuchMethodException {
         int capacity = 50;
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, capacity);
         Method updateCache = privateMethod("updateCache", MqttMessage.class);
