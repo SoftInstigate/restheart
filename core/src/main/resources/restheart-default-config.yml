@@ -898,10 +898,18 @@ mcpService:
   # consistency for a bounded staleness window — see the "catalog cache" section of the docs.
   catalog-ttl-seconds: 300
 
+  # How often at most a client subscribed to a resource is told it changed
+  # (notifications/resources/updated). The notification carries no payload — it means "re-read" —
+  # so a subscriber already told once learns nothing from being told again before it reads, and a
+  # busy collection would otherwise turn every write into a message. The first change in a quiet
+  # period is sent immediately; further ones are collapsed into a single notification per interval.
+  subscription-notify-interval-seconds: 5
+
   # Enables the MCP "resources" primitive (resources/list, resources/read,
-  # resources/templates/list) in addition to the list_apis/how_to_call tools — the official MCP
-  # SDK manages resources as a single server-wide registry, not per-request, so it needs one
-  # canonical externally-visible URL rather than whatever a given request's Host header says.
+  # resources/templates/list, resources/subscribe) in addition to the list_apis/how_to_call
+  # tools — the official MCP SDK manages resources as a single server-wide registry, not
+  # per-request, so it needs one canonical externally-visible URL rather than whatever a given
+  # request's Host header says.
   # Defaults to the standard local setup; override to your real public URL for any other
   # deployment (a reverse proxy, a custom host/port, ...). Comment out to disable the resources
   # primitive entirely (list_apis/how_to_call keep working regardless).
