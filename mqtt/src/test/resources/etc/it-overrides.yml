@@ -51,6 +51,12 @@
     qos: 1
 
 /mqtt-sse/enabled: true
+# Set explicitly, and deliberately OUTSIDE the acl below. A request that names no ?topic= is
+# still subscribed by mqtt-sse - to this filter - so it is a request that must be authorized like
+# any other. Leaving default-topic at its built-in "sensors/#" would make that case indistinguish-
+# able from an allowed one, and the hole where the authorizer skipped it entirely would go on
+# passing. Every other IT names its topic explicitly, so nothing else is affected.
+/mqtt-sse/default-topic: "alarms/#"
 /mqtt-rest/enabled: true
 
 # mqtt-topic-authorizer is the one module plugin left enabled by default, and it fails closed:

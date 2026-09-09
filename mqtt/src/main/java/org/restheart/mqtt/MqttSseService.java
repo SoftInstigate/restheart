@@ -118,12 +118,24 @@ public class MqttSseService implements SseService {
 
     private List<PipelineSpec> pipelineSpecs = List.of();
 
+    /**
+     * The topic filter a connection gets when it names none, i.e. the {@code default-topic}
+     * default.
+     * <p>
+     * Package-visible on purpose: {@link MqttTopicAuthorizer} has to authorize the filter this
+     * service will <em>actually</em> subscribe to, which for a request with no {@code topic}
+     * parameter is this one. Two private copies of the literal would drift, and the drift would
+     * be a silent authorization hole rather than a visible bug.
+     * </p>
+     */
+    static final String DEFAULT_TOPIC = "sensors/#";
+
     /** Number of currently open connections, keyed by the requested topic filter. */
     private final Map<String, AtomicInteger> connectionsPerTopic = new ConcurrentHashMap<>();
 
     @OnInit
     public void init() {
-        defaultTopic = argOrDefault(config, "default-topic", "sensors/#");
+        defaultTopic = argOrDefault(config, "default-topic", DEFAULT_TOPIC);
         defaultQos = argOrDefault(config, "default-qos", 1);
         validateQos("default-qos", defaultQos);
         perConnectionQueueCapacity = argOrDefault(config, "per-connection-queue-capacity", 256);

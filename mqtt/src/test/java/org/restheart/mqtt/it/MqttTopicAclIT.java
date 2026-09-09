@@ -119,4 +119,28 @@ public class MqttTopicAclIT extends MqttITBase {
                 + logs);
     }
 
+    @Test
+    void requestNamingNoTopicIsAuthorizedAgainstTheDefaultTopic() throws Exception {
+        // No ?topic= at all. mqtt-sse does not reject such a request - it substitutes its
+        // configured default-topic and subscribes - so it must be authorized against THAT filter.
+        // it-overrides.yml sets default-topic to "alarms/#", outside the admin role's only grant,
+        // so the correct answer is 403.
+        //
+        // This is a regression test for a real fail-open: the authorizer used to return without
+        // deciding anything whenever the request carried no topic parameter, on the assumption
+        // that the service would reject it. The result was that GET /mqtt-sse with no topic
+        // subscribed the caller to default-topic with the ACL never consulted - and with an empty
+        // ACL, documented as denying everything, still let it through.
+        var req = authedRequest("/mqtt-sse").build();
+
+        var resp = httpClient().send(req, BodyHandlers.ofString());
+
+        assertEquals(403, resp.statusCode(),
+            "a request naming no topic is still subscribed to default-topic, so it must be "
+                + "authorized against it; got body: " + resp.body());
+        assertTrue(resp.body().contains("alarms/#"),
+            "the denial must name the filter actually being refused - the default topic, not the "
+                + "absent parameter; got: " + resp.body());
+    }
+
 }

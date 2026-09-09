@@ -25,7 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -73,6 +75,20 @@ public class MqttTopicAuthorizerTest {
         Field configField = MqttTopicAuthorizer.class.getDeclaredField("config");
         configField.setAccessible(true);
         configField.set(authorizer, config);
+    }
+
+    /**
+     * Injects the full RESTHeart configuration the authorizer reads {@code mqtt-sse}'s
+     * {@code default-topic} from. Tests that do not call this leave it null, which makes the
+     * authorizer fall back to {@link MqttSseService#DEFAULT_TOPIC} - the same thing that happens
+     * on a server where mqtt-sse is left on its own defaults.
+     */
+    private void injectRhConfig(Map<String, Object> confMap) throws Exception {
+        var configuration = mock(org.restheart.configuration.Configuration.class);
+        when(configuration.toMap()).thenReturn(confMap);
+        Field field = MqttTopicAuthorizer.class.getDeclaredField("rhConfig");
+        field.setAccessible(true);
+        field.set(authorizer, configuration);
     }
 
     @SuppressWarnings("unchecked")
@@ -531,5 +547,88 @@ public class MqttTopicAuthorizerTest {
         ServiceResponse<?> response = mock(ServiceResponse.class);
 
         assertFalse(authorizer.resolve(request, response));
+    }
+
+    // --- A request that names no topic still subscribes to one ---
+    //
+    // These cover the hole that let /mqtt-sse be reached unchecked: the authorizer used to return
+    // without deciding anything when the request carried no "topic" parameter, on the assumption
+    // that the service would reject it. MqttSseService does not - it substitutes default-topic and
+    // subscribes. Nothing in this class exercised a request without a topic, which is why it went
+    // unnoticed.
+
+    @Test
+    @DisplayName("no ?topic= on /mqtt-sse is denied when the default topic is not granted")
+    void testMissingTopicOnSseIsDeniedWhenDefaultNotGranted() throws Exception {
+        injectConfig(Map.of("acl", Map.of("admin", List.of("alarms/#"))));
+        authorizer.init();
+
+        ServiceRequest<?> request = requestWithTopic(null, accountWithRoles("admin"));
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        authorizer.handle(request, response);
+
+        // sensors/# is what the connection would actually be subscribed to, and this ACL grants
+        // only alarms/#, so it must be refused - not waved through for naming nothing.
+        verify(response).setInError(eq(HttpStatus.SC_FORBIDDEN), contains("sensors/#"));
+    }
+
+    @Test
+    @DisplayName("no ?topic= on /mqtt-sse is allowed when the default topic IS granted")
+    void testMissingTopicOnSseIsAllowedWhenDefaultGranted() throws Exception {
+        injectConfig(Map.of("acl", Map.of("admin", List.of("sensors/#"))));
+        authorizer.init();
+
+        ServiceRequest<?> request = requestWithTopic(null, accountWithRoles("admin"));
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        authorizer.handle(request, response);
+
+        // default-topic must keep working: closing the hole must not quietly remove the feature.
+        verify(response, never()).setInError(anyInt(), anyString());
+    }
+
+    @Test
+    @DisplayName("the configured mqtt-sse default-topic is the one authorized, not the built-in")
+    void testMissingTopicUsesConfiguredDefaultTopic() throws Exception {
+        injectConfig(Map.of("acl", Map.of("admin", List.of("sensors/#"))));
+        injectRhConfig(Map.of("mqtt-sse", Map.of("default-topic", "alarms/#")));
+        authorizer.init();
+
+        ServiceRequest<?> request = requestWithTopic(null, accountWithRoles("admin"));
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        authorizer.handle(request, response);
+
+        // The grant is on sensors/#, but this server's mqtt-sse subscribes unnamed connections to
+        // alarms/# - so that is what has to be checked. Reading the built-in default here instead
+        // would authorize a filter the service never uses.
+        verify(response).setInError(eq(HttpStatus.SC_FORBIDDEN), contains("alarms/#"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("no ?topic= on /mqtt is left alone: that service answers 400 and never subscribes")
+    void testMissingTopicOnRestIsNotDecided() throws Exception {
+        injectConfig(Map.of("acl", Map.of("admin", List.of("alarms/#"))));
+        authorizer.init();
+
+        // Built before the stubbing below, not inside it: accountWithRoles builds a mock of its
+        // own, and Mockito reads a nested mock() inside an in-progress when(...) as unfinished
+        // stubbing.
+        var account = accountWithRoles("admin");
+
+        ServiceRequest<Object> request = mock(ServiceRequest.class);
+        doReturn(new HashMap<String, java.util.Deque<String>>()).when(request).getQueryParameters();
+        when(request.getPath()).thenReturn("/mqtt");
+        when(request.getAuthenticatedAccount()).thenReturn(account);
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        authorizer.handle(request, response);
+
+        // MqttRestService answers 400 for a missing topic and reads only a cache, so there is no
+        // filter to authorize and nothing that could be subscribed unchecked. Turning this into a
+        // 403 would replace an accurate error with a misleading one.
+        verify(response, never()).setInError(anyInt(), anyString());
     }
 }

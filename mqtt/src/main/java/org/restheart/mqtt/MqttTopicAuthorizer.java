@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.Inject;
@@ -101,7 +102,18 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
     @Inject("config")
     private Map<String, Object> config;
 
+    /**
+     * The whole RESTHeart configuration, needed to read a <em>different</em> plugin's setting:
+     * {@code mqtt-sse}'s {@code default-topic}. See {@link #effectiveTopicFilter} for why this
+     * interceptor cannot do its job while knowing only its own configuration.
+     */
+    @Inject("rh-config")
+    private Configuration rhConfig;
+
     private Map<String, List<String>> acl;
+
+    /** The filter {@code mqtt-sse} subscribes a connection to when the request names none. */
+    private String sseDefaultTopic = MqttSseService.DEFAULT_TOPIC;
 
     @OnInit
     public void init() {
@@ -114,6 +126,8 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
         if (acl == null) {
             acl = Map.of();
         }
+
+        sseDefaultTopic = resolveSseDefaultTopic();
         // An empty ACL is the resting state of a RESTHeart that ships this module and never
         // arms it, so announcing it at INFO would greet every operator with a line about a
         // feature they are not using. With entries configured, someone is using it and the
@@ -203,9 +217,11 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
 
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
-        String topicFilter = extractTopic(request);
+        String topicFilter = effectiveTopicFilter(request);
 
-        // No topic in query string — let the service handle it
+        // Only reachable for /mqtt, which never subscribes to anything: MqttRestService answers
+        // 400 when the topic parameter is missing, so there is no filter to authorize and nothing
+        // that could be reached unchecked.
         if (topicFilter == null || topicFilter.isEmpty()) {
             return;
         }
@@ -233,6 +249,54 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
             LOGGER.debug("Topic '{}' denied for account '{}'", topicFilter, account.getPrincipal().getName());
             response.setInError(HttpStatus.SC_FORBIDDEN, "Not authorized for topic: " + topicFilter);
         }
+    }
+
+    /**
+     * The topic filter this request will <em>actually</em> subscribe to, which is what has to be
+     * authorized - not merely the one it named.
+     * <p>
+     * This used to return early whenever the request carried no {@code topic} parameter, on the
+     * reasoning that the service would reject it. {@code MqttRestService} does, with a 400. But
+     * {@link MqttSseService#resolveTopicFilter} does not: it substitutes its configured
+     * {@code default-topic}. So {@code GET /mqtt-sse} with no {@code topic} subscribed the caller
+     * to that filter - {@code sensors/#} out of the box - with the ACL never consulted, and with
+     * an empty ACL, which is documented as denying everything, still letting it through. An
+     * interceptor that authorizes a different value from the one the service uses is not an
+     * authorizer.
+     * </p>
+     *
+     * @param request the request being authorized
+     * @return the filter to authorize, or {@code null} when there is none and none is implied
+     */
+    private String effectiveTopicFilter(ServiceRequest<?> request) {
+        var named = extractTopic(request);
+        if (named != null && !named.isEmpty()) {
+            return named;
+        }
+        return matchesBase(request.getPath(), "/mqtt-sse") ? sseDefaultTopic : null;
+    }
+
+    /**
+     * Reads {@code mqtt-sse}'s {@code default-topic} out of the full configuration, falling back
+     * to {@link MqttSseService#DEFAULT_TOPIC} - the same default that service itself applies - so
+     * the two can never disagree about what an unnamed filter means.
+     *
+     * @return the configured default topic, never {@code null}
+     */
+    private String resolveSseDefaultTopic() {
+        try {
+            var sseBlock = rhConfig == null ? null : rhConfig.toMap().get("mqtt-sse");
+            if (sseBlock instanceof Map<?, ?> block && block.get("default-topic") instanceof String s
+                    && !s.isBlank()) {
+                return s;
+            }
+        } catch (Exception e) {
+            // A sentinel that takes the server down is worse than one that falls back to the
+            // documented default - which is also what mqtt-sse will use if its own read fails.
+            LOGGER.debug("Could not read mqtt-sse.default-topic; falling back to {}",
+                MqttSseService.DEFAULT_TOPIC, e);
+        }
+        return MqttSseService.DEFAULT_TOPIC;
     }
 
     /**
