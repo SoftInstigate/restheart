@@ -350,12 +350,26 @@ public class MqttSseService implements SseService {
             return true; // unlimited
         }
 
-        AtomicInteger counter = connectionsPerTopic.computeIfAbsent(topicFilter, _ -> new AtomicInteger());
-        if (counter.incrementAndGet() > maxConnectionsPerTopic) {
-            counter.decrementAndGet();
-            return false;
-        }
-        return true;
+        // The whole decision happens inside compute(), under the same per-key lock
+        // releaseConnectionSlot uses. Incrementing outside it would race with the eviction of a
+        // now-idle counter there: the entry could be removed between this thread obtaining the
+        // counter and incrementing it, leaving a live connection accounted for on an object no
+        // longer in the map - and its later release decrementing a different one.
+        //
+        // maxConnectionsPerTopic is >= 1 by the guard above, so a freshly created counter always
+        // accepts and no zero-valued entry is ever left behind on the rejection path.
+        var accepted = new boolean[1];
+        connectionsPerTopic.compute(topicFilter, (k, existing) -> {
+            var counter = existing == null ? new AtomicInteger() : existing;
+            if (counter.get() >= maxConnectionsPerTopic) {
+                accepted[0] = false;
+                return counter;
+            }
+            counter.incrementAndGet();
+            accepted[0] = true;
+            return counter;
+        });
+        return accepted[0];
     }
 
     /**
@@ -369,10 +383,23 @@ public class MqttSseService implements SseService {
         if (maxConnectionsPerTopic <= 0) {
             return;
         }
-        AtomicInteger counter = connectionsPerTopic.get(topicFilter);
-        if (counter != null) {
-            counter.decrementAndGet();
-        }
+        // compute(), so the decrement and the eviction of a now-idle counter are one atomic step
+        // under the map's per-key lock. Left to grow, this map accumulated one permanent entry
+        // per distinct topic filter ever connected on - and the filters come from clients, so a
+        // caller authorized for sensors/# could add entries without bound by connecting on
+        // sensors/1, sensors/2 and so on. That it only bit when max-connections-per-topic was
+        // set made it worse, not better: that is precisely when an operator is trying to cap
+        // resource use.
+        //
+        // A plain decrementAndGet() followed by remove() would not do: between the two, a
+        // concurrent tryAcquireConnectionSlot could take the same counter back up to 1 and then
+        // have its entry removed underneath it, losing the accounting for a live connection.
+        connectionsPerTopic.compute(topicFilter, (k, counter) -> {
+            if (counter == null) {
+                return null;
+            }
+            return counter.decrementAndGet() <= 0 ? null : counter;
+        });
     }
 
     /**

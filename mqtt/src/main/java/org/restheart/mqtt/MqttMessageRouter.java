@@ -93,6 +93,17 @@ public class MqttMessageRouter {
     private final Map<String, MqttMessage> lastMessageCache;
 
     // Rate limiting: token bucket
+    /**
+     * Guards {@link #availableTokens} and {@link #lastRefillNanos}.
+     * <p>
+     * A private object rather than {@code this}: this router is handed to third-party plugins
+     * through the {@code mqtt-router} provider, so its own monitor is reachable by code outside
+     * this module. Synchronizing on {@code this} would let any such plugin hold the lock that
+     * every incoming message has to take, and stall message dispatch entirely.
+     * </p>
+     */
+    private final Object rateLimitLock = new Object();
+
     private double availableTokens;
     private long lastRefillNanos = System.nanoTime();
     private final AtomicLong messagesReceivedCount = new AtomicLong(0);
@@ -176,12 +187,22 @@ public class MqttMessageRouter {
      * @param listener    the callback invoked with each {@link MqttMessage} matching the filter
      */
     public void subscribe(String topicFilter, Qos qos, Consumer<MqttMessage> listener) {
-        listeners.computeIfAbsent(topicFilter, k -> new CopyOnWriteArrayList<>()).add(listener);
+        // compute(), not computeIfAbsent(...).add(...): the add has to happen while the map still
+        // holds the key, under the same per-key lock unsubscribe uses. Otherwise a concurrent
+        // unsubscribe of the last listener can drop this brand-new one - see unsubscribe.
+        var total = new int[1];
+        listeners.compute(topicFilter, (k, existing) -> {
+            var list = existing == null ? new CopyOnWriteArrayList<Consumer<MqttMessage>>() : existing;
+            list.add(listener);
+            total[0] = list.size();
+            return list;
+        });
 
+        // Outside the compute: this talks to the broker, and ConcurrentHashMap's own contract
+        // forbids long or blocking work inside a remapping function.
         ensureBrokerSubscription(topicFilter, qos);
 
-        LOGGER.debug("Added listener for topic filter: {}, total listeners: {}",
-            topicFilter, listeners.get(topicFilter).size());
+        LOGGER.debug("Added listener for topic filter: {}, total listeners: {}", topicFilter, total[0]);
     }
 
     /**
@@ -238,24 +259,41 @@ public class MqttMessageRouter {
      * @param listener    the listener instance to remove
      */
     public void unsubscribe(String topicFilter, Consumer<MqttMessage> listener) {
-        List<Consumer<MqttMessage>> topicListeners = listeners.get(topicFilter);
-        if (topicListeners != null) {
-            topicListeners.remove(listener);
-
-            if (topicListeners.isEmpty()) {
-                listeners.remove(topicFilter, topicListeners);
-
-                if (!configuredFilters.contains(topicFilter)) {
-                    synchronized (filterQos) {
-                        filterQos.remove(topicFilter);
-                    }
-                    unsubscribeFromBroker(topicFilter);
-                }
+        // The removal, the emptiness test and the map eviction are one atomic step, under the
+        // map's per-key lock.
+        //
+        // Doing them separately was a race that silently lost subscribers: with the last listener
+        // removed and the list observed empty, a concurrent subscribe() would take the SAME list
+        // object out of the map and add to it - and the two-argument remove(key, value) that
+        // followed still matched, because it compares the current mapped value with the one
+        // passed and they are the same object, whatever it now contains. The new listener was
+        // evicted along with the broker subscription, while its owner believed it was subscribed
+        // and simply never received anything. Two SSE clients opening and closing on one topic
+        // filter is enough to hit it.
+        var remaining = new int[] { -1 };
+        listeners.compute(topicFilter, (k, list) -> {
+            if (list == null) {
+                return null;
             }
+            list.remove(listener);
+            remaining[0] = list.size();
+            return list.isEmpty() ? null : list;
+        });
 
-            LOGGER.debug("Removed listener for topic filter: {}, remaining: {}",
-                topicFilter, topicListeners.size());
+        if (remaining[0] < 0) {
+            return; // nothing was registered for this filter
         }
+
+        // Outside the compute, for the same reason as in subscribe: unsubscribeFromBroker talks
+        // to the broker, and must not run inside a remapping function.
+        if (remaining[0] == 0 && !configuredFilters.contains(topicFilter)) {
+            synchronized (filterQos) {
+                filterQos.remove(topicFilter);
+            }
+            unsubscribeFromBroker(topicFilter);
+        }
+
+        LOGGER.debug("Removed listener for topic filter: {}, remaining: {}", topicFilter, remaining[0]);
     }
 
     /**
@@ -410,7 +448,18 @@ public class MqttMessageRouter {
      *         disabled because {@code maxMessagePerSecond <= 0}), {@code false} if it should be
      *         dropped
      */
-    private synchronized boolean checkRateLimit() {
+    private boolean checkRateLimit() {
+        synchronized (rateLimitLock) {
+            return checkRateLimitLocked();
+        }
+    }
+
+    /**
+     * The token-bucket step itself. Must only be called while holding {@link #rateLimitLock}.
+     *
+     * @return {@code true} if a token was available and has been consumed
+     */
+    private boolean checkRateLimitLocked() {
         if (maxMessagePerSecond <= 0) {
             return true; // No limit
         }

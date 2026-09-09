@@ -470,4 +470,68 @@ public class MqttMessageRouterTest {
         assertTrue(router.getStats().getCachedMessages() <= capacity,
             "the cache must never exceed its configured capacity under concurrent updates");
     }
+    @Test
+    void testConcurrentSubscribeIsNotLostByAnUnsubscribeOfTheLastListener()
+        throws InterruptedException, ExecutionException, TimeoutException {
+        // Regression test. subscribe() and unsubscribe() used to mutate the listener list and the
+        // map that holds it as separate steps: unsubscribe removed the last listener, saw the
+        // list was empty, and then called listeners.remove(filter, list). A subscribe() landing
+        // in that window took the SAME list object back out of the map and added to it - and the
+        // two-argument remove still matched, because it compares the mapped value with the one
+        // passed and they are the same object whatever it now contains. The new listener was
+        // evicted along with the broker subscription, and its owner never learned: it simply
+        // received nothing, forever. Two SSE clients opening and closing on one topic filter is
+        // enough to reach it.
+        //
+        // The assertion is on the router's own observable state rather than on internals: after
+        // each round exactly one listener - the newly subscribed one - must still be registered.
+        var router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 100);
+        var topic = "sensors/race";
+
+        var executor = Executors.newFixedThreadPool(2);
+        var failure = new AtomicReference<Throwable>();
+        try {
+            for (int round = 0; round < 500 && failure.get() == null; round++) {
+                Consumer<MqttMessage> leaving = msg -> { };
+                Consumer<MqttMessage> arriving = msg -> { };
+                router.subscribe(topic, Qos.AT_LEAST_ONCE, leaving);
+
+                var start = new CountDownLatch(1);
+                var unsubscribing = executor.submit(() -> {
+                    await(start, failure);
+                    router.unsubscribe(topic, leaving);
+                });
+                var subscribing = executor.submit(() -> {
+                    await(start, failure);
+                    router.subscribe(topic, Qos.AT_LEAST_ONCE, arriving);
+                });
+
+                start.countDown();
+                unsubscribing.get(10, TimeUnit.SECONDS);
+                subscribing.get(10, TimeUnit.SECONDS);
+
+                assertEquals(1, router.getStats().getTotalListeners(),
+                    "a subscribe concurrent with the unsubscribe of the last listener must survive "
+                        + "it; round " + round);
+
+                router.unsubscribe(topic, arriving);
+                assertEquals(0, router.getStats().getTotalListeners(),
+                    "the filter must be left clean between rounds; round " + round);
+            }
+        } finally {
+            executor.shutdown();
+        }
+
+        assertNull(failure.get(), "no round may throw");
+    }
+
+    private static void await(CountDownLatch latch, AtomicReference<Throwable> failure) {
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            failure.set(e);
+        }
+    }
+
 }
