@@ -41,6 +41,7 @@ import org.restheart.plugins.Service;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.security.authorizers.DescriptorAuthorizationImpl;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.utils.BsonUtils;
@@ -278,56 +279,23 @@ public class AuthorizersHandler extends PipelinedHandler {
             return true;
         }
 
-        var descriptorAuthorizers = authorizers.stream()
-                .filter(PluginRecord::isEnabled)
-                .map(PluginRecord::getInstance)
-                .filter(DescriptorAwareAuthorizer.class::isInstance)
-                .map(DescriptorAwareAuthorizer.class::cast)
-                .toList();
-
-        if (descriptorAuthorizers.isEmpty()) {
-            LOGGER.debug("No DescriptorAwareAuthorizer configured — denying {} operation(s) to authorize for service '{}'",
-                    descriptors.size(), PluginUtils.name(service));
-            return false;
-        }
-
-        var vetoers = descriptorAuthorizers.stream().filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER).toList();
-        var allowers = descriptorAuthorizers.stream().filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER).toList();
+        // The rule lives in DescriptorAuthorizationImpl, which the "descriptor-authorization"
+        // provider also hands to plugins: the MCP server applies the same one per catalog entry to
+        // leave out of a listing what the caller could not read. A second copy of a security rule
+        // is a boundary that can drift without anything saying so.
+        var authorization = new DescriptorAuthorizationImpl(authorizers);
 
         var decisions = new ArrayList<Decision>(descriptors.size());
 
         for (var descriptor : descriptors) {
-            for (var vetoer : vetoers) {
-                try {
-                    if (!vetoer.decide(descriptor).allowed()) {
-                        return false;
-                    }
-                } catch (Exception ex) {
-                    LOGGER.error("Error in VETOER {} evaluating a RequestDescriptor for service '{}'",
-                            PluginUtils.name(vetoer), PluginUtils.name(service), ex);
-                    return false;
-                }
-            }
+            var decision = authorization.decide(descriptor);
 
-            Decision granted = null;
-            for (var allower : allowers) {
-                try {
-                    var decision = allower.decide(descriptor);
-                    if (decision.allowed()) {
-                        granted = decision;
-                        break;
-                    }
-                } catch (Exception ex) {
-                    LOGGER.error("Error in ALLOWER {} evaluating a RequestDescriptor for service '{}'",
-                            PluginUtils.name(allower), PluginUtils.name(service), ex);
-                }
-            }
-
-            if (granted == null) {
+            if (!decision.allowed()) {
+                LOGGER.debug("Denied a RequestDescriptor for service '{}'", PluginUtils.name(service));
                 return false;
             }
 
-            decisions.add(granted);
+            decisions.add(decision);
         }
 
         // Attached only once every descriptor is allowed, so a service can never read a decision
