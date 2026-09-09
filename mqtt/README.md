@@ -2,11 +2,11 @@
 
 Bridges an external MQTT broker into RESTHeart: incoming topic messages become Server-Sent Events, REST responses, MongoDB documents, or input to your own plugins.
 
-The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX, AWS IoT Core) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.0, and exposes what it receives through ordinary RESTHeart plugins.
+The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.0, and exposes what it receives through ordinary RESTHeart plugins. Brokers that require mutual TLS with a client certificate — AWS IoT Core among them — are not supported: the module exposes only trust-store settings (`tls`, `tls-trust-store`, `tls-trust-store-password`), never a key store or client certificate.
 
 ## Not bundled
 
-`restheart-mqtt` does not ship with RESTHeart: it is not in the distribution zip and not in the Docker image. It is installed separately — see "Installing" below. This is deliberate. MQTT is far from RESTHeart's habitual use cases, and `hivemq-mqtt-client` brings 14 transitive jars including RxJava and five Netty modules, a second network stack and reactive runtime that exists nowhere else in a product built on Undertow/XNIO. Bundling it would add all of that to every RESTHeart installation, including the ones that never touch MQTT.
+`restheart-mqtt` does not ship with RESTHeart: it is not in the distribution zip and not in the Docker image. It is installed separately — see "Installing" below. This is deliberate. MQTT is far from RESTHeart's habitual use cases, and `hivemq-mqtt-client` brings 13 transitive jars including RxJava and seven Netty modules, a second network stack and reactive runtime that exists nowhere else in a product built on Undertow/XNIO. Bundling it would add all of that to every RESTHeart installation, including the ones that never touch MQTT.
 
 The module still lives in the RESTHeart monorepo, and its integration tests run against the core built alongside it — see "Building".
 
@@ -21,6 +21,35 @@ The module still lives in the RESTHeart monorepo, and its integration tests run 
 | `mqtt-topic-authorizer` | `WildcardInterceptor` | — | Yes (deliberately, fails closed) |
 | `mqtt-mongo-writer` | `Initializer` (`AFTER_STARTUP`) | — | No (Tier 2) |
 | `mqtt-status` | `Initializer` (`AFTER_STARTUP`) | — | Yes (diagnostic sentinel) |
+
+How the pieces fit together:
+
+```mermaid
+flowchart LR
+    broker[("MQTT broker")]
+    mongo[("MongoDB")]
+    callers(["HTTP clients"])
+
+    subgraph rh["RESTHeart"]
+        direction TB
+        client["<b>mqtt-client</b><br><i>the broker connection</i>"]
+        router["<b>mqtt-router</b><br><i>fan-out + last-value cache</i>"]
+        sse["<b>mqtt-sse</b><br><code>/mqtt-sse</code>"]
+        rest["<b>mqtt-rest</b><br><code>/mqtt</code>"]
+        writer["<b>mqtt-mongo-writer</b>"]
+        own["<i>your own plugin</i>"]
+    end
+
+    broker ==> client
+    client ==> router
+    router --> sse
+    router --> rest
+    router --> writer
+    router --> own
+    writer --> mongo
+    sse -.-> callers
+    rest -.-> callers
+```
 
 `mqtt-sse` and `mqtt-rest` are both registered with `secure = true`: they require authentication. See "Enablement" below for what the "Enabled by default" column means in practice.
 
@@ -57,6 +86,11 @@ mqtt-mongo-writer:
 
 **Provider only.** Inject `mqtt-router` from your own plugin, as [`examples/mqtt-logger`](../examples/mqtt-logger) does, with no HTTP endpoint exposed at all:
 
+```mermaid
+flowchart LR
+    broker[("MQTT broker")] ==> client["<b>mqtt-client</b>"] ==> router["<b>mqtt-router</b>"] --> own["<i>your plugin</i><br>injects mqtt-router"]
+```
+
 ```yaml
 mqtt-client:
   enabled: true
@@ -67,6 +101,30 @@ mqtt-router:
 ```
 
 **Live SSE:**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as HTTP client
+    participant A as mqtt-topic-authorizer
+    participant S as mqtt-sse
+    participant R as mqtt-router
+    participant B as MQTT broker
+
+    C->>A: GET /mqtt-sse?topic=sensors/%23
+    Note over A: REQUEST_AFTER_AUTH<br>checks the topic filter against the ACL
+    alt filter not granted
+        A-->>C: 403, never reaches the router
+    else filter granted
+        A->>S: request continues
+        S->>R: subscribe(filter, qos, listener)
+        R->>B: SUBSCRIBE (once per filter)
+        S-->>C: 200, text/event-stream held open
+        B->>R: message on the topic
+        R->>S: listener invoked
+        S-->>C: event: mqtt-message
+    end
+```
 
 ```yaml
 mqtt-client:
@@ -87,6 +145,15 @@ mqtt-topic-authorizer:
 ```
 
 **REST polling.** `mqtt-rest` only ever answers from the router's last-message cache, so something has to prime it:
+
+```mermaid
+flowchart LR
+    broker[("MQTT broker")] ==> client["<b>mqtt-client</b>"] ==> router["<b>mqtt-router</b>"]
+    router --> cache[("last-message cache<br><i>in memory</i>")]
+    caller(["HTTP client"]) -->|"GET /mqtt?topic=..."| rest["<b>mqtt-rest</b>"]
+    rest --> cache
+    rest -.->|"200 with the last message<br>404 if nothing cached yet"| caller
+```
 
 ```yaml
 mqtt-client:
@@ -110,6 +177,14 @@ mqtt-topic-authorizer:
 ```
 
 **MongoDB persistence:**
+
+```mermaid
+flowchart LR
+    broker[("MQTT broker")] ==> client["<b>mqtt-client</b>"] ==> router["<b>mqtt-router</b>"]
+    router --> writer["<b>mqtt-mongo-writer</b>"]
+    writer --> buffer["buffer<br><i>bounded, drop policy</i>"]
+    buffer -->|"drain loop, batched"| mongo[("MongoDB<br><i>db.collection per sink</i>")]
+```
 
 ```yaml
 mqtt-client:
@@ -166,16 +241,17 @@ Then copy the settings you need from `restheart-mqtt-default-config.yml` into yo
 
 ## The traps
 
-Every one of these is silent: nothing refuses to start, and nothing complains unless you go looking.
+Most of these are silent: nothing refuses to start, and nothing complains unless you go looking. One of them is not, and is called out below.
 
 - **A config block present without `enabled: true` leaves the plugin off.** The block looks complete and correct; it just isn't read, because `PluginRecord.isEnabled` falls back to the plugin's compiled default (`false` for every Tier 1/2 plugin) whenever the `enabled` key is absent.
-- **Plugin config blocks are top-level keys named after the plugin.** There is no `plugins-args:` wrapper: `PluginsFactory` looks up each plugin's arguments by name directly at the root of the configuration map. That wrapper form is not handled at all, so every setting nested under it is silently ignored and the plugin runs entirely on defaults.
+- **Plugin config blocks are top-level keys named after the plugin.** There is no `plugins-args:` wrapper: `PluginsFactory` looks up each plugin's arguments by name directly at the root of the configuration map. That wrapper form is not handled at all, so every setting nested under it is ignored and the plugin runs entirely on defaults. This is the one trap here that announces itself: core logs a WARN at startup naming every plugin whose block a `plugins-args` wrapper swallowed ([#723](https://github.com/SoftInstigate/restheart/issues/723)).
 - **`mqtt-rest` answers `404` forever** unless something populates the router's last-message cache (`mqtt-router.subscriptions`, a live SSE client, or the writer's `mongo-sink`) **and** `mqtt-router.last-message-cache` is `true`.
-- **`mqtt-mongo-writer` with an empty `mongo-sink` runs and writes nothing.** The buffer fills and the drain loop drains it, but there is no sink to route messages to, so no document is ever written.
+- **`mqtt-mongo-writer` with an empty `mongo-sink` runs and writes nothing.** With no sinks, the writer never subscribes to anything on the router at all, so nothing is ever offered to the buffer and it stays empty — not a buffer that fills and drains into nowhere.
 - **`mqtt-topic-authorizer` with no `acl` denies everything with `403`.** There is no permissive default.
+- **A request with no `?topic=` is not unauthenticated territory.** `mqtt-sse` subscribes such a request to its `default-topic` (`sensors/#` by default), so the ACL must grant that filter or the request is refused with `403`. Granting only specific topics while leaving `default-topic` at its default is the common mistake.
 - **MQTT 5 settings under `protocol-version: 3` are dropped.** `session-expiry-seconds`, `will.delay-seconds` and `will.message-expiry-seconds` exist only in MQTT 5.0, and the 3.1.1 connection path has nowhere to put them — the values are read and validated, then discarded. A will message configured with a delay fires immediately instead.
 
-`mqtt-status` reports all of these at startup by comparing the configuration against what the plugin registry actually instantiated. Check the log for it before assuming a misconfiguration is a bug.
+`mqtt-status` reports five of these at startup, by comparing the configuration against what the plugin registry actually instantiated: the missing `enabled` key, MQTT 5 keys under `protocol-version: 3`, `mqtt-rest` with an unprimed cache, an empty `mongo-sink`, and an empty `acl`. The `plugins-args` wrapper is reported by core instead. The `default-topic` one is reported by neither — it is a working ACL doing exactly what it was told, so there is nothing for a sentinel to find. Check the log before assuming a misconfiguration is a bug.
 
 ## Quick start
 
@@ -216,7 +292,7 @@ curl -u admin:secret 'http://localhost:8080/mqtt?topic=sensors/temp'
 [`mqtt/docker-compose.yml`](./docker-compose.yml) runs a self-contained two-container demo (RESTHeart plus a Mosquitto broker, no MongoDB) with the module already armed and a working ACL, so there is no broker or config to set up by hand. It bind-mounts `mqtt/target` into the RESTHeart container's plugins directory, so build the module first. From the `mqtt` directory:
 
 ```
-../mvnw -pl mqtt package
+../mvnw -f ../pom.xml -pl mqtt package
 docker compose up
 ```
 
@@ -244,12 +320,12 @@ See "Enablement" above for each plugin's `enabled` default; the tables below cov
 
 | key | default | notes |
 |---|---|---|
-| `broker-url` | `tcp://localhost:1883` | `tcp`, `ssl`, `mqtt`, `mqtts`, `ws`, `wss` |
+| `broker-url` | `tcp://localhost:1883` | `tcp`, `ssl`, `mqtts`, `ws`, `wss` |
 | `protocol-version` | `3` | `3` or `5` only; anything else fails at startup |
 | `client-id` | generated | `restheart-<uuid>` when absent or blank |
 | `username`, `password` | none | |
-| `clean-session` | `false` | persistent session, so the broker replays what you missed |
-| `keep-alive-seconds` | `60` | |
+| `clean-session` | `false` | persistent session, so the broker replays what you missed — but only if `client-id` is also set explicitly. With the documented defaults `client-id` is regenerated on every start, so the broker sees a new client each boot and there is nothing to resume. |
+| `keep-alive-seconds` | `60` | `< 0` fails at startup |
 | `connect-timeout-seconds` | `10` | must be > 0 |
 | `session-expiry-seconds` | `4294967295` | MQTT 5 only |
 | `tls` | `false` | forces TLS even on a plaintext scheme |
@@ -271,7 +347,7 @@ The port follows the scheme when you do not give one: 1883 for `tcp`, 8883 for `
 
 | key | default | notes |
 |---|---|---|
-| `max-inflight-messages-per-second` | `5000` | global token bucket; excess messages are dropped, not queued |
+| `max-inflight-messages-per-second` | `5000` | global token bucket; excess messages are dropped, not queued. `0` or any value `<= 0` disables the rate limit entirely. |
 | `last-message-cache` | `true` | backs `mqtt-rest` and the SSE replay-on-connect |
 | `last-message-cache-size` | `1000` | LRU |
 | `subscriptions` | `[]` | list of `{topic, qos}` subscribed at startup |
@@ -288,11 +364,13 @@ Subscriptions declared here survive a broker session reset: when the client reco
 | `default-qos` | `1` | |
 | `per-connection-queue-capacity` | `256` | full queue drops the newest message for that client only |
 | `payload-envelope` | `false` | `true` wraps the payload as `{topic, payload, receivedAt, qos, cached}` |
-| `last-message-cache` | `true` | sends the cached last message on connect |
+| `last-message-cache` | `true` | on connect, replays the cached last message of **every** topic currently cached that matches the request's topic filter, sorted by `receivedAt` — not just one message |
 | `max-connections-per-topic` | `0` | `0` = unlimited |
 | `pipeline` | none | see below |
 
 Query parameters: `?topic=<filter>&qos=<0-2>`. A `qos` that is unparseable or outside 0-2 falls back to `default-qos` with a warning rather than refusing the connection — by the time the service sees the request the SSE handshake has already been sent, so there is no status code left to return. `default-qos` itself is validated at startup, since it is that fallback.
+
+Every event is sent with SSE event type `mqtt-message` — this is the field a client dispatches on (`event: mqtt-message`).
 
 Each event carries an id of the form `<topic>-<epochMillis>-<n>`, where `n` is a per-connection sequence. **These ids are unique within one stream but are not globally meaningful and cannot be used to resume** — `Last-Event-ID` is currently ignored. Resumable replay is tracked in [#606](https://github.com/SoftInstigate/restheart/issues/606).
 
@@ -313,7 +391,7 @@ mqtt-sse:
         - type: tumbling-window
           window-ms: 5000
           function: avg
-          field: "temperature"
+          field: "$.value"
 ```
 
 | stage | parameters |
@@ -322,11 +400,13 @@ mqtt-sse:
 | `map` | `extract-field` |
 | `throttle` | `max-events-per-second` (default `10`) |
 | `tumbling-window` | `window-ms` (default `1000`), `function` (default `count`), `field` |
-| `sliding-window` | `window-size` (default `10`), `function`, `field` |
+| `sliding-window` | `window-size` (default `10`), `function` (default `count`), `field` |
 
-Aggregation functions: `count`, `sum`, `avg`, `min`, `max`. A window whose messages yield no numeric values emits nothing rather than a zero or a sentinel. Tumbling windows are flushed by the connection's drain loop even when no further message arrives, so the last window of a quiet stream is still emitted.
+A window's `field`, `map`'s `extract-field`, and `filter`'s `jsonpath` are **JSONPath expressions** evaluated against the message payload (e.g. `"$.value"`), not plain field names — `"temperature"` is not valid JSONPath and throws for every message, logged at WARN, so the window silently emits nothing. A `map` stage configured without `extract-field` is not rejected: it is silently dropped from the pipeline.
 
-Pipeline selection for a connection is: exact topic-filter match, then MQTT wildcard match, then no pipeline. Every entry must carry a `topic`; one without it could never be selected, so it fails at startup rather than sitting there doing nothing.
+Aggregation functions: `count`, `sum`, `avg`, `min`, `max`, `array`, `last`. A window whose messages yield no numeric values (`avg`/`sum`/`min`/`max`) emits nothing rather than a zero or a sentinel. Tumbling windows are flushed by the connection's drain loop even when no further message arrives, so the last window of a quiet stream is still emitted.
+
+Pipeline selection for a connection is: exact topic-filter match, then MQTT wildcard match, then no pipeline. Every entry must carry a `topic`; one without it could never be selected, so it fails at startup rather than sitting there doing nothing. Every other validation — `window-ms <= 0`, `window-size <= 0`, `max-events-per-second <= 0`, and `avg`/`min`/`max`/`sum` configured with no `field` — is checked only **per connection**, inside the SSE handshake, since pipelines are instantiated fresh for every connection: a bad value throws for that one connection rather than failing at startup.
 
 ### `mqtt-rest`
 
@@ -354,7 +434,7 @@ mqtt-topic-authorizer:
       - "#"
 ```
 
-An unauthenticated request is denied. A request whose topic filter is not covered by any of the account's roles is denied with 403.
+An unauthenticated request is denied with `401`. A request whose topic filter is not covered by any of the account's roles is denied with `403`.
 
 **The ACL check is filter containment, not topic matching, and the difference matters.** A pattern grants a requested filter only when everything the requested filter could match is also matched by the pattern. So `sensors/+` does **not** grant `sensors/#`: `#` reaches deeper levels that `+` cannot. Granting `sensors/+` and receiving `sensors/a/b` would be a privilege escalation, so it is refused. `#` in a pattern grants everything below it, as expected.
 
@@ -398,9 +478,13 @@ An unrecognised value fails at startup rather than silently falling back.
 |---|---|---|
 | `auto` | ObjectId | `insertMany` |
 | `payload-field` | the `id-field` of the payload | upserting `bulkWrite` |
-| `topic-timestamp-hash` | hash of topic + timestamp + payload | upserting `bulkWrite` |
+| `topic-timestamp-hash` | hash of topic + timestamp | upserting `bulkWrite` |
 
-The two deduplicating strategies write with upserts, so redelivery — or several RESTHeart nodes each receiving the same broker message — converges on one document instead of raising duplicate-key errors. Duplicate-key (11000) is counted as a success. `id-field` (default `messageId`) must be set and non-blank when `id-strategy` is `payload-field`; both keys are validated at startup, because a typo would otherwise disable deduplication silently.
+The two deduplicating strategies write with upserts, so redelivery converges on one document instead of raising duplicate-key errors. Duplicate-key (11000) is counted as a success. `id-field` (default `messageId`) must be set and non-blank when `id-strategy` is `payload-field`; both keys are validated at startup, because a typo would otherwise disable deduplication silently.
+
+With `payload-field`, if the payload is not valid JSON or the field is absent, the failure is swallowed: no `_id` is computed, and that one document falls back to a plain insert instead of an upsert — deduplication is lost silently, per message, rather than failing the write.
+
+**Only `payload-field` converges across a cluster.** `topic-timestamp-hash` deduplicates redelivery within a single node, but not across nodes: its timestamp component is `receivedAt`, set independently by each node's own `Instant.now()` when the message arrives, so two nodes receiving the same broker message compute two different `_id`s and both write a document. Use `payload-field` — keyed on something the broker message itself carries — when several RESTHeart nodes receive the same messages and must converge on one document.
 
 Every `mongo-sink` entry must carry all three of `topic`, `database` and `collection`, each a string; a missing or mistyped key fails at startup naming the entry. An absent or empty `mongo-sink` list is legal and simply means nothing is persisted.
 
@@ -436,7 +520,7 @@ The router's API is expressed entirely in this module's own types (`Qos`, `MqttM
 
 **Message loss is by design in three places**, each counted so it is visible rather than silent: the router's global rate limit, the SSE per-connection queue, and the writer's buffer under `ring-buffer` or `drop-incoming`. Only `blocking-queue` refuses to lose data.
 
-**Clustering.** On MQTT 3.1.1 there are no shared subscriptions, so every RESTHeart node receives every message. For MongoDB persistence, use `payload-field` or `topic-timestamp-hash` so the nodes converge instead of duplicating. On MQTT 5.0, shared subscriptions are the cleaner answer — tracked in [#602](https://github.com/SoftInstigate/restheart/issues/602).
+**Clustering.** On MQTT 3.1.1 there are no shared subscriptions, so every RESTHeart node receives every message. For MongoDB persistence, use `payload-field` so the nodes converge instead of duplicating — `topic-timestamp-hash` only deduplicates within a single node (see "`mqtt-mongo-writer`" above). On MQTT 5.0, shared subscriptions are the cleaner answer — tracked in [#602](https://github.com/SoftInstigate/restheart/issues/602).
 
 **Topic authorization on `/mqtt-sse`** is enforced end to end: a request for a topic filter granted by the ACL subscribes normally, and a request for an ungranted filter is rejected with `403` and a body of `{"msg":"Not authorized for topic: <filter>"}` before it ever reaches the router. This depends on RESTHeart running the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`, wired into `plugSseService`) — without it, SSE handshake requests pass through no interceptor at all, so `mqtt-topic-authorizer` resolves but is never invoked on that path, and `/mqtt-sse` ends up authenticated but not authorized per topic. Make sure the RESTHeart build this module is deployed against includes that fix.
 

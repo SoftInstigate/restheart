@@ -40,11 +40,13 @@ mqtt-client:
     max-delay-ms: 30000                       # max delay cap (HiveMQ client uses fixed 2.0 multiplier)
 
 # MQTT Router - shared in-process fanout/rate-limit/cache for MQTT messages.
-# Not gated by the two-tier enablement (enabledByDefault = true in code): it
-# has no HTTP surface of its own and simply follows mqtt-client through the
-# provider dependency graph, so it goes dormant automatically when
-# mqtt-client is disabled. last-message-cache and subscriptions below are
-# what let mqtt-rest answer immediately once it is enabled (see below).
+# Registered with enabledByDefault = false in code, same as mqtt-client: a
+# disabled provider is never instantiated, so it does not automatically
+# follow mqtt-client through the provider dependency graph, and it must be
+# enabled explicitly alongside mqtt-client (enabling mqtt-client without
+# mqtt-router leaves the module with no message routing). "enabled: true"
+# below is required. last-message-cache and subscriptions below are what let
+# mqtt-rest answer immediately once it is enabled (see below).
 mqtt-router:
   enabled: true
   max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
