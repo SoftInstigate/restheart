@@ -119,21 +119,30 @@ public class McpAuthorizationIT extends AbstactIT {
     }
 
     @Test
-    public void catalogIsNotAclFiltered_butReadingStillIs() throws Exception {
-        // #616's deliberate choice: visibility is per-resource mcp.enabled, not per-caller ACL.
-        // Worth pinning, because "the catalog hides it" is a tempting but false substitute for
-        // enforcement — the guarantee is that reading is refused, not that listing is.
+    public void catalogIsAclFiltered_andReadingStillIs() throws Exception {
+        // This used to assert the opposite, on #616's reasoning that visibility is per-resource
+        // mcp.enabled rather than per-caller ACL, and that hiding is no substitute for refusing.
+        // The refusing half still holds and is asserted below. The hiding half was reconsidered:
+        // a catalog entry carries the resource's URI, its actions including the writing ones, its
+        // parameter names and its mcp.description — prose written to explain what the data is —
+        // so an unfiltered catalog let any caller who could reach /mcp enumerate the server.
+        // Filtering is now an addition to enforcement, not a substitute for it: both are pinned
+        // here, in the same test, so neither can be dropped in favour of the other.
         var uris = asMcpUser.callTool("list_apis", "{}").getArray("resources").stream()
                 .map(r -> r.asDocument().getString("uri").getValue())
                 .toList();
 
-        assertTrue(uris.contains(DENIED_COLL),
-                "the catalog is not ACL-filtered by design; got " + uris);
+        assertFalse(uris.contains(DENIED_COLL),
+                "a resource this caller cannot read was listed in the catalog; got " + uris);
+
+        // the positive control: a filter that hid everything would satisfy the assertion above
+        assertTrue(uris.contains(ALLOWED_COLL),
+                "the catalog hid a resource this caller may read, so it is denying rather than filtering; got " + uris);
 
         var response = asMcpUser.rawRpc("resources/read", """
                 {"uri":"%s?page=1"}
                 """.formatted(DENIED_COLL));
-        assertEquals(403, response.statusCode(), "listed, but reading it must still be refused");
+        assertEquals(403, response.statusCode(), "hidden from the catalog, and reading it must still be refused");
     }
 
     @Test
