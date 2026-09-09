@@ -15,26 +15,30 @@ name: MQTT module
 
 on:
   push:
+    # Only "branches" is given, which by itself already excludes tag pushes: push events match
+    # branches and tags separately, and defining one without the other leaves the undefined ref
+    # out. A "tags-ignore" here would be dead configuration.
     branches:
       - "**"
-    tags-ignore:
-      - "*"
     paths:
-      # The module itself...
+      # The module itself, and everything it is installed into and tested against.
+      #
+      # core/** whole, not a hand-picked list of the parts that look relevant. The ITs run this
+      # module inside a real RESTHeart built from core, so almost anything in core can break it:
+      # the plugin loader decides whether the module is discovered, security provides the
+      # authentication /mqtt-sse requires, and the SSE and request-pipeline handlers it rides on
+      # are spread across core rather than living in one package. A narrower list would be a
+      # guess, and the failure mode of guessing wrong is silence - the module keeps passing its
+      # own tests because nothing runs them.
+      #
+      # This costs roughly two minutes of CI on every core commit. That is the price of not
+      # having a gated module rot unnoticed, paid up front and visibly, instead of with a
+      # scheduled run that reports the breakage up to a week after whoever caused it moved on.
       - "mqtt/**"
-      # ...and the parts of core it is actually installed into and tested against: the plugin
-      # loader decides whether the module is discovered at all, and the security plugins provide
-      # the authentication /mqtt-sse requires. A change to either can break this module without
-      # touching a single file under mqtt/.
-      - "core/src/main/java/org/restheart/plugins/**"
-      - "core/src/main/java/org/restheart/Bootstrapper.java"
+      - "core/**"
       - "security/**"
       - "commons/**"
       - ".github/workflows/mqtt.yml"
-  # Weekly, so a change elsewhere in core that breaks the module surfaces within days rather
-  # than at the next release. Monday morning, before anyone would start on top of it.
-  schedule:
-    - cron: "0 6 * * 1"
   workflow_dispatch:
 
 jobs:
@@ -85,7 +89,12 @@ jobs:
     # integration tests passed against the core built alongside it — a guarantee the core's
     # own snapshot image does not have.
     needs: integration-tests
-    if: github.ref == 'refs/heads/master'
+    # Only on a real push to master. The event check is not redundant with the ref check: a
+    # workflow_dispatch (and any scheduled run, should one ever be added back) also reports
+    # github.ref as the default branch, and would republish the archive with no new commit
+    # behind it, rewriting the build date in the release notes to say something happened when
+    # nothing did.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
       contents: write

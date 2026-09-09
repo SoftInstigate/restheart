@@ -215,8 +215,10 @@
         MQTT should have to pay.
 
         The accepted risk of gating is that the module can rot unnoticed, so
-        .github/workflows/mqtt.yml runs this profile on every push touching mqtt/** and on a
-        schedule. Do not remove one without the other.
+        .github/workflows/mqtt.yml runs this profile on every push touching mqtt/**, core/**,
+        security/** or commons/** - deliberately the whole of core rather than a hand-picked
+        list, since almost anything in it can break a plugin running inside it. Do not remove
+        one without the other.
 
         These ITs run against core/target/restheart.jar as it was JUST BUILT, not against a
         published image: MqttITBase launches it as a subprocess. That requires core to have been
