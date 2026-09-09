@@ -41,6 +41,10 @@ on:
       - ".github/workflows/mqtt.yml"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   integration-tests:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
