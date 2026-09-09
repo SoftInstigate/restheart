@@ -2,15 +2,6 @@
     <target name="copy">
         <echo message="***** Copying plugins to target/plugins" level="info" />
         <mkdir dir="./target/plugins" />
-        <!-- restheart-mqtt ships with the product but is inert until switched on:
-             mqtt-client is registered with enabledByDefault = false and is the root of the
-             module's injection graph, so mqtt-router, mqtt-sse, mqtt-rest and
-             mqtt-mongo-writer all cascade off with it. Nothing connects to a broker and no
-             endpoint is bound unless an operator sets /mqtt-client/enabled to true.
-             It costs 14 jars and 6.5 MB, against 69 MB for the distribution as a whole.
-             mqtt-topic-authorizer stays enabled on purpose - see its Javadoc; it is never
-             invoked while the endpoints are unbound, and having it already active means
-             /mqtt-sse can never be armed in a fail-open state. -->
         <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
@@ -21,7 +12,6 @@
         <copy file="../emails/target/restheart-emails.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../stripe/target/restheart-stripe.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../ai/target/restheart-ai.jar" todir="./target/plugins" overwrite="true" />
-        <copy file="../mqtt/target/restheart-mqtt.jar" todir="./target/plugins" overwrite="true" />
 
         <echo message="***** Copying plugins dependencies to target/plugins/lib" level="info" />
         <mkdir dir="./target/plugins/lib" />
@@ -52,14 +42,6 @@
         </copy>
         <copy todir="./target/plugins/lib" overwrite="true">
             <fileset dir="../ai/target/lib"></fileset>
-        </copy>
-        <!-- hivemq-mqtt-client and its transitives. Note this brings a second copy of
-             org.reactivestreams:reactive-streams - 1.0.4 here, 1.0.3 already present via
-             graphql-java. Both jars hold the identical set of 13 classes, so whichever the
-             flat plugins classloader resolves first works for both plugins; see #724 for
-             why that resolution is order-dependent and what should replace it. -->
-        <copy todir="./target/plugins/lib" overwrite="true">
-            <fileset dir="../mqtt/target/lib"></fileset>
         </copy>
 
         <!-- Remove any JAR from plugins/lib that is already present in lib/ -->

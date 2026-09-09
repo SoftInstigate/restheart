@@ -99,7 +99,6 @@
     </properties>
 
     <modules>
-        <module>mqtt</module>
         <module>test-plugins</module>
         <module>commons</module>
         <module>mongoclient</module>
@@ -113,6 +112,12 @@
         <module>stripe</module>
         <module>ai</module>
         <module>core</module>
+        <!-- After core, deliberately. restheart-mqtt is not part of the distribution: it is a
+             peripheral module that installs into a RESTHeart, and its integration tests launch
+             core/target/restheart.jar - just built - as a subprocess. That makes it a downstream
+             consumer of core, the same position a third-party plugin occupies, so core must never
+             depend on it. See mqtt/README.md. -->
+        <module>mqtt</module>
     </modules>
 
     <organization>

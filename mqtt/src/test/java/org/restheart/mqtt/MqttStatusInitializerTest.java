@@ -146,18 +146,26 @@ public class MqttStatusInitializerTest {
     }
 
     @Test
-    @DisplayName("Case 1b: with no mqtt configuration at all the sentinel is silent, because the "
-        + "module ships with RESTHeart and most installations never use it")
-    void testUntouchedModuleIsSilent() {
+    @DisplayName("Case 1b: with no mqtt configuration at all the sentinel still speaks, because "
+        + "the module is installed on purpose and is doing nothing")
+    void testInstalledButUnconfiguredModuleStillSpeaks() {
         var config = configOf(Map.of());
         var registry = registryWithActive(); // nothing active
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
-        assertTrue(findings.isEmpty(),
-            "nobody has configured anything under mqtt-*, so there is no misconfiguration to warn "
-                + "about and no reason to put an mqtt line in front of an operator who never asked "
-                + "for MQTT; got: " + findings);
+        // The module is not part of the RESTHeart distribution: its jar is on the classpath only
+        // because someone installed it deliberately. So "no mqtt-* configuration at all" is not
+        // an operator who never asked for MQTT - it is one who asked and then stopped halfway,
+        // which is exactly the trap this sentinel exists to catch.
+        //
+        // This assertion was briefly the opposite, while the module was being shipped inside the
+        // distribution and this line would have greeted every installation. If it ever ships
+        // again, this is the test that has to change back with it.
+        assertEquals(1, findings.size(), "only the module-off INFO should fire; got: " + findings);
+        assertEquals(Level.INFO, findings.get(0).level());
+        assertTrue(findings.get(0).message().contains("installed but inactive"),
+            "an installed-but-unconfigured module must say so; got: " + findings.get(0).message());
     }
 
     // --- Case 2: the enablement trap (negative control) ---

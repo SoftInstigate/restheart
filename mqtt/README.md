@@ -6,14 +6,16 @@ The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX, AW
 
 ## Not bundled
 
-`restheart-mqtt` does not ship with RESTHeart: it is not in the distribution zip and not in the Docker image. It has to be installed separately. This is deliberate — `hivemq-mqtt-client` brings 13 transitive jars including RxJava and five Netty modules, a second network stack and reactive runtime that exists nowhere else in a product built on Undertow/XNIO. Bundling it would add all of that to every RESTHeart installation, including the ones that never touch MQTT.
+`restheart-mqtt` does not ship with RESTHeart: it is not in the distribution zip and not in the Docker image. It is installed separately — see "Installing" below. This is deliberate. MQTT is far from RESTHeart's habitual use cases, and `hivemq-mqtt-client` brings 14 transitive jars including RxJava and five Netty modules, a second network stack and reactive runtime that exists nowhere else in a product built on Undertow/XNIO. Bundling it would add all of that to every RESTHeart installation, including the ones that never touch MQTT.
+
+The module still lives in the RESTHeart monorepo, and its integration tests run against the core built alongside it — see "Building".
 
 ## What you get
 
 | Plugin | Kind | Default URI | Enabled by default |
 |---|---|---|---|
 | `mqtt-client` | `Provider<MqttClient>` | — | No (Tier 1, the module switch) |
-| `mqtt-router` | `Provider<MqttMessageRouter>` | — | Yes (follows `mqtt-client`, no HTTP surface) |
+| `mqtt-router` | `Provider<MqttMessageRouter>` | — | No (gated explicitly, see below) |
 | `mqtt-sse` | `SseService` | `/mqtt-sse` | No (Tier 2) |
 | `mqtt-rest` | `JsonService` | `/mqtt` | No (Tier 2) |
 | `mqtt-topic-authorizer` | `WildcardInterceptor` | — | Yes (deliberately, fails closed) |
@@ -34,7 +36,7 @@ mqtt-client:
   broker-url: "tcp://broker:1883"
 ```
 
-`mqtt-router` has no separate flag: it follows `mqtt-client` through RESTHeart's provider dependency graph (`ProvidersChecker`), so it is dormant whenever `mqtt-client` is, and active as soon as `mqtt-client` is enabled. It has no HTTP surface of its own, so there is nothing for a second switch to gate.
+`mqtt-router` is registered with `enabledByDefault = false` too, and is enabled together with `mqtt-client`. It does not rely on `ProvidersChecker` following the injection graph: a disabled provider is never instantiated, so with `mqtt-client` off, `mqtt-client` is absent from the provider registry entirely and an enabled `mqtt-router` would log a "no provider found" ERROR on every startup. Enabling `mqtt-client` without `mqtt-router` leaves the module with no message routing, so enable both.
 
 **Tier 2 (opt-in surfaces).** Arming Tier 1 alone exposes no HTTP endpoint. `mqtt-sse`, `mqtt-rest` and `mqtt-mongo-writer` are each independently registered with `enabledByDefault = false`, and are switched on one at a time as needed:
 
@@ -59,6 +61,9 @@ mqtt-mongo-writer:
 mqtt-client:
   enabled: true
   broker-url: "tcp://broker:1883"
+
+mqtt-router:
+  enabled: true
 ```
 
 **Live SSE:**
@@ -67,6 +72,9 @@ mqtt-client:
 mqtt-client:
   enabled: true
   broker-url: "tcp://broker:1883"
+
+mqtt-router:
+  enabled: true
 
 mqtt-sse:
   enabled: true
@@ -86,6 +94,7 @@ mqtt-client:
   broker-url: "tcp://broker:1883"
 
 mqtt-router:
+  enabled: true
   last-message-cache: true
   subscriptions:
     - topic: "sensors/#"
@@ -107,6 +116,9 @@ mqtt-client:
   enabled: true
   broker-url: "tcp://broker:1883"
 
+mqtt-router:
+  enabled: true
+
 mqtt-mongo-writer:
   enabled: true
   mongo-sink:
@@ -116,6 +128,41 @@ mqtt-mongo-writer:
 ```
 
 This last one also needs the `mongoclient` module configured and connected: `mqtt-mongo-writer` injects `mclient` rather than opening its own connection.
+
+## Installing
+
+The module is distributed as an archive containing the plugin, its runtime dependencies, a sample configuration and both licences. Download the latest build from `master` and unpack it into your instance's plugins directory:
+
+```
+curl -LO https://github.com/SoftInstigate/restheart/releases/download/mqtt-snapshot/restheart-mqtt-10.0.0-SNAPSHOT.zip
+unzip restheart-mqtt-10.0.0-SNAPSHOT.zip -d /opt/restheart/plugins/
+```
+
+That archive is published by [`.github/workflows/mqtt.yml`](../.github/workflows/mqtt.yml) on every push to `master`, and **only after this module's integration tests have passed** against the core built alongside it. The release notes record which commit each build came from.
+
+To build it yourself instead — necessarily, if you are working on the module:
+
+```
+./mvnw -pl mqtt package
+unzip mqtt/target/restheart-mqtt-<version>.zip -d /opt/restheart/plugins/
+```
+
+Either way you get:
+
+```
+plugins/restheart-mqtt-<version>/
+├── restheart-mqtt.jar
+├── lib/                              hivemq-mqtt-client and its 13 transitives
+├── restheart-mqtt-default-config.yml
+├── LICENSE.txt
+└── COMM-LICENSE.txt
+```
+
+The version directory is deliberate, not an accident of packaging. `PluginsScanner` scans the plugins directory two levels deep and treats any `lib` path segment as classpath-only, never scanning it for plugins, so both the jar and its dependencies are picked up from there. Keeping `lib/` inside the module's own directory rather than merging it into the shared `plugins/lib` is what stops this module's Netty and RxJava from mixing with other plugins' dependencies — see [#724](https://github.com/SoftInstigate/restheart/issues/724).
+
+Then copy the settings you need from `restheart-mqtt-default-config.yml` into your instance's configuration, and enable at least `mqtt-client` and `mqtt-router`. See "Enablement" above for what each plugin's switch does.
+
+**The RESTHeart you install into must be recent enough** to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`). Without that, `mqtt-topic-authorizer` resolves but is never invoked on the `/mqtt-sse` path, leaving the endpoint authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
 
 ## The traps
 
@@ -138,6 +185,7 @@ mqtt-client:
   protocol-version: 5
 
 mqtt-router:
+  enabled: true
   subscriptions:
     - topic: "sensors/#"
       qos: 1
@@ -145,6 +193,9 @@ mqtt-router:
 mqtt-sse:
   enabled: true
   default-topic: "sensors/#"
+
+mqtt-rest:
+  enabled: true
 
 mqtt-topic-authorizer:
   acl:
@@ -161,7 +212,7 @@ curl -u admin:secret 'http://localhost:8080/mqtt?topic=sensors/temp'
 
 ## Try it in two minutes
 
-[`mqtt/docker-compose.yml`](./docker-compose.yml) runs a self-contained two-container demo (RESTHeart plus a Mosquitto broker, no MongoDB) with the module already armed and a working ACL, so there is no broker or config to set up by hand. From the `mqtt` directory:
+[`mqtt/docker-compose.yml`](./docker-compose.yml) runs a self-contained two-container demo (RESTHeart plus a Mosquitto broker, no MongoDB) with the module already armed and a working ACL, so there is no broker or config to set up by hand. It bind-mounts `mqtt/target` into the RESTHeart container's plugins directory, so build the module first. From the `mqtt` directory:
 
 ```
 ../mvnw -pl mqtt package
@@ -181,6 +232,8 @@ docker compose exec mosquitto mosquitto_pub -t sensors/temp -m '{"value": 21.5}'
 ```
 
 It runs `softinstigate/restheart-snapshot:latest` rather than a released image, because per-topic ACL enforcement on `/mqtt-sse` needs a fix that is currently only on unreleased `master`; against a released image the same demo would silently accept a topic outside the ACL instead of rejecting it with `403`.
+
+This demo is for trying the module out, not for testing it. To exercise a locally modified module properly, run its integration tests: `./mvnw -pl mqtt -am verify -Pmqtt-it` — those launch the core you just built, rather than a published image. See "Building".
 
 ## Configuration
 
@@ -389,12 +442,12 @@ Note that `subscribe` currently takes HiveMQ's `MqttQos` in the listener signatu
 ## Building
 
 ```
-./mvnw -pl mqtt test          # unit tests
-./mvnw -pl mqtt verify        # plus integration tests against an embedded Moquette broker
-./mvnw -pl mqtt package       # also produces the installable restheart-mqtt-<version>.zip/.tar.gz (see "Installing")
+./mvnw -pl mqtt test                      # this module's unit tests, no Docker needed
+./mvnw -pl mqtt package                   # also produces the installable archive — see "Installing"
+./mvnw -pl mqtt -am verify -Pmqtt-it      # plus the integration tests
 ```
 
-`MqttMongoWriterIT` needs a MongoDB on `localhost:27017` and skips itself when there is none.
+The integration tests are opt-in, behind the `mqtt-it` profile: they need Docker, and nobody who is not working on MQTT should have to pay for it. They run against **the core built alongside this module**, not a published image — `MqttITBase` launches `core/target/restheart.jar` as a subprocess with this module staged into its own plugins directory, alongside a Mosquitto broker container. That is why `-am` is needed: it builds core first.
 
 ## Roadmap
 

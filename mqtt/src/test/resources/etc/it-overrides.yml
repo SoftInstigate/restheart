@@ -1,0 +1,65 @@
+# RESTHeart configuration overrides for restheart-mqtt's integration tests.
+#
+# Applied with `-o` to the core/target/restheart.jar that MqttITBase launches as a subprocess.
+# The server is started with --standalone, so the base configuration is
+# restheart-default-config-no-mongodb.yml: no MongoDB, and fileRealmAuthenticator /
+# fileAclAuthorizer providing security. Only what the tests actually need is overridden here.
+#
+# NOT set here: /core/plugins-directory. It has to be an absolute path (a relative one resolves
+# against the restheart.jar's own location, which is core/target - not this module), so MqttITBase
+# passes it through the RHO environment variable instead, computed at runtime. Everything that can
+# be static lives in this file.
+
+---
+# fileRealmAuthenticator ships its built-in "admin" user with password: null, i.e. disabled.
+# Declared as a whole block rather than a path override so the roles are explicit: the mqtt
+# topic ACL below grants by role, and "admin" is the role it grants.
+/fileRealmAuthenticator:
+  enabled: true
+  users:
+    - userid: admin
+      password: secret
+      roles: [admin, user]
+
+# INFO, not DEBUG: three tests read the server log (MqttITBase captures the subprocess's own
+# stdout), and DEBUG buries the four lines they look for - "mqtt module active:",
+# "Re-subscribing to", "Subscribed to topic filter:" - under the whole request pipeline.
+# no-colors so those lines can be matched without ANSI escapes in the way.
+/logging/log-level: INFO
+/logging/no-colors: true
+
+# --- restheart-mqtt ---------------------------------------------------------------------
+# The module is dormant on installation: mqtt-client is enabledByDefault=false and is the root
+# of the module's injection graph. Every plugin the ITs exercise is switched on explicitly.
+#
+# broker-url points at the Mosquitto container MqttITBase starts with Testcontainers. The port
+# is not fixed - Testcontainers assigns it - so MqttITBase overrides broker-url through RHO at
+# runtime, the same way it does plugins-directory. The value here is the default and only
+# documents the shape.
+/mqtt-client/enabled: true
+/mqtt-client/broker-url: tcp://localhost:1883
+
+# mqtt-router is gated explicitly rather than following mqtt-client through the provider graph:
+# a disabled provider is never instantiated, so with mqtt-client off, an enabled mqtt-router
+# would log "no provider found" on every startup. See MqttRouterProvider's javadoc.
+/mqtt-router/enabled: true
+# The router caches only what something has subscribed to, and a broker delivers nothing nobody
+# asked for. This startup subscription on sensors/# - the same prefix the acl below grants - is
+# what fills the last-message cache MqttRestLastValueIT reads back over /mqtt.
+/mqtt-router/subscriptions:
+  - topic: "sensors/#"
+    qos: 1
+
+/mqtt-sse/enabled: true
+/mqtt-rest/enabled: true
+
+# mqtt-topic-authorizer is the one module plugin left enabled by default, and it fails closed:
+# with no acl at all it refuses every /mqtt-sse and /mqtt request with 403. It resolves on those
+# two paths only. "sensors/#" for the admin role is what MqttTopicAclIT proves is enforced - and
+# "alarms/#" is deliberately NOT granted, so that suite has an ungranted filter to be refused on.
+/mqtt-topic-authorizer/acl:
+  admin:
+    - "sensors/#"
+
+# mqtt-mongo-writer stays off: --standalone means there is no MongoDB to write to, and
+# MqttPluginLoadingIT asserts it is reported inactive.

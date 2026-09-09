@@ -1,0 +1,142 @@
+name: MQTT module
+
+# restheart-mqtt is deliberately outside the RESTHeart distribution and outside core's test
+# sequence: MQTT is far from RESTHeart's habitual use cases, so the module lives in this
+# monorepo but ships separately, and core references it nowhere.
+#
+# One consequence is that its integration tests are opt-in (the "mqtt-it" profile in
+# mqtt/pom.xml), because they need Docker and nobody who is not working on MQTT should have to
+# pay for it. The accepted risk of gating is that a module nothing exercises can rot unnoticed
+# — this workflow is what closes that. It is not optional: do not remove it without also making
+# the "mqtt-it" profile active by default.
+#
+# The tests run against the core built alongside the module (MqttITBase launches
+# core/target/restheart.jar as a subprocess), which is why -am is required.
+
+on:
+  push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "*"
+    paths:
+      # The module itself...
+      - "mqtt/**"
+      # ...and the parts of core it is actually installed into and tested against: the plugin
+      # loader decides whether the module is discovered at all, and the security plugins provide
+      # the authentication /mqtt-sse requires. A change to either can break this module without
+      # touching a single file under mqtt/.
+      - "core/src/main/java/org/restheart/plugins/**"
+      - "core/src/main/java/org/restheart/Bootstrapper.java"
+      - "security/**"
+      - "commons/**"
+      - ".github/workflows/mqtt.yml"
+  # Weekly, so a change elsewhere in core that breaks the module surfaces within days rather
+  # than at the next release. Monday morning, before anyone would start on top of it.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: "graalvm"
+          java-version: "25"
+          cache: "maven"
+      - name: Build core and run the mqtt integration tests
+        # -am builds core first: the ITs launch core/target/restheart.jar, so it has to exist.
+        # -DskipITs=false is not needed — verify runs them — but core's own ITs would run too
+        # without -pl, which is why the module is named explicitly.
+        run: mvn -B clean verify -pl mqtt -am -Pmqtt-it
+      - name: Upload server logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mqtt-it-logs
+          # MqttITBase writes one log per test class here — the RESTHeart under test is a
+          # subprocess, so without these a CI failure says only that /ping never answered.
+          path: mqtt/target/it-logs/
+          if-no-files-found: warn
+      - name: Keep the installable archive for the publish job
+        # Uploaded from THIS job, not rebuilt in the next one, so what gets published is
+        # byte-for-byte what the integration tests just ran against.
+        uses: actions/upload-artifact@v4
+        with:
+          name: restheart-mqtt-archive
+          path: |
+            mqtt/target/restheart-mqtt-*.zip
+            mqtt/target/restheart-mqtt-*.tar.gz
+          if-no-files-found: error
+
+  publish-snapshot:
+    # The module is not in the RESTHeart distribution, so without this there is no way to try
+    # it without building it by hand. This publishes the same installable archive the
+    # "Installing" section of mqtt/README.md documents, to a fixed pre-release, refreshed on
+    # every push to master.
+    #
+    # needs: integration-tests means the snapshot is published ONLY if the module's own
+    # integration tests passed against the core built alongside it — a guarantee the core's
+    # own snapshot image does not have.
+    needs: integration-tests
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download the archive built and tested above
+        uses: actions/download-artifact@v5
+        with:
+          name: restheart-mqtt-archive
+          path: dist/
+      - name: Publish to the rolling pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=mqtt-snapshot
+
+          ZIP=$(ls dist/restheart-mqtt-*.zip | head -1)
+          ZIP_NAME=$(basename "$ZIP")
+
+          # Create the release once, then only ever replace its assets. Deleting and
+          # recreating it each time would leave a window in which the documented download
+          # URL 404s, which for a URL printed in a README is worse than a stale tag.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --prerelease \
+              --title "restheart-mqtt (snapshot)" \
+              --notes "placeholder - replaced below on every build"
+          fi
+
+          gh release upload "$TAG" dist/* --clobber
+
+          # The git tag stays where the release was first cut and does NOT track master: gh
+          # cannot move the tag of a published release. The notes carry the provenance
+          # instead, and say so, rather than letting the tag imply something untrue.
+          #
+          # Notes are built with printf into a file rather than an inline heredoc: inside a
+          # YAML block scalar every line is indented, and an indented heredoc body would
+          # render as a markdown code block while an indented terminator would never close
+          # the heredoc at all.
+          {
+            printf 'Latest build of `restheart-mqtt` from `master`, published only after its integration tests passed against the core built alongside it.\n\n'
+            printf -- '- commit: `%s`\n' "$GITHUB_SHA"
+            printf -- '- built: %s\n\n' "$(date -u +'%Y-%m-%d %H:%M UTC')"
+            printf 'The `%s` git tag is a fixed anchor for a stable download URL and does not point at the commit above - the commit is recorded here instead.\n\n' "$TAG"
+            printf 'Install into a RESTHeart instance:\n\n'
+            printf '```\n'
+            printf 'curl -LO https://github.com/%s/releases/download/%s/%s\n' "$GITHUB_REPOSITORY" "$TAG" "$ZIP_NAME"
+            printf 'unzip %s -d /opt/restheart/plugins/\n' "$ZIP_NAME"
+            printf '```\n\n'
+            printf 'Then enable at least `mqtt-client` and `mqtt-router` - see [the module README](https://github.com/%s/blob/master/mqtt/README.md#installing).\n' "$GITHUB_REPOSITORY"
+          } > notes.md
+
+          gh release edit "$TAG" --notes-file notes.md

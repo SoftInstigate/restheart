@@ -107,6 +107,13 @@
         restheart-mqtt.jar, lib/ (hivemq-mqtt-client and its transitives), the sample config and
         both licence files. attach=false keeps it out of the artifacts published to Maven Central.
 
+        This archive is how the module is distributed. It is deliberately NOT part of the
+        RESTHeart distribution - MQTT is far from RESTHeart's habitual use cases, so the module
+        lives in this monorepo but ships separately, and core does not reference it anywhere.
+        Unpacked into an instance's plugins/ directory it yields
+        plugins/restheart-mqtt-<version>/{restheart-mqtt.jar,lib/*.jar}: the per-module layout,
+        which keeps its netty and rxjava out of the shared plugins/lib (see restheart#724).
+
         Nothing uploads this today: no workflow references it, because nothing is ever released
         from master - 10.0.0 will be released by branching 10.x, the same way 9.x is released, and
         tags.yml (the release workflow) exists only on the 9.x branch, not on master. Whoever cuts
@@ -180,8 +187,144 @@
           <compilerArgs>
             <arg>-Xlint:-removal</arg>
           </compilerArgs>
+          <!--
+              org.restheart.mqtt.it is the integration-test harness (MqttITBase and its five
+              Mqtt*IT subclasses) - it imports org.testcontainers.*, which is a dependency of the
+              mqtt-it profile only (see that profile's comment for why it is not an always-on
+              dependency of this module). Excluded here so a plain `mvn test`, with the profile
+              inactive, does not fail testCompile for want of a dependency that build deliberately
+              withholds outside the profile. The mqtt-it profile below restores this package to
+              testCompile once its own dependencies make org.testcontainers resolvable again.
+          -->
+          <testExcludes>
+            <testExclude>org/restheart/mqtt/it/**</testExclude>
+          </testExcludes>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!--
+        Integration tests, opt-in: ./mvnw verify -Pmqtt-it
+
+        Opt-in rather than always-on because this module is deliberately outside the RESTHeart
+        distribution and outside core's test sequence - see the comment on <module>mqtt</module>
+        in the root pom. Its ~300 unit tests need no Docker and run on every build; these do
+        need Docker (a Mosquitto broker) and roughly a minute, which nobody who is not touching
+        MQTT should have to pay.
+
+        The accepted risk of gating is that the module can rot unnoticed, so
+        .github/workflows/mqtt.yml runs this profile on every push touching mqtt/** and on a
+        schedule. Do not remove one without the other.
+
+        These ITs run against core/target/restheart.jar as it was JUST BUILT, not against a
+        published image: MqttITBase launches it as a subprocess. That requires core to have been
+        built first, which the reactor guarantees because <module>mqtt</module> is declared after
+        <module>core</module>. There is deliberately no Maven dependency on core enforcing that:
+        it would drag core and all its transitives (Undertow, the MongoDB driver, ...) onto this
+        module's test classpath, next to 300 unit tests that do not want them. If the ordering is
+        ever broken, MqttITBase fails immediately with an actionable message naming the missing
+        jar.
+    -->
+    <profile>
+      <id>mqtt-it</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.testcontainers</groupId>
+          <artifactId>testcontainers</artifactId>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.testcontainers</groupId>
+          <artifactId>testcontainers-junit-jupiter</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <!--
+              Restores org/restheart/mqtt/it/** to testCompile: the default build (see the
+              maven-compiler-plugin configuration above <build><plugins>) excludes it so a plain
+              `mvn test` never needs org.testcontainers on its classpath. Within this profile the
+              two testcontainers dependencies above make that package resolvable again, so the
+              exclusion is lifted - combine.self="override" replaces the parent's testExcludes
+              list outright rather than appending to it, which is what an ordinary child
+              <testExcludes> would do.
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <testExcludes combine.self="override" />
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <!--
+                  Stages the plugins directory the ITs' RESTHeart runs with. Done here, in the
+                  build, rather than in test code, so the layout is visible and reproducible
+                  outside a test run.
+
+                  It has to carry core's own plugins, not only this module's: authentication is
+                  itself a plugin (fileRealmAuthenticator and basicAuthMechanism live in
+                  restheart-security.jar), and /mqtt-sse is registered with secure = true, so a
+                  directory holding only restheart-mqtt.jar would come up with no authorizer at
+                  all and deny every request.
+
+                  This only READS core/target - it never writes there - so core still has no
+                  knowledge of this module.
+              -->
+              <execution>
+                <id>stage-it-plugins</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <fail message="core/target/plugins is missing - the mqtt ITs run against the core you just built, so build it first: ./mvnw -pl mqtt -am verify -Pmqtt-it">
+                      <condition>
+                        <not><available file="../core/target/plugins" type="dir" /></not>
+                      </condition>
+                    </fail>
+                    <delete dir="${project.build.directory}/it-plugins" />
+                    <mkdir dir="${project.build.directory}/it-plugins" />
+                    <!-- core's plugins, exactly as an installed RESTHeart has them -->
+                    <copy todir="${project.build.directory}/it-plugins">
+                      <fileset dir="../core/target/plugins" />
+                    </copy>
+                    <!-- this module, in its own subdirectory: the same per-module layout the
+                         installable archive produces when unpacked into plugins/, which keeps
+                         its netty/rxjava out of the shared plugins/lib (see restheart#724).
+                         PluginsScanner recurses two levels and treats any "lib" segment as
+                         classpath-only, so both the jar and its lib/ are picked up correctly. -->
+                    <copy file="${project.build.directory}/${project.artifactId}.jar"
+                          todir="${project.build.directory}/it-plugins/mqtt" />
+                    <copy todir="${project.build.directory}/it-plugins/mqtt/lib">
+                      <fileset dir="${project.build.directory}/lib" />
+                    </copy>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

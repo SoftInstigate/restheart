@@ -55,8 +55,9 @@ services:
       #    predicate form below is the one RESTHeart's own FileRealmAuthenticator
       #    suggests in its "null password" warning, rather than a positional
       #    users[1] index;
-      #  - mqtt-client/mqtt-sse are enabledByDefault=false (the module is
-      #    dormant on installation), so both must be switched on explicitly;
+      #  - mqtt-client and mqtt-router are enabledByDefault=false, so they
+      #    must be switched on explicitly; mqtt-sse is also enabledByDefault=false
+      #    and needs enabling to expose the HTTP endpoint;
       #  - broker-url defaults to tcp://localhost:1883, which from inside
       #    this container is the restheart container itself, not the broker
       #    - it must point at the "mosquitto" service instead;
@@ -68,13 +69,15 @@ services:
         /fileRealmAuthenticator/users[userid='admin']/password->"secret";
         /mqtt-client/enabled->true;
         /mqtt-client/broker-url->"tcp://mosquitto:1883";
+        /mqtt-router/enabled->true;
         /mqtt-sse/enabled->true;
         /mqtt-topic-authorizer/acl->{"admin":["sensors/#"]};
     volumes:
       # Built by `../mvnw -pl mqtt package`: restheart-mqtt.jar plus lib/ (its
       # runtime dependencies, which must not themselves be scanned for
       # plugins - hence the "lib" directory name, per RESTHeart's plugin
-      # loading convention).
+      # loading convention). The module is not in the image - it is not part of
+      # the RESTHeart distribution - so this mount is how the demo gets it.
       - ./target:/opt/restheart/plugins/custom
     depends_on:
       mosquitto:
