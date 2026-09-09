@@ -1407,7 +1407,13 @@ public class McpService implements ByteArrayService {
                         + "Validate args against the declared params and body_schema before calling.\n\nThe descriptor "
                         + "is stable and safe to reuse: it carries no credential. Its Authorization header holds the "
                         + "placeholder `" + DescriptorRenderer.TOKEN_PLACEHOLDER + "` — call get_token to obtain a token and substitute "
-                        + "it just before sending the request, not when you receive this descriptor.")
+                        + "it just before sending the request, not when you receive this descriptor.\n\n"
+                        + "Call this ONCE PER ACTION SHAPE, not once per request. The descriptor for, say, creating a "
+                        + "document in a collection is the same every time apart from the body: keep it and reuse it, "
+                        + "changing only what varies. A repeated write is then two steps, not three — get_token, then "
+                        + "send — and the second is unavoidable for any short-lived credential. Calling how_to_call "
+                        + "before every write costs a round trip that buys nothing, and in a contended situation that "
+                        + "delay can lose you the operation.")
                 .build();
     }
 
@@ -1419,7 +1425,9 @@ public class McpService implements ByteArrayService {
                         + "sending the request — not in advance, and do not store it. Getting a fresh one costs "
                         + "nothing; reusing a stale one fails with 401. One token can serve several requests made "
                         + "within its window.\n\nIt carries the identity and roles of the current session and no more, "
-                        + "so it can do exactly what this session can do. Requires an authenticated session.")
+                        + "so it can do exactly what this session can do. Requires an authenticated session.\n\n"
+                        + "The response is a JSON object: read `access_token` from it and put it in the descriptor's "
+                        + "Authorization header in place of the placeholder, as `Bearer <token>`.")
                 .build();
     }
 
