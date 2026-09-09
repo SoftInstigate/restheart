@@ -24,12 +24,6 @@
       <version>10.0.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>com.hivemq</groupId>
-      <artifactId>hivemq-mqtt-client</artifactId>
-      <version>1.4.0</version>
-      <scope>provided</scope>
-    </dependency>
   </dependencies>
 
   <build>

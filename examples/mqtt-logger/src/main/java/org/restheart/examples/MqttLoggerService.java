@@ -9,6 +9,7 @@ import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.mqtt.MqttMessageRouter;
 import org.restheart.mqtt.model.MqttMessage;
+import org.restheart.mqtt.model.Qos;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
@@ -18,7 +19,6 @@ import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -71,7 +71,7 @@ public class MqttLoggerService implements JsonService {
     public void init() {
         subscribedTopic = (String) config.getOrDefault("topic", "sensors/#");
 
-        router.subscribe(subscribedTopic, MqttQos.AT_LEAST_ONCE, msg -> {
+        router.subscribe(subscribedTopic, Qos.AT_LEAST_ONCE, msg -> {
             // Add message to buffer, maintaining max size (FIFO drop oldest)
             synchronized (messageBuffer) {
                 if (messageBuffer.size() >= MAX_MESSAGES) {

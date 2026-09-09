@@ -130,6 +130,14 @@ public abstract class MqttITBase {
     /**
      * Starts the Mosquitto broker and the primary RESTHeart instance, in that order, before any
      * {@code @Test} in the subclass runs.
+     * <p>
+     * Between the two, {@link #beforeRestheartStarts()} and then {@link #extraRho()} are called -
+     * in that order, and deliberately kept as two separate hooks rather than one that does both
+     * jobs implicitly. A subclass that needs a dependency RESTHeart itself must connect to (for
+     * example a MongoDB container, whose host port is not known before it starts) starts it in
+     * {@link #beforeRestheartStarts()} and only then, in {@link #extraRho()}, can report the port
+     * that starting it just assigned.
+     * </p>
      *
      * @throws IOException if either the broker or RESTHeart fails to start
      */
@@ -158,15 +166,19 @@ public abstract class MqttITBase {
         mosquitto.setPortBindings(List.of(brokerPort + ":1883"));
         mosquitto.start();
 
-        restheart = startRestheart(overridesFile(),
-            List.of("/mqtt-client/broker-url->\"tcp://localhost:" + brokerPort + "\""),
-            getClass().getSimpleName() + ".log");
+        beforeRestheartStarts();
+
+        var rho = new ArrayList<String>();
+        rho.add("/mqtt-client/broker-url->\"tcp://localhost:" + brokerPort + "\"");
+        rho.addAll(extraRho());
+
+        restheart = startRestheart(overridesFile(), rho, getClass().getSimpleName() + ".log", standalone());
     }
 
     /**
-     * Tears down the primary RESTHeart instance and the Mosquitto broker, in that order, so
-     * neither outlives the test class - and makes sure both teardowns run even if one of them
-     * throws.
+     * Tears down the primary RESTHeart instance, whatever {@link #afterRestheartStops()} adds and
+     * the Mosquitto broker, in that order, so nothing outlives the test class - and makes sure
+     * every teardown step runs even if an earlier one throws.
      */
     @AfterAll
     void stopTopology() {
@@ -178,11 +190,79 @@ public abstract class MqttITBase {
                     restheart.close();
                 }
             } finally {
-                if (mosquitto != null) {
-                    mosquitto.stop();
+                try {
+                    afterRestheartStops();
+                } finally {
+                    if (mosquitto != null) {
+                        mosquitto.stop();
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * Whether the primary RESTHeart instance {@link #startTopology()} starts is launched with
+     * {@code --standalone}.
+     * <p>
+     * Defaults to {@code true}, i.e. today's behaviour for every existing subclass: {@code
+     * --standalone} makes Bootstrapper load {@code restheart-default-config-no-mongodb.yml}, which
+     * has no MongoDB at all. A subclass that needs a real {@code mclient} - because it exercises a
+     * plugin that writes to MongoDB, such as {@code mqtt-mongo-writer} - overrides this to {@code
+     * false} so the full {@code restheart-default-config.yml} is loaded instead, and supplies the
+     * MongoDB connection string itself through {@link #extraRho()}.
+     * </p>
+     *
+     * @return {@code true} to launch with {@code --standalone} (the default), {@code false} to
+     *         omit it
+     */
+    protected boolean standalone() {
+        return true;
+    }
+
+    /**
+     * Starts, before the primary RESTHeart instance launches, whatever extra dependency a
+     * subclass's tests need beyond the Mosquitto broker every mqtt IT already gets.
+     * <p>
+     * Default is a no-op. Kept deliberately separate from {@link #extraRho()} - see
+     * {@link #startTopology()}'s javadoc for why - and paired with {@link #afterRestheartStops()}
+     * for symmetric teardown of whatever this method starts.
+     * </p>
+     *
+     * @throws IOException if the extra dependency fails to start
+     */
+    protected void beforeRestheartStarts() throws IOException {
+        // no-op by default
+    }
+
+    /**
+     * Contributes additional {@code RHO} pairs for the primary RESTHeart instance, applied on top
+     * of the plugins-directory, port and broker-url pairs {@link #startTopology()} always sets.
+     * <p>
+     * Default is empty. Called after {@link #beforeRestheartStarts()} so a subclass can report a
+     * port or connection string that starting its own dependency just assigned - for example the
+     * host port Testcontainers picked for a MongoDB container it started in
+     * {@link #beforeRestheartStarts()}.
+     * </p>
+     *
+     * @return additional {@code RHO} pairs, in the same {@code "/path->value"} form documented on
+     *         {@link #startRestheart(Path, List, String, boolean)}
+     */
+    protected List<String> extraRho() {
+        return List.of();
+    }
+
+    /**
+     * Stops whatever {@link #beforeRestheartStarts()} started, after the primary RESTHeart
+     * instance has already been closed and before the Mosquitto broker is stopped.
+     * <p>
+     * Default is a no-op, matching {@link #beforeRestheartStarts()}'s default. Runs inside {@link
+     * #stopTopology()}'s own {@code finally} chain, so it still runs even if closing RESTHeart
+     * itself threw.
+     * </p>
+     */
+    protected void afterRestheartStops() {
+        // no-op by default
     }
 
     /**
@@ -246,6 +326,28 @@ public abstract class MqttITBase {
      */
     protected static RestheartInstance startRestheart(Path overridesFile, List<String> extraRho, String logFileName)
             throws IOException {
+        return startRestheart(overridesFile, extraRho, logFileName, true);
+    }
+
+    /**
+     * Same as {@link #startRestheart(Path, List, String)}, with control over whether the instance
+     * is launched with {@code --standalone} - see {@link #standalone()} for why a subclass would
+     * want it omitted.
+     *
+     * @param overridesFile the {@code -o} overrides file to launch RESTHeart with
+     * @param extraRho additional {@code RHO} pairs (for example the broker URL), applied on top
+     *        of the plugins-directory and port pairs this method always sets; omit the broker URL
+     *        entirely for an instance that must have no {@code mqtt-*} configuration at all
+     * @param logFileName the file name (not path) of the per-instance log this instance's stdout
+     *        and stderr are redirected to, under {@code target/it-logs/}, created fresh
+     * @param standalone whether to launch with {@code --standalone} (loads {@code
+     *        restheart-default-config-no-mongodb.yml}) or without it (loads {@code
+     *        restheart-default-config.yml}, with MongoDB)
+     * @return the started, ready instance
+     * @throws IOException if the process cannot be started or the log file cannot be prepared
+     */
+    protected static RestheartInstance startRestheart(Path overridesFile, List<String> extraRho, String logFileName,
+            boolean standalone) throws IOException {
         var jar = coreJar();
         var port = freePort();
         var logFile = freshLogFile(logFileName);
@@ -255,8 +357,17 @@ public abstract class MqttITBase {
         rho.add("/http-listener/port->" + port);
         rho.addAll(extraRho);
 
-        var pb = new ProcessBuilder(javaExecutable(), "-jar", jar.toString(),
-            "--standalone", "-o", overridesFile.toAbsolutePath().toString());
+        var args = new ArrayList<String>();
+        args.add(javaExecutable());
+        args.add("-jar");
+        args.add(jar.toString());
+        if (standalone) {
+            args.add("--standalone");
+        }
+        args.add("-o");
+        args.add(overridesFile.toAbsolutePath().toString());
+
+        var pb = new ProcessBuilder(args);
         pb.environment().put("RHO", String.join(";", rho));
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.to(logFile.toFile()));

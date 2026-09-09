@@ -15,11 +15,12 @@ cd examples/mqtt-logger && ../../mvnw package -DskipTests
 
 ### Dependencies
 
-The plugin compiles against three `provided` dependencies—all supplied by the RESTHeart server at runtime, not bundled:
+The plugin compiles against two `provided` dependencies—both supplied by the RESTHeart server at runtime, not bundled:
 
 - **restheart-commons** — RESTHeart's base plugin API and utilities
 - **restheart-mqtt** — The MQTT router provider and message model
-- **hivemq-mqtt-client** — The underlying MQTT client library
+
+Note what is *not* here: `hivemq-mqtt-client`. The router's API is expressed entirely in `restheart-mqtt`'s own types (`Qos`, `MqttMessage`), so a plugin that consumes messages never compiles against the MQTT client library. Add it only if you inject `mqtt-client` to reach the raw HiveMQ client for protocol features the router does not expose.
 
 Since these are declared with `provided` scope, the plugin JAR contains no runtime dependencies; the server supplies them from `plugins/restheart-mqtt.jar` and its transitive dependencies.
 
@@ -101,7 +102,7 @@ public class MqttLoggerService implements JsonService {
     @OnInit
     public void init() {
         String topic = (String) config.getOrDefault("topic", "sensors/#");
-        router.subscribe(topic, MqttQos.AT_LEAST_ONCE, msg -> {
+        router.subscribe(topic, Qos.AT_LEAST_ONCE, msg -> {
             // Buffer and log each received message
         });
     }

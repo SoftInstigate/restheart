@@ -47,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.restheart.mqtt.model.Qos;
 
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
@@ -164,7 +165,7 @@ public class MqttRouterProviderTest {
 
         // register one listener so the router has a topic filter to resubscribe
         try {
-            router.subscribe("test/topic", MqttQos.AT_LEAST_ONCE, msg -> {});
+            router.subscribe("test/topic", Qos.AT_LEAST_ONCE, msg -> {});
         } catch (RuntimeException expected) {
             // simulated broker-subscribe failure; the router still recorded the listener
         }

@@ -417,7 +417,7 @@ public class MyService implements JsonService {
 
     @OnInit
     public void onInit() {
-        router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, msg ->
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, msg ->
             LOGGER.info("{} -> {}", msg.getTopic(), msg.getPayload()));
     }
 }
@@ -427,7 +427,7 @@ Inject `mqtt-client` for the raw HiveMQ client when you need to publish, or need
 
 A worked example is in [`examples/mqtt-logger`](../examples/mqtt-logger).
 
-Note that `subscribe` currently takes HiveMQ's `MqttQos` in the listener signature, so plugins that use the router take a compile-time dependency on the HiveMQ types.
+The router's API is expressed entirely in this module's own types (`Qos`, `MqttMessage`), so a plugin that only uses the router does not compile against HiveMQ at all. Inject `mqtt-client` instead, as above, when you deliberately want the raw HiveMQ client.
 
 ## Operational notes
 

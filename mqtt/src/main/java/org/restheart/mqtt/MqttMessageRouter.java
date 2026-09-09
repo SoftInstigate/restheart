@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.restheart.mqtt.model.MqttMessage;
+import org.restheart.mqtt.model.Qos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,10 +53,10 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
  * Router that bridges an underlying MQTT broker connection (MQTT 3 or 5, via the HiveMQ client)
  * to in-process listeners.
  * <p>
- * Consumers register interest in a topic filter via {@link #subscribe(String, MqttQos, Consumer)};
+ * Consumers register interest in a topic filter via {@link #subscribe(String, Qos, Consumer)};
  * the router lazily subscribes to the broker the first time a topic filter gains a listener, and
  * unsubscribes from the broker once the last listener for a topic filter is removed — unless the
- * filter was established via {@link #subscribeFromConfig(String, MqttQos)}, in which case it
+ * filter was established via {@link #subscribeFromConfig(String, Qos)}, in which case it
  * survives listener churn. A single global publish consumer is registered once, at construction
  * time, and every received publish is fanned out in-process (in {@link #dispatchMessage}) to every
  * listener whose topic filter matches, exactly once per listener.
@@ -83,7 +84,7 @@ public class MqttMessageRouter {
     private final Map<String, List<Consumer<MqttMessage>>> listeners = new ConcurrentHashMap<>();
 
     // Topic filter -> effective (highest requested) QoS currently subscribed on the broker
-    private final Map<String, MqttQos> filterQos = new ConcurrentHashMap<>();
+    private final Map<String, Qos> filterQos = new ConcurrentHashMap<>();
 
     // Topic filters established via configuration: these survive listener churn
     private final Set<String> configuredFilters = ConcurrentHashMap.newKeySet();
@@ -174,7 +175,7 @@ public class MqttMessageRouter {
      * @param qos         the QoS level to use when subscribing to the broker
      * @param listener    the callback invoked with each {@link MqttMessage} matching the filter
      */
-    public void subscribe(String topicFilter, MqttQos qos, Consumer<MqttMessage> listener) {
+    public void subscribe(String topicFilter, Qos qos, Consumer<MqttMessage> listener) {
         listeners.computeIfAbsent(topicFilter, k -> new CopyOnWriteArrayList<>()).add(listener);
 
         ensureBrokerSubscription(topicFilter, qos);
@@ -195,7 +196,7 @@ public class MqttMessageRouter {
      * @param topicFilter the MQTT topic filter to subscribe to
      * @param qos         the QoS level to use when subscribing to the broker
      */
-    void subscribeFromConfig(String topicFilter, MqttQos qos) {
+    void subscribeFromConfig(String topicFilter, Qos qos) {
         configuredFilters.add(topicFilter);
         ensureBrokerSubscription(topicFilter, qos);
     }
@@ -208,11 +209,11 @@ public class MqttMessageRouter {
      * @param topicFilter the MQTT topic filter to subscribe to
      * @param qos         the QoS level requested
      */
-    private void ensureBrokerSubscription(String topicFilter, MqttQos qos) {
+    private void ensureBrokerSubscription(String topicFilter, Qos qos) {
         boolean needsBrokerSubscribe;
         synchronized (filterQos) {
-            MqttQos current = filterQos.get(topicFilter);
-            if (current == null || qos.getCode() > current.getCode()) {
+            Qos current = filterQos.get(topicFilter);
+            if (current == null || qos.code() > current.code()) {
                 filterQos.put(topicFilter, qos);
                 needsBrokerSubscribe = true;
             } else {
@@ -230,7 +231,7 @@ public class MqttMessageRouter {
      * <p>
      * If this was the last listener registered for {@code topicFilter}, the router unsubscribes
      * from the filter on the underlying broker connection — unless {@code topicFilter} was
-     * established via {@link #subscribeFromConfig(String, MqttQos)}, in which case the broker
+     * established via {@link #subscribeFromConfig(String, Qos)}, in which case the broker
      * subscription is retained regardless of listener count.
      *
      * @param topicFilter the MQTT topic filter the listener was registered on
@@ -267,11 +268,12 @@ public class MqttMessageRouter {
      * @param topicFilter the MQTT topic filter to subscribe to
      * @param qos         the QoS level to subscribe with
      */
-    private void subscribeOnBroker(String topicFilter, MqttQos qos) {
+    private void subscribeOnBroker(String topicFilter, Qos qos) {
+        MqttQos brokerQos = MqttQos.fromCode(qos.code());
         if (client instanceof Mqtt5AsyncClient mqtt5Client) {
             mqtt5Client.subscribeWith()
                 .topicFilter(topicFilter)
-                .qos(qos)
+                .qos(brokerQos)
                 .send()
                 .whenComplete((subAck, throwable) -> {
                     if (throwable != null) {
@@ -283,7 +285,7 @@ public class MqttMessageRouter {
         } else if (client instanceof Mqtt3AsyncClient mqtt3Client) {
             mqtt3Client.subscribeWith()
                 .topicFilter(topicFilter)
-                .qos(qos)
+                .qos(brokerQos)
                 .send()
                 .whenComplete((subAck, throwable) -> {
                     if (throwable != null) {
@@ -501,19 +503,19 @@ public class MqttMessageRouter {
     /**
      * Re-issues broker subscriptions for every topic filter currently tracked by the router
      * (whether it has active listeners, was established via
-     * {@link #subscribeFromConfig(String, MqttQos)}, or both), each at the QoS it is currently
+     * {@link #subscribeFromConfig(String, Qos)}, or both), each at the QoS it is currently
      * tracked at. Intended to be called after the underlying MQTT client reconnects, since broker
      * subscriptions do not survive a disconnect.
      */
     public void resubscribeAll() {
-        Map<String, MqttQos> snapshot;
+        Map<String, Qos> snapshot;
         synchronized (filterQos) {
             snapshot = new HashMap<>(filterQos);
         }
 
         LOGGER.info("Re-subscribing to {} topic filters after reconnect", snapshot.size());
 
-        for (Map.Entry<String, MqttQos> entry : snapshot.entrySet()) {
+        for (Map.Entry<String, Qos> entry : snapshot.entrySet()) {
             subscribeOnBroker(entry.getKey(), entry.getValue());
         }
     }

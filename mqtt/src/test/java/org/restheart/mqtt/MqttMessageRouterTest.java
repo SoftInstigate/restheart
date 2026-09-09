@@ -59,6 +59,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.restheart.mqtt.MqttMessageRouter.RouterStats;
 import org.restheart.mqtt.model.MqttMessage;
+import org.restheart.mqtt.model.Qos;
 
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
@@ -153,11 +154,11 @@ public class MqttMessageRouterTest {
 
         // 1st listener -> triggers subscribeOnBroker
         RuntimeException ex1 = assertThrows(RuntimeException.class,
-            () -> router.subscribe("test/topic", MqttQos.AT_LEAST_ONCE, listener1));
+            () -> router.subscribe("test/topic", Qos.AT_LEAST_ONCE, listener1));
         assertEquals("SubscribeCalled", ex1.getMessage());
 
         // 2nd listener on same topic, same QoS -> does NOT trigger subscribeOnBroker again
-        router.subscribe("test/topic", MqttQos.AT_LEAST_ONCE, listener2);
+        router.subscribe("test/topic", Qos.AT_LEAST_ONCE, listener2);
 
         // Unsubscribe listener1 -> does NOT trigger unsubscribeFromBroker
         router.unsubscribe("test/topic", listener1);
@@ -182,7 +183,7 @@ public class MqttMessageRouterTest {
         MqttMessageRouter router = assertDoesNotThrow(() -> new MqttMessageRouter(plainClient, 5000, true, 1000));
 
         Consumer<MqttMessage> listener = msg -> {};
-        assertDoesNotThrow(() -> router.subscribe("a/b", MqttQos.AT_LEAST_ONCE, listener));
+        assertDoesNotThrow(() -> router.subscribe("a/b", Qos.AT_LEAST_ONCE, listener));
         assertDoesNotThrow(() -> router.unsubscribe("a/b", listener));
     }
 
@@ -199,9 +200,9 @@ public class MqttMessageRouterTest {
 
         MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
 
-        router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerA);
-        router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerB);
-        router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerC);
+        router.subscribe("test/order", Qos.AT_LEAST_ONCE, listenerA);
+        router.subscribe("test/order", Qos.AT_LEAST_ONCE, listenerB);
+        router.subscribe("test/order", Qos.AT_LEAST_ONCE, listenerC);
 
         MqttMessage message = new MqttMessage("test/order", "payload", 1, Instant.now());
 
@@ -230,11 +231,11 @@ public class MqttMessageRouterTest {
         CountDownLatch delivered = new CountDownLatch(2);
 
         // Two overlapping filters, each with its own listener
-        router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, msg -> {
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, msg -> {
             overlappingListenerCalls.incrementAndGet();
             delivered.countDown();
         });
-        router.subscribe("sensors/temp", MqttQos.AT_LEAST_ONCE, msg -> {
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {
             exactListenerCalls.incrementAndGet();
             delivered.countDown();
         });
@@ -317,9 +318,9 @@ public class MqttMessageRouterTest {
 
         ArgumentCaptor<MqttQos> qosCaptor = ArgumentCaptor.forClass(MqttQos.class);
 
-        router.subscribe("sensors/temp", MqttQos.AT_MOST_ONCE, msg -> {});
-        router.subscribe("sensors/temp", MqttQos.EXACTLY_ONCE, msg -> {}); // upgrade: must re-subscribe
-        router.subscribe("sensors/temp", MqttQos.AT_LEAST_ONCE, msg -> {}); // lower than tracked: no new broker call
+        router.subscribe("sensors/temp", Qos.AT_MOST_ONCE, msg -> {});
+        router.subscribe("sensors/temp", Qos.EXACTLY_ONCE, msg -> {}); // upgrade: must re-subscribe
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {}); // lower than tracked: no new broker call
 
         verify(fixture.subscribeStage, times(2)).qos(qosCaptor.capture());
         List<MqttQos> requestedSoFar = qosCaptor.getAllValues();
@@ -343,10 +344,10 @@ public class MqttMessageRouterTest {
         Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
         MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
 
-        router.subscribeFromConfig("sensors/#", MqttQos.AT_LEAST_ONCE);
+        router.subscribeFromConfig("sensors/#", Qos.AT_LEAST_ONCE);
 
         Consumer<MqttMessage> listener = msg -> {};
-        router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, listener);
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, listener);
         router.unsubscribe("sensors/#", listener);
 
         assertEquals(1, router.getStats().getTopicFilters(),
@@ -360,7 +361,7 @@ public class MqttMessageRouterTest {
         MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
 
         Consumer<MqttMessage> listener = msg -> {};
-        router.subscribe("devices/status", MqttQos.AT_LEAST_ONCE, listener);
+        router.subscribe("devices/status", Qos.AT_LEAST_ONCE, listener);
         router.unsubscribe("devices/status", listener);
 
         assertEquals(0, router.getStats().getTopicFilters(),

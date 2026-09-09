@@ -41,6 +41,7 @@ import org.bson.Document;
 import org.restheart.mqtt.buffer.MessageBuffer;
 import org.restheart.mqtt.buffer.MessageBuffer.Strategy;
 import org.restheart.mqtt.model.MqttMessage;
+import org.restheart.mqtt.model.Qos;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -49,7 +50,6 @@ import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.client.MongoClient;
@@ -233,7 +233,7 @@ public class MqttMongoWriter implements Initializer {
 
         // Subscribe to topics
         for (MongoSink sink : sinks) {
-            router.subscribe(sink.topic(), MqttQos.AT_LEAST_ONCE, buffer::offer);
+            router.subscribe(sink.topic(), Qos.AT_LEAST_ONCE, buffer::offer);
             LOGGER.info("Subscribed to topic {} → {}.{}", sink.topic(), sink.database(), sink.collection());
         }
 

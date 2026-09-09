@@ -316,6 +316,16 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <!-- MqttMongoWriterIT starts its own MongoDB container. Passed through from the
+                     root pom rather than hardcoded in the test, so this module tests against the
+                     same database as the rest of the repository and -Dmongodb.version=8.0 works
+                     here exactly as it does for core's suite. -->
+                <mongodb.image>${mongodb.image}</mongodb.image>
+                <mongodb.version>${mongodb.version}</mongodb.version>
+              </systemPropertyVariables>
+            </configuration>
             <executions>
               <execution>
                 <goals>

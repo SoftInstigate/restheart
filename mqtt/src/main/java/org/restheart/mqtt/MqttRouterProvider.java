@@ -23,6 +23,7 @@ package org.restheart.mqtt;
 import java.util.List;
 import java.util.Map;
 
+import org.restheart.mqtt.model.Qos;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -32,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.datatypes.MqttQos;
 
 /**
  * RESTHeart provider plugin that supplies the single {@link MqttMessageRouter} instance shared
@@ -154,7 +154,7 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
 
             final int qosCode = resolveConfiguredQos(subscription);
 
-            router.subscribeFromConfig(topicFilter, MqttQos.fromCode(qosCode));
+            router.subscribeFromConfig(topicFilter, Qos.fromCode(qosCode));
         }
     }
 
@@ -186,7 +186,7 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
             }
         }
 
-        if (qosCode == null || MqttQos.fromCode(qosCode) == null) {
+        if (qosCode == null || Qos.fromCode(qosCode) == null) {
             throw new IllegalArgumentException(
                 "Invalid value for subscriptions[].qos: " + qosValue + " in entry " + subscription
                     + ". Accepted values are: 0, 1, 2");

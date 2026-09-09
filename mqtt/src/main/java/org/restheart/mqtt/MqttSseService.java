@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.restheart.mqtt.model.MqttMessage;
+import org.restheart.mqtt.model.Qos;
 import org.restheart.mqtt.pipeline.FilterStage;
 import org.restheart.mqtt.pipeline.MapStage;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;
@@ -53,7 +54,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.hivemq.client.mqtt.datatypes.MqttQos;
 
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 
@@ -180,7 +180,7 @@ public class MqttSseService implements SseService {
                 }
             }
         };
-        router.subscribe(topicFilter, MqttQos.fromCode(qos), listener);
+        router.subscribe(topicFilter, Qos.fromCode(qos), listener);
 
         // Drain queue on virtual thread
         Thread.ofVirtual().start(() -> {
@@ -242,7 +242,7 @@ public class MqttSseService implements SseService {
      * Resolves the QoS level from the parsed query string parameters.
      * Falls back to the configured, already-validated {@code default-qos} if
      * {@code qos} is absent, unparseable, or out of the 0-2 range accepted by
-     * {@link MqttQos#fromCode(int)} - a typo in a query parameter is not worth
+     * {@link Qos#fromCode(int)} - a typo in a query parameter is not worth
      * killing an SSE connection over.
      *
      * @param params the query string parameters, already parsed and URL-decoded
@@ -254,7 +254,7 @@ public class MqttSseService implements SseService {
             if (qosStr != null) {
                 try {
                     int qos = Integer.parseInt(qosStr);
-                    if (MqttQos.fromCode(qos) != null) {
+                    if (Qos.fromCode(qos) != null) {
                         return qos;
                     }
                     LOGGER.warn("QoS value '{}' is out of range (must be 0, 1 or 2), using default", qosStr);
@@ -268,7 +268,7 @@ public class MqttSseService implements SseService {
 
     /**
      * Validates a configured QoS value, failing fast at {@link #init()} rather than letting an
-     * out-of-range value reach {@link MqttQos#fromCode(int)} later, where it would resolve to
+     * out-of-range value reach {@link Qos#fromCode(int)} later, where it would resolve to
      * {@code null} and blow up {@link MqttMessageRouter#subscribe} at connection time instead.
      *
      * @param key   the configuration key {@code value} was read from, used in the failure message
@@ -276,7 +276,7 @@ public class MqttSseService implements SseService {
      * @throws IllegalArgumentException if {@code value} is not 0, 1 or 2
      */
     private static void validateQos(String key, int value) {
-        if (MqttQos.fromCode(value) == null) {
+        if (Qos.fromCode(value) == null) {
             throw new IllegalArgumentException(
                 "Invalid value for " + key + ": " + value + ". Accepted values are: 0, 1, 2");
         }

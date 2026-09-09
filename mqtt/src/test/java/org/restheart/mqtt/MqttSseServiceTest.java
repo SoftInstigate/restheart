@@ -51,10 +51,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.restheart.mqtt.model.MqttMessage;
+import org.restheart.mqtt.model.Qos;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;
 
 import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.datatypes.MqttQos;
 
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import org.xnio.ChannelListener;
@@ -158,7 +158,7 @@ public class MqttSseServiceTest {
         assertEquals(1, qos);
     }
 
-    // --- Fix 1: an out-of-range ?qos= must fall back to default-qos, not reach MqttQos.fromCode(n)
+    // --- Fix 1: an out-of-range ?qos= must fall back to default-qos, not reach Qos.fromCode(n)
     // as null and blow up the router's "highest QoS wins" tracking for everyone subscribed to
     // the same filter. ---
 
@@ -170,7 +170,7 @@ public class MqttSseServiceTest {
         callInit();
 
         int qos = service.resolveQos(service.parseQueryString("topic=sensors/&qos=7"));
-        assertEquals(1, qos, "qos=7 is out of MqttQos's 0..2 range and must fall back to default-qos");
+        assertEquals(1, qos, "qos=7 is out of Qos's 0..2 range and must fall back to default-qos");
     }
 
     @Test
@@ -181,7 +181,7 @@ public class MqttSseServiceTest {
         callInit();
 
         int qos = service.resolveQos(service.parseQueryString("topic=sensors/&qos=-1"));
-        assertEquals(2, qos, "qos=-1 is out of MqttQos's 0..2 range and must fall back to default-qos");
+        assertEquals(2, qos, "qos=-1 is out of Qos's 0..2 range and must fall back to default-qos");
     }
 
     // --- Fix 2: default-qos itself must be validated at init, since resolveQos() now falls back
@@ -508,7 +508,7 @@ public class MqttSseServiceTest {
     private Consumer<MqttMessage> onConnectAndCaptureListener(MqttMessageRouter mockRouter, ServerSentEventConnection conn) {
         ArgumentCaptor<Consumer<MqttMessage>> captor = ArgumentCaptor.forClass(Consumer.class);
         service.onConnect(conn, null);
-        verify(mockRouter).subscribe(anyString(), any(MqttQos.class), captor.capture());
+        verify(mockRouter).subscribe(anyString(), any(Qos.class), captor.capture());
         return captor.getValue();
     }
 
@@ -613,7 +613,7 @@ public class MqttSseServiceTest {
         // test) thread, so plain, immediate verify() is enough - none of this
         // depends on the background drain thread ever being scheduled.
         service.onConnect(conn1, null);
-        verify(mockRouter).subscribe(anyString(), any(MqttQos.class), any());
+        verify(mockRouter).subscribe(anyString(), any(Qos.class), any());
         verify(conn1).addCloseTask(closeTaskCaptor.capture());
 
         // Second connection on the same topic filter must be rejected: no subscribe, connection closed.
@@ -622,7 +622,7 @@ public class MqttSseServiceTest {
         service.onConnect(conn2, null);
 
         verify(conn2).close();
-        verify(mockRouter, times(1)).subscribe(anyString(), any(MqttQos.class), any());
+        verify(mockRouter, times(1)).subscribe(anyString(), any(Qos.class), any());
 
         // Close the first connection: its slot must be released, including
         // the fact that the rejected connection above never leaked a permit.
@@ -633,7 +633,7 @@ public class MqttSseServiceTest {
         ServerSentEventConnection conn3 = mockConnection("topic=sensors/%23", open3);
         try {
             service.onConnect(conn3, null);
-            verify(mockRouter, times(2)).subscribe(anyString(), any(MqttQos.class), any());
+            verify(mockRouter, times(2)).subscribe(anyString(), any(Qos.class), any());
         } finally {
             open3.set(false);
         }
