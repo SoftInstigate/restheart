@@ -173,6 +173,7 @@ Every one of these is silent: nothing refuses to start, and nothing complains un
 - **`mqtt-rest` answers `404` forever** unless something populates the router's last-message cache (`mqtt-router.subscriptions`, a live SSE client, or the writer's `mongo-sink`) **and** `mqtt-router.last-message-cache` is `true`.
 - **`mqtt-mongo-writer` with an empty `mongo-sink` runs and writes nothing.** The buffer fills and the drain loop drains it, but there is no sink to route messages to, so no document is ever written.
 - **`mqtt-topic-authorizer` with no `acl` denies everything with `403`.** There is no permissive default.
+- **MQTT 5 settings under `protocol-version: 3` are dropped.** `session-expiry-seconds`, `will.delay-seconds` and `will.message-expiry-seconds` exist only in MQTT 5.0, and the 3.1.1 connection path has nowhere to put them — the values are read and validated, then discarded. A will message configured with a delay fires immediately instead.
 
 `mqtt-status` reports all of these at startup by comparing the configuration against what the plugin registry actually instantiated. Check the log for it before assuming a misconfiguration is a bug.
 
@@ -259,7 +260,7 @@ See "Enablement" above for each plugin's `enabled` default; the tables below cov
 | `will.topic`, `will.payload` | none | |
 | `will.qos` | `0` | must be 0-2 |
 | `will.retain` | `false` | |
-| `will.delay-seconds` | `0` | |
+| `will.delay-seconds` | `0` | MQTT 5 only |
 | `will.message-expiry-seconds` | none | MQTT 5 only |
 
 The port follows the scheme when you do not give one: 1883 for `tcp`, 8883 for `ssl`/`mqtts`, 80 for `ws`, 443 for `wss`. Setting `tls: true` on a plaintext scheme also moves the default port (`tcp://broker` becomes port 8883, not 1883); an explicit port always wins.

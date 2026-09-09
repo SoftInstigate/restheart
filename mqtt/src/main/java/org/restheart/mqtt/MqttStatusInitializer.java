@@ -185,6 +185,35 @@ public class MqttStatusInitializer implements Initializer {
             }
         }
 
+        // MQTT 5 settings under a 3.1.1 connection. MqttClientSingleton has two connect paths -
+        // buildMqtt5Client/connectWith().sessionExpiryInterval(...) and the v5 will builder's
+        // delayInterval/messageExpiryInterval - and the 3.1.1 path simply does not carry these
+        // three fields, because the protocol has nowhere to put them. So the settings are read,
+        // validated, and then dropped: the operator gets no error, no warning, and a will message
+        // that fires immediately instead of after the delay they asked for. Same shape as the
+        // plugins-args trap this sentinel was written for - a configuration that is silently
+        // inert - which is why it belongs here rather than in MqttClientSingleton.
+        var clientBlock = asMap(confMap.get("mqtt-client"));
+        if (clientBlock != null && asInt(clientBlock.get("protocol-version"), 3) != 5) {
+            var willBlock = asMap(clientBlock.get("will"));
+            var mqtt5OnlyKeys = new ArrayList<String>();
+            if (clientBlock.containsKey("session-expiry-seconds")) {
+                mqtt5OnlyKeys.add("session-expiry-seconds");
+            }
+            if (willBlock != null && willBlock.containsKey("delay-seconds")) {
+                mqtt5OnlyKeys.add("will.delay-seconds");
+            }
+            if (willBlock != null && willBlock.containsKey("message-expiry-seconds")) {
+                mqtt5OnlyKeys.add("will.message-expiry-seconds");
+            }
+            if (!mqtt5OnlyKeys.isEmpty()) {
+                findings.add(new Finding(Level.WARN,
+                    "mqtt-client sets " + String.join(", ", mqtt5OnlyKeys) + ", which exist only in MQTT 5.0, "
+                        + "while protocol-version is 3; these settings are silently ignored on a 3.1.1 "
+                        + "connection - set /mqtt-client/protocol-version to 5, or remove them"));
+            }
+        }
+
         var restActive = isActive(registry, "mqtt-rest");
         var sseActive = isActive(registry, "mqtt-sse");
         var mongoWriterActive = isActive(registry, "mqtt-mongo-writer");
@@ -261,6 +290,29 @@ public class MqttStatusInitializer implements Initializer {
 
     private static boolean isNonEmptyMap(Object o) {
         return (o instanceof Map<?, ?> m) && !m.isEmpty();
+    }
+
+    /**
+     * Reads a configuration value as an int, accepting a {@link Number} or a numeric
+     * {@link String} - a value quoted in YAML is a common slip, and this sentinel must not
+     * mistake {@code protocol-version: "5"} for an unset one and warn about nothing.
+     *
+     * @param o the raw configuration value
+     * @param defaultValue what to return when the value is absent or unparseable
+     * @return the resolved int
+     */
+    private static int asInt(Object o, int defaultValue) {
+        if (o instanceof Number n) {
+            return n.intValue();
+        }
+        if (o instanceof String str) {
+            try {
+                return Integer.parseInt(str.trim());
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
     }
 
     private static boolean asBoolean(Object o, boolean defaultValue) {

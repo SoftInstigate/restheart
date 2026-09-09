@@ -424,6 +424,98 @@ public class MqttStatusInitializerTest {
             "a diagnostic that takes the server down is worse than no diagnostic");
     }
 
+    // --- MQTT 5 settings on a 3.1.1 connection ---
+
+    @Test
+    @DisplayName("session-expiry-seconds under protocol-version 3 is reported: MQTT 5 only")
+    void testSessionExpiryUnderMqtt3IsReported() {
+        // No protocol-version key at all: the default is 3, so this is the shape an operator who
+        // copied the setting from MQTT 5 documentation actually ends up with.
+        var config = configOf(Map.of("mqtt-client", Map.of(
+            "enabled", true,
+            "session-expiry-seconds", 3600)));
+        var registry = registryWithActive("mqtt-client");
+
+        var findings = MqttStatusInitializer.findings(config, registry);
+
+        var warning = onlyWarning(findings);
+        assertTrue(warning.message().contains("session-expiry-seconds"),
+            "the warning must name the setting that is being ignored; got: " + warning.message());
+        assertTrue(warning.message().contains("protocol-version"),
+            "and must name the switch that would make it take effect; got: " + warning.message());
+    }
+
+    @Test
+    @DisplayName("both MQTT 5-only will options under protocol-version 3 are reported in one finding")
+    void testMqtt5OnlyWillOptionsUnderMqtt3AreReported() {
+        var config = configOf(Map.of("mqtt-client", Map.of(
+            "enabled", true,
+            "protocol-version", 3,
+            "will", Map.of(
+                "topic", "status/restheart",
+                "payload", "offline",
+                "delay-seconds", 30,
+                "message-expiry-seconds", 60))));
+        var registry = registryWithActive("mqtt-client");
+
+        var warning = onlyWarning(MqttStatusInitializer.findings(config, registry));
+
+        // One finding naming both, not one finding each: they share a single cause, and an
+        // operator fixes them with the same one-line change.
+        assertTrue(warning.message().contains("will.delay-seconds")
+            && warning.message().contains("will.message-expiry-seconds"),
+            "both ignored will options must be named in the one finding; got: " + warning.message());
+    }
+
+    @Test
+    @DisplayName("the same settings under protocol-version 5 are not reported")
+    void testMqtt5OnlySettingsUnderMqtt5AreSilent() {
+        var config = configOf(Map.of("mqtt-client", Map.of(
+            "enabled", true,
+            "protocol-version", 5,
+            "session-expiry-seconds", 3600,
+            "will", Map.of(
+                "topic", "status/restheart",
+                "payload", "offline",
+                "delay-seconds", 30))));
+        var registry = registryWithActive("mqtt-client");
+
+        var findings = MqttStatusInitializer.findings(config, registry);
+
+        assertTrue(findings.stream().noneMatch(f -> f.message().contains("MQTT 5.0")),
+            "these settings do take effect on a 5.0 connection, so warning about them would be "
+                + "noise an operator cannot act on; got: " + findings);
+    }
+
+    @Test
+    @DisplayName("protocol-version quoted as a YAML string is still understood as 5")
+    void testQuotedProtocolVersionIsUnderstood() {
+        // "5" rather than 5 is a common YAML slip. Reading it as unset would default to 3 and
+        // produce a warning about a configuration that is in fact correct - the sentinel would
+        // then be the thing sending the operator on a false trail.
+        var config = configOf(Map.of("mqtt-client", Map.of(
+            "enabled", true,
+            "protocol-version", "5",
+            "session-expiry-seconds", 3600)));
+        var registry = registryWithActive("mqtt-client");
+
+        var findings = MqttStatusInitializer.findings(config, registry);
+
+        assertTrue(findings.stream().noneMatch(f -> f.message().contains("MQTT 5.0")),
+            "protocol-version: \"5\" is 5; got: " + findings);
+    }
+
+    /**
+     * @param findings the findings under test
+     * @return the single {@link Level#WARN} finding among them, failing the test if there is not
+     *         exactly one
+     */
+    private static Finding onlyWarning(List<Finding> findings) {
+        var warnings = findings.stream().filter(f -> f.level() == Level.WARN).toList();
+        assertEquals(1, warnings.size(), "expected exactly one WARN; got: " + findings);
+        return warnings.get(0);
+    }
+
     private static void setField(Object target, String name, Object value) throws Exception {
         var field = target.getClass().getDeclaredField(name);
         field.setAccessible(true);
