@@ -39,6 +39,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.restheart.metrics.Metrics;
+import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.pipeline.FilterStage;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;
@@ -139,5 +141,32 @@ public class MqttPipelineTest {
         // Assert
         assertTrue(result.isPresent(), "Pipeline should pass message through");
         assertEquals("sensors/temp", result.get().getTopic());
+    }
+
+    @Test
+    void testThrottleStageAggregatesDropsAcrossInstances() throws Exception {
+        // Arrange - two separate per-connection instances with capacity 1
+        ThrottleStage stageA = new ThrottleStage(1);
+        ThrottleStage stageB = new ThrottleStage(1);
+
+        var nameAndLabels = MetricNameAndLabels.of("mqtt_throttle_dropped");
+        long before = ((Number) Metrics.getGaugeValue(nameAndLabels)).longValue();
+
+        // Act - exhaust each bucket then force one drop per instance
+        MqttMessage msg1 = new MqttMessage("sensors/temp", "{\"temp\":1}", 0, Instant.now());
+        MqttMessage msg2 = new MqttMessage("sensors/temp", "{\"temp\":2}", 0, Instant.now());
+
+        stageA.process(msg1);
+        Optional<MqttMessage> droppedA = stageA.process(msg2);
+
+        stageB.process(msg1);
+        Optional<MqttMessage> droppedB = stageB.process(msg2);
+
+        long after = ((Number) Metrics.getGaugeValue(nameAndLabels)).longValue();
+
+        // Assert - the shared gauge reflects the sum of drops across both instances
+        assertTrue(droppedA.isEmpty(), "Second call on stageA should be dropped");
+        assertTrue(droppedB.isEmpty(), "Second call on stageB should be dropped");
+        assertEquals(2, after - before, "mqtt_throttle_dropped gauge should account for drops from both instances");
     }
 }

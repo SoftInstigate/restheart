@@ -22,8 +22,11 @@
 package org.restheart.mqtt.pipeline;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.restheart.metrics.Metrics;
+import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.mqtt.model.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +55,10 @@ import org.slf4j.LoggerFactory;
 public class ThrottleStage implements MqttEventStage {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ThrottleStage.class);
+
+    // Aggregates drops across all per-connection instances for the mqtt_throttle_dropped gauge
+    private static final AtomicLong TOTAL_DROPPED = new AtomicLong();
+    private static final AtomicBoolean METRIC_REGISTERED = new AtomicBoolean(false);
     
     private final int maxEventsPerSecond;
     private final AtomicLong tokens;
@@ -72,6 +79,11 @@ public class ThrottleStage implements MqttEventStage {
         this.tokens = new AtomicLong(maxEventsPerSecond); // Start with full bucket
         this.lastRefillTime = new AtomicLong(System.nanoTime());
         this.droppedCount = new AtomicLong(0);
+
+        // Many ThrottleStage instances are created (one per SSE connection) but the gauge is process-wide
+        if (METRIC_REGISTERED.compareAndSet(false, true)) {
+            Metrics.registerGauge(MetricNameAndLabels.of("mqtt_throttle_dropped"), TOTAL_DROPPED::get);
+        }
     }
     
     @Override
@@ -87,6 +99,7 @@ public class ThrottleStage implements MqttEventStage {
             if (currentTokens <= 0) {
                 // No tokens available - drop message
                 long dropped = droppedCount.incrementAndGet();
+                TOTAL_DROPPED.incrementAndGet();
 
                 if (dropped % 100 == 0) {
                     LOGGER.warn("Throttle stage dropped {} messages (rate limit: {} msg/s)",

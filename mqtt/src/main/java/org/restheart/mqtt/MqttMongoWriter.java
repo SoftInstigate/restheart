@@ -38,6 +38,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
+import org.restheart.metrics.MetricNameAndLabels;
+import org.restheart.metrics.Metrics;
 import org.restheart.mqtt.buffer.MessageBuffer;
 import org.restheart.mqtt.buffer.MessageBuffer.Strategy;
 import org.restheart.mqtt.model.MqttMessage;
@@ -204,6 +206,13 @@ public class MqttMongoWriter implements Initializer {
         int capacity = configOrDefault(bufferConfig, "capacity", 10000);
         Strategy strategy = Strategy.fromConfigValue(strategyStr);
         buffer = new MessageBuffer(capacity, strategy);
+
+        // Exposes the buffer's live depth/throughput via GET /metrics/mqtt_buffer_* outside the JVM
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_size"), buffer::size);
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_capacity"), buffer::capacity);
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_accepted"), buffer::acceptedCount);
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_dropped"), buffer::droppedCount);
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_duplicates"), duplicateCount::get);
 
         // Drain config
         @SuppressWarnings("unchecked")

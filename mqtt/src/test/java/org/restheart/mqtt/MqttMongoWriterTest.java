@@ -53,6 +53,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
+import org.restheart.metrics.MetricNameAndLabels;
+import org.restheart.metrics.Metrics;
 import org.restheart.mqtt.buffer.MessageBuffer;
 import org.restheart.mqtt.buffer.MessageBuffer.Strategy;
 import org.restheart.mqtt.model.MqttMessage;
@@ -301,6 +303,40 @@ public class MqttMongoWriterTest {
             } finally {
                 writer.close();
             }
+        }
+    }
+
+    @Test
+    @DisplayName("onInit() registers buffer gauges reflecting the live state of the configured buffer")
+    void testOnInitRegistersBufferGauges() throws Exception {
+        // Metrics.registerGauge() does not replace an already-registered gauge, so a stale
+        // supplier left behind by another test's onInit() call must be cleared first.
+        Metrics.removeMetric(MetricNameAndLabels.of("mqtt_buffer_capacity"));
+        Metrics.removeMetric(MetricNameAndLabels.of("mqtt_buffer_size"));
+        Metrics.removeMetric(MetricNameAndLabels.of("mqtt_buffer_accepted"));
+        Metrics.removeMetric(MetricNameAndLabels.of("mqtt_buffer_dropped"));
+
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of(
+            "id-strategy", "auto",
+            "buffer", Map.of("strategy", "ring-buffer", "capacity", 5),
+            "mongo-sink", List.of());
+        setField(writer, "config", config);
+
+        writer.onInit();
+        try {
+            assertEquals(5, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_capacity")));
+            assertEquals(0, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_size")));
+            assertEquals(0L, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_accepted")));
+            assertEquals(0L, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_dropped")));
+
+            MessageBuffer buffer = (MessageBuffer) getField(writer, "buffer");
+            buffer.offer(msg("sensors/temp", "{\"temp\":1}", 0));
+
+            assertEquals(1, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_size")));
+            assertEquals(1L, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_accepted")));
+        } finally {
+            writer.close();
         }
     }
 

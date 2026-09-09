@@ -45,6 +45,8 @@ import org.restheart.mqtt.pipeline.MqttEventStage;
 import org.restheart.mqtt.pipeline.SlidingWindowAggregator;
 import org.restheart.mqtt.pipeline.ThrottleStage;
 import org.restheart.mqtt.pipeline.TumblingWindowAggregator;
+import org.restheart.metrics.MetricNameAndLabels;
+import org.restheart.metrics.Metrics;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
@@ -133,6 +135,9 @@ public class MqttSseService implements SseService {
     /** Number of currently open connections, keyed by the requested topic filter. */
     private final Map<String, AtomicInteger> connectionsPerTopic = new ConcurrentHashMap<>();
 
+    /** Cumulative SSE queue-full drops across all connections, for the mqtt_sse_dropped gauge. */
+    private final AtomicLong totalDroppedMessages = new AtomicLong();
+
     @OnInit
     public void init() {
         defaultTopic = argOrDefault(config, "default-topic", DEFAULT_TOPIC);
@@ -144,6 +149,10 @@ public class MqttSseService implements SseService {
         maxConnectionsPerTopic = argOrDefault(config, "max-connections-per-topic", 0);
 
         pipelineSpecs = buildPipelineSpecs();
+
+        // Suppliers, not snapshots: each gauge reads the live counters on every /metrics scrape.
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_sse_dropped"), totalDroppedMessages::get);
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_sse_open_connections"), this::totalOpenConnections);
 
         LOGGER.info("MqttSseService initialized: defaultTopic={}, defaultQos={}, queueCapacity={}, envelope={}, "
             + "maxConnectionsPerTopic={}",
@@ -186,6 +195,7 @@ public class MqttSseService implements SseService {
         Consumer<MqttMessage> listener = msg -> {
             if (!queue.offer(msg)) {
                 long dropped = droppedMessages.incrementAndGet();
+                totalDroppedMessages.incrementAndGet();
                 if (dropped % 1000 == 0) {
                     LOGGER.warn("SSE client queue full for topic {}, dropped {} messages so far",
                         topicFilter, dropped);
@@ -400,6 +410,16 @@ public class MqttSseService implements SseService {
             }
             return counter.decrementAndGet() <= 0 ? null : counter;
         });
+    }
+
+    /**
+     * Sums the per-topic-filter connection counts in {@link #connectionsPerTopic}, for the
+     * {@code mqtt_sse_open_connections} gauge.
+     *
+     * @return the total number of currently open SSE connections across all topic filters
+     */
+    private int totalOpenConnections() {
+        return connectionsPerTopic.values().stream().mapToInt(AtomicInteger::get).sum();
     }
 
     /**

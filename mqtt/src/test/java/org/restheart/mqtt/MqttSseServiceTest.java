@@ -50,6 +50,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.restheart.metrics.MetricNameAndLabels;
+import org.restheart.metrics.Metrics;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.model.Qos;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;
@@ -78,6 +80,13 @@ public class MqttSseServiceTest {
         service = new MqttSseService();
         config = new HashMap<>();
         router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 1000);
+
+        // Metrics registries are process-wide static state and registerGauge() keeps whichever
+        // supplier registered first for a given name: without this, a gauge registered by a
+        // previous test's service instance would silently survive and this test would observe
+        // stale values instead of the fresh instance's counters.
+        Metrics.removeAllMetrics("mqtt_sse_dropped");
+        Metrics.removeAllMetrics("mqtt_sse_open_connections");
     }
 
     private void injectConfig() throws Exception {
@@ -733,5 +742,71 @@ public class MqttSseServiceTest {
         } finally {
             open.set(false);
         }
+    }
+
+    // --- Metrics gauge tests ---
+
+    @Test
+    @DisplayName("mqtt_sse_open_connections gauge tracks connection open and close")
+    void testOpenConnectionsGaugeTracksConnectionLifecycle() throws Exception {
+        config.put("default-topic", "sensors/#");
+        // connectionsPerTopic is only populated when a limit is configured; unlimited (the
+        // default) never touches the map, so the gauge would stay at zero without this.
+        config.put("max-connections-per-topic", 10);
+        callInit();
+
+        MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
+        when(mockRouter.getLastMessages(anyString())).thenReturn(List.of());
+        injectMockRouter(mockRouter);
+
+        MetricNameAndLabels gaugeName = MetricNameAndLabels.of("mqtt_sse_open_connections");
+        long before = ((Number) Metrics.getGaugeValue(gaugeName)).longValue();
+
+        AtomicBoolean open = new AtomicBoolean(true);
+        ServerSentEventConnection conn = mockConnection("topic=sensors/%23", open);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<ChannelListener<ServerSentEventConnection>> closeTaskCaptor = ArgumentCaptor.forClass(ChannelListener.class);
+
+        service.onConnect(conn, null);
+        verify(conn).addCloseTask(closeTaskCaptor.capture());
+
+        assertEquals(before + 1, ((Number) Metrics.getGaugeValue(gaugeName)).longValue(),
+            "gauge must increase by one when a connection opens");
+
+        open.set(false);
+        closeTaskCaptor.getValue().handleEvent(conn);
+
+        assertEquals(before, ((Number) Metrics.getGaugeValue(gaugeName)).longValue(),
+            "gauge must decrease back when the connection closes");
+    }
+
+    @Test
+    @DisplayName("mqtt_sse_dropped gauge increases when the per-connection queue is full")
+    void testDroppedGaugeIncreasesWhenQueueFull() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("per-connection-queue-capacity", 1);
+        callInit();
+
+        MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
+        when(mockRouter.getLastMessages(anyString())).thenReturn(List.of());
+        injectMockRouter(mockRouter);
+
+        MetricNameAndLabels gaugeName = MetricNameAndLabels.of("mqtt_sse_dropped");
+        long before = ((Number) Metrics.getGaugeValue(gaugeName)).longValue();
+
+        // isOpen() is false from the start, so the drain loop's while-condition fails
+        // immediately and nothing is ever polled off the queue: the offers below fill the
+        // capacity-1 queue deterministically, with no race against the background thread.
+        AtomicBoolean open = new AtomicBoolean(false);
+        ServerSentEventConnection conn = mockConnection("topic=sensors/%23", open);
+
+        Consumer<MqttMessage> listener = onConnectAndCaptureListener(mockRouter, conn);
+
+        listener.accept(new MqttMessage("sensors/temp", "1", 0, Instant.now()));
+        listener.accept(new MqttMessage("sensors/temp", "2", 0, Instant.now()));
+
+        assertEquals(before + 1, ((Number) Metrics.getGaugeValue(gaugeName)).longValue(),
+            "gauge must increase by one when a message is dropped on a full queue");
     }
 }

@@ -524,6 +524,12 @@ The router's API is expressed entirely in this module's own types (`Qos`, `MqttM
 
 **Topic authorization on `/mqtt-sse`** is enforced end to end: a request for a topic filter granted by the ACL subscribes normally, and a request for an ungranted filter is rejected with `403` and a body of `{"msg":"Not authorized for topic: <filter>"}` before it ever reaches the router. This depends on RESTHeart running the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`, wired into `plugSseService`) — without it, SSE handshake requests pass through no interceptor at all, so `mqtt-topic-authorizer` resolves but is never invoked on that path, and `/mqtt-sse` ends up authenticated but not authorized per topic. Make sure the RESTHeart build this module is deployed against includes that fix.
 
+## Metrics
+
+`mqtt-metrics-collector` (enabled by default whenever `mqtt-client` is armed) registers the router's counters as live Prometheus gauges via `restheart-metrics`' custom-metrics API, exposed at `GET /metrics/<name>`: `mqtt_router_topic_filters`, `mqtt_router_listeners`, `mqtt_router_cached_messages`, `mqtt_router_messages_received`, `mqtt_router_messages_dropped`. `mqtt-mongo-writer` and `mqtt-sse`, when enabled, register their own gauges the same way: `mqtt_buffer_size`, `mqtt_buffer_capacity`, `mqtt_buffer_accepted`, `mqtt_buffer_dropped`, `mqtt_buffer_duplicates`, `mqtt_sse_dropped`, `mqtt_sse_open_connections`, and `mqtt_throttle_dropped` (aggregated across every per-connection `ThrottleStage`).
+
+For a synchronous JSON view of the router's own counters without a Prometheus scrape, enable `mqtt-stats` (Tier 2, opt-in, secure) and `GET /mqtt/stats`.
+
 ## Building
 
 ```
@@ -536,7 +542,7 @@ The integration tests are opt-in, behind the `mqtt-it` profile: they need Docker
 
 ## Roadmap
 
-Post-v1 work is tracked under [#601](https://github.com/SoftInstigate/restheart/issues/601): MQTT 5 shared subscriptions and user properties (#602), an HTTP → MQTT publish endpoint (#603), a WebSocket bridge (#604), polyglot pipeline stages (#605), replay from MongoDB via `Last-Event-ID` (#606), a dead-letter REST API (#607), metrics (#608), schema validation and pluggable deserializers (#609), and a distributed single-writer mode (#610).
+Post-v1 work is tracked under [#601](https://github.com/SoftInstigate/restheart/issues/601): MQTT 5 shared subscriptions and user properties (#602), an HTTP → MQTT publish endpoint (#603), a WebSocket bridge (#604), polyglot pipeline stages (#605), replay from MongoDB via `Last-Event-ID` (#606), a dead-letter REST API (#607), schema validation and pluggable deserializers (#609), and a distributed single-writer mode (#610).
 
 ## License
 
