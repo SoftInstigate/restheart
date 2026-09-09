@@ -64,7 +64,7 @@ jobs:
           mvn -B clean verify -pl mqtt -Pmqtt-it
       - name: Upload server logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mqtt-it-logs
           # MqttITBase writes one log per test class here — the RESTHeart under test is a
@@ -74,7 +74,7 @@ jobs:
       - name: Keep the installable archive for the publish job
         # Uploaded from THIS job, not rebuilt in the next one, so what gets published is
         # byte-for-byte what the integration tests just ran against.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: restheart-mqtt-archive
           path: |
