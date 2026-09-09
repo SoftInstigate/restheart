@@ -150,6 +150,25 @@ public class McpGetTokenIT extends AbstactIT {
      * {@code tamperedToken_isRefused} fail intermittently in CI with a 200 that was, in those runs,
      * the correct answer to a token that had not actually been tampered with (restheart#728).
      */
+    /**
+     * Guards {@link #tamper} itself.
+     *
+     * <p>Without this, a tampering that stopped actually changing the signature would make
+     * {@code tamperedToken_isRefused} pass every time while verifying nothing — a stronger failure
+     * than the intermittent one it replaced, because nothing would ever go red. The property that
+     * matters is not "the string differs" but "the bytes the server verifies differ".
+     */
+    @Test
+    public void tamperingActuallyBreaksTheSignature() throws Exception {
+        var accessToken = mcp.callTool("get_token", "{}").getString("access_token").getValue();
+
+        var original = Base64.getUrlDecoder().decode(accessToken.split("\\.")[2]);
+        var broken = Base64.getUrlDecoder().decode(tamper(accessToken).split("\\.")[2]);
+
+        assertTrue(!java.util.Arrays.equals(original, broken),
+                "tamper() left the decoded signature unchanged, so tamperedToken_isRefused proves nothing");
+    }
+
     private static String tamper(String jwt) {
         var parts = jwt.split("\\.");
         var signature = Base64.getUrlDecoder().decode(parts[2]);
