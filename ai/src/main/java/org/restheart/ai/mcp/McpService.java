@@ -61,6 +61,7 @@ import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
+import org.restheart.plugins.security.DescriptorAuthorization;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.plugins.security.JwtIssuer;
@@ -131,6 +132,10 @@ public class McpService implements ByteArrayService {
     @Inject("registry")
     private PluginsRegistry pluginsRegistry;
 
+    /** The framework's own answer to "could this caller perform this operation?" — see {@link #visibleTo}. */
+    @Inject("descriptor-authorization")
+    private DescriptorAuthorization authorization;
+
     @Inject("config")
     private Map<String, Object> config;
 
@@ -158,8 +163,17 @@ public class McpService implements ByteArrayService {
     /** Guards the one-time initial resource-registry population — see {@link #handle} and {@link #init()}'s comment on why it can't happen in {@code init()} itself. */
     private final AtomicBoolean resourcesInitialized = new AtomicBoolean(false);
 
+    /**
+     * The running service, so {@link McpCatalogFilterInterceptor} can reuse this catalog and this
+     * visibility rule instead of building its own. There is exactly one instance: RESTHeart plugins
+     * are singletons.
+     */
+    private static volatile McpService instance;
+
     @OnInit
     public void init() {
+        instance = this;
+
         var mcpAwareRegistry = McpAwareRegistry.discover(pluginsRegistry);
 
         jsonMapper = new JacksonMcpJsonMapperSupplier().get();
@@ -1273,6 +1287,79 @@ public class McpService implements ByteArrayService {
         return decisions != null && decisions.size() == 1 ? decisions.get(0) : null;
     }
 
+    /**
+     * The catalog filter for whoever is asking: a resource is listed only if a read of it would be
+     * authorized, decided by the very rule that authorizes the read
+     * ({@link org.restheart.plugins.security.DescriptorAuthorization}).
+     *
+     * <p>Everything is visible when there is no request to derive an identity from — which happens
+     * only for calls that do not come from a client, and never for a real one.
+     */
+    /**
+     * Whether the caller of {@code exchange} should see the resource at {@code uri} in a listing —
+     * the same question {@link #visibleTo} answers, asked by URI because that is all a listing
+     * carries. Returns a predicate rather than a boolean so the authorizers and the caller's
+     * identity are resolved once for a whole list, not once per entry.
+     *
+     * <p>A listing carries URIs the catalog has no resource for — {@code /coll/_size} and
+     * {@code /coll/{id}} are entries in their own right, synthesized from a collection's actions.
+     * Those are decided too, on their own path: the catalog is consulted only to learn which HTTP
+     * method the read uses, falling back to the owning resource's and then to {@code GET}. Not
+     * finding a URI is never a reason to show it.
+     *
+     * <p>The one case that stays open is the service not being initialized, when there is no
+     * catalog and no authorization to consult yet.
+     */
+    static Predicate<String> catalogVisibility(HttpServerExchange exchange) {
+        var self = instance;
+
+        if (self == null || self.resourceLookup == null || self.publicBaseUrl == null || self.authorization == null) {
+            return uri -> true;
+        }
+
+        var identity = RequestDescriptor.of(exchange);
+
+        return uri -> CatalogVisibility.isReadable(self.authorization, identity,
+                CatalogVisibility.pathOf(uri), self.readMethodOf(identity, uri));
+    }
+
+    /**
+     * The HTTP method a read of {@code uri} would use: the resource's own when the catalog knows
+     * that URI, otherwise the method of the resource it hangs off — {@code /coll/_size} reads as
+     * {@code /coll} does — and {@code GET} when neither is known.
+     */
+    private String readMethodOf(RequestDescriptor identity, String uri) {
+        var exact = resourceLookup.find(identity.principal(), publicBaseUrl, uri);
+
+        if (exact.isPresent()) {
+            return CatalogVisibility.methodOf(CatalogVisibility.readAction(exact.get()));
+        }
+
+        var lastSlash = uri.lastIndexOf('/');
+
+        if (lastSlash > 0) {
+            var owner = resourceLookup.find(identity.principal(), publicBaseUrl, uri.substring(0, lastSlash));
+
+            if (owner.isPresent()) {
+                return CatalogVisibility.methodOf(CatalogVisibility.readAction(owner.get()));
+            }
+        }
+
+        return "GET";
+    }
+
+    private Predicate<McpResource> visibleTo(McpTransportContext ctx) {
+        var request = request(ctx);
+
+        if (request == null) {
+            return r -> true;
+        }
+
+        var identity = RequestDescriptor.of(request.getExchange());
+
+        return resource -> CatalogVisibility.isVisible(authorization, identity, resource);
+    }
+
     private static String baseUrl(McpTransportContext ctx) {
         return ctx.get(CTX_BASE_URL) instanceof String s ? s : "";
     }
@@ -1362,7 +1449,7 @@ public class McpService implements ByteArrayService {
             var result = listApisTool.list(
                     principal(ctx), baseUrl(ctx),
                     stringArg(args, "resource"), stringArg(args, "query"), stringArg(args, "kind"),
-                    intArg(args, "limit"), stringArg(args, "cursor"));
+                    intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx));
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());
@@ -1382,7 +1469,7 @@ public class McpService implements ByteArrayService {
             var result = howToCallTool.call(
                     principal(ctx), baseUrl(ctx),
                     stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
-                    stringArg(args, "transport"));
+                    stringArg(args, "transport"), visibleTo(ctx));
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());

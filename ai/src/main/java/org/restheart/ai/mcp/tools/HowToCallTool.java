@@ -22,6 +22,9 @@ package org.restheart.ai.mcp.tools;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.function.Predicate;
+
+import org.restheart.plugins.mcp.McpResource;
 
 import org.restheart.ai.mcp.transport.DescriptorRenderer;
 import org.restheart.ai.mcp.validation.BodyValidator;
@@ -48,8 +51,13 @@ public final class HowToCallTool {
      * @throws ValidationFailedException if {@code args} fails param or body-schema validation
      */
     public Map<String, Object> call(BaseAccount principal, String baseUrl, String resourceUri, String actionName,
-                                    Map<String, Object> args, String transportPreference) {
+                                    Map<String, Object> args, String transportPreference,
+                                    Predicate<McpResource> visible) {
+        // Same filter as the catalog: composing a request for a resource the caller cannot invoke
+        // would hand back, action by action and parameter by parameter, exactly what leaving it out
+        // of list_apis was meant to withhold.
         var resource = lookup.find(principal, baseUrl, resourceUri)
+                .filter(visible)
                 .orElseThrow(() -> new UnknownResourceException(resourceUri));
 
         var action = resource.actions().get(actionName);

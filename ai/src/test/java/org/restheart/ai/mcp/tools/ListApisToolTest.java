@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 import org.restheart.ai.mcp.McpAwareRegistry;
@@ -36,6 +37,9 @@ import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
 
 public class ListApisToolTest {
+
+    /** These tests are about listing, not about who may see what — everything is visible. */
+    private static final Predicate<McpResource> VISIBLE = r -> true;
 
     private static CachedResourceLookup lookup(RegisteredMcpAware... entries) {
         return new CachedResourceLookup(McpAwareRegistry.of(List.of(entries)), Duration.ofMinutes(5), () -> {
@@ -65,7 +69,7 @@ public class ListApisToolTest {
                 new RegisteredMcpAware(fixed(resource("https://host/a", "service", "A")), "p1", "/a", Map.of()),
                 new RegisteredMcpAware(fixed(resource("https://host/b", "service", "B"), resource("https://host/c", "service", "C")), "p2", "/b", Map.of()));
 
-        var result = tool.list(null, "https://host", null, null, null, null, null);
+        var result = tool.list(null, "https://host", null, null, null, null, null, VISIBLE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -81,7 +85,7 @@ public class ListApisToolTest {
     public void resourceMode_returnsFullContext_ignoresOtherFilters() {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/a", "collection", "A")), "p1", "/a", Map.of()));
 
-        var result = tool.list(null, "https://host", "https://host/a", "irrelevant", "irrelevant", 1, "irrelevant");
+        var result = tool.list(null, "https://host", "https://host/a", "irrelevant", "irrelevant", 1, "irrelevant", VISIBLE);
 
         assertEquals("https://host/a", result.get("uri"));
         assertEquals("collection", result.get("kind"));
@@ -90,7 +94,7 @@ public class ListApisToolTest {
     @Test
     public void resourceMode_unknownUri_throws() {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/a", "service", "A")), "p1", "/a", Map.of()));
-        assertThrows(UnknownResourceException.class, () -> tool.list(null, "https://host", "https://host/does-not-exist", null, null, null, null));
+        assertThrows(UnknownResourceException.class, () -> tool.list(null, "https://host", "https://host/does-not-exist", null, null, null, null, VISIBLE));
     }
 
     @Test
@@ -100,7 +104,7 @@ public class ListApisToolTest {
                         resource("https://host/products", "collection", "Catalog items")),
                 "p1", "/x", Map.of()));
 
-        var result = tool.list(null, "https://host", null, "ORDER", null, null, null);
+        var result = tool.list(null, "https://host", null, "ORDER", null, null, null, VISIBLE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -114,7 +118,7 @@ public class ListApisToolTest {
                 fixed(resource("https://host/a", "collection", "A"), resource("https://host/b", "graphql-app", "B")),
                 "p1", "/x", Map.of()));
 
-        var result = tool.list(null, "https://host", null, null, "GraphQL-App", null, null);
+        var result = tool.list(null, "https://host", null, null, "GraphQL-App", null, null, VISIBLE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -128,14 +132,14 @@ public class ListApisToolTest {
                 fixed(resource("https://host/a", "s", null), resource("https://host/b", "s", null), resource("https://host/c", "s", null)),
                 "p1", "/x", Map.of()));
 
-        var firstPage = tool.list(null, "https://host", null, null, null, 2, null);
+        var firstPage = tool.list(null, "https://host", null, null, null, 2, null, VISIBLE);
         @SuppressWarnings("unchecked")
         var firstResources = (List<Map<String, Object>>) firstPage.get("resources");
         assertEquals(2, firstResources.size());
         assertEquals("https://host/a", firstResources.get(0).get("uri"));
         assertEquals("2", firstPage.get("next_cursor"));
 
-        var secondPage = tool.list(null, "https://host", null, null, null, 2, (String) firstPage.get("next_cursor"));
+        var secondPage = tool.list(null, "https://host", null, null, null, 2, (String) firstPage.get("next_cursor"), VISIBLE);
         @SuppressWarnings("unchecked")
         var secondResources = (List<Map<String, Object>>) secondPage.get("resources");
         assertEquals(1, secondResources.size());
@@ -144,9 +148,36 @@ public class ListApisToolTest {
     }
 
     @Test
+    public void catalog_omitsWhatTheCallerCannotSee() {
+        var tool = toolWith(new RegisteredMcpAware(
+                fixed(resource("https://host/allowed", "collection", "A"), resource("https://host/denied", "collection", "B")),
+                "p1", "/x", Map.of()));
+
+        var result = tool.list(null, "https://host", null, null, null, null, null,
+                r -> r.uri().endsWith("/allowed"));
+
+        @SuppressWarnings("unchecked")
+        var resources = (List<Map<String, Object>>) result.get("resources");
+        assertEquals(1, resources.size());
+        assertEquals("https://host/allowed", resources.get(0).get("uri"));
+    }
+
+    /**
+     * Asking for one resource by URI must obey the same filter as the catalog: otherwise the
+     * drill-down hands back in full what the listing was careful to leave out.
+     */
+    @Test
+    public void resourceMode_hiddenResourceIsUnknown() {
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/denied", "collection", "B")), "p1", "/x", Map.of()));
+
+        assertThrows(UnknownResourceException.class,
+                () -> tool.list(null, "https://host", "https://host/denied", null, null, null, null, r -> false));
+    }
+
+    @Test
     public void emptyRegistry_emptyCatalog() {
         var tool = new ListApisTool(lookup());
-        var result = tool.list(null, "https://host", null, null, null, null, null);
+        var result = tool.list(null, "https://host", null, null, null, null, null, VISIBLE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");

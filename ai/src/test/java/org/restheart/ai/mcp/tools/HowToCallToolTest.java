@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 import org.restheart.ai.mcp.McpAwareRegistry;
@@ -36,6 +37,9 @@ import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
 
 public class HowToCallToolTest {
+
+    /** These tests are about composing a request, not about who may see what. */
+    private static final Predicate<McpResource> VISIBLE = r -> true;
 
     private static McpAware fixed(McpResource resource) {
         return new McpAware() {
@@ -53,13 +57,25 @@ public class HowToCallToolTest {
         return new HowToCallTool(lookup);
     }
 
+    /**
+     * A resource left out of the catalog for this caller must not be describable either: composing
+     * a request for it would hand back, action by action, what hiding it was meant to withhold.
+     */
+    @Test
+    public void hiddenResource_isUnknown() {
+        var tool = toolFor(McpResource.builder().uri("https://host/a").action("query", a -> a.method("GET")).build());
+
+        assertThrows(UnknownResourceException.class,
+                () -> tool.call(null, "https://host", "https://host/a", "query", Map.of(), null, r -> false));
+    }
+
     @Test
     public void unknownResource_throws() {
         var resource = McpResource.builder().uri("https://host/a").action("query", a -> a.method("GET")).build();
         var tool = toolFor(resource);
 
         assertThrows(UnknownResourceException.class,
-                () -> tool.call(null, "https://host", "https://host/does-not-exist", "query", Map.of(), null));
+                () -> tool.call(null, "https://host", "https://host/does-not-exist", "query", Map.of(), null, VISIBLE));
     }
 
     @Test
@@ -68,7 +84,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(UnknownActionException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "delete", Map.of(), null));
+                () -> tool.call(null, "https://host", "https://host/a", "delete", Map.of(), null, VISIBLE));
         assertTrue(ex.validActions().contains("query"));
     }
 
@@ -81,7 +97,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "get", Map.of(), null));
+                () -> tool.call(null, "https://host", "https://host/a", "get", Map.of(), null, VISIBLE));
         assertEquals(1, ex.errors().size());
     }
 
@@ -96,7 +112,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("other", "x")), null));
+                () -> tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("other", "x")), null, VISIBLE));
         assertTrue(!ex.errors().isEmpty());
     }
 
@@ -108,7 +124,7 @@ public class HowToCallToolTest {
                 .build();
         var tool = toolFor(resource);
 
-        var descriptor = tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("message", "hi")), null);
+        var descriptor = tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("message", "hi")), null, VISIBLE);
 
         assertEquals("http", descriptor.get("transport"));
         assertEquals(Map.of("message", "hi"), descriptor.get("body"));

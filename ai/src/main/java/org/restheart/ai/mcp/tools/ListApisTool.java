@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.security.BaseAccount;
@@ -50,21 +51,25 @@ public final class ListApisTool {
      * @throws UnknownResourceException if {@code resourceUri} matches no known resource
      */
     public Map<String, Object> list(BaseAccount principal, String baseUrl, String resourceUri,
-                                    String query, String kind, Integer limit, String cursor) {
+                                    String query, String kind, Integer limit, String cursor,
+                                    Predicate<McpResource> visible) {
         if (resourceUri != null) {
             return lookup.find(principal, baseUrl, resourceUri)
+                    .filter(visible)
                     .map(McpResource::toMap)
                     .orElseThrow(() -> new UnknownResourceException(resourceUri));
         }
 
-        return catalog(principal, baseUrl, query, kind, limit, cursor);
+        return catalog(principal, baseUrl, query, kind, limit, cursor, visible);
     }
 
-    private Map<String, Object> catalog(BaseAccount principal, String baseUrl, String query, String kind, Integer limit, String cursor) {
+    private Map<String, Object> catalog(BaseAccount principal, String baseUrl, String query, String kind,
+                                        Integer limit, String cursor, Predicate<McpResource> visible) {
         var resources = new ArrayList<>(lookup.all(principal, baseUrl));
         resources.sort(Comparator.comparing(McpResource::uri));
 
         var filtered = resources.stream()
+                .filter(visible)
                 .filter(r -> kind == null || kind.equalsIgnoreCase(r.kind()))
                 .filter(r -> query == null || matches(r, query))
                 .toList();
