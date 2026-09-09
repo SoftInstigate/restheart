@@ -23,8 +23,10 @@ package org.restheart.ai.mcp;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -313,6 +315,9 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             session.accept(rpcNotif).contextWrite(c -> c.put(McpTransportContext.KEY, ctx)).block();
             res.setStatusCode(HttpStatus.SC_ACCEPTED);
 
+        } else if (message instanceof McpSchema.JSONRPCRequest rpcReq && BUFFERED_METHODS.contains(rpcReq.method())) {
+            respondBuffered(session, rpcReq, sessionId, res, ctx);
+
         } else if (message instanceof McpSchema.JSONRPCRequest rpcReq) {
             // Tool call → SSE streaming response
             final var activeSession = session;
@@ -346,6 +351,89 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             res.setContent("Unknown JSON-RPC message type");
         }
+    }
+
+    /**
+     * The JSON-RPC methods answered with exactly one message and nothing streamed.
+     *
+     * <p>These go back through RESTHeart's own {@code ResponseSender} as {@code application/json},
+     * not through {@code setCustomSender} writing SSE into the exchange. Two reasons. The
+     * Streamable HTTP spec expects a plain JSON response when there is nothing to stream, and
+     * framing a single line as an event stream is ceremony the client has to unwrap. More
+     * importantly, a response written by a custom sender never passes the standard response
+     * pipeline, so no {@code InterceptPoint.RESPONSE} interceptor can see or change it — which is
+     * how a per-caller filter on {@code resources/list} becomes possible at all.
+     *
+     * <p>Deliberately a list of methods rather than a guess: {@code tools/call} may legitimately
+     * emit progress notifications or a sampling request before its result, and buffering those
+     * would hold back a stream that exists to be incremental.
+     */
+    private static final Set<String> BUFFERED_METHODS = Set.of(
+            McpSchema.METHOD_RESOURCES_LIST,
+            McpSchema.METHOD_RESOURCES_TEMPLATES_LIST,
+            McpSchema.METHOD_RESOURCES_READ,
+            McpSchema.METHOD_TOOLS_LIST,
+            McpSchema.METHOD_PROMPT_LIST,
+            McpSchema.METHOD_PING);
+
+    /**
+     * Runs a request to completion and answers with its single message, letting RESTHeart send it.
+     *
+     * <p>If the SDK ever emits more than one message for a method listed in {@link
+     * #BUFFERED_METHODS} the response falls back to SSE: nothing has been written to the exchange
+     * yet at that point, so the choice is still open, and dropping the extra messages would be
+     * worse than a slightly unexpected content type.
+     */
+    private void respondBuffered(McpStreamableServerSession session, McpSchema.JSONRPCRequest rpcReq,
+                                 String sessionId, ByteArrayResponse res, McpTransportContext ctx) {
+        var transport = new UndertowStreamableSessionTransport(sessionId, jsonMapper, false);
+        var messages = new ArrayList<String>();
+
+        var vt = Thread.ofVirtual().start(() -> {
+            try {
+                session.responseStream(rpcReq, transport)
+                        .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
+                        .block();
+            } catch (Exception e) {
+                LOGGER.warn("responseStream error for session {}: {}", sessionId, e.getMessage());
+            } finally {
+                transport.close();
+            }
+        });
+
+        try {
+            String message;
+            while ((message = transport.take()) != null) {
+                messages.add(message);
+            }
+            vt.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            transport.close();
+        }
+
+        if (messages.size() == 1) {
+            res.setContentType(APPLICATION_JSON);
+            res.setContent(messages.get(0));
+            return;
+        }
+
+        LOGGER.debug("{} produced {} messages; answering with SSE after all", rpcReq.method(), messages.size());
+
+        res.setCustomSender(() -> {
+            var exchange = res.getExchange();
+            setSseHeaders(exchange);
+            exchange.startBlocking();
+            try (var out = exchange.getOutputStream()) {
+                for (var m : messages) {
+                    out.write(UndertowStreamableSessionTransport
+                            .formatSseEvent(MESSAGE_EVENT_TYPE, m, null).getBytes(StandardCharsets.UTF_8));
+                }
+                out.flush();
+            } catch (IOException e) {
+                LOGGER.debug("SSE write failed for session {}: {}", sessionId, e.getMessage());
+            }
+        });
     }
 
     /**
@@ -492,9 +580,21 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         private volatile boolean closed = false;
         private final ReentrantLock lock = new ReentrantLock();
 
+        /**
+         * When false the queue carries the raw JSON-RPC message instead of an SSE frame, so a
+         * caller that is buffering a single response can hand it to RESTHeart's own response
+         * sender rather than writing the exchange itself. See {@link #BUFFERED_METHODS}.
+         */
+        private final boolean sseFraming;
+
         UndertowStreamableSessionTransport(String sessionId, McpJsonMapper jsonMapper) {
+            this(sessionId, jsonMapper, true);
+        }
+
+        UndertowStreamableSessionTransport(String sessionId, McpJsonMapper jsonMapper, boolean sseFraming) {
             this.sessionId = sessionId;
             this.jsonMapper = jsonMapper;
+            this.sseFraming = sseFraming;
         }
 
         /** Blocks until the next SSE event string is available; returns {@code null} on close. */
@@ -516,7 +616,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 try {
                     if (closed) return;
                     String json = jsonMapper.writeValueAsString(message);
-                    queue.put(Optional.of(formatSseEvent(MESSAGE_EVENT_TYPE, json, messageId)));
+                    queue.put(Optional.of(sseFraming ? formatSseEvent(MESSAGE_EVENT_TYPE, json, messageId) : json));
                 } catch (Exception e) {
                     LOGGER.error("Failed to queue SSE message for session {}: {}", sessionId, e.getMessage());
                 } finally {
@@ -547,7 +647,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             }
         }
 
-        private static String formatSseEvent(String eventType, String data, String id) {
+        static String formatSseEvent(String eventType, String data, String id) {
             var sb = new StringBuilder();
             if (id != null) sb.append("id: ").append(id).append('\n');
             sb.append("event: ").append(eventType).append('\n');
