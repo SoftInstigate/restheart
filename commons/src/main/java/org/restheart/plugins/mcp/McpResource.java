@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 public final class McpResource {
     private final String uri;
     private final String kind;
+    private final boolean subscribable;
     private final String description;
     private final List<Map.Entry<Transport, List<String>>> transports;
     private final Map<String, Action> actions;
@@ -50,6 +51,7 @@ public final class McpResource {
     private McpResource(Builder b) {
         this.uri = Objects.requireNonNull(b.uri, "uri is required");
         this.kind = b.kind == null ? "service" : b.kind;
+        this.subscribable = b.subscribable;
         this.description = b.description;
         this.auth = b.auth;
         this.extra = Map.copyOf(b.extra);
@@ -76,6 +78,21 @@ public final class McpResource {
 
     public String kind() {
         return kind;
+    }
+
+    /**
+     * Whether {@code resources/subscribe} on this resource can ever deliver a
+     * {@code notifications/resources/updated}.
+     * <p>
+     * Notifications come from a change stream, and only a collection has one. An aggregation is
+     * derived, a service is computed, a GraphQL app is a query — none of them has a source of
+     * change to watch, and subscribing to one used to succeed and then stay silent forever.
+     * <p>
+     * The owning plugin declares this so the answer is known from the catalog, without having to
+     * try opening a watch to find out.
+     */
+    public boolean subscribable() {
+        return subscribable;
     }
 
     public String description() {
@@ -115,6 +132,12 @@ public final class McpResource {
         var m = new LinkedHashMap<String, Object>();
         m.put("uri", uri);
         m.put("kind", kind);
+
+        // Only when true: absence means "not subscribable", and stating that on every service and
+        // aggregation would pad the catalog with a negative that is already the default.
+        if (subscribable) {
+            m.put("subscribable", true);
+        }
         if (description != null) {
             m.put("description", description);
         }
@@ -341,6 +364,7 @@ public final class McpResource {
     public static final class Builder {
         private String uri;
         private String kind;
+        private boolean subscribable;
         private String description;
         private Map<String, Object> auth;
         private final Map<String, Action> actions = new LinkedHashMap<>();
@@ -350,6 +374,12 @@ public final class McpResource {
 
         public Builder uri(String uri) {
             this.uri = uri;
+            return this;
+        }
+
+        /** @see McpResource#subscribable() */
+        public Builder subscribable(boolean subscribable) {
+            this.subscribable = subscribable;
             return this;
         }
 

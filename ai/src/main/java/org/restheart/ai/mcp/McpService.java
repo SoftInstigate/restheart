@@ -229,26 +229,33 @@ public class McpService implements ByteArrayService {
      * that vanishes without the {@code DELETE} that closes its session: its watch survives until
      * the resource leaves the catalog or the server stops.
      */
-    private void watchIfSubscribing(ByteArrayRequest req, McpTransportContext ctx) {
+    private boolean watchIfSubscribing(ByteArrayRequest req, ByteArrayResponse res, McpTransportContext ctx) {
         try {
             var body = req.getContent();
             if (body == null || body.length == 0) {
-                return;
+                return true;
             }
 
             if (!(McpSchema.deserializeJsonRpcMessage(jsonMapper, new String(body, StandardCharsets.UTF_8))
                     instanceof McpSchema.JSONRPCRequest rpc)
                     || !(rpc.params() instanceof Map<?, ?> params)
                     || !(params.get("uri") instanceof String uri)) {
-                return;
+                return true;
             }
 
             var sessionId = req.getHeader(HttpHeaders.MCP_SESSION_ID);
             if (sessionId == null || sessionId.isBlank()) {
-                return;
+                return true;
             }
 
             if (McpSchema.METHOD_RESOURCES_SUBSCRIBE.equals(rpc.method())) {
+                var resource = resourceLookup.find(principal(ctx), publicBaseUrl, uri);
+
+                if (resource.isEmpty() || !resource.get().subscribable()) {
+                    refuseSubscription(res, rpc, uri, resource.map(McpResource::kind).orElse(null));
+                    return false;
+                }
+
                 demand.subscribed(uri, sessionId);
 
                 // On every subscribe, not only the first: a change stream can die on its own —
@@ -264,6 +271,41 @@ public class McpService implements ByteArrayService {
             }
         } catch (Exception e) {
             LOGGER.warn("could not inspect a /mcp request for a resource subscription", e);
+        }
+
+        return true;
+    }
+
+    /**
+     * Answers a {@code resources/subscribe} the server can never honour, instead of letting it
+     * through to succeed and stay silent.
+     *
+     * <p>The SDK owns {@code resources/subscribe}: it registers a private handler that only records
+     * the subscription, and offers no hook to decline one (see java-sdk#1128). But this service
+     * sees the message first, so the refusal happens here — before {@code handlePost} hands it to
+     * the SDK, which is why {@link #watchIfSubscribing} reports whether to continue.
+     *
+     * <p>It is a JSON-RPC error rather than an HTTP status because it is a protocol-level answer to
+     * a well-formed request, and because the client needs to read the reason: the message names the
+     * collection to subscribe to instead, which is the thing that is actually not obvious.
+     */
+    private void refuseSubscription(ByteArrayResponse res, McpSchema.JSONRPCRequest rpc, String uri, String kind) {
+        var reason = kind == null
+                ? "no such resource: " + uri
+                : "a resource of kind '" + kind + "' cannot be subscribed to: " + uri
+                        + ". Notifications come from a change stream, and only a collection has"
+                        + " one — subscribe to the collection this is derived from, and read this"
+                        + " resource when told it changed.";
+
+        var error = new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS, reason);
+
+        try {
+            res.setContentType("application/json");
+            res.setContent(jsonMapper.writeValueAsString(McpSchema.JSONRPCResponse.error(rpc.id(), error)));
+            res.setStatusCode(HttpStatus.SC_OK);
+        } catch (Exception e) {
+            LOGGER.error("could not write the refusal of a subscription to {}", uri, e);
+            res.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -1138,8 +1180,9 @@ public class McpService implements ByteArrayService {
             // Opened on demand, before the SDK records the subscription: the SDK keeps that map
             // private, so this is how we learn a resource is wanted. Watching every exposed
             // collection instead would pay for streams nobody asked for.
-            watchIfSubscribing(req, ctx);
-            provider.handlePost(req, res, ctx);
+            if (watchIfSubscribing(req, res, ctx)) {
+                provider.handlePost(req, res, ctx);
+            }
         } else if (req.isGet()) {
             provider.handleGet(req, res, ctx);
         } else if (req.isDelete()) {

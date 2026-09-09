@@ -66,6 +66,11 @@ public final class CollectionMcpResourceBuilder {
         var builder = McpResource.builder()
                 .uri(collectionUri)
                 .kind("collection")
+                // A collection is the only MCP resource with a source of change to watch:
+                // MongoMcpAwareImpl.watch opens a change stream on it. Everything derived from one
+                // has none, so resources/subscribe is refused there rather than accepted and left
+                // silent.
+                .subscribable(true)
                 .description(description(mcp))
                 .transport(McpResource.Transport.HTTP);
 
