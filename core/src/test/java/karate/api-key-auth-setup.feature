@@ -93,6 +93,27 @@ Scenario: Create the test-apikeys db and seed the keys
   When method PUT
   Then assert responseStatus == 201 || responseStatus == 200
 
+  # Belongs to `admin`, but names a role admin does not otherwise need. The test
+  # ACL grants aclreader path-prefix /mcp, so this key can open an MCP session —
+  # and what get_token then mints must carry `aclreader`, not admin's own roles.
+  # That is what mcp-api-key-auth.feature uses to show the key's roles travel all
+  # the way through the session into the issued token.
+  #
+  #   printf 'rhak_mcpreader' | shasum -a 256
+  * header Authorization = admin
+  Given path 'test-apikeys/keys/mcpreader'
+  And param wm = 'upsert'
+  And request
+  """
+  {
+    "hash": "912396c41907467434cc28f6d1ef2f615028c87c3fea8900a4b0f26d8072ab8c",
+    "user": "admin",
+    "roles": ["aclreader"]
+  }
+  """
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
+
   # A narrower role. The test ACL grants poweruser only GET /testdb, so this key
   # is what shows that the *specific* roles on the key document drive
   # authorization — not merely that some role arrived.

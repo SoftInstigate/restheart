@@ -143,3 +143,42 @@ Scenario: get_token on a PAT-authenticated session issues a token for that ident
     When method POST
     Then status 200
     And match response contains 'access_token'
+
+Scenario: the token minted from a PAT session carries the key's roles, not the user's
+    # rhak_mcpreader belongs to `admin` but names only `aclreader`. If the session
+    # took its roles from the user behind the key rather than from the key, `admin`
+    # would appear here — and the key would silently confer far more than it says.
+    * header Authorization = 'Bearer rhak_mcpreader'
+    * header Accept = mcpAccept
+    Given path '/mcp'
+    And request initialize
+    When method POST
+    Then status 200
+    * def session = responseHeaders['Mcp-Session-Id'][0]
+
+    * header Authorization = 'Bearer rhak_mcpreader'
+    * header Accept = mcpAccept
+    * header Mcp-Session-Id = session
+    Given path '/mcp'
+    And request { "jsonrpc": "2.0", "method": "notifications/initialized" }
+    When method POST
+    Then assert responseStatus == 200 || responseStatus == 202
+
+    * header Authorization = 'Bearer rhak_mcpreader'
+    * header Accept = mcpAccept
+    * header Mcp-Session-Id = session
+    Given path '/mcp'
+    And request { "jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": { "name": "get_token", "arguments": {} } }
+    When method POST
+    Then status 200
+    And match response contains 'aclreader'
+
+    # The decisive half, and behavioural rather than textual: the response also carries
+    # `username`, which for this key is `admin`, so looking for the absence of that string
+    # would fail for the wrong reason. What settles it is what the session can reach. The
+    # test ACL grants /secho to admin and not to aclreader — so admin's own roles are
+    # demonstrably not in play here.
+    * header Authorization = 'Bearer rhak_mcpreader'
+    Given path '/secho'
+    When method GET
+    Then status 403
