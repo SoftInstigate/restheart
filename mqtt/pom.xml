@@ -287,7 +287,7 @@
                 </goals>
                 <configuration>
                   <target>
-                    <fail message="core/target/plugins is missing - the mqtt ITs run against the core you just built, so build it first: ./mvnw -pl mqtt -am verify -Pmqtt-it">
+                    <fail message="core/target/plugins is missing - the mqtt ITs run against the core you just built, so build it first: ./mvnw -pl core -am install -DskipTests (naming mqtt alone with -am does not build core, since mqtt has no POM dependency on it)">
                       <condition>
                         <not><available file="../core/target/plugins" type="dir" /></not>
                       </condition>
