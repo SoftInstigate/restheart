@@ -305,11 +305,12 @@ public class McpService implements ByteArrayService {
      */
     private void refuseSubscription(ByteArrayResponse res, McpSchema.JSONRPCRequest rpc, String uri, String kind) {
         var reason = kind == null
-                ? "no such resource: " + uri
-                : "a resource of kind '" + kind + "' cannot be subscribed to: " + uri
-                        + ". Notifications come from a change stream on a collection, and this"
-                        + " resource has none to watch. Collections and aggregations over them are"
-                        + " subscribable — list_apis marks those with \"subscribable\": true.";
+                ? "no such resource: %s".formatted(uri)
+                : """
+                        a resource of kind '%s' cannot be subscribed to: %s. Notifications come from a change \
+                        stream on a collection, and this resource has none to watch. Collections and aggregations \
+                        over them are subscribable — list_apis marks those with "subscribable": true.\
+                        """.formatted(kind, uri);
 
         var error = new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS, reason);
 
@@ -1380,12 +1381,14 @@ public class McpService implements ByteArrayService {
         properties.put("cursor", schemaProp("string", "Optional. Continues a previous paged catalog call."));
 
         return McpSchema.Tool.builder("list_apis", inputSchema(properties, null))
-                .description("Lists or describes MCP-enabled APIs exposed by RESTHeart. Without arguments, returns the "
-                        + "catalog (URIs, kinds, short descriptions) — optionally narrowed with `query`/`kind` and "
-                        + "paged with `limit`/`cursor`. With a resource URI, returns full context: kind, supported "
-                        + "transports, actions with parameter types, auth requirements, examples. On a deployment "
-                        + "with many resources, prefer a filtered call over an unfiltered one. Call this before "
-                        + "how_to_call to learn what you can do with a resource.")
+                .description("""
+                        Lists or describes MCP-enabled APIs exposed by RESTHeart. Without arguments, returns the \
+                        catalog (URIs, kinds, short descriptions) — optionally narrowed with `query`/`kind` and \
+                        paged with `limit`/`cursor`. With a resource URI, returns full context: kind, supported \
+                        transports, actions with parameter types, auth requirements, examples. On a deployment \
+                        with many resources, prefer a filtered call over an unfiltered one. Call this before \
+                        how_to_call to learn what you can do with a resource.\
+                        """)
                 .build();
     }
 
@@ -1398,36 +1401,48 @@ public class McpService implements ByteArrayService {
                 "Optional transport preference (e.g. websocket vs sse for streams). If omitted, the resource's default transport is used."));
 
         return McpSchema.Tool.builder("how_to_call", inputSchema(properties, List.of("resource", "action")))
-                .description("Returns a request descriptor (transport, URL, headers, body) for invoking a known MCP resource. "
-                        + "The tool COMPOSES the request — it does NOT execute it. After receiving the response, "
-                        + "choose any client appropriate to the descriptor's transport and your host environment "
-                        + "(HTTP libraries, WebSocket libraries, OS shells with curl/httpie/wscat, generated code in "
-                        + "any language). The MCP server does not prescribe the tool.\n\nDispatch by action — the "
-                        + "set of valid actions for a given resource is declared in the resource's list_apis output. "
-                        + "Validate args against the declared params and body_schema before calling.\n\nThe descriptor "
-                        + "is stable and safe to reuse: it carries no credential. Its Authorization header holds the "
-                        + "placeholder `" + DescriptorRenderer.TOKEN_PLACEHOLDER + "` — call get_token to obtain a token and substitute "
-                        + "it just before sending the request, not when you receive this descriptor.\n\n"
-                        + "Call this ONCE PER ACTION SHAPE, not once per request. The descriptor for, say, creating a "
-                        + "document in a collection is the same every time apart from the body: keep it and reuse it, "
-                        + "changing only what varies. A repeated write is then two steps, not three — get_token, then "
-                        + "send — and the second is unavoidable for any short-lived credential. Calling how_to_call "
-                        + "before every write costs a round trip that buys nothing, and in a contended situation that "
-                        + "delay can lose you the operation.")
+                .description("""
+                        Returns a request descriptor (transport, URL, headers, body) for invoking a known MCP \
+                        resource. The tool COMPOSES the request — it does NOT execute it. After receiving the \
+                        response, choose any client appropriate to the descriptor's transport and your host \
+                        environment (HTTP libraries, WebSocket libraries, OS shells with curl/httpie/wscat, \
+                        generated code in any language). The MCP server does not prescribe the tool.
+
+                        Dispatch by action — the set of valid actions for a given resource is declared in the \
+                        resource's list_apis output. Validate args against the declared params and body_schema \
+                        before calling.
+
+                        The descriptor is stable and safe to reuse: it carries no credential. Its Authorization \
+                        header holds the placeholder `%s` — call get_token to obtain a token and substitute it just \
+                        before sending the request, not when you receive this descriptor.
+
+                        Call this ONCE PER ACTION SHAPE, not once per request. The descriptor for, say, creating a \
+                        document in a collection is the same every time apart from the body: keep it and reuse it, \
+                        changing only what varies. A repeated write is then two steps, not three — get_token, then \
+                        send — and the second is unavoidable for any short-lived credential. Calling how_to_call \
+                        before every write costs a round trip that buys nothing, and in a contended situation that \
+                        delay can lose you the operation.\
+                        """.formatted(DescriptorRenderer.TOKEN_PLACEHOLDER))
                 .build();
     }
 
     static McpSchema.Tool getTokenToolDefinition() {
         return McpSchema.Tool.builder("get_token", inputSchema(new LinkedHashMap<>(), null))
-                .description("Issues a short-lived access token for the current session, to fill in the `"
-                        + DescriptorRenderer.TOKEN_PLACEHOLDER + "` placeholder of a descriptor returned by how_to_call.\n\nThe token "
-                        + "expires within seconds (see `expires_in` in the response), so call this immediately before "
-                        + "sending the request — not in advance, and do not store it. Getting a fresh one costs "
-                        + "nothing; reusing a stale one fails with 401. One token can serve several requests made "
-                        + "within its window.\n\nIt carries the identity and roles of the current session and no more, "
-                        + "so it can do exactly what this session can do. Requires an authenticated session.\n\n"
-                        + "The response is a JSON object: read `access_token` from it and put it in the descriptor's "
-                        + "Authorization header in place of the placeholder, as `Bearer <token>`.")
+                .description("""
+                        Issues a short-lived access token for the current session, to fill in the `%s` placeholder \
+                        of a descriptor returned by how_to_call.
+
+                        The token expires within seconds (see `expires_in` in the response), so call this \
+                        immediately before sending the request — not in advance, and do not store it. Getting a \
+                        fresh one costs nothing; reusing a stale one fails with 401. One token can serve several \
+                        requests made within its window.
+
+                        It carries the identity and roles of the current session and no more, so it can do exactly \
+                        what this session can do. Requires an authenticated session.
+
+                        The response is a JSON object: read `access_token` from it and put it in the descriptor's \
+                        Authorization header in place of the placeholder, as `Bearer <token>`.\
+                        """.formatted(DescriptorRenderer.TOKEN_PLACEHOLDER))
                 .build();
     }
 
@@ -1508,15 +1523,19 @@ public class McpService implements ByteArrayService {
         var principal = principal(ctx);
 
         if (principal == null) {
-            return errorResult("no authenticated session: get_token issues a token for the caller's own identity, "
-                    + "so the MCP session must itself be authenticated");
+            return errorResult("""
+                    no authenticated session: get_token issues a token for the caller's own identity, so the MCP \
+                    session must itself be authenticated\
+                    """);
         }
 
         var issuer = PluginModelResolver.resolve(pluginsRegistry, resolvedJwtIssuers, "jwtIssuer", JwtIssuer.class);
 
         if (issuer.isEmpty()) {
-            return errorResult("token issuance is not available on this deployment: the 'jwtIssuer' provider is "
-                    + "disabled, or the 'jwtConfigProvider' it builds on is not configured");
+            return errorResult("""
+                    token issuance is not available on this deployment: the 'jwtIssuer' provider is disabled, or \
+                    the 'jwtConfigProvider' it builds on is not configured\
+                    """);
         }
 
         try {

@@ -116,8 +116,10 @@ public class McpCatalogFilterInterceptor implements ByteArrayInterceptor {
             var uri = uriOf(entry, listed.getValue());
 
             if (uri == null) {
-                LOGGER.warn("mcpCatalogFilterInterceptor: an entry of '{}' has no '{}' — the SDK's result"
-                        + " shape has changed and the catalog is NOT being filtered", listed.getKey(), listed.getValue());
+                LOGGER.warn("""
+                        mcpCatalogFilterInterceptor: an entry of '{}' has no '{}' — the SDK's result shape has \
+                        changed and the catalog is NOT being filtered\
+                        """, listed.getKey(), listed.getValue());
                 return;
             }
 
