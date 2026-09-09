@@ -66,10 +66,10 @@ public final class CollectionMcpResourceBuilder {
         var builder = McpResource.builder()
                 .uri(collectionUri)
                 .kind("collection")
-                // A collection is the only MCP resource with a source of change to watch:
-                // MongoMcpAwareImpl.watch opens a change stream on it. Everything derived from one
-                // has none, so resources/subscribe is refused there rather than accepted and left
-                // silent.
+                // MongoMcpAwareImpl.watch opens a change stream on the collection; an aggregation
+                // over it shares that same stream. What stays unsubscribable is what has no
+                // collection to watch or nothing to re-read — a GraphQL app, a service, a change
+                // stream — and there resources/subscribe is refused rather than left silent.
                 .subscribable(true)
                 .description(description(mcp))
                 .transport(McpResource.Transport.HTTP);

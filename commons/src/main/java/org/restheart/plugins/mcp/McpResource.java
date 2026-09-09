@@ -84,9 +84,12 @@ public final class McpResource {
      * Whether {@code resources/subscribe} on this resource can ever deliver a
      * {@code notifications/resources/updated}.
      * <p>
-     * Notifications come from a change stream, and only a collection has one. An aggregation is
-     * derived, a service is computed, a GraphQL app is a query — none of them has a source of
-     * change to watch, and subscribing to one used to succeed and then stay silent forever.
+     * Notifications come from a change stream, so a resource is subscribable when there is a
+     * collection whose changes can make it stale: the collection itself, or an aggregation over it,
+     * which shares the same stream. A service is computed from nothing watchable, a GraphQL app
+     * reads across collections its mapping decides at query time, and a change stream is a live
+     * channel that is not readable in the first place — subscribing to those used to succeed and
+     * then stay silent forever.
      * <p>
      * The owning plugin declares this so the answer is known from the catalog, without having to
      * try opening a watch to find out.

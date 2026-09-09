@@ -400,26 +400,54 @@ public final class MongoMcpAwareImpl {
     }
 
     /**
-     * Watches the collection a resource reads from (#617). Several resources map to one collection
-     * — its documents, one document, its {@code _size} — and they all share the one change stream
-     * {@link CollectionWatchers} keeps for it.
+     * Watches the collection whose changes can make a resource stale (#617). Several resources map
+     * to one collection — its documents, one document, its {@code _size}, an aggregation over it —
+     * and they all share the one change stream {@link CollectionWatchers} keeps for it, so
+     * subscribing to a collection and to an aggregation over it costs one stream, not two.
      *
-     * <p>Empty for an aggregation: its result is a computation over a pipeline, and there is no
-     * change stream for a computation. Refusing the subscription is better than accepting one that
-     * would only fire when the underlying collection changed, which is a different question than
-     * the one the client asked.
+     * <p>An aggregation included, deliberately. MongoDB cannot say when the <em>result</em> of a
+     * pipeline changes — there is no change stream over a computation — but the notification
+     * carries no payload: it means "re-read". Waking a subscriber whenever the source collection
+     * changes answers exactly that, at the cost of the occasional wake-up for a write the pipeline
+     * filters out. Re-reading and finding the same board is cheap; never being told is not.
      */
     public Optional<AutoCloseable> watch(McpContext ctx, String resourceUri, Runnable onChange) {
-        if (databases == null || resourceUri.contains("/_aggrs/") || resourceUri.contains("/_streams/")) {
+        if (databases == null) {
             return Optional.empty();
         }
 
-        var resolved = resolveMount(resourceUri);
+        var sourceUri = sourceCollectionUri(resourceUri);
+        if (sourceUri == null) {
+            return Optional.empty();
+        }
+
+        var resolved = resolveMount(sourceUri);
         if (resolved == null) {
             return Optional.empty();
         }
 
         return Optional.of(watchers().watch(resolved.database(), resolved.collection(), onChange));
+    }
+
+    /**
+     * The URI of the collection a resource reads from, or {@code null} when there is none to watch.
+     *
+     * <p>An aggregation URI is the collection's with {@code /_aggrs/<name>} appended, and the mount
+     * resolver rejects those extra segments, so the suffix is dropped before resolving rather than
+     * resolved through.
+     *
+     * <p>A change stream gets nothing: it is a live channel consumed over a websocket and is not
+     * readable through {@code resources/read}, so there would be nothing to re-read when told it
+     * changed.
+     */
+    private static String sourceCollectionUri(String resourceUri) {
+        if (resourceUri.contains("/_streams/")) {
+            return null;
+        }
+
+        var aggrs = resourceUri.indexOf("/_aggrs/");
+
+        return aggrs < 0 ? resourceUri : resourceUri.substring(0, aggrs);
     }
 
     private volatile CollectionWatchers watchers;

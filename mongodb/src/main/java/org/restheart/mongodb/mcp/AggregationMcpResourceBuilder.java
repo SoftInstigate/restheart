@@ -84,6 +84,10 @@ public final class AggregationMcpResourceBuilder {
         var builder = McpResource.builder()
                 .uri(collectionUri + pathTemplate)
                 .kind("aggregation")
+                // Watched through the collection it reads from: MongoDB cannot say when a
+                // pipeline's result changes, but a notification only means "re-read", and the
+                // source collection changing is exactly when re-reading is worth it.
+                .subscribable(true)
                 .description(description(mcp));
 
         var avarsProperties = new LinkedHashMap<String, McpResource.Param>();

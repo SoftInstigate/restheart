@@ -293,9 +293,9 @@ public class McpService implements ByteArrayService {
         var reason = kind == null
                 ? "no such resource: " + uri
                 : "a resource of kind '" + kind + "' cannot be subscribed to: " + uri
-                        + ". Notifications come from a change stream, and only a collection has"
-                        + " one — subscribe to the collection this is derived from, and read this"
-                        + " resource when told it changed.";
+                        + ". Notifications come from a change stream on a collection, and this"
+                        + " resource has none to watch. Collections and aggregations over them are"
+                        + " subscribable — list_apis marks those with \"subscribable\": true.";
 
         var error = new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS, reason);
 
