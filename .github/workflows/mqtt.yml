@@ -55,15 +55,12 @@ jobs:
           java-version: "25"
           cache: "maven"
       - name: Build core and run the mqtt integration tests
-        # Two steps, not one "-pl core,mqtt -am verify": mqtt has no POM dependency on core (see
-        # the mqtt-it profile comment in mqtt/pom.xml), so a single "-pl mqtt -am" never built
-        # core at all — core/target/plugins was never there for the ITs to stage. Naming core
-        # in -pl fixes that, but running core's own "verify" here would also re-run its full
-        # karate/IT suite, which is slow and already covered by the Snapshot Release workflow.
-        # So: install core (and whatever it depends on) with tests skipped, just to produce
-        # core/target/restheart.jar and core/target/plugins, then run mqtt's own build+ITs.
+        # core/copy-plugins.xml stages modules that are intentionally not direct Maven
+        # dependencies of core, so even "-pl core -am" omits required plugin jars such as
+        # mongoclient. Build the full reactor with tests skipped to populate every target/
+        # directory, then run only mqtt's build and integration tests.
         run: |
-          mvn -B -pl core -am install -DskipTests
+          mvn -B install -DskipTests
           mvn -B clean verify -pl mqtt -Pmqtt-it
       - name: Upload server logs on failure
         if: failure()
