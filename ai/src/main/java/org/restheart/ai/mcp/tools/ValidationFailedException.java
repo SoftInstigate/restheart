@@ -29,7 +29,10 @@ public class ValidationFailedException extends RuntimeException {
     private final transient List<String> errors;
 
     public ValidationFailedException(List<String> errors) {
-        super(String.join("; ", errors));
+        // One error per line, not "; "-joined: a single body-schema error already uses "; " to
+        // separate the reasons within one alternative of a oneOf, so the same separator at both
+        // levels ran the alternatives together into one unreadable run of text.
+        super(String.join("\n", errors));
         this.errors = errors;
     }
 
