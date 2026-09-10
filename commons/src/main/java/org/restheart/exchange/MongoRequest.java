@@ -189,6 +189,12 @@ public class MongoRequest extends BsonRequest {
     /** Client session for multi-document transactions. */
     private ClientSessionImpl clientSession = null;
 
+    /**
+     * Set by {@link #startTxn()}. Read by the MongoDB service before the write, to decide whether
+     * this request needs a session with a transaction on it.
+     */
+    private boolean txnRequested = false;
+
     /** The HAL (Hypertext Application Language) formatting mode. */
     private HAL_MODE halMode = HAL_MODE.FULL;
 
@@ -1140,6 +1146,35 @@ public class MongoRequest extends BsonRequest {
         } else {
             return documentId;
         }
+    }
+
+    /**
+     * Declares that this request may need to be undone after it has been written, i.e. that a
+     * {@code RESPONSE} interceptor may call {@link MongoResponse#rollback(com.mongodb.client.MongoClient)}.
+     *
+     * <p>Call it at request time, before the write: a transaction cannot be opened around a write
+     * that already happened. The decision is therefore taken on what the request looks like rather
+     * than on its outcome, and is necessarily conservative — a transaction is opened whenever an
+     * undo <em>might</em> be needed, and most of them commit with nothing to undo.
+     *
+     * <p>Where the deployment supports transactions the write runs in one, and the undo is its
+     * abort: nothing is ever written, no change stream event is emitted, and the undo cannot fail
+     * halfway. Where it does not — no replica set — this is a no-op and {@code rollback()} falls
+     * back to a compensating write, with the limits documented there.
+     *
+     * <p>Idempotent. The caller never commits: the transaction is committed for it once every
+     * {@code RESPONSE} interceptor has run, unless one of them asked for the rollback.
+     */
+    public void startTxn() {
+        this.txnRequested = true;
+    }
+
+    /**
+     * @return true if an interceptor asked, with {@link #startTxn()}, to be able to undo this
+     * request's write
+     */
+    public boolean isTxnRequested() {
+        return this.txnRequested;
     }
 
     /**

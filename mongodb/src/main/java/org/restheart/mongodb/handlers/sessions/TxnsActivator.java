@@ -59,6 +59,7 @@ public class TxnsActivator implements Initializer {
                 enableTxns();
             } else {
                 BootstrapLogger.warnSubItem(LOGGER, "Cannot enable Transactions: MongoDB is a standalone instance and Transactions require a Replica Set.");
+                BootstrapLogger.warnSubItem(LOGGER, "A write undone after being checked (e.g. by jsonSchemaAfterWrite) is therefore undone by a compensating write, which is visible to readers and to change streams while it lasts, and does not apply if the document changed meanwhile.");
             }
         }
     }

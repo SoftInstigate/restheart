@@ -25,7 +25,12 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.sessions.ClientSessionFactory;
+import org.restheart.mongodb.db.sessions.Sid;
+import org.restheart.mongodb.db.sessions.Txn;
+import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
 
@@ -67,6 +72,8 @@ public class ClientSessionInjector extends PipelinedHandler {
         return ClientSessionInjectorHandlerHolder.INSTANCE;
     }
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientSessionInjector.class);
+
     private ClientSessionFactory clientSessionFactory = ClientSessionFactory.getInstance();
 
     /**
@@ -96,20 +103,59 @@ public class ClientSessionInjector extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
 
-        if (request.isInError() || !exchange.getQueryParameters().containsKey(CLIENT_SESSION_KEY)) {
+        if (request.isInError()) {
             next(exchange);
             return;
         }
 
-        try {
-            request.setClientSession(getClientSessionFactory().getClientSession(exchange));
-        } catch (IllegalArgumentException ex) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage());
-            next(exchange);
-            return;
+        if (exchange.getQueryParameters().containsKey(CLIENT_SESSION_KEY)) {
+            try {
+                request.setClientSession(getClientSessionFactory().getClientSession(exchange));
+            } catch (IllegalArgumentException ex) {
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage());
+                next(exchange);
+                return;
+            }
+        } else if (request.isTxnRequested()) {
+            startServerTxn(request);
         }
 
         next(exchange);
+    }
+
+    /**
+     * Opens a transaction for a request that asked, with {@code MongoRequest.startTxn()}, to be able
+     * to undo its own write. The write joins it: every handler passes
+     * {@code request.getClientSession()} down to the db layer.
+     *
+     * <p>Only reached when the client did not supply a session of its own. A client-driven
+     * transaction ({@code ?sid=&txn=}) is joined rather than nested — MongoDB has no nested
+     * transactions — and it is the branch above that installs it.
+     *
+     * <p>Whether transactions are available at all is read from the installed factory rather than
+     * probed here: {@code TxnsActivator} swaps in {@link TxnClientSessionFactory} at startup, and
+     * only when MongoDB is a replica set. When it did not, this is a no-op and the request runs
+     * unwrapped — {@code rollback()} then falls back to a compensating write.
+     */
+    private void startServerTxn(MongoRequest request) {
+        if (!(getClientSessionFactory() instanceof TxnClientSessionFactory txnFactory)) {
+            LOGGER.debug("Transaction requested but not available: MongoDB is not a replica set. "
+                    + "A rollback would be a compensating write.");
+            return;
+        }
+
+        // a session of our own, used by this request alone, so its transaction number starts at 1
+        var cs = txnFactory.getTxnClientSession(Sid.randomUUID(), request.rsOps(), new Txn(1, Txn.TransactionStatus.NONE));
+
+        cs.setMessageSentInCurrentTransaction(false);
+
+        if (!cs.hasActiveTransaction()) {
+            cs.startTransaction();
+        }
+
+        request.setClientSession(cs);
+
+        LOGGER.debug("Request runs in a server-side transaction");
     }
 
     /**
