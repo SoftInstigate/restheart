@@ -107,6 +107,9 @@ public class MqttStatusInitializerTest {
         if (active.contains("mqtt-mongo-writer")) {
             initializers.add(record("mqtt-mongo-writer", false, Map.of("enabled", true)));
         }
+        if (active.contains("mqtt-connector")) {
+            initializers.add(record("mqtt-connector", true, Map.of()));
+        }
         when(registry.getInitializers()).thenReturn(initializers);
 
         Set<PluginRecord<Interceptor<?, ?>>> interceptors = new java.util.HashSet<>();
@@ -371,8 +374,11 @@ public class MqttStatusInitializerTest {
         confMap.put("mqtt-topic-authorizer", Map.of("acl", Map.of("iot-reader", List.of("sensors/#"))));
 
         var config = configOf(confMap);
-        var registry = registryWithActive(
-            "mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest", "mqtt-mongo-writer", "mqtt-topic-authorizer");
+        // mqtt-connector included: it is enabled by default and is what actually connects the
+        // client, so a setup without it is not healthy - it is a module that never reaches the
+        // broker at all.
+        var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest",
+            "mqtt-mongo-writer", "mqtt-topic-authorizer", "mqtt-connector");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
@@ -434,9 +440,9 @@ public class MqttStatusInitializerTest {
         var config = configOf(Map.of("mqtt-client", Map.of(
             "enabled", true,
             "session-expiry-seconds", 3600)));
-        // mqtt-router too: without it the sentinel rightly warns that nothing would ever
-        // connect, which is a different finding from the one under test here.
-        var registry = registryWithActive("mqtt-client", "mqtt-router");
+        // mqtt-router and mqtt-connector too: without them the sentinel rightly warns that
+        // nothing would route or connect, which are different findings from the one under test.
+        var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-connector");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
@@ -458,9 +464,9 @@ public class MqttStatusInitializerTest {
                 "payload", "offline",
                 "delay-seconds", 30,
                 "message-expiry-seconds", 60))));
-        // mqtt-router too: without it the sentinel rightly warns that nothing would ever
-        // connect, which is a different finding from the one under test here.
-        var registry = registryWithActive("mqtt-client", "mqtt-router");
+        // mqtt-router and mqtt-connector too: without them the sentinel rightly warns that
+        // nothing would route or connect, which are different findings from the one under test.
+        var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-connector");
 
         var warning = onlyWarning(MqttStatusInitializer.findings(config, registry));
 
@@ -482,9 +488,9 @@ public class MqttStatusInitializerTest {
                 "topic", "status/restheart",
                 "payload", "offline",
                 "delay-seconds", 30))));
-        // mqtt-router too: without it the sentinel rightly warns that nothing would ever
-        // connect, which is a different finding from the one under test here.
-        var registry = registryWithActive("mqtt-client", "mqtt-router");
+        // mqtt-router and mqtt-connector too: without them the sentinel rightly warns that
+        // nothing would route or connect, which are different findings from the one under test.
+        var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-connector");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
@@ -503,9 +509,9 @@ public class MqttStatusInitializerTest {
             "enabled", true,
             "protocol-version", "5",
             "session-expiry-seconds", 3600)));
-        // mqtt-router too: without it the sentinel rightly warns that nothing would ever
-        // connect, which is a different finding from the one under test here.
-        var registry = registryWithActive("mqtt-client", "mqtt-router");
+        // mqtt-router and mqtt-connector too: without them the sentinel rightly warns that
+        // nothing would route or connect, which are different findings from the one under test.
+        var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-connector");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 

@@ -82,7 +82,8 @@ public class MqttStatusInitializer implements Initializer {
      * The six plugins that make up the {@code mqtt} module, in the order they are reported.
      */
     private static final List<String> MQTT_PLUGIN_NAMES = List.of(
-        "mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest", "mqtt-mongo-writer", "mqtt-topic-authorizer");
+        "mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest", "mqtt-mongo-writer",
+        "mqtt-topic-authorizer", "mqtt-connector");
 
     /**
      * The full RESTHeart configuration, used to read the configuration blocks of the other
@@ -214,17 +215,15 @@ public class MqttStatusInitializer implements Initializer {
             }
         }
 
-        // mqtt-client without mqtt-router is now worse than useless, and silently so. The client
-        // is deliberately built but not connected during its own initialization - mqtt-router
-        // connects it, right after registering the consumer that redelivered messages need in
-        // order to have somewhere to arrive. With the router disabled nobody ever connects, so
-        // the module sits there configured and inert.
-        if (clientActive && !isActive(registry, "mqtt-router")) {
+        // mqtt-connector is enabled by default precisely so nobody has to remember it, but an
+        // operator who disabled it explicitly has silently disarmed the whole module: mqtt-client
+        // builds the client and nothing ever connects it.
+        if (clientActive && !isActive(registry, "mqtt-connector")) {
             findings.add(new Finding(Level.WARN,
-                "mqtt-client is enabled but mqtt-router is not, so nothing ever connects to the broker: "
-                    + "the client is built during initialization and connected by mqtt-router, which also "
-                    + "registers the consumer that messages redelivered on a resumed session arrive at. "
-                    + "Set /mqtt-router/enabled to true"));
+                "mqtt-client is enabled but mqtt-connector is not, so nothing ever connects to the broker. "
+                    + "mqtt-client only builds the client; connecting is deferred until every consumer "
+                    + "registered at startup exists, because whatever the broker redelivers on a resumed "
+                    + "session is lost if it arrives before them. Set /mqtt-connector/enabled to true"));
         }
 
         var restActive = isActive(registry, "mqtt-rest");

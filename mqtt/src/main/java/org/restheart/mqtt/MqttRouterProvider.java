@@ -123,20 +123,11 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
 
         router = new MqttMessageRouter(mqttClient, maxMessagesPerSecond, cacheEnabled, maxCacheSize);
 
-        // Now, and not before: the router's constructor has just registered the global publish
-        // consumer, so anything the broker redelivers on CONNACK has somewhere to go. mqtt-client
-        // deliberately builds without connecting for exactly this reason - see its init().
-        //
-        // The guard is for tests that build this provider around a mocked client without a
-        // configured singleton. In production it always holds: mqtt-client is priority 10 to this
-        // provider's 11, and this provider cannot even be instantiated without injecting the
-        // client mqtt-client provides.
-        if (MqttClientSingleton.isInitialized()) {
-            MqttClientSingleton.getInstance().connect();
-        } else {
-            LOGGER.debug("MqttClientSingleton is not initialized; not connecting. Expected only "
-                + "outside a running RESTHeart");
-        }
+        // Deliberately NOT connecting here. Registering the global publish consumer, which the
+        // constructor above just did, is necessary but not sufficient: mqtt-mongo-writer registers
+        // its durable listener later still, at AFTER_STARTUP, and a message redelivered before
+        // that exists is acknowledged by dispatchMessage as having no durable claimant - and lost.
+        // mqtt-connector connects, last of all. See MqttConnectorInitializer.
 
         MqttClientSingleton.getInstance().addOnNewSessionListener(router::resubscribeAll);
 
