@@ -24,6 +24,7 @@ package org.restheart.mqtt.buffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.restheart.mqtt.model.MqttMessage;
@@ -102,6 +103,19 @@ public class MessageBuffer {
         }
     }
 
+    /**
+     * The default ceiling on how long {@link Strategy#BLOCKING} waits for room: 30 seconds.
+     * <p>
+     * Chosen to cover what the application layer can honestly cover - a database restart of
+     * seconds to tens of seconds - and no more. A longer outage is not something a buffer can
+     * bridge, and pretending otherwise puts the responsibility in the wrong place: that is what a
+     * properly sized replica set is for.
+     * </p>
+     */
+    public static final long DEFAULT_MAX_WAIT_MS = 30_000L;
+
+    private final long maxWaitMs;
+
     private final ArrayBlockingQueue<Pending> queue;
     private final Strategy strategy;
     private final int capacity;
@@ -116,6 +130,16 @@ public class MessageBuffer {
      * @throws IllegalArgumentException if capacity is not positive
      */
     public MessageBuffer(int capacity, Strategy strategy) {
+        this(capacity, strategy, DEFAULT_MAX_WAIT_MS);
+    }
+
+    /**
+     * @param capacity   how many messages the buffer holds
+     * @param strategy   what to do when it is full
+     * @param maxWaitMs  for {@link Strategy#BLOCKING} only: how long to wait for room before
+     *                   giving up on a message. Zero or less waits forever.
+     */
+    public MessageBuffer(int capacity, Strategy strategy, long maxWaitMs) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("capacity must be positive");
         }
@@ -124,6 +148,7 @@ public class MessageBuffer {
         }
         this.capacity = capacity;
         this.strategy = strategy;
+        this.maxWaitMs = maxWaitMs;
         this.queue = new ArrayBlockingQueue<>(capacity);
     }
 
@@ -176,9 +201,26 @@ public class MessageBuffer {
 
     private boolean offerBlocking(Pending message) {
         try {
-            queue.put(message);
-            acceptedCount.incrementAndGet();
-            return true;
+            // Bounded, not queue.put(). An unbounded wait parks the dispatching thread for as long
+            // as the database is away, and those threads are holding messages that are therefore
+            // never acknowledged - so the broker's in-flight window fills and it stops delivering
+            // ANYTHING to this client, SSE included. A database problem would take the live stream
+            // down with it, even though the live stream does not touch the database.
+            //
+            // Past the ceiling the message is dropped and counted, and the caller acknowledges it,
+            // so the connection keeps breathing. That loses data during a long outage, deliberately:
+            // covering one is a job for a replica set, not for a queue in memory.
+            if (maxWaitMs <= 0) {
+                queue.put(message);
+                acceptedCount.incrementAndGet();
+                return true;
+            }
+            if (queue.offer(message, maxWaitMs, TimeUnit.MILLISECONDS)) {
+                acceptedCount.incrementAndGet();
+                return true;
+            }
+            recordDropped(message);
+            return false;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return false;

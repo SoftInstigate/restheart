@@ -234,8 +234,9 @@ public class MqttMongoWriter implements Initializer {
         // then. Watch mqtt_router_messages_dropped, not just mqtt_buffer_dropped.
         String strategyStr = configOrDefault(bufferConfig, "strategy", "blocking-queue");
         int capacity = configOrDefault(bufferConfig, "capacity", 10000);
+        long maxWaitMs = configOrDefault(bufferConfig, "max-wait-ms", MessageBuffer.DEFAULT_MAX_WAIT_MS);
         Strategy strategy = Strategy.fromConfigValue(strategyStr);
-        buffer = new MessageBuffer(capacity, strategy);
+        buffer = new MessageBuffer(capacity, strategy, maxWaitMs);
 
         // Exposes the buffer's live depth/throughput via GET /metrics/mqtt_buffer_* outside the JVM
         Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_size"), buffer::size);
@@ -283,8 +284,16 @@ public class MqttMongoWriter implements Initializer {
             // until this writer has genuinely taken the message. Buffering it is not taking it -
             // the buffer is in memory - so the callback travels with the message and is invoked
             // by flush(), after the write to MongoDB has succeeded.
-            router.subscribeDurable(sink.topic(), Qos.AT_LEAST_ONCE,
-                (msg, taken) -> buffer.offer(new MessageBuffer.Pending(msg, taken)));
+            router.subscribeDurable(sink.topic(), Qos.AT_LEAST_ONCE, (msg, taken) -> {
+                if (!buffer.offer(new MessageBuffer.Pending(msg, taken))) {
+                    // Refused - the buffer is full and the wait ceiling elapsed, or the strategy
+                    // drops outright. Acknowledge anyway: the message is lost either way, and
+                    // leaving it unacknowledged would hold a slot in the broker's in-flight window
+                    // and eventually stop delivery to every consumer, the live ones included. The
+                    // drop itself is counted and exposed as mqtt_buffer_dropped.
+                    taken.run();
+                }
+            });
             LOGGER.info("Subscribed to topic {} → {}.{}", sink.topic(), sink.database(), sink.collection());
         }
 

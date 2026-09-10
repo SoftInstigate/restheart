@@ -258,6 +258,10 @@ Why connecting is a separate step: a broker redelivers everything a resumed sess
 
 What the guarantee does not cover: SSE and REST are live consumers and never hold up an acknowledgement — a browser must not be able to stall ingestion. The guarantee is about the persistence path, not about what a dashboard sees.
 
+**It covers a fast restart, not an outage.** `mqtt-mongo-writer`'s buffer waits up to `buffer.max-wait-ms` (30 s by default) for room before giving up on a message; past that it drops it, counts it in `mqtt_buffer_dropped`, and acknowledges it so the broker can move on. That ceiling is the honest boundary of what this layer can do: it absorbs a MongoDB restart of seconds to tens of seconds, which is what a buffer in memory is good for. **A prolonged database outage is not something an application can bridge, and this one does not pretend to** — the defence against that is a properly sized replica set, not a longer queue.
+
+The ceiling exists for a second reason, and it is the one that matters most in practice: **without it a MongoDB problem would take the live stream down with it.** An unbounded wait parks the dispatching thread, and that thread is holding a message that is therefore never acknowledged; once enough of them accumulate the broker's in-flight window fills and it stops delivering to this client altogether — SSE included, even though SSE never touches the database. Bounding the wait keeps the two independent, so consumers go on reading messages while persistence is degraded. Set `buffer.max-wait-ms` to `0` to wait indefinitely instead, accepting that coupling.
+
 ## The traps
 
 Most of these are silent: nothing refuses to start, and nothing complains unless you go looking. One of them is not, and is called out below.
@@ -483,7 +487,7 @@ mqtt-mongo-writer:
 
 Requires the `mongoclient` module: it injects `mclient` rather than opening its own connection.
 
-**Buffer strategies** (`buffer.strategy`, default `blocking-queue`):
+**Buffer strategies** (`buffer.strategy`, default `blocking-queue`; `buffer.max-wait-ms` bounds how long `blocking-queue` waits, 30 s by default, `0` for no bound):
 
 | value | on overflow |
 |---|---|

@@ -493,4 +493,46 @@ public class MessageBufferTest {
         assertEquals(totalOffered, buffer.acceptedCount(), "BLOCKING never drops under normal operation");
         assertEquals(0, buffer.droppedCount());
     }
+    // --- BLOCKING is bounded, not indefinite ---
+
+    @Test
+    @DisplayName("BLOCKING gives up once max-wait-ms elapses, rather than parking forever")
+    void testBlockingGivesUpAfterTheCeiling() {
+        MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING, 200);
+        assertTrue(buffer.offer(new Pending(msg("t", "first"), () -> { })));
+
+        long startedAt = System.currentTimeMillis();
+        boolean accepted = buffer.offer(new Pending(msg("t", "second"), () -> { }));
+        long waited = System.currentTimeMillis() - startedAt;
+
+        // An unbounded wait here would park the dispatching thread for as long as the consumer is
+        // away - and that thread is holding a message that is therefore never acknowledged, so the
+        // broker's in-flight window fills and it stops delivering to every consumer, live ones
+        // included. A database outage would take the SSE stream down with it.
+        assertFalse(accepted, "the second message must be refused once the ceiling elapses");
+        assertTrue(waited >= 200, "it must actually have waited the ceiling first; waited " + waited + " ms");
+        assertTrue(waited < 5_000, "and not much longer; waited " + waited + " ms");
+        assertEquals(1, buffer.droppedCount(), "the refusal must be counted, not silent");
+    }
+
+    @Test
+    @DisplayName("BLOCKING with a non-positive ceiling still waits indefinitely")
+    void testBlockingWithoutCeilingStillWaitsForever() throws Exception {
+        MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING, 0);
+        assertTrue(buffer.offer(new Pending(msg("t", "first"), () -> { })));
+
+        var accepted = new java.util.concurrent.atomic.AtomicBoolean(false);
+        var offering = Thread.ofVirtual().start(() ->
+            accepted.set(buffer.offer(new Pending(msg("t", "second"), () -> { }))));
+
+        // Still parked after a moment, because nothing has drained yet.
+        Thread.sleep(300);
+        assertFalse(accepted.get(), "with no ceiling the offer must still be waiting");
+
+        buffer.drain(1);
+        offering.join(java.time.Duration.ofSeconds(5));
+
+        assertTrue(accepted.get(), "and complete as soon as room appears");
+    }
+
 }

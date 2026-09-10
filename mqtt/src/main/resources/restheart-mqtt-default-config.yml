@@ -119,6 +119,11 @@ mqtt-sse:
 #     strategy: "blocking-queue"                # default; applies backpressure. "ring-buffer" and
 #                                               # "drop-incoming" lose messages under load - see README
 #     capacity: 10000
+#     max-wait-ms: 30000                        # blocking-queue only: how long to wait for room
+#                                               # before dropping and acknowledging. Covers a fast
+#                                               # database restart; a long outage is a replica-set
+#                                               # problem, and an unbounded wait would stall SSE
+#                                               # too. 0 waits forever.
 #   drain:
 #     batch-size: 200
 #     flush-interval-ms: 500

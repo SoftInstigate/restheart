@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -845,6 +846,47 @@ public class MqttMongoWriterTest {
             // Silently running on a default is the "present but inert" trap the module has a
             // sentinel for; the reader logs a warning naming the key rather than pretending.
             assertEquals(200, getField(writer, "batchSize"));
+        } finally {
+            writer.close();
+        }
+    }
+
+    @Test
+    @DisplayName("a message the buffer refuses is acknowledged anyway, so the connection keeps breathing")
+    void testRefusedMessageIsStillAcknowledged() throws Exception {
+        // The wiring the whole live/durable separation rests on. When the buffer refuses a message
+        // - full, and the wait ceiling elapsed - the message is lost either way. Leaving it
+        // unacknowledged would be strictly worse than dropping it: it would hold a slot in the
+        // broker's in-flight window, and once that fills the broker stops delivering to this client
+        // entirely, SSE included. A MongoDB outage would take the live stream down with it.
+        var router = mock(MqttMessageRouter.class);
+        MqttMongoWriter writer = new MqttMongoWriter(router);
+        setField(writer, "config", Map.of(
+            "id-strategy", "auto",
+            "buffer", Map.of("strategy", "drop-incoming", "capacity", 1),
+            "mongo-sink", List.of(Map.of(
+                "topic", "sensors/#", "database", "db", "collection", "coll"))));
+
+        // The drain loop starts inside onInit and will reach for MongoDB; a deep-stub keeps it from
+        // tripping over a null client. What is written there is not what this test is about.
+        setField(writer, "mclient", mock(MongoClient.class, org.mockito.Mockito.RETURNS_DEEP_STUBS));
+
+        writer.onInit();
+        try {
+            var listener = ArgumentCaptor.forClass(MqttMessageRouter.DurableListener.class);
+            verify(router).subscribeDurable(eq("sensors/#"), any(), listener.capture());
+
+            var acknowledged = new java.util.concurrent.atomic.AtomicInteger();
+            Runnable ack = acknowledged::incrementAndGet;
+
+            // First fills the single slot and is held - not acknowledged until it is written.
+            listener.getValue().onMessage(msg("sensors/temp", "{\"n\":1}", 1), ack);
+            assertEquals(0, acknowledged.get(), "a buffered message must not be acknowledged yet");
+
+            // Second is refused, and must be acknowledged on the spot.
+            listener.getValue().onMessage(msg("sensors/temp", "{\"n\":2}", 1), ack);
+            assertEquals(1, acknowledged.get(),
+                "a refused message must be acknowledged rather than left holding an in-flight slot");
         } finally {
             writer.close();
         }
