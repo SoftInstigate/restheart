@@ -62,6 +62,13 @@ public class MqttDurabilityIT extends MqttITBase {
     private static final String DB = "test-mqtt";
     private static final String COLLECTION = "sensor-events";
 
+    /**
+     * The log both instances write to, set by {@code it-overrides-durability.yml}. Logback writes
+     * it with immediate flush, unlike the harness's stdout capture, which this test's SIGKILL
+     * would lose - and which is also what makes it usable as a readiness signal.
+     */
+    private static final Path SERVER_LOG = Path.of("target", "it-logs", "MqttDurabilityIT-server.log");
+
     private GenericContainer<?> mongo;
     private MongoClient testMongoClient;
 
@@ -85,6 +92,11 @@ public class MqttDurabilityIT extends MqttITBase {
 
     @Override
     protected void beforeRestheartStarts() throws IOException {
+        // Both instances append to this file, and it survives between runs - so the connection
+        // count this test waits on would start already satisfied by the previous run's lines.
+        java.nio.file.Files.createDirectories(SERVER_LOG.getParent());
+        java.nio.file.Files.deleteIfExists(SERVER_LOG);
+
         mongoPort = freePort();
         mongo = new GenericContainer<>(System.getProperty("mongodb.image", "mongodb/mongodb-atlas-local")
                 + ":" + System.getProperty("mongodb.version", "preview"))
@@ -113,6 +125,14 @@ public class MqttDurabilityIT extends MqttITBase {
 
     @Test
     void aMessageSurvivesTheDeathOfTheInstanceThatReceivedIt() throws Exception {
+        // Not /ping: that answers while AFTER_STARTUP initializers are still running, and
+        // mqtt-connector is deliberately the last of them. Proceeding on /ping alone let this test
+        // stop MongoDB and publish against an instance whose MQTT client had not connected - and
+        // stopping MongoDB then stalls core's changeStreamActivator for its 30 s server-selection
+        // timeout, so the connector never ran before the kill. The message was never received,
+        // never held, and nothing was owed.
+        awaitBrokerConnections(SERVER_LOG, 1, 90);
+
         var collection = collection();
         collection.deleteMany(Filters.exists("_id"));
 
@@ -143,6 +163,9 @@ public class MqttDurabilityIT extends MqttITBase {
         // on 1883, where nothing listens.
         restheart = startRestheart(overridesFile(), allRho(), getClass().getSimpleName() + "-restarted.log",
             standalone());
+
+        // The second connection: the resumed session is only owed anything once this happens.
+        awaitBrokerConnections(SERVER_LOG, 2, 90);
 
         assertTrue(awaitDocument(collection, 60_000),
             "the message was never acknowledged, so the broker owed it to the resumed session and "

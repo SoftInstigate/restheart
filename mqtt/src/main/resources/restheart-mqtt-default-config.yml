@@ -16,8 +16,8 @@ mqtt-client:
   enabled: true
   broker-url: "tcp://localhost:1883"          # tcp:// (default), ssl:// or mqtts://, ws://, wss://
   protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0
-  client-id: ~                                # ~ (null/blank) generates "restheart-" + random UUID;
-                                               # leave unset so multiple instances don't collide on the same id
+  client-id: ~                                # ~ (null/blank) generates "restheart-" + instance name;
+                                               # must be unique per concurrently connected instance
   username: ~
   password: ~
   clean-session: false

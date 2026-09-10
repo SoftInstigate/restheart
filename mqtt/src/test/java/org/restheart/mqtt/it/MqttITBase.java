@@ -491,6 +491,47 @@ public abstract class MqttITBase {
      * @return a port that was free a moment ago
      * @throws IOException if no port could be probed
      */
+    /**
+     * Blocks until the module's log shows {@code occurrences} broker connections, or fails.
+     * <p>
+     * {@code /ping} is not a readiness check for this module. RESTHeart answers it as soon as the
+     * HTTP listener is up, while AFTER_STARTUP initializers are still running - and
+     * {@code mqtt-connector} is deliberately the last of them. A test that proceeds on {@code /ping}
+     * alone can act against an instance whose MQTT client has not connected yet, and an unrelated
+     * core initializer stalling (core's changeStreamActivator blocks for the MongoDB
+     * server-selection timeout when the database is down, which some of these tests arrange
+     * deliberately) widens that window to tens of seconds.
+     * </p>
+     *
+     * @param logFile     the log to watch; both instances of a restart test write to the same one,
+     *                    which is why this counts occurrences rather than looking for the first
+     * @param occurrences how many connections should have happened by now - 1 after the first
+     *                    start, 2 after a restart, and so on
+     * @param timeoutSec  how long to wait before failing
+     */
+    protected static void awaitBrokerConnections(Path logFile, int occurrences, int timeoutSec) {
+        var deadline = System.currentTimeMillis() + timeoutSec * 1000L;
+        var marker = "Connected to MQTT broker";
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                var seen = Files.readString(logFile).split(marker, -1).length - 1;
+                if (seen >= occurrences) {
+                    return;
+                }
+            } catch (IOException e) {
+                // the file may not exist yet on the first poll
+            }
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("interrupted waiting for the broker connection", e);
+            }
+        }
+        throw new IllegalStateException("the MQTT client had not connected " + occurrences
+            + " time(s) within " + timeoutSec + "s; see " + logFile.toAbsolutePath());
+    }
+
     protected static int freePort() throws IOException {
         try (var s = new ServerSocket(0)) {
             return s.getLocalPort();

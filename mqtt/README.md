@@ -16,10 +16,13 @@ The module still lives in the RESTHeart monorepo, and its integration tests run 
 |---|---|---|---|
 | `mqtt-client` | `Provider<MqttClient>` | — | No (Tier 1, the module switch) |
 | `mqtt-router` | `Provider<MqttMessageRouter>` | — | No (gated explicitly, see below) |
+| `mqtt-connector` | `Initializer` (`AFTER_STARTUP`) | — | Yes (connects the client, last of all) |
 | `mqtt-sse` | `SseService` | `/mqtt-sse` | No (Tier 2) |
 | `mqtt-rest` | `JsonService` | `/mqtt` | No (Tier 2) |
 | `mqtt-topic-authorizer` | `WildcardInterceptor` | — | Yes (deliberately, fails closed) |
 | `mqtt-mongo-writer` | `Initializer` (`AFTER_STARTUP`) | — | No (Tier 2) |
+| `mqtt-metrics-collector` | `Initializer` (`AFTER_STARTUP`) | — | Yes (registers the router's gauges) |
+| `mqtt-stats` | `JsonService` | `/mqtt/stats` | No (Tier 2) |
 | `mqtt-status` | `Initializer` (`AFTER_STARTUP`) | — | Yes (diagnostic sentinel) |
 
 How the pieces fit together:
@@ -239,6 +242,22 @@ Then copy the settings you need from `restheart-mqtt-default-config.yml` into yo
 
 **The RESTHeart you install into must be recent enough** to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`). Without that, `mqtt-topic-authorizer` resolves but is never invoked on the `/mqtt-sse` path, leaving the endpoint authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
 
+## Durability
+
+A message is acknowledged to the broker only once a durable consumer has taken responsibility for it. With `mqtt-mongo-writer`, that means after the write to MongoDB succeeds or the batch is dead-lettered. Until then the broker still owes it, and will redeliver if this instance dies. So with QoS 1 and a persistent session, the module delivers at-least-once end to end.
+
+This is a change from the original design, where the client acknowledged every message the instant it was handed over, before anything decided whether to keep it. The broker's redelivery guarantee was discarded before the message reached storage, so the module was at-most-once whatever QoS was configured. The difference matters, and it cuts both ways: at-most-once loses messages, at-least-once duplicates them. A redelivered message is delivered again, so the same reading can be written twice — after a crash, and on any reconnect that resumes a session mid-flight. That is the trade you are making, and `id-strategy` is how you settle it: `payload-field` keys the document on something the message itself carries, so a redelivery converges on one document instead of adding a second. Leaving `id-strategy` at `auto` means every redelivery is a new document.
+
+Three things are required:
+
+- **QoS 1 or 2.** QoS 0 has no acknowledgement in the protocol at all, so there is nothing to withhold and nothing to redeliver. The guarantee does not exist at QoS 0.
+- **`clean-session: false`** (the default), so the broker keeps the session and redelivers what the last connection owed when the next one resumes.
+- **A stable `client-id`.** An MQTT session is keyed on it. The default is now derived from the RESTHeart instance name (`restheart-<instance name>`) rather than a fresh UUID per start, which is what makes it stable. **A client id must be unique across concurrently connected clients:** a broker disconnects the existing client when another connects with the same id. So several RESTHeart instances sharing one `/core/name` will knock each other off the broker in a loop. Give each instance its own name, or set `/mqtt-client/client-id` explicitly.
+
+Why connecting is a separate step: a broker redelivers everything a resumed session owes the moment it sends CONNACK. Anything not listening at that instant loses those messages. The module registers consumers at three different moments — `mqtt-client` builds the client, `mqtt-router` registers the global publish consumer, `mqtt-mongo-writer` registers its durable listener at AFTER_STARTUP — so `mqtt-connector` exists purely to connect after all of them. It is enabled by default so nobody has to remember it; disabling it leaves a module that never reaches the broker, and `mqtt-status` reports that.
+
+What the guarantee does not cover: SSE and REST are live consumers and never hold up an acknowledgement — a browser must not be able to stall ingestion. The guarantee is about the persistence path, not about what a dashboard sees.
+
 ## The traps
 
 Most of these are silent: nothing refuses to start, and nothing complains unless you go looking. One of them is not, and is called out below.
@@ -322,9 +341,9 @@ See "Enablement" above for each plugin's `enabled` default; the tables below cov
 |---|---|---|
 | `broker-url` | `tcp://localhost:1883` | `tcp`, `ssl`, `mqtts`, `ws`, `wss` |
 | `protocol-version` | `3` | `3` or `5` only; anything else fails at startup |
-| `client-id` | generated | `restheart-<uuid>` when absent or blank |
+| `client-id` | generated | `restheart-<instance name>` when absent or blank; must be unique per concurrently connected instance |
 | `username`, `password` | none | |
-| `clean-session` | `false` | persistent session, so the broker replays what you missed — but only if `client-id` is also set explicitly. With the documented defaults `client-id` is regenerated on every start, so the broker sees a new client each boot and there is nothing to resume. |
+| `clean-session` | `false` | persistent session, so the broker replays what you missed. With the documented defaults the session is now stable across restarts — see "Durability" above. |
 | `keep-alive-seconds` | `60` | `< 0` fails at startup |
 | `connect-timeout-seconds` | `10` | must be > 0 |
 | `session-expiry-seconds` | `4294967295` | MQTT 5 only |
@@ -520,7 +539,7 @@ The router's API is expressed entirely in this module's own types (`Qos`, `MqttM
 
 ## Operational notes
 
-**Shutdown.** RESTHeart has no plugin shutdown callback, so the client and the writer's drain loop are stopped from JVM shutdown hooks. On a clean shutdown the writer drains its buffer into MongoDB for up to `drain.shutdown-timeout-ms` (5 s by default, deliberately inside Docker's 10 s SIGTERM grace), and anything still buffered when that elapses is written to the dead-letter file rather than dropped. A `kill -9` runs no hook at all and will lose whatever is still buffered.
+**Shutdown.** RESTHeart has no plugin shutdown callback, so the client and the writer's drain loop are stopped from JVM shutdown hooks. On a clean shutdown the writer drains its buffer into MongoDB for up to `drain.shutdown-timeout-ms` (5 s by default, deliberately inside Docker's 10 s SIGTERM grace), and anything still buffered when that elapses is written to the dead-letter file rather than dropped. A `kill -9` runs no hook at all, but what was buffered was never acknowledged, so the broker redelivers it to the next instance that resumes the session — see "Durability" above.
 
 **Message loss is by design on the live-data paths**, each counted so it is visible rather than silent: the router's global rate limit and the SSE per-connection queue. For a dashboard that is the right answer — you want the latest reading, not a backlog.
 
