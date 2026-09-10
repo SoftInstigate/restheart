@@ -110,6 +110,16 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
                 : null;
     }
 
+    /**
+     * Nothing is handled elsewhere here: this <em>is</em> the elsewhere. The inherited version lets
+     * a bulk {@code PATCH} past untouched, which is right before the write and would skip the only
+     * case this interceptor exists for.
+     */
+    @Override
+    boolean handledElsewhere(MongoRequest request, MongoResponse response, BsonDocument args) {
+        return false;
+    }
+
     @Override
     List<BsonDocument> documentsToCheck(MongoRequest request, MongoResponse response) {
         if (request.isBulkDocuments()) {

@@ -123,32 +123,8 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
                 .get("jsonSchema")
                 .asDocument();
 
-        // this request is not supported by jsonSchema checkers
-        //
-        if (request.isPatch() && request.isBulkDocuments()) {
-            // Since the write runs in a transaction it can be validated after the fact, like a
-            // single PATCH: jsonSchemaAfterWrite checks the documents it touched and aborts the
-            // transaction if any fails. jsonSchemaAfterWriteTxn asked for that transaction, and
-            // only asks where one is actually available.
-            if (request.isTxnRequested()) {
-                return;
-            }
-
-            BsonValue skipNotSupported = args.get(SKIP_NOT_SUPPORTED_PROPERTY);
-
-            if (skipNotSupported != null
-                    && skipNotSupported.isBoolean()
-                    && skipNotSupported.asBoolean().getValue()) {
-                LOGGER.debug("skipping jsonSchema checking since the request is a bulk PATCH and skipNotSupported=true");
-                return;
-            } else {
-                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
-                        "'jsonSchema' checker does not support bulk PATCH requests on a standalone "
-                                + "MongoDB. Use a replica set, where the write runs in a transaction "
-                                + "and is validated after it, or set 'skipNotSupported:true' to allow "
-                                + "them unvalidated.");
-                return;
-            }
+        if (handledElsewhere(request, response, args)) {
+            return;
         }
 
         BsonValue _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);
@@ -201,6 +177,51 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
                             + ": "
                             + String.join(", ", sve.getViolations()));
         }
+    }
+
+    /**
+     * Whether this request is not this interceptor's to check, and what to do about it.
+     *
+     * <p>A bulk {@code PATCH} carries update operators, so before the write there is no resulting
+     * document to validate. Where the write runs in a transaction it is checked afterwards instead,
+     * by {@code jsonSchemaAfterWrite}, and this pass simply lets it past. Where it does not — no
+     * replica set, so nothing could undo it — it is refused, unless the collection has opted out
+     * with {@code skipNotSupported}.
+     *
+     * <p>Overridden by {@link JsonSchemaAfterWriteChecker}, which inherits this {@code handle} and
+     * for which none of the above applies: checking a bulk {@code PATCH} after the write is exactly
+     * its job, and returning early here would skip the one case it exists for.
+     *
+     * @return true if the caller must stop, having either refused the request or deliberately let
+     * it through
+     */
+    boolean handledElsewhere(MongoRequest request, MongoResponse response, BsonDocument args) {
+        if (!(request.isPatch() && request.isBulkDocuments())) {
+            return false;
+        }
+
+        if (request.isTxnRequested()) {
+            // jsonSchemaAfterWriteTxn asked for the transaction, and only asks where one is
+            // available; jsonSchemaAfterWrite validates the outcome and aborts it if it fails
+            return true;
+        }
+
+        var skipNotSupported = args.get(SKIP_NOT_SUPPORTED_PROPERTY);
+
+        if (skipNotSupported != null
+                && skipNotSupported.isBoolean()
+                && skipNotSupported.asBoolean().getValue()) {
+            LOGGER.debug("skipping jsonSchema checking since the request is a bulk PATCH and skipNotSupported=true");
+            return true;
+        }
+
+        response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
+                "'jsonSchema' checker does not support bulk PATCH requests on a standalone "
+                        + "MongoDB. Use a replica set, where the write runs in a transaction "
+                        + "and is validated after it, or set 'skipNotSupported:true' to allow "
+                        + "them unvalidated.");
+
+        return true;
     }
 
     List<BsonDocument> documentsToCheck(MongoRequest request, MongoResponse response) {
