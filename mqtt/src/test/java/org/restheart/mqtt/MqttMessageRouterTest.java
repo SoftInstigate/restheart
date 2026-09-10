@@ -307,9 +307,19 @@ public class MqttMessageRouterTest {
             globalConsumer.accept(publish);
         }
 
+        // Dispatch runs on a virtual thread per message, and the rate-limit decision now lives
+        // there, so the drop counter is settled asynchronously.
+        awaitCondition(() -> router.getStats().getMessagesDropped() == 3, 5_000);
+
         RouterStats stats = router.getStats();
-        assertEquals(2, stats.getMessagesReceived(), "only messages admitted by the rate limiter are counted as received");
-        assertEquals(3, stats.getMessagesDropped());
+
+        // "Received" means received from the broker - all five - not "survived the rate limiter".
+        // The counters deliberately overlap now: a rate-limited message is still delivered to
+        // every durable listener and still persisted, so calling it unreceived would be false,
+        // and dropped/received is the loss rate an operator actually wants.
+        assertEquals(5, stats.getMessagesReceived(),
+            "every message the broker delivered is received, whatever the rate limiter then does with it");
+        assertEquals(3, stats.getMessagesDropped(), "three were refused live delivery");
     }
 
     // --- A8: highest requested QoS wins, and resubscribeAll uses the tracked QoS ---
@@ -637,6 +647,57 @@ public class MqttMessageRouterTest {
         assertTrue(acked.get(),
             "a failing live listener must not affect the durable path - the two have opposite "
                 + "obligations and must not be able to interfere");
+    }
+
+    /**
+     * Spins until {@code condition} holds or {@code timeoutMillis} elapses, failing the test if it
+     * never does. Needed because dispatch runs on a virtual thread per message, so anything it
+     * counts is settled after the call that triggered it has already returned.
+     *
+     * @param condition     what to wait for
+     * @param timeoutMillis how long to wait before failing
+     */
+    private static void awaitCondition(java.util.function.BooleanSupplier condition, long timeoutMillis) {
+        var deadline = System.currentTimeMillis() + timeoutMillis;
+        while (System.currentTimeMillis() < deadline) {
+            if (condition.getAsBoolean()) {
+                return;
+            }
+            Thread.onSpinWait();
+        }
+        org.junit.jupiter.api.Assertions.fail("condition not met within " + timeoutMillis + " ms");
+    }
+
+    @Test
+    void testTheRateLimitRefusesLiveDeliveryButNeverThePersistencePath() {
+        // A limit of 1/s, then five messages. Live listeners see one; the durable listener must
+        // see all five and be given the chance to take every one of them.
+        //
+        // This is the separation the limit lacked: it ran before the fan-out, so a number chosen
+        // to protect a dashboard silently governed what reached storage too. And once the
+        // acknowledgement became manual, a message cut there was never acknowledged either, so a
+        // flood filled the broker's in-flight window and stalled delivery outright.
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 1, true, 1000);
+
+        var live = new AtomicInteger();
+        var durable = new AtomicInteger();
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, msg -> live.incrementAndGet());
+        router.subscribeDurable("sensors/#", Qos.AT_LEAST_ONCE, (msg, taken) -> {
+            durable.incrementAndGet();
+            taken.run();
+        });
+
+        Consumer<Mqtt5Publish> globalConsumer = capturedGlobalConsumer(mockClient);
+        for (int i = 0; i < 5; i++) {
+            globalConsumer.accept(mockPublish("sensors/temp", "x", MqttQos.AT_LEAST_ONCE));
+        }
+
+        awaitCondition(() -> durable.get() == 5, 5_000);
+
+        assertEquals(5, durable.get(), "persistence must see every message, whatever the rate limit says");
+        assertEquals(1, live.get(), "live delivery is what the rate limit governs");
+        assertEquals(4, router.getStats().getMessagesDropped(), "and the four it refused are counted");
     }
 
 }

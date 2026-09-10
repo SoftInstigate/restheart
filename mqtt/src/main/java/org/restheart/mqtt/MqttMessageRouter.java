@@ -435,10 +435,11 @@ public class MqttMessageRouter {
      * @param publish the MQTT 5 publish received from the broker
      */
     private void handleMqtt5Message(Mqtt5Publish publish) {
-        if (!checkRateLimit()) {
-            recordDropped();
-            return;
-        }
+        // No rate-limit cut here any more. It used to drop the message before anything saw it,
+        // which meant persistence inherited a policy written for live consumers - and, once the
+        // acknowledgement became manual, meant a dropped message was never acknowledged either,
+        // so a flood filled the broker's in-flight window and stalled delivery entirely. The
+        // limit now applies where it belongs, to live fan-out only, inside dispatchMessage.
         messagesReceivedCount.incrementAndGet();
 
         MqttMessage message = new MqttMessage(
@@ -463,10 +464,11 @@ public class MqttMessageRouter {
      * @param publish the MQTT 3 publish received from the broker
      */
     private void handleMqtt3Message(Mqtt3Publish publish) {
-        if (!checkRateLimit()) {
-            recordDropped();
-            return;
-        }
+        // No rate-limit cut here any more. It used to drop the message before anything saw it,
+        // which meant persistence inherited a policy written for live consumers - and, once the
+        // acknowledgement became manual, meant a dropped message was never acknowledged either,
+        // so a flood filled the broker's in-flight window and stalled delivery entirely. The
+        // limit now applies where it belongs, to live fan-out only, inside dispatchMessage.
         messagesReceivedCount.incrementAndGet();
 
         MqttMessage message = new MqttMessage(
@@ -562,19 +564,26 @@ public class MqttMessageRouter {
             ackToBroker.run();
         }
 
-        for (Map.Entry<String, List<Consumer<MqttMessage>>> entry : listeners.entrySet()) {
-            String topicFilter = entry.getKey();
+        // The rate limit governs live delivery and nothing else. A dashboard falling behind is a
+        // reason to drop; a message bound for storage never is. Note the durable path below runs
+        // regardless of what this returns.
+        if (checkRateLimit()) {
+            for (Map.Entry<String, List<Consumer<MqttMessage>>> entry : listeners.entrySet()) {
+                String topicFilter = entry.getKey();
 
-            if (MqttTopicMatcher.matches(message.getTopic(), topicFilter)) {
-                for (Consumer<MqttMessage> listener : entry.getValue()) {
-                    try {
-                        listener.accept(message);
-                    } catch (Exception e) {
-                        LOGGER.error("Error dispatching message to listener for topic {}",
-                            message.getTopic(), e);
+                if (MqttTopicMatcher.matches(message.getTopic(), topicFilter)) {
+                    for (Consumer<MqttMessage> listener : entry.getValue()) {
+                        try {
+                            listener.accept(message);
+                        } catch (Exception e) {
+                            LOGGER.error("Error dispatching message to listener for topic {}",
+                                message.getTopic(), e);
+                        }
                     }
                 }
             }
+        } else {
+            recordDropped();
         }
 
         if (durable.isEmpty()) {
