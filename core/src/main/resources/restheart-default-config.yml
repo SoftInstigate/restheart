@@ -301,19 +301,20 @@ authTokenService:
   # in seconds. RESTHeart has one token, renewed by presenting itself; an OAuth client keeps it and
   # refreshes only once it has expired — many wait for the 401 — so without a window the standard
   # grant would never succeed and the client would re-run the whole authorization flow instead.
-  # Be clear about what this buys: for anyone holding the token, a grace window is equivalent to a
-  # longer ttl. The window extends only the power to renew, not to read — but renewing yields a
-  # token that reads, so an attacker takes one extra step and is where it would have been with the
-  # longer ttl anyway. What it buys is client compatibility, not security, and that is enough of a
-  # reason: without it the standard grant simply does not work with clients that renew on the 401.
-  # Treat ttl + refresh-grace-seconds as the real lifetime of a leaked token, and note that neither
-  # bounds it: a renewed token is renewable in turn, so the chain has no end today.
-  # 60 is enough for what the window is for: the moment a client takes to notice a 401 and renew,
-  # plus clock skew between it and the server. It is deliberately NOT a token lifetime — the window
-  # does not need to cover a client that went idle, since one away long enough to care will be
-  # re-authenticating either way, and matching it to ttl would double a leaked token's useful life
-  # for no gain.
-  refresh-grace-seconds: 60
+  # The window is for the client that went idle, not for the one that is busy. A busy client gets
+  # its 401 seconds after expiry and renews at once; the client that hits an expired token is
+  # usually one that stopped calling for a while, so what this really sets is how long it may stay
+  # away and still resume without sending the user through the sign-in flow again.
+  # It does not extend the power to read, only the power to renew — but a renewal yields a token
+  # that reads, so for anyone holding the token grace and ttl are the same thing one step apart.
+  # Moving seconds between the two changes little; their sum is what matters.
+  # That sum is the revocation latency. renew() re-reads the account, so a user disabled or stripped
+  # of a role keeps working for at most ttl + refresh-grace-seconds, and that is the number to
+  # choose deliberately: 15m + 5m means twenty minutes.
+  # It does not bound a stolen token, which is renewable in turn and so has no expiry at all today.
+  # Bound the chain with a permission on the renewals claim instead:
+  #   "predicate": "path('/token') and method(POST) and lte(@user.renewals, 9)"
+  refresh-grace-seconds: 300
   # Redirect target for GET /token/redirect. null (default) means the endpoint
   # returns 400 unless a per-request override-redirect-url is attached instead.
   # Example: https://app.example.com/callback

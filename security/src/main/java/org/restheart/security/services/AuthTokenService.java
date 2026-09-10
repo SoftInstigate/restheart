@@ -70,14 +70,22 @@ public class AuthTokenService implements ByteArrayService {
     /**
      * Default grace window, in seconds.
      *
-     * <p>One minute, not one token lifetime. The window exists to cover the moment a client takes
-     * to notice a {@code 401} and renew, plus clock skew — both of which are seconds. It is not
-     * meant to keep an idle client alive: one away long enough for that to matter will be
-     * re-authenticating regardless, and since a grace window is equivalent to a longer {@code ttl}
-     * for whoever holds the token, matching it to {@code ttl} would double a leaked token's useful
-     * life and buy nothing.
+     * <p>Five minutes, sized for the client that went idle rather than the one that is busy. A busy
+     * client gets its {@code 401} within seconds of expiry and renews at once — seconds would do.
+     * The client that actually meets an expired token is the one that stopped calling for a while,
+     * so this sets how long it may stay away and still resume without sending the user through the
+     * sign-in flow again.
+     *
+     * <p>The window extends the power to renew, not to read; but a renewal yields a token that
+     * reads, so for whoever holds the token grace and {@code ttl} are the same thing one step
+     * apart. Moving seconds from one to the other changes little. Their sum is what matters, and
+     * what it measures is revocation latency: {@code renew()} re-reads the account, so a user
+     * disabled or stripped of a role keeps working for at most {@code ttl + grace}.
+     *
+     * <p>It bounds nothing else. A renewed token is renewable in turn, so the chain has no end of
+     * its own — bound it with a permission on the {@code renewals} claim.
      */
-    private static final int DEFAULT_REFRESH_GRACE_SECONDS = 60;
+    private static final int DEFAULT_REFRESH_GRACE_SECONDS = 300;
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
     private static final String TOKEN_REDIRECT_ENDPOINT = "/token/redirect";
 
