@@ -52,6 +52,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -105,7 +106,9 @@ public class MqttMessageRouterTest {
     @SuppressWarnings("unchecked")
     private static Consumer<Mqtt5Publish> capturedGlobalConsumer(Mqtt5AsyncClient mockClient) {
         ArgumentCaptor<Consumer<Mqtt5Publish>> captor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockClient, times(1)).publishes(eq(MqttGlobalPublishFilter.ALL), captor.capture());
+        // The three-argument overload: the router registers with manualAcknowledgement = true, so
+        // that a durable listener can hold a message until it has actually taken it.
+        verify(mockClient, times(1)).publishes(eq(MqttGlobalPublishFilter.ALL), captor.capture(), eq(true));
         return captor.getValue();
     }
 
@@ -206,8 +209,8 @@ public class MqttMessageRouterTest {
 
         MqttMessage message = new MqttMessage("test/order", "payload", 1, Instant.now());
 
-        Method dispatchMessageMethod = privateMethod("dispatchMessage", MqttMessage.class);
-        dispatchMessageMethod.invoke(router, message);
+        Method dispatchMessageMethod = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
+        dispatchMessageMethod.invoke(router, message, (Runnable) () -> { });
 
         assertEquals(3, invocationOrder.size());
         assertEquals("A", invocationOrder.get(0));
@@ -241,7 +244,7 @@ public class MqttMessageRouterTest {
         });
 
         // Registering two (even overlapping) filters must not register additional global consumers
-        verify(mockClient, times(1)).publishes(eq(MqttGlobalPublishFilter.ALL), org.mockito.ArgumentMatchers.any());
+        verify(mockClient, times(1)).publishes(eq(MqttGlobalPublishFilter.ALL), org.mockito.ArgumentMatchers.any(), eq(true));
 
         // Simulate the broker delivering exactly one publish matching both filters
         globalConsumer.accept(mockPublish("sensors/temp", "21.5", MqttQos.AT_LEAST_ONCE));
@@ -532,6 +535,108 @@ public class MqttMessageRouterTest {
             Thread.currentThread().interrupt();
             failure.set(e);
         }
+    }
+
+    // --- manual acknowledgement: who gets to hold up the broker ---
+
+    @Test
+    void testWithNoDurableListenerTheMessageIsAcknowledgedImmediately() throws Exception {
+        // The common case - an SSE-only deployment - must behave exactly as it always has. Someone
+        // watching a dashboard has no business delaying an acknowledgement.
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 100);
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, msg -> { });
+
+        var acked = new AtomicBoolean(false);
+        Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
+        dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
+            (Runnable) () -> acked.set(true));
+
+        assertTrue(acked.get(), "with nothing durable registered the message must be acknowledged at once");
+    }
+
+    @Test
+    void testADurableListenerHoldsTheAcknowledgementUntilItReportsIn() throws Exception {
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 100);
+
+        var held = new AtomicReference<Runnable>();
+        router.subscribeDurable("sensors/#", Qos.AT_LEAST_ONCE, (msg, taken) -> held.set(taken));
+
+        var acked = new AtomicBoolean(false);
+        Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
+        dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
+            (Runnable) () -> acked.set(true));
+
+        // This is the whole point: the listener has been handed the message but has not yet taken
+        // responsibility for it - it is in an in-memory buffer, not on disk - so the broker must
+        // still consider it owed.
+        assertFalse(acked.get(), "a durable listener that has not reported in must hold the acknowledgement");
+
+        held.get().run();
+        assertTrue(acked.get(), "and release it once it has");
+    }
+
+    @Test
+    void testTheAcknowledgementWaitsForTheLastDurableListener() throws Exception {
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 100);
+
+        var first = new AtomicReference<Runnable>();
+        var second = new AtomicReference<Runnable>();
+        router.subscribeDurable("sensors/#", Qos.AT_LEAST_ONCE, (msg, taken) -> first.set(taken));
+        router.subscribeDurable("sensors/temp", Qos.AT_LEAST_ONCE, (msg, taken) -> second.set(taken));
+
+        var acked = new AtomicBoolean(false);
+        Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
+        dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
+            (Runnable) () -> acked.set(true));
+
+        first.get().run();
+        assertFalse(acked.get(), "one of two is not enough - the other has not taken it yet");
+
+        // Calling back twice must not release on the other's behalf: the guard is per listener.
+        first.get().run();
+        assertFalse(acked.get(), "a listener reporting twice must not count as two");
+
+        second.get().run();
+        assertTrue(acked.get(), "the last one releases it");
+    }
+
+    @Test
+    void testADurableListenerThatThrowsLeavesTheMessageUnacknowledged() throws Exception {
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 100);
+        router.subscribeDurable("sensors/#", Qos.AT_LEAST_ONCE, (msg, taken) -> {
+            throw new IllegalStateException("cannot take it");
+        });
+
+        var acked = new AtomicBoolean(false);
+        Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
+        dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
+            (Runnable) () -> acked.set(true));
+
+        // Acknowledging here would tell the broker the message is safe when it demonstrably is
+        // not, and it would never be redelivered. Leaving it unacknowledged costs an in-flight
+        // slot; losing it costs the message.
+        assertFalse(acked.get(),
+            "a listener that failed to take the message must not have it acknowledged on its behalf");
+    }
+
+    @Test
+    void testALiveListenerCannotHoldUpADurableOne() throws Exception {
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 100);
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, msg -> {
+            throw new IllegalStateException("a broken SSE listener");
+        });
+        var held = new AtomicReference<Runnable>();
+        router.subscribeDurable("sensors/#", Qos.AT_LEAST_ONCE, (msg, taken) -> held.set(taken));
+
+        var acked = new AtomicBoolean(false);
+        Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
+        dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
+            (Runnable) () -> acked.set(true));
+
+        held.get().run();
+        assertTrue(acked.get(),
+            "a failing live listener must not affect the durable path - the two have opposite "
+                + "obligations and must not be able to interfere");
     }
 
 }

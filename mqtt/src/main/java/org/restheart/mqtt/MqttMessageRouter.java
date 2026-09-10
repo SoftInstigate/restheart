@@ -24,6 +24,8 @@ package org.restheart.mqtt;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -82,6 +84,14 @@ public class MqttMessageRouter {
 
     // Topic filter -> list of message consumers
     private final Map<String, List<Consumer<MqttMessage>>> listeners = new ConcurrentHashMap<>();
+
+    /**
+     * Listeners that must take responsibility for a message before it is acknowledged to the
+     * broker, keyed by topic filter. Kept apart from {@link #listeners} because the two have
+     * opposite obligations: a live listener must never be able to hold up an acknowledgement,
+     * and a durable one must.
+     */
+    private final Map<String, List<DurableListener>> durableListeners = new ConcurrentHashMap<>();
 
     // Topic filter -> effective (highest requested) QoS currently subscribed on the broker
     private final Map<String, Qos> filterQos = new ConcurrentHashMap<>();
@@ -163,9 +173,9 @@ public class MqttMessageRouter {
      */
     private void registerGlobalPublishConsumer() {
         if (client instanceof Mqtt5AsyncClient mqtt5Client) {
-            mqtt5Client.publishes(MqttGlobalPublishFilter.ALL, this::handleMqtt5Message);
+            mqtt5Client.publishes(MqttGlobalPublishFilter.ALL, this::handleMqtt5Message, true);
         } else if (client instanceof Mqtt3AsyncClient mqtt3Client) {
-            mqtt3Client.publishes(MqttGlobalPublishFilter.ALL, this::handleMqtt3Message);
+            mqtt3Client.publishes(MqttGlobalPublishFilter.ALL, this::handleMqtt3Message, true);
         } else {
             LOGGER.error("Unsupported MQTT client type: {}; unable to register publish consumer",
                 client == null ? "null" : client.getClass().getName());
@@ -203,6 +213,50 @@ public class MqttMessageRouter {
         ensureBrokerSubscription(topicFilter, qos);
 
         LOGGER.debug("Added listener for topic filter: {}, total listeners: {}", topicFilter, total[0]);
+    }
+
+    /**
+     * Registers a listener that must take responsibility for a message before the router
+     * acknowledges it to the broker. See {@link DurableListener}.
+     * <p>
+     * The broker subscription is shared with {@link #subscribe}: a filter needs one whether the
+     * interest in it is live, durable, or both.
+     * </p>
+     *
+     * @param topicFilter the MQTT topic filter to listen on
+     * @param qos         the QoS to subscribe with; note that QoS 0 has no acknowledgement in the
+     *                    protocol at all, so registering a durable listener on a QoS 0 filter buys
+     *                    nothing
+     * @param listener    the durable listener
+     */
+    public void subscribeDurable(String topicFilter, Qos qos, DurableListener listener) {
+        durableListeners.compute(topicFilter, (k, existing) -> {
+            var list = existing == null ? new CopyOnWriteArrayList<DurableListener>() : existing;
+            list.add(listener);
+            return list;
+        });
+
+        ensureBrokerSubscription(topicFilter, qos);
+
+        LOGGER.debug("Added durable listener for topic filter: {}", topicFilter);
+    }
+
+    /**
+     * Removes a previously registered durable listener.
+     *
+     * @param topicFilter the filter it was registered on
+     * @param listener    the listener to remove
+     */
+    public void unsubscribeDurable(String topicFilter, DurableListener listener) {
+        durableListeners.compute(topicFilter, (k, list) -> {
+            if (list == null) {
+                return null;
+            }
+            list.remove(listener);
+            return list.isEmpty() ? null : list;
+        });
+
+        LOGGER.debug("Removed durable listener for topic filter: {}", topicFilter);
     }
 
     /**
@@ -398,7 +452,7 @@ public class MqttMessageRouter {
             updateCache(message);
         }
 
-        Thread.ofVirtual().start(() -> dispatchMessage(message));
+        Thread.ofVirtual().start(() -> dispatchMessage(message, publish::acknowledge));
     }
 
     /**
@@ -426,7 +480,7 @@ public class MqttMessageRouter {
             updateCache(message);
         }
 
-        Thread.ofVirtual().start(() -> dispatchMessage(message));
+        Thread.ofVirtual().start(() -> dispatchMessage(message, publish::acknowledge));
     }
 
     /**
@@ -497,7 +551,17 @@ public class MqttMessageRouter {
      *
      * @param message the message to dispatch
      */
-    private void dispatchMessage(MqttMessage message) {
+    private void dispatchMessage(MqttMessage message, Runnable ackToBroker) {
+        var durable = matchingDurableListeners(message.getTopic());
+
+        // With nothing durable registered - an SSE-only deployment, which is the common case -
+        // acknowledge straight away, before delivering. That is byte-for-byte the behaviour this
+        // module has always had, and it must stay that way: someone watching a dashboard has no
+        // business holding up the broker.
+        if (durable.isEmpty()) {
+            ackToBroker.run();
+        }
+
         for (Map.Entry<String, List<Consumer<MqttMessage>>> entry : listeners.entrySet()) {
             String topicFilter = entry.getKey();
 
@@ -512,6 +576,49 @@ public class MqttMessageRouter {
                 }
             }
         }
+
+        if (durable.isEmpty()) {
+            return;
+        }
+
+        // One acknowledgement when the last durable listener reports in. The guard is per
+        // listener, not per message, so a listener that calls back twice cannot release the
+        // acknowledgement on another's behalf.
+        var outstanding = new AtomicInteger(durable.size());
+        for (DurableListener listener : durable) {
+            var alreadyReported = new AtomicBoolean(false);
+            Runnable taken = () -> {
+                if (alreadyReported.compareAndSet(false, true) && outstanding.decrementAndGet() == 0) {
+                    ackToBroker.run();
+                }
+            };
+            try {
+                listener.onMessage(message, taken);
+            } catch (Exception e) {
+                // Deliberately no acknowledgement: the listener did not take the message, so
+                // claiming it did would lose it for good. It stays unacknowledged and the broker
+                // redelivers it on the next session - at the cost of an in-flight slot until then.
+                LOGGER.error("Durable listener threw for topic {}; the message stays unacknowledged "
+                    + "and will be redelivered", message.getTopic(), e);
+            }
+        }
+    }
+
+    /**
+     * @param topic the topic a message arrived on
+     * @return every durable listener whose filter matches it, flattened across filters
+     */
+    private List<DurableListener> matchingDurableListeners(String topic) {
+        if (durableListeners.isEmpty()) {
+            return List.of();
+        }
+        var matches = new ArrayList<DurableListener>();
+        for (Map.Entry<String, List<DurableListener>> entry : durableListeners.entrySet()) {
+            if (MqttTopicMatcher.matches(topic, entry.getKey())) {
+                matches.addAll(entry.getValue());
+            }
+        }
+        return matches;
     }
 
     /**
@@ -640,4 +747,32 @@ public class MqttMessageRouter {
          */
         public long getMessagesDropped() { return messagesDropped; }
     }
+    /**
+     * A consumer that the router waits for before acknowledging a message to the broker.
+     * <p>
+     * The callback is deliberately not a {@link Consumer}: returning from a method is the wrong
+     * signal here. {@code MqttMongoWriter} takes a message by putting it in an in-memory buffer,
+     * and that buffer is not durable - acknowledging at that point would tell the broker the
+     * message is safe while it is one crash away from being gone, which is the very thing this
+     * mechanism exists to stop. So responsibility is signalled separately, by invoking
+     * {@code taken}, whenever the implementation genuinely has it: after the write to MongoDB
+     * succeeds, or after it has been spooled to disk.
+     * </p>
+     * <p>
+     * Not calling {@code taken} is a legitimate outcome and means the message stays unacknowledged
+     * and will be redelivered. It is not free, though: an unacknowledged message occupies a slot
+     * in the broker's in-flight window, so a listener that never calls back will eventually stall
+     * delivery for this client.
+     * </p>
+     */
+    @FunctionalInterface
+    public interface DurableListener {
+        /**
+         * @param message the message to take responsibility for
+         * @param taken   invoked, once, when responsibility has actually been taken; invoking it
+         *                more than once is ignored
+         */
+        void onMessage(MqttMessage message, Runnable taken);
+    }
+
 }

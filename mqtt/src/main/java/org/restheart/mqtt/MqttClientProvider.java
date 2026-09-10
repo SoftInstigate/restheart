@@ -23,11 +23,14 @@ package org.restheart.mqtt;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.restheart.configuration.Configuration;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.hivemq.client.mqtt.MqttClient;
 
@@ -70,6 +73,8 @@ import com.hivemq.client.mqtt.MqttClient;
 )
 public class MqttClientProvider implements Provider<MqttClient>{
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttClientProvider.class);
+
     /** Guards against registering the shutdown hook more than once per classloader. */
     private static final AtomicBoolean SHUTDOWN_HOOK_REGISTERED = new AtomicBoolean(false);
 
@@ -82,6 +87,14 @@ public class MqttClientProvider implements Provider<MqttClient>{
      */
     @Inject("config")
     private Map<String, Object> config;
+
+    /**
+     * The whole RESTHeart configuration, read for one thing only: the instance name, which is
+     * what makes the default {@code client-id} stable across restarts. See
+     * {@link #resolveClientId(String, boolean)}.
+     */
+    @Inject("rh-config")
+    private Configuration rhConfig;
 
     /**
      * Initializes the MQTT client configuration, sets default values for missing configuration keys,
@@ -114,10 +127,11 @@ public class MqttClientProvider implements Provider<MqttClient>{
     public void init() {
         final String brokerUrl = argOrDefault(config, "broker-url", "tcp://localhost:1883");
         final int protocolVersion = argOrDefault(config, "protocol-version", 3);
-        final String clientId = argOrDefault(config, "client-id", null);
+        final String configuredClientId = argOrDefault(config, "client-id", (String) null);
         final String username = argOrDefault(config, "username", null);
         final String password = argOrDefault(config, "password", null);
         final boolean cleanSession = argOrDefault(config, "clean-session", false);
+        final String clientId = resolveClientId(configuredClientId, cleanSession);
         final int keepAliveSeconds = argOrDefault(config, "keep-alive-seconds", 60);
         final int connectTimeoutSeconds = argOrDefault(config, "connect-timeout-seconds", 10);
         final boolean tlsEnabled = argOrDefault(config, "tls", false);
@@ -205,6 +219,51 @@ public class MqttClientProvider implements Provider<MqttClient>{
     @Override
     public MqttClient get(final PluginRecord<?> caller) {
         return MqttClientSingleton.getInstance().getClient();
+    }
+
+    /**
+     * The client identifier to connect with: the configured one, or a default derived from the
+     * RESTHeart instance name.
+     * <p>
+     * It used to be {@code restheart-<random UUID>}, regenerated on every start. That is fatal to
+     * any durability guarantee: an MQTT session is keyed by client identifier, so a restarted
+     * instance presented itself as a brand-new client, the broker had no session to resume, and
+     * everything it was still holding for the old one was discarded. With {@code clean-session:
+     * false} the operator has asked for a resumable session; a fresh identifier silently denies
+     * it.
+     * </p>
+     * <p>
+     * Deriving it from the instance name makes it stable across restarts of the same instance.
+     * The hazard that introduces is the opposite one: a client identifier must be <em>unique</em>
+     * across concurrently connected clients, and a broker disconnects the existing client when a
+     * new one connects with the same identifier. Two RESTHeart instances sharing a name would
+     * therefore knock each other off the broker in a loop. That is why an instance still carrying
+     * the stock name is warned about rather than left to discover it in production.
+     * </p>
+     *
+     * @param configured   the {@code client-id} from configuration, or {@code null}/blank if unset
+     * @param cleanSession whether the session is disposable, in which case stability buys nothing
+     * @return the identifier to connect with, never {@code null}
+     */
+    private String resolveClientId(String configured, boolean cleanSession) {
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+
+        var instanceName = rhConfig == null ? null : rhConfig.coreModule().name();
+        if (instanceName == null || instanceName.isBlank()) {
+            instanceName = "default";
+        }
+
+        if (!cleanSession && "default".equals(instanceName)) {
+            LOGGER.warn("mqtt-client has no client-id and this instance still carries the stock name "
+                + "'default', so the identifier is 'restheart-default'. With clean-session: false the "
+                + "broker keys the resumable session on that identifier - two RESTHeart instances "
+                + "sharing it will disconnect each other in a loop. Set /mqtt-client/client-id, or "
+                + "give each instance its own /core/name");
+        }
+
+        return "restheart-" + instanceName;
     }
 
 }
