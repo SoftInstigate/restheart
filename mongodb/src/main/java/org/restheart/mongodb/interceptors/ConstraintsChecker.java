@@ -34,7 +34,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.RHMongoClients;
-import org.restheart.mongodb.metadata.Invariant;
+import org.restheart.mongodb.metadata.Constraint;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -45,10 +45,10 @@ import org.slf4j.LoggerFactory;
 import com.mongodb.client.model.UpdateOptions;
 
 /**
- * Enforces the integrity rules a collection declares as {@code invariants} metadata.
+ * Enforces the integrity rules a collection declares as {@code constraints} metadata.
  *
  * <p>Each rule is an aggregation that must return nothing (or something — see
- * {@link Invariant.HoldsWhen}). They run after the write and inside its transaction, so what they
+ * {@link Constraint.HoldsWhen}). They run after the write and inside its transaction, so what they
  * see is the state the write would leave behind; if any of them is broken the transaction is
  * aborted and nothing was ever committed.
  *
@@ -56,13 +56,13 @@ import com.mongodb.client.model.UpdateOptions;
  * write, whatever the role, {@code admin} included.
  */
 @RegisterPlugin(
-        name = "invariants",
-        description = "checks a collection's declared invariants after a write, and undoes the write when one is broken",
+        name = "constraints",
+        description = "checks a collection's declared constraints after a write, and undoes the write when one is broken",
         interceptPoint = InterceptPoint.RESPONSE,
         // after jsonSchemaAfterWrite (10), well before txnCloser (MAX_VALUE) which ends the transaction
         priority = 20)
-public class InvariantsChecker implements MongoInterceptor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(InvariantsChecker.class);
+public class ConstraintsChecker implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConstraintsChecker.class);
 
     /** How many violating documents are read and reported. Enough to diagnose, bounded by design. */
     private static final int MAX_VIOLATIONS = 10;
@@ -76,16 +76,16 @@ public class InvariantsChecker implements MongoInterceptor {
             return;
         }
 
-        final var invariants = enabled(request);
+        final var constraints = enabled(request);
 
-        if (invariants.isEmpty()) {
+        if (constraints.isEmpty()) {
             return;
         }
 
         try {
             serialize(request);
         } catch (final com.mongodb.MongoException me) {
-            LOGGER.debug("Could not take the invariants guard for {}", request.getCollectionName(), me);
+            LOGGER.debug("Could not take the constraints guard for {}", request.getCollectionName(), me);
 
             response.setInError(HttpStatus.SC_CONFLICT,
                     "the write conflicted with a concurrent one and was not applied, retry the request");
@@ -93,11 +93,11 @@ public class InvariantsChecker implements MongoInterceptor {
             return;
         }
 
-        for (final var invariant : invariants) {
-            final var violations = evaluate(request, invariant);
+        for (final var constraint : constraints) {
+            final var violations = evaluate(request, constraint);
 
-            if (invariant.violatedBy(violations.size())) {
-                refuse(request, response, invariant, violations);
+            if (constraint.violatedBy(violations.size())) {
+                refuse(request, response, constraint, violations);
                 return;
             }
         }
@@ -106,21 +106,21 @@ public class InvariantsChecker implements MongoInterceptor {
     /**
      * Takes the collection's guard document, in the write's own transaction.
      *
-     * <p>This is what makes an invariant a guarantee rather than a hope. MongoDB transactions give
+     * <p>This is what makes an constraint a guarantee rather than a hope. MongoDB transactions give
      * snapshot isolation: the engine detects two transactions writing the same document, and
      * nothing else. Two writes that are each valid against their own snapshot and invalid together
-     * would both commit — the classic write skew, and exactly the case an invariant exists to stop.
+     * would both commit — the classic write skew, and exactly the case an constraint exists to stop.
      * Having every write to the collection touch one document turns that undetectable read-write
      * conflict into a write-write conflict the engine does detect: one of the two aborts.
      *
      * <p>The document's content is irrelevant; it exists to be contended. The cost is that writes
-     * to a collection declaring invariants serialize, which is why invariants are opt-in per
+     * to a collection declaring constraints serialize, which is why constraints are opt-in per
      * collection.
      */
     private void serialize(MongoRequest request) {
         RHMongoClients.mclient()
                 .getDatabase(request.getDBName())
-                .getCollection(MongoServiceConfiguration.get().getInvariantsGuardCollection(), BsonDocument.class)
+                .getCollection(MongoServiceConfiguration.get().getConstraintsGuardCollection(), BsonDocument.class)
                 .updateOne(
                         request.getClientSession(),
                         eq("_id", new BsonString(request.getCollectionName())),
@@ -133,10 +133,10 @@ public class InvariantsChecker implements MongoInterceptor {
      * that is not committed yet — the whole point, since what is being judged is the state the
      * write would leave.
      */
-    private List<BsonDocument> evaluate(MongoRequest request, Invariant invariant) {
+    private List<BsonDocument> evaluate(MongoRequest request, Constraint constraint) {
         final var pipeline = new ArrayList<BsonDocument>();
 
-        invariant.stages().forEach(stage -> pipeline.add(stage.asDocument()));
+        constraint.stages().forEach(stage -> pipeline.add(stage.asDocument()));
         pipeline.add(new BsonDocument("$limit", new BsonInt32(MAX_VIOLATIONS)));
 
         final var rows = new ArrayList<BsonDocument>();
@@ -156,32 +156,32 @@ public class InvariantsChecker implements MongoInterceptor {
      * something does — and a notEmpty rule has none by definition, where {@code message} is the
      * whole diagnostic.
      */
-    private void refuse(MongoRequest request, MongoResponse response, Invariant invariant, List<BsonDocument> violations)
+    private void refuse(MongoRequest request, MongoResponse response, Constraint constraint, List<BsonDocument> violations)
             throws Exception {
-        final var message = invariant.message() == null
-                ? "invariant '" + invariant.name() + "' is not satisfied"
-                : invariant.message();
+        final var message = constraint.message() == null
+                ? "constraint '" + constraint.name() + "' is not satisfied"
+                : constraint.message();
 
         response.setInError(HttpStatus.SC_CONFLICT, message);
 
         if (response.getContent() != null && response.getContent().isDocument()) {
             final var error = response.getContent().asDocument();
 
-            error.put("invariant", new BsonString(invariant.name()));
+            error.put("constraint", new BsonString(constraint.name()));
 
             if (!violations.isEmpty()) {
                 error.put("violations", new BsonArray(List.copyOf(violations)));
             }
         }
 
-        LOGGER.debug("Invariant '{}' broken by the write to {}, rolling it back",
-                invariant.name(), request.getCollectionName());
+        LOGGER.debug("Constraint '{}' broken by the write to {}, rolling it back",
+                constraint.name(), request.getCollectionName());
 
         response.rollback(RHMongoClients.mclient());
     }
 
-    private static List<Invariant> enabled(MongoRequest request) throws Exception {
-        return Invariant.getFromJson(request.getCollectionProps()).stream().filter(Invariant::enabled).toList();
+    private static List<Constraint> enabled(MongoRequest request) throws Exception {
+        return Constraint.getFromJson(request.getCollectionProps()).stream().filter(Constraint::enabled).toList();
     }
 
     /**
@@ -200,7 +200,7 @@ public class InvariantsChecker implements MongoInterceptor {
         return request.isHandledBy("mongo")
                 && isDocumentWrite(request)
                 && request.getCollectionProps() != null
-                && request.getCollectionProps().containsKey(Invariant.INVARIANTS_ELEMENT_NAME)
+                && request.getCollectionProps().containsKey(Constraint.CONSTRAINTS_ELEMENT_NAME)
                 && request.getClientSession() != null
                 && request.getClientSession().hasActiveTransaction()
                 && response.getDbOperationResult() != null

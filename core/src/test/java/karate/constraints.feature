@@ -1,14 +1,14 @@
-@invariants
+@constraints
 Feature: Integrity rules that span documents
 
-# A collection declares rules as `invariants` metadata: an aggregation that must return nothing —
+# A collection declares rules as `constraints` metadata: an aggregation that must return nothing —
 # or something, with holdsWhen: notEmpty. They are evaluated after the write and inside its
 # transaction, so what they judge is the state the write would leave behind; a broken rule aborts
 # it. They are a property of the data, so they apply to every writer, admin included.
 
 Background:
 * url 'http://localhost:8080'
-* def db = '/test-invariants'
+* def db = '/test-constraints'
 * def accounts = db + '/accounts'
 * def users = db + '/users'
 * def authHeader = 'Basic YWRtaW46c2VjcmV0'
@@ -24,14 +24,14 @@ Scenario: Set up two collections, one rule each
     # "no balance is negative": the pipeline finds the offenders, and must find none
     * header Authorization = authHeader
     Given path accounts
-    And request { "invariants": [ { "name": "noNegativeBalance", "message": "an account balance cannot be negative", "stages": [ { "$match": { "balance": { "$lt": 0 } } } ] } ] }
+    And request { "constraints": [ { "name": "noNegativeBalance", "message": "an account balance cannot be negative", "stages": [ { "$match": { "balance": { "$lt": 0 } } } ] } ] }
     When method PUT
     Then assert responseStatus == 201
 
     # "at least one admin remains": the same shape, read the other way round
     * header Authorization = authHeader
     Given path users
-    And request { "invariants": [ { "name": "atLeastOneAdmin", "message": "the last admin cannot be removed", "holdsWhen": "notEmpty", "stages": [ { "$match": { "role": "admin" } }, { "$limit": 1 } ] } ] }
+    And request { "constraints": [ { "name": "atLeastOneAdmin", "message": "the last admin cannot be removed", "holdsWhen": "notEmpty", "stages": [ { "$match": { "role": "admin" } }, { "$limit": 1 } ] } ] }
     When method PUT
     Then assert responseStatus == 201
 
@@ -72,7 +72,7 @@ Scenario: A write that would break the rule is refused, and leaves nothing behin
     And request { "$inc": { "balance": -100 } }
     When method PATCH
     Then assert responseStatus == 409
-    And match response.invariant == 'noNegativeBalance'
+    And match response.constraint == 'noNegativeBalance'
     And match response.message contains 'balance cannot be negative'
     # the rows are the useful half: which document breaks the rule
     And match response.violations[0]._id == 'alice'
@@ -104,7 +104,7 @@ Scenario: An insert is checked like any other write
     And request { "_id": "carol", "balance": -1 }
     When method POST
     Then assert responseStatus == 409
-    And match response.invariant == 'noNegativeBalance'
+    And match response.constraint == 'noNegativeBalance'
 
     * header Authorization = authHeader
     Given path accounts + '/carol'
@@ -124,7 +124,7 @@ Scenario: A delete is checked too, and notEmpty reads the other way round
     Given path users + '/root'
     When method DELETE
     Then assert responseStatus == 409
-    And match response.invariant == 'atLeastOneAdmin'
+    And match response.constraint == 'atLeastOneAdmin'
     And match response.message contains 'last admin'
     # a notEmpty rule has no offending rows to show: the message is the whole diagnostic
     And match response.violations == '#notpresent'
@@ -148,47 +148,47 @@ Scenario: A bulk write is refused as a whole
     And request { "$inc": { "balance": -25 } }
     When method PATCH
     Then assert responseStatus == 409
-    And match response.invariant == 'noNegativeBalance'
+    And match response.constraint == 'noNegativeBalance'
 
     * header Authorization = authHeader
     Given path accounts + '/bob'
     When method GET
     Then match response == bobBefore
 
-Scenario: Malformed invariants are refused when declared, not at the first write
+Scenario: Malformed constraints are refused when declared, not at the first write
 
     * header Authorization = authHeader
     Given path db + '/broken'
-    And request { "invariants": [ { "name": "noStages" } ] }
+    And request { "constraints": [ { "name": "noStages" } ] }
     When method PUT
     Then assert responseStatus == 400
     And match response.message contains 'stages'
 
     * header Authorization = authHeader
     Given path db + '/broken'
-    And request { "invariants": [ { "name": "dup", "stages": [ { "$match": { } } ] }, { "name": "dup", "stages": [ { "$match": { } } ] } ] }
+    And request { "constraints": [ { "name": "dup", "stages": [ { "$match": { } } ] }, { "name": "dup", "stages": [ { "$match": { } } ] } ] }
     When method PUT
     Then assert responseStatus == 400
     And match response.message contains 'duplicated'
 
     * header Authorization = authHeader
     Given path db + '/broken'
-    And request { "invariants": [ { "name": "wrongDirection", "holdsWhen": "sometimes", "stages": [ { "$match": { } } ] } ] }
+    And request { "constraints": [ { "name": "wrongDirection", "holdsWhen": "sometimes", "stages": [ { "$match": { } } ] } ] }
     When method PUT
     Then assert responseStatus == 400
 
-    # $lookup is in aggregationSecurity's stageBlacklist, and invariants are held to it unchanged
+    # $lookup is in aggregationSecurity's stageBlacklist, and constraints are held to it unchanged
     * header Authorization = authHeader
     Given path db + '/broken'
-    And request { "invariants": [ { "name": "reachesOut", "stages": [ { "$lookup": { "from": "other", "localField": "a", "foreignField": "b", "as": "c" } } ] } ] }
+    And request { "constraints": [ { "name": "reachesOut", "stages": [ { "$lookup": { "from": "other", "localField": "a", "foreignField": "b", "as": "c" } } ] } ] }
     When method PUT
     Then assert responseStatus == 400
 
-Scenario: An invariant that is disabled is not evaluated
+Scenario: An constraint that is disabled is not evaluated
 
     * header Authorization = authHeader
     Given path db + '/off'
-    And request { "invariants": [ { "name": "impossible", "enabled": false, "stages": [ { "$match": { } } ] } ] }
+    And request { "constraints": [ { "name": "impossible", "enabled": false, "stages": [ { "$match": { } } ] } ] }
     When method PUT
     Then assert responseStatus == 201
 
@@ -202,7 +202,7 @@ Scenario: An invariant that is disabled is not evaluated
 
 Scenario: The guard document is taken on every write to a guarded collection
 
-    # An internal, asserted deliberately: it is what makes an invariant a guarantee rather than a
+    # An internal, asserted deliberately: it is what makes an constraint a guarantee rather than a
     # hope. Two concurrent writes each valid on their own snapshot and invalid together would both
     # commit — snapshot isolation does not detect that — unless every write to the collection
     # contends one document. If this stopped being written, every other scenario here would still
@@ -214,8 +214,25 @@ Scenario: The guard document is taken on every write to a guarded collection
     Then assert responseStatus == 201
 
     * header Authorization = authHeader
-    Given path db + '/_invariants/accounts'
+    Given path db + '/_constraints/accounts'
     When method GET
     Then assert responseStatus == 200
     And match response.v == '#number'
     And assert response.v > 0
+
+Scenario: The old name is inert
+
+    # "constraints" was called "invariants" before 9.9 shipped. A leftover reference anywhere in
+    # the code would keep working and nobody would notice, so this pins that the old key is now
+    # just an unknown metadata field: no transaction, no check, no 409.
+    * header Authorization = authHeader
+    Given path db + '/oldname'
+    And request { "invariants": [ { "name": "wouldRefuseEverything", "stages": [ { "$match": { } } ] } ] }
+    When method PUT
+    Then assert responseStatus == 201
+
+    * header Authorization = authHeader
+    Given path db + '/oldname'
+    And request { "_id": "anything" }
+    When method POST
+    Then assert responseStatus == 201

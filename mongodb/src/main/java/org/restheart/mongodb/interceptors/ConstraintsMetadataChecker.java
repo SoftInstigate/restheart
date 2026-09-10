@@ -24,7 +24,7 @@ import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.metadata.Invariant;
+import org.restheart.mongodb.metadata.Constraint;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -32,40 +32,40 @@ import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.utils.HttpStatus;
 
 /**
- * Refuses malformed {@code invariants} metadata when it is declared, rather than when a write first
+ * Refuses malformed {@code constraints} metadata when it is declared, rather than when a write first
  * meets it.
  *
  * <p>A collection that looks configured and quietly enforces nothing is the worst of the possible
  * outcomes, and the person writing the metadata is the one who can fix it.
  *
  * <p>The pipelines are held to {@code aggregationSecurity}, unchanged and in full — the same
- * settings that already constrain {@code aggrs}. There is no invariant-specific restriction and no
- * invariant-specific switch: a deployment that has lifted {@code $lookup} has made that decision
- * for its aggregations, and invariants follow it.
+ * settings that already constrain {@code aggrs}. There is no constraint-specific restriction and no
+ * constraint-specific switch: a deployment that has lifted {@code $lookup} has made that decision
+ * for its aggregations, and constraints follow it.
  */
 @RegisterPlugin(
-        name = "invariantsMetadataChecker",
-        description = "validates the 'invariants' collection metadata when it is written",
+        name = "constraintsMetadataChecker",
+        description = "validates the 'constraints' collection metadata when it is written",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
-public class InvariantsMetadataChecker implements MongoInterceptor {
+public class ConstraintsMetadataChecker implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         final var declared = request.getContent().asDocument();
 
         try {
-            final var invariants = Invariant.getFromJson(declared);
+            final var constraints = Constraint.getFromJson(declared);
             final var security = new AggregationPipelineSecurityChecker(
                     MongoServiceConfiguration.get().getAggregationSecurityConfiguration());
 
-            for (final var invariant : invariants) {
-                security.validatePipelineOrThrow(invariant.stages(), request.getDBName());
+            for (final var constraint : constraints) {
+                security.validatePipelineOrThrow(constraint.stages(), request.getDBName());
             }
         } catch (final InvalidMetadataException ime) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, ime.getMessage());
         } catch (final SecurityException se) {
             response.setInError(HttpStatus.SC_BAD_REQUEST,
-                    "invariant pipeline refused by aggregationSecurity: " + se.getMessage());
+                    "constraint pipeline refused by aggregationSecurity: " + se.getMessage());
         }
     }
 
@@ -76,6 +76,6 @@ public class InvariantsMetadataChecker implements MongoInterceptor {
                 && request.isCollection()
                 && request.getContent() != null
                 && request.getContent().isDocument()
-                && request.getContent().asDocument().containsKey(Invariant.INVARIANTS_ELEMENT_NAME);
+                && request.getContent().asDocument().containsKey(Constraint.CONSTRAINTS_ELEMENT_NAME);
     }
 }

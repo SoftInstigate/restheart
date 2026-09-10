@@ -36,7 +36,7 @@ import org.restheart.exchange.InvalidMetadataException;
  * aggregation returns anything:
  *
  * <pre>
- * { "invariants": [ {
+ * { "constraints": [ {
  *     "name": "noNegativeBalance",
  *     "message": "an account balance cannot be negative",
  *     "holdsWhen": "empty",
@@ -57,8 +57,8 @@ import org.restheart.exchange.InvalidMetadataException;
  * to show
  * @param enabled false turns the rule off without deleting it
  */
-public record Invariant(String name, BsonArray stages, HoldsWhen holdsWhen, String message, boolean enabled) {
-    public static final String INVARIANTS_ELEMENT_NAME = "invariants";
+public record Constraint(String name, BsonArray stages, HoldsWhen holdsWhen, String message, boolean enabled) {
+    public static final String CONSTRAINTS_ELEMENT_NAME = "constraints";
 
     private static final String NAME = "name";
     private static final String STAGES = "stages";
@@ -85,67 +85,67 @@ public record Invariant(String name, BsonArray stages, HoldsWhen holdsWhen, Stri
     }
 
     /**
-     * Reads the {@code invariants} of a collection, or an empty list when it declares none.
+     * Reads the {@code constraints} of a collection, or an empty list when it declares none.
      *
      * @throws InvalidMetadataException if the element is there but malformed — a duplicate name, an
      * empty pipeline, an unknown {@code holdsWhen}. Thrown when the metadata is written rather than
      * when a write first meets it: a collection that looks configured and silently enforces nothing
      * is the worst of the three outcomes.
      */
-    public static List<Invariant> getFromJson(BsonDocument collProps) throws InvalidMetadataException {
-        final var ret = new ArrayList<Invariant>();
+    public static List<Constraint> getFromJson(BsonDocument collProps) throws InvalidMetadataException {
+        final var ret = new ArrayList<Constraint>();
 
         if (collProps == null) {
             return ret;
         }
 
-        final var declared = collProps.get(INVARIANTS_ELEMENT_NAME);
+        final var declared = collProps.get(CONSTRAINTS_ELEMENT_NAME);
 
         if (declared == null) {
             return ret;
         }
 
         if (!declared.isArray()) {
-            throw new InvalidMetadataException("'" + INVARIANTS_ELEMENT_NAME + "' must be an array");
+            throw new InvalidMetadataException("'" + CONSTRAINTS_ELEMENT_NAME + "' must be an array");
         }
 
         final var names = new HashSet<String>();
 
-        for (var declaredInvariant : declared.asArray()) {
-            if (!declaredInvariant.isDocument()) {
+        for (var declaredConstraint : declared.asArray()) {
+            if (!declaredConstraint.isDocument()) {
                 throw new InvalidMetadataException(
-                        "'" + INVARIANTS_ELEMENT_NAME + "' must contain documents, found " + declaredInvariant);
+                        "'" + CONSTRAINTS_ELEMENT_NAME + "' must contain documents, found " + declaredConstraint);
             }
 
-            final var invariant = of(declaredInvariant.asDocument());
+            final var constraint = of(declaredConstraint.asDocument());
 
-            if (!names.add(invariant.name())) {
-                throw new InvalidMetadataException("duplicated invariant name '" + invariant.name() + "'");
+            if (!names.add(constraint.name())) {
+                throw new InvalidMetadataException("duplicated constraint name '" + constraint.name() + "'");
             }
 
-            ret.add(invariant);
+            ret.add(constraint);
         }
 
         return ret;
     }
 
-    private static Invariant of(BsonDocument declared) throws InvalidMetadataException {
+    private static Constraint of(BsonDocument declared) throws InvalidMetadataException {
         final var name = declared.get(NAME);
 
         if (name == null || !name.isString() || name.asString().getValue().isBlank()) {
-            throw new InvalidMetadataException("invariant is missing a '" + NAME + "'");
+            throw new InvalidMetadataException("constraint is missing a '" + NAME + "'");
         }
 
         final var stages = declared.get(STAGES);
 
         if (stages == null || !stages.isArray() || stages.asArray().isEmpty()) {
             throw new InvalidMetadataException(
-                    "invariant '" + name.asString().getValue() + "' needs a non-empty '" + STAGES + "' array");
+                    "constraint '" + name.asString().getValue() + "' needs a non-empty '" + STAGES + "' array");
         }
 
         for (var stage : stages.asArray()) {
             if (!stage.isDocument()) {
-                throw new InvalidMetadataException("invariant '" + name.asString().getValue()
+                throw new InvalidMetadataException("constraint '" + name.asString().getValue()
                         + "': '" + STAGES + "' must contain documents, found " + stage);
             }
         }
@@ -153,25 +153,25 @@ public record Invariant(String name, BsonArray stages, HoldsWhen holdsWhen, Stri
         final var holdsWhen = declared.get(HOLDS_WHEN);
 
         if (holdsWhen != null && !holdsWhen.isString()) {
-            throw new InvalidMetadataException("invariant '" + name.asString().getValue()
+            throw new InvalidMetadataException("constraint '" + name.asString().getValue()
                     + "': '" + HOLDS_WHEN + "' must be a string");
         }
 
         final var message = declared.get(MESSAGE);
 
         if (message != null && !message.isString()) {
-            throw new InvalidMetadataException("invariant '" + name.asString().getValue()
+            throw new InvalidMetadataException("constraint '" + name.asString().getValue()
                     + "': '" + MESSAGE + "' must be a string");
         }
 
         final var enabled = declared.get(ENABLED);
 
         if (enabled != null && !enabled.isBoolean()) {
-            throw new InvalidMetadataException("invariant '" + name.asString().getValue()
+            throw new InvalidMetadataException("constraint '" + name.asString().getValue()
                     + "': '" + ENABLED + "' must be a boolean");
         }
 
-        return new Invariant(
+        return new Constraint(
                 name.asString().getValue(),
                 stages.asArray(),
                 holdsWhen == null ? HoldsWhen.EMPTY : HoldsWhen.of(holdsWhen.asString().getValue()),

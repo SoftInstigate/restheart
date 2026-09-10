@@ -23,39 +23,39 @@ package org.restheart.mongodb.interceptors;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
-import org.restheart.mongodb.metadata.Invariant;
+import org.restheart.mongodb.metadata.Constraint;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
 /**
- * Runs in a transaction every write to a collection that declares invariants.
+ * Runs in a transaction every write to a collection that declares constraints.
  *
- * <p>{@link InvariantsChecker} judges the state the write would leave and has to be able to undo
+ * <p>{@link ConstraintsChecker} judges the state the write would leave and has to be able to undo
  * it, which is only free of traces if it was never committed. A transaction cannot be opened around
  * a write that already happened, so the decision is taken here, before it.
  *
  * <p>Where transactions are not available — no replica set — the write is refused rather than
  * allowed through unchecked. A rule believed to be enforced and silently not enforced is worse than
- * no rule, and this is the only moment a deployment can be told: invariants live in collection
+ * no rule, and this is the only moment a deployment can be told: constraints live in collection
  * metadata, so they cannot be known at startup.
  */
 @RegisterPlugin(
-        name = "invariantsTxn",
-        description = "runs in a transaction the writes to a collection declaring invariants",
+        name = "constraintsTxn",
+        description = "runs in a transaction the writes to a collection declaring constraints",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
-public class InvariantsTxn implements MongoInterceptor {
+public class ConstraintsTxn implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        if (Invariant.getFromJson(request.getCollectionProps()).stream().noneMatch(Invariant::enabled)) {
+        if (Constraint.getFromJson(request.getCollectionProps()).stream().noneMatch(Constraint::enabled)) {
             return;
         }
 
         if (!ClientSessionInjector.transactionsAvailable()) {
             response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
-                    "collection '" + request.getCollectionName() + "' declares invariants, which need "
+                    "collection '" + request.getCollectionName() + "' declares constraints, which need "
                             + "MongoDB configured as a replica set: without transactions a write that "
                             + "breaks one could not be undone");
             return;
@@ -67,8 +67,8 @@ public class InvariantsTxn implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
-                && InvariantsChecker.isDocumentWrite(request)
+                && ConstraintsChecker.isDocumentWrite(request)
                 && request.getCollectionProps() != null
-                && request.getCollectionProps().containsKey(Invariant.INVARIANTS_ELEMENT_NAME);
+                && request.getCollectionProps().containsKey(Constraint.CONSTRAINTS_ELEMENT_NAME);
     }
 }

@@ -111,14 +111,14 @@ public interface MongoServiceConfigurationKeys {
 
     /**
      * Name of the collection holding the guard documents that serialize writes to collections
-     * declaring invariants.
+     * declaring constraints.
      */
-    public static final String INVARIANTS_GUARD_COLLECTION_KEY = "invariants-guard-collection";
+    public static final String CONSTRAINTS_GUARD_COLLECTION_KEY = "constraints-guard-collection";
 
     /**
-     * Default value of invariants-guard-collection.
+     * Default value of constraints-guard-collection.
      */
-    public static final String DEFAULT_INVARIANTS_GUARD_COLLECTION = "_invariants";
+    public static final String DEFAULT_CONSTRAINTS_GUARD_COLLECTION = "_constraints";
 
     /**
      * the key for the mongo-uri property.
