@@ -22,6 +22,7 @@ package org.restheart.mongodb.interceptors;
 
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -30,7 +31,9 @@ import org.restheart.plugins.RegisterPlugin;
  * Asks for a transaction around the requests {@link JsonSchemaAfterWriteChecker} validates.
  *
  * <p>A {@code PATCH} carrying update operators has no document to validate until the update has
- * been applied, so it is checked at {@code RESPONSE} and undone when it does not pass. The undo is
+ * been applied, so it is checked at {@code RESPONSE} and undone when it does not pass. The same is
+ * true of a bulk {@code PATCH}, which additionally could not be undone at all before there was a
+ * transaction to abort. The undo is
  * only free of traces if the write was never committed, and a transaction cannot be opened around a
  * write that already happened — hence a separate interceptor here, at request time.
  *
@@ -53,13 +56,17 @@ public class JsonSchemaAfterWriteTxn implements MongoInterceptor {
     /**
      * The request half of {@link JsonSchemaAfterWriteChecker#resolve}: same requests, minus the
      * conditions on the write's result, which does not exist yet.
+     *
+     * <p>A bulk {@code PATCH} is included only where transactions are actually available. Without
+     * one it cannot be validated at all — {@code rollback()} has never supported undoing a bulk
+     * write — and {@code jsonSchemaBeforeWrite} refuses it with {@code 501} as it always has.
      */
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
                 && request.isPatch()
-                && !request.isBulkDocuments()
                 && request.isWriteDocument()
+                && (!request.isBulkDocuments() || ClientSessionInjector.transactionsAvailable())
                 && request.getCollectionProps() != null
                 && request.getCollectionProps().containsKey("jsonSchema")
                 && request.getCollectionProps().get("jsonSchema").isDocument();

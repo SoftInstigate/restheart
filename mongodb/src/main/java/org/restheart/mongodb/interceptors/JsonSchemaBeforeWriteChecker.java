@@ -48,9 +48,10 @@ import org.slf4j.LoggerFactory;
  * This intercetor is able to check PUT and POST requests that don't use update
  * operators. PATCH requests are checked by jsonSchemaAfterWrite
  * <br><br>
- * Note that checking bulk PATCH, i.e. PATCH /coll/*, is not supported. In this
- * case the optional metadata property 'skipNotSuppored' controls the behaviour:
- * if true, the request is not checked and executed, if false the request fails.
+ * Bulk PATCH, i.e. PATCH /coll/*, is checked by jsonSchemaAfterWrite too, where the
+ * write runs in a transaction — on a standalone MongoDB it cannot be checked, and
+ * the optional metadata property 'skipNotSupported' controls the behaviour: if
+ * true, the request is not checked and executed, if false the request fails.
  *
  * It checks the request content against the JSON schema specified by the
  * 'jsonSchema' collection metadata:
@@ -125,6 +126,14 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         // this request is not supported by jsonSchema checkers
         //
         if (request.isPatch() && request.isBulkDocuments()) {
+            // Since the write runs in a transaction it can be validated after the fact, like a
+            // single PATCH: jsonSchemaAfterWrite checks the documents it touched and aborts the
+            // transaction if any fails. jsonSchemaAfterWriteTxn asked for that transaction, and
+            // only asks where one is actually available.
+            if (request.isTxnRequested()) {
+                return;
+            }
+
             BsonValue skipNotSupported = args.get(SKIP_NOT_SUPPORTED_PROPERTY);
 
             if (skipNotSupported != null
@@ -134,8 +143,10 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
                 return;
             } else {
                 response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
-                        "'jsonSchema' checker does not support bulk PATCH requests. "
-                                + "Set 'skipNotSupported:true' to allow them.");
+                        "'jsonSchema' checker does not support bulk PATCH requests on a standalone "
+                                + "MongoDB. Use a replica set, where the write runs in a transaction "
+                                + "and is validated after it, or set 'skipNotSupported:true' to allow "
+                                + "them unvalidated.");
                 return;
             }
         }

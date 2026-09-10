@@ -176,6 +176,18 @@ public class ClientSessionInjector extends PipelinedHandler {
     }
 
     /**
+     * Whether this deployment can run a request in a transaction.
+     *
+     * <p>Read from the installed factory rather than probed: {@code TxnsActivator} swaps in
+     * {@link TxnClientSessionFactory} at startup, and only when MongoDB is a replica set.
+     *
+     * @return true if {@code MongoRequest.startTxn()} will actually open a transaction
+     */
+    public static boolean transactionsAvailable() {
+        return getInstance().getClientSessionFactory() instanceof TxnClientSessionFactory;
+    }
+
+    /**
      * @return the clientSessionFactory
      */
     public ClientSessionFactory getClientSessionFactory() {

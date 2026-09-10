@@ -27,9 +27,11 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.DeleteManyModel;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.in;
 import com.mongodb.client.model.UpdateManyModel;
 import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.bson.BsonArray;
@@ -259,11 +261,25 @@ public class Documents {
             _filter = filter;
         }
 
-        patches.add(new UpdateManyModel<>(_filter, DbUtils.getUpdateDocument(data), DbUtils.U_NOT_UPSERT_OPS));
+        // In a transaction the ids are read and updated atomically, so updating by id is equivalent
+        // to updating by filter — and it answers what the filter cannot: which documents were
+        // touched. Without that, a bulk patch cannot be validated afterwards, since a document the
+        // update pushed out of the filter would no longer be found by it.
+        //
+        // Outside a transaction the two steps could race, so the filter is used directly and the
+        // ids stay unknown.
+        final List<BsonValue> patchedIds = inTransaction(cs)
+                ? idsOf(mcoll, cs.get(), _filter)
+                : null;
+
+        patches.add(new UpdateManyModel<>(
+                patchedIds == null ? _filter : in("_id", patchedIds),
+                DbUtils.getUpdateDocument(data),
+                DbUtils.U_NOT_UPSERT_OPS));
 
         try {
             var result = cs.isPresent() ? mcoll.bulkWrite(cs.get(), patches) : mcoll.bulkWrite(patches);
-            var ret = new BulkOperationResult(HttpStatus.SC_OK, null, result);
+            var ret = new BulkOperationResult(HttpStatus.SC_OK, null, result, patchedIds);
 
             // invalidate the cache entris of this collection
             GetCollectionCache.getInstance().invalidateAll(dbName, collName);
@@ -480,5 +496,21 @@ public class Documents {
                     oldDocument,
                     null);
         }
+    }
+
+    private static boolean inTransaction(final Optional<ClientSession> cs) {
+        return cs.isPresent() && cs.get().hasActiveTransaction();
+    }
+
+    /** The ids matching the filter, read in the caller's session so they are part of its snapshot. */
+    private static List<BsonValue> idsOf(final MongoCollection<BsonDocument> mcoll, final ClientSession cs, final Bson filter) {
+        final var ids = new ArrayList<BsonValue>();
+
+        mcoll.find(cs, filter)
+                .projection(new BsonDocument("_id", new BsonInt32(1)))
+                .map(doc -> doc.get("_id"))
+                .into(ids);
+
+        return ids;
     }
 }

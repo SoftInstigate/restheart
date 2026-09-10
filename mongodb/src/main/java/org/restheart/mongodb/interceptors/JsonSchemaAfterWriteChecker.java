@@ -20,11 +20,16 @@
  */
 package org.restheart.mongodb.interceptors;
 
+import static com.mongodb.client.model.Filters.in;
+
+import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.RHMongoClients;
+import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
@@ -76,24 +81,66 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
         }
     }
 
+    /**
+     * A bulk {@code PATCH} is included only when it ran in a transaction that collected the ids it
+     * touched — {@code jsonSchemaAfterWriteTxn} asks for that transaction, and only asks where one
+     * is available. Without the ids there is nothing to re-read and nothing to check, and letting
+     * the request through unchecked is the behaviour {@code jsonSchemaBeforeWrite} already decides
+     * on, with {@code skipNotSupported}.
+     */
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
                 && request.getCollectionProps() != null
-                && (request.isPatch() && !request.isBulkDocuments())
+                && request.isPatch()
                 && request.isWriteDocument()
-                && request.getCollectionProps() != null
                 && request.getCollectionProps().containsKey("jsonSchema")
                 && request.getCollectionProps().get("jsonSchema").isDocument()
-                && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300);
+                && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300)
+                && (!request.isBulkDocuments() || patchedIds(response) != null);
+    }
+
+    /** The ids a bulk patch touched, or null when the write did not collect them. */
+    private static List<BsonValue> patchedIds(MongoResponse response) {
+        return response.getDbOperationResult() instanceof BulkOperationResult bulk
+                ? bulk.getPatchedIds()
+                : null;
     }
 
     @Override
     List<BsonDocument> documentsToCheck(MongoRequest request, MongoResponse response) {
+        if (request.isBulkDocuments()) {
+            return patchedDocuments(request, patchedIds(response));
+        }
+
         var content = response.getDbOperationResult().getNewData() == null
                 ? new BsonDocument()
                 : response.getDbOperationResult().getNewData();
 
         return List.of(content);
+    }
+
+    /**
+     * Re-reads the documents a bulk patch modified, as they now are.
+     *
+     * <p>Read in the request's own session, so it sees the update that is not committed yet — the
+     * whole point, since what has to be validated is the outcome of the patch and not the state
+     * before it. By id rather than by the request's filter: an update can push a document out of
+     * the filter that selected it, and that document would then escape the check.
+     */
+    private List<BsonDocument> patchedDocuments(MongoRequest request, List<BsonValue> ids) {
+        final var docs = new ArrayList<BsonDocument>();
+
+        if (ids.isEmpty()) {
+            return docs;
+        }
+
+        RHMongoClients.mclient()
+                .getDatabase(request.getDBName())
+                .getCollection(request.getCollectionName(), BsonDocument.class)
+                .find(request.getClientSession(), in("_id", ids))
+                .into(docs);
+
+        return docs;
     }
 }
