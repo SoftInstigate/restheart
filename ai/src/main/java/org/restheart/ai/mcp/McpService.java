@@ -1292,7 +1292,27 @@ public class McpService implements ByteArrayService {
     }
 
     /** Mirrors {@code OAuthProtectedResourceMetadataService.resolveServerUrl} (restheart-security). */
-    private static String resolveBaseUrl(ByteArrayRequest req) {
+    /**
+     * The base URL every resource URI this request produces is built from.
+     *
+     * <p>{@code public-base-url} wins whenever it is configured. The alternative — deriving it from
+     * the request — is a guess that a proxy can make wrong: a TLS-terminating one hands RESTHeart
+     * an {@code http://} {@code Host} for a site published over {@code https://}. Worse, only
+     * {@code list_apis} could do the guessing at all: the {@code resources} primitive is served
+     * from a registry the SDK builds once for the whole server, so it has always used the
+     * configured value. Preferring the configured value here is what stops the two channels from
+     * naming the same resource differently — which is exactly what a client noticed, offered a
+     * {@code localhost} URI by one and an external one by the other.
+     *
+     * <p>Falling back to the request keeps a deployment that never configured it working as before,
+     * including the one where {@code public-base-url} is commented out to switch the {@code
+     * resources} primitive off entirely.
+     */
+    private String resolveBaseUrl(ByteArrayRequest req) {
+        if (publicBaseUrl != null && !publicBaseUrl.isBlank()) {
+            return publicBaseUrl;
+        }
+
         var exchange = req.getExchange();
         var headers = exchange.getRequestHeaders();
 

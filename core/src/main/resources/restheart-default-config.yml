@@ -327,10 +327,14 @@ oauthAuthorizationServerMetadataService:
 # See: https://restheart.org/docs/security/authentication#oauth-authorization-code
 oauthAuthorizationService:
   enabled: false
-  # URL of the frontend login page. On GET /authorize, the user-agent is redirected here
-  # with all OAuth parameters forwarded as query string.
-  # Example: https://myapp.example.com/login
-  login-url: null
+  # The login page GET /authorize redirects the user-agent to, with all OAuth parameters
+  # forwarded as query string. The default is the page RESTHeart itself serves at /login
+  # (see static-resources above).
+  # Relative by design: the browser resolves it against the origin it is already on, which is
+  # what keeps it correct behind a TLS-terminating proxy, where an absolute URL built from the
+  # Host header would come out as http:// and break the flow.
+  # Point it at your own page to replace it, e.g. https://myapp.example.com/login
+  login-url: /login
   # Allowed redirect_uri values (supports * wildcard).
   # Example:
   #   - http://localhost:*
@@ -910,9 +914,13 @@ mcpService:
   # tools — the official MCP SDK manages resources as a single server-wide registry, not
   # per-request, so it needs one canonical externally-visible URL rather than whatever a given
   # request's Host header says.
+  # It is also what list_apis builds its URIs from, so both channels name a resource the same
+  # way. Only when this is commented out does list_apis fall back to deriving the base URL from
+  # the request, which a TLS-terminating proxy can make wrong by handing over an http:// Host for
+  # a site published over https://.
   # Defaults to the standard local setup; override to your real public URL for any other
-  # deployment (a reverse proxy, a custom host/port, ...). Comment out to disable the resources
-  # primitive entirely (list_apis/how_to_call keep working regardless).
+  # deployment (a reverse proxy, a tunnel such as ngrok, a custom host/port, ...). Comment out to
+  # disable the resources primitive entirely (list_apis/how_to_call keep working regardless).
   public-base-url: http://localhost:8080
 
 # Automatically creates indexes on {"descriptor.uri":1} and {"descriptor.name":1}
@@ -953,6 +961,15 @@ static-resources:
   - what: static/metrics
     where: /metrics-ui
     welcome-file: restheart-metrics.html
+    embedded: true
+  # Sign-in page for the OAuth Authorization Code flow, served from restheart-security.jar.
+  # It is what oauthAuthorizationService redirects to (see its `login-url` below), and it is
+  # public — a login page behind a login is of no use. Serving it costs nothing when OAuth is
+  # disabled: it is a static form that posts to /authorize, which answers 404 until you enable
+  # the service. Replace it with your own by pointing `login-url` elsewhere.
+  - what: static/oauth
+    where: /login
+    welcome-file: login.html
     embedded: true
 
 # Simple ping service
