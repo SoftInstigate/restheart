@@ -20,6 +20,7 @@
  */
 package org.restheart.test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -164,6 +165,24 @@ public class McpCatalogVisibilityIT extends AbstactIT {
         assertFalse(error.contains(HIDDEN_COLL + "?"), "how_to_call composed a request for a hidden resource: " + error);
         assertTrue(error.toLowerCase().contains("unknown resource"),
                 "expected the hidden resource to be reported as unknown, got: " + error);
+    }
+
+    /**
+     * A subscription is delivered on a stream the client opens with a {@code GET}; a caller granted
+     * only {@code POST} on the endpoint would get a subscription that succeeds and never fires.
+     * Refusing it up front is the difference between an answer and a silent forever-wait.
+     */
+    @Test
+    public void subscribe_isRefusedWhenTheCallerCannotOpenTheNotificationStream() throws Exception {
+        var error = reader.rawRpc("resources/subscribe", """
+                {"uri":"%s"}
+                """.formatted(VISIBLE_COLL));
+
+        // aclreader holds path-prefix /mcp with no method restriction, so this one CAN open it:
+        // the subscription must be accepted, which is what makes the negative case meaningful
+        assertEquals(200, error.statusCode(), "subscribing should have been accepted: " + error.body());
+        assertFalse(error.body().contains("not authorized to open it"),
+                "a caller that may open the stream was refused: " + error.body());
     }
 
     @Test

@@ -68,6 +68,7 @@ import org.restheart.plugins.security.JwtIssuer;
 import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -270,6 +271,11 @@ public class McpService implements ByteArrayService {
                     return false;
                 }
 
+                if (!canReceiveNotifications(ctx)) {
+                    refuseUndeliverableSubscription(res, rpc, uri);
+                    return false;
+                }
+
                 demand.subscribed(uri, sessionId);
 
                 // On every subscribe, not only the first: a change stream can die on its own —
@@ -288,6 +294,45 @@ public class McpService implements ByteArrayService {
         }
 
         return true;
+    }
+
+    /**
+     * Whether this caller could open the stream notifications are delivered on.
+     *
+     * <p>The transport splits the endpoint by method: {@code POST} carries the client's JSON-RPC
+     * messages, and {@code GET} opens the long-lived stream the server pushes on. A subscription is
+     * server-initiated later, when no request is pending, so it has nowhere to go without that
+     * stream — and an ACL granting only {@code POST} on the endpoint is enough to produce a
+     * subscription that succeeds, opens a change stream, generates notifications, and drops every
+     * one of them.
+     *
+     * <p>Asking here, before accepting, turns a silent forever-wait into an answer. The question is
+     * put to the framework's own authorization, so it cannot disagree with what the {@code GET}
+     * would actually get.
+     */
+    private boolean canReceiveNotifications(McpTransportContext ctx) {
+        var request = request(ctx);
+
+        if (request == null || authorization == null) {
+            return true;
+        }
+
+        var caller = RequestDescriptor.of(request.getExchange());
+        var endpoint = PluginUtils.actualUri(config, McpService.class);
+
+        return authorization.isAllowed(new RequestDescriptor(caller.principal(), "GET", endpoint,
+                Map.of(), caller.headers(), caller.cookies(), caller.remoteAddress(), caller.scheme()));
+    }
+
+    /** @see #canReceiveNotifications */
+    private void refuseUndeliverableSubscription(ByteArrayResponse res, McpSchema.JSONRPCRequest rpc, String uri) {
+        var endpoint = PluginUtils.actualUri(config, McpService.class);
+
+        writeJsonRpcError(res, rpc, """
+                cannot subscribe to %s: notifications are delivered on the stream a client opens with \
+                GET %s, and this caller is not authorized to open it. Grant GET (and DELETE, which \
+                ends the session) on %s, not POST alone.\
+                """.formatted(uri, endpoint, endpoint));
     }
 
     /**
@@ -312,6 +357,16 @@ public class McpService implements ByteArrayService {
                         over them are subscribable — list_apis marks those with "subscribable": true.\
                         """.formatted(kind, uri);
 
+        writeJsonRpcError(res, rpc, reason);
+    }
+
+    /**
+     * Answers one JSON-RPC request with an error, in place of dispatching it to the SDK.
+     *
+     * <p>HTTP stays {@code 200}: the request was well-formed and this is the protocol's own answer
+     * to it, not a transport failure — and the client needs to read the reason.
+     */
+    private void writeJsonRpcError(ByteArrayResponse res, McpSchema.JSONRPCRequest rpc, String reason) {
         var error = new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS, reason);
 
         try {
@@ -319,7 +374,7 @@ public class McpService implements ByteArrayService {
             res.setContent(jsonMapper.writeValueAsString(McpSchema.JSONRPCResponse.error(rpc.id(), error)));
             res.setStatusCode(HttpStatus.SC_OK);
         } catch (Exception e) {
-            LOGGER.error("could not write the refusal of a subscription to {}", uri, e);
+            LOGGER.error("could not write a JSON-RPC error answering {}", rpc.method(), e);
             res.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
