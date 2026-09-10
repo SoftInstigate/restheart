@@ -116,16 +116,20 @@ mqtt-sse:
 # mqtt-mongo-writer:
 #   enabled: true
 #   buffer:
-#     strategy: "ring-buffer"                   # "ring-buffer" | "drop-incoming" | "blocking-queue"
+#     strategy: "blocking-queue"                # default; applies backpressure. "ring-buffer" and
+#                                               # "drop-incoming" lose messages under load - see README
 #     capacity: 10000
 #   drain:
 #     batch-size: 200
 #     flush-interval-ms: 500
 #     max-retries: 3
 #     retry-delay-ms: 1000
+#     shutdown-timeout-ms: 5000                 # how long a clean shutdown may drain into MongoDB
+#                                               # before the rest goes to the dead-letter file
 #   id-strategy: "auto"                         # "auto" | "payload-field" | "topic-timestamp-hash"
 #   id-field: "messageId"                       # field name when id-strategy = "payload-field"
 #   dead-letter-file: "./mqtt-dead-letter.log"  # documents dropped after exhausting max-retries, one JSON per line
+#   dead-letter-max-bytes: 104857600            # rotates to <file>.1 past this size; footprint bounded at 2x
 #   mongo-sink:
 #     - topic: "sensors/#"
 #       database: "iot"

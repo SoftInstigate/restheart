@@ -445,15 +445,17 @@ Persists messages to MongoDB through a bounded in-memory buffer that absorbs tra
 ```yaml
 mqtt-mongo-writer:
   buffer:
-    strategy: "ring-buffer"
+    strategy: "blocking-queue"
     capacity: 10000
   drain:
     batch-size: 200
     flush-interval-ms: 500
     max-retries: 3
     retry-delay-ms: 1000
+    shutdown-timeout-ms: 5000
   id-strategy: "topic-timestamp-hash"
   dead-letter-file: "./mqtt-dead-letter.log"
+  dead-letter-max-bytes: 104857600
   mongo-sink:
     - topic: "sensors/#"
       database: "iot"
@@ -462,7 +464,7 @@ mqtt-mongo-writer:
 
 Requires the `mongoclient` module: it injects `mclient` rather than opening its own connection.
 
-**Buffer strategies** (`buffer.strategy`, default `ring-buffer`):
+**Buffer strategies** (`buffer.strategy`, default `blocking-queue`):
 
 | value | on overflow |
 |---|---|
@@ -490,6 +492,8 @@ Every `mongo-sink` entry must carry all three of `topic`, `database` and `collec
 
 Batches that still fail after `max-retries` are appended to `dead-letter-file`, one JSON document per line. Failing to write that file is logged, never propagated.
 
+A relative `dead-letter-file` is resolved to an absolute path at startup, against the server process's working directory, and the resolved path is logged — for a forked or containerised RESTHeart that directory is rarely where the operator is standing, and a dead-letter file nobody can find is the same as no dead-letter file. The file is rotated to `<file>.1` once it passes `dead-letter-max-bytes` (100 MB by default), replacing any previous rotation, so its footprint is bounded at twice that. Nothing reads it back yet: re-ingestion is [#607](https://github.com/SoftInstigate/restheart/issues/607).
+
 ## Using the client from your own plugin
 
 Inject `mqtt-router` to subscribe to topics:
@@ -516,9 +520,13 @@ The router's API is expressed entirely in this module's own types (`Qos`, `MqttM
 
 ## Operational notes
 
-**Shutdown.** RESTHeart has no plugin shutdown callback, so the client and the writer's drain loop are stopped from JVM shutdown hooks. A `kill -9` will lose whatever is still buffered.
+**Shutdown.** RESTHeart has no plugin shutdown callback, so the client and the writer's drain loop are stopped from JVM shutdown hooks. On a clean shutdown the writer drains its buffer into MongoDB for up to `drain.shutdown-timeout-ms` (5 s by default, deliberately inside Docker's 10 s SIGTERM grace), and anything still buffered when that elapses is written to the dead-letter file rather than dropped. A `kill -9` runs no hook at all and will lose whatever is still buffered.
 
-**Message loss is by design in three places**, each counted so it is visible rather than silent: the router's global rate limit, the SSE per-connection queue, and the writer's buffer under `ring-buffer` or `drop-incoming`. Only `blocking-queue` refuses to lose data.
+**Message loss is by design on the live-data paths**, each counted so it is visible rather than silent: the router's global rate limit and the SSE per-connection queue. For a dashboard that is the right answer — you want the latest reading, not a backlog.
+
+**The persistence path does not lose by default.** `mqtt-mongo-writer`'s buffer defaults to `blocking-queue`, which applies backpressure instead; `ring-buffer` and `drop-incoming` are there for anyone who would rather drop than slow down, and must be chosen explicitly. Backpressure is cheap here because the router dispatches each message on its own virtual thread, so a full buffer parks a virtual thread rather than a platform one.
+
+**But choosing `blocking-queue` does not by itself make the path lossless**, and this is the part worth internalising: the router's `max-inflight-messages-per-second` (5000 by default) cuts *before* any consumer is reached, the writer included — and the MQTT client has already acknowledged the message to the broker by then, so there is no redelivery to fall back on. Above that rate you lose messages upstream of the buffer, whatever strategy it uses. Watch `mqtt_router_messages_dropped`, not only `mqtt_buffer_dropped`.
 
 **Clustering.** On MQTT 3.1.1 there are no shared subscriptions, so every RESTHeart node receives every message. For MongoDB persistence, use `payload-field` so the nodes converge instead of duplicating — `topic-timestamp-hash` only deduplicates within a single node (see "`mqtt-mongo-writer`" above). On MQTT 5.0, shared subscriptions are the cleaner answer — tracked in [#602](https://github.com/SoftInstigate/restheart/issues/602).
 

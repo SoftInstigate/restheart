@@ -25,6 +25,9 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -95,7 +98,7 @@ import com.mongodb.client.model.WriteModel;
  *   mqtt-mongo-writer:
  *     enabled: true
  *     buffer:
- *       strategy: "ring-buffer"  # "ring-buffer" | "drop-incoming" | "blocking-queue"
+ *       strategy: "blocking-queue"  # "blocking-queue" (default) | "ring-buffer" | "drop-incoming"
  *       capacity: 10000
  *     drain:
  *       batch-size: 200
@@ -167,6 +170,22 @@ public class MqttMongoWriter implements Initializer {
     private String idStrategy;
     private String idField;
     private String deadLetterFile;
+
+    /**
+     * How long {@link #close()} may spend draining the buffer into MongoDB before writing what is
+     * left to the dead-letter file. Deliberately shorter than Docker's 10-second default grace
+     * period between SIGTERM and SIGKILL: overshooting it does not buy more time, it just means
+     * being killed mid-drain with the remainder neither written nor dead-lettered.
+     */
+    private long shutdownTimeoutMs;
+
+    /**
+     * Size at which the dead-letter file is rotated. Without a bound this file is written by
+     * every failure path and read by nothing, so a long MongoDB outage quietly fills the disk -
+     * turning a recoverable incident into an unrecoverable one for every other service on the
+     * host. One rotation is kept, so the footprint is bounded at twice this value.
+     */
+    private long deadLetterMaxBytes;
     private List<MongoSink> sinks;
     private volatile boolean running;
 
@@ -202,7 +221,18 @@ public class MqttMongoWriter implements Initializer {
         // Buffer config
         @SuppressWarnings("unchecked")
         Map<String, Object> bufferConfig = (Map<String, Object>) config.getOrDefault("buffer", Map.of());
-        String strategyStr = configOrDefault(bufferConfig, "strategy", "ring-buffer");
+        // blocking-queue by default, not ring-buffer. This is a persistence path: someone who
+        // configures a mongo-sink is asking for their messages to be stored, and a default that
+        // silently evicts the oldest under load answers a question they did not ask. Backpressure
+        // is the honest response, and it is cheap here - MqttMessageRouter dispatches every
+        // message on its own virtual thread, so a full buffer parks a virtual thread rather than
+        // a platform one.
+        //
+        // It does NOT make the path lossless on its own: the router's rate limit
+        // (max-inflight-messages-per-second, 5000 by default) drops before any consumer is
+        // reached, and the HiveMQ client has already acknowledged the message to the broker by
+        // then. Watch mqtt_router_messages_dropped, not just mqtt_buffer_dropped.
+        String strategyStr = configOrDefault(bufferConfig, "strategy", "blocking-queue");
         int capacity = configOrDefault(bufferConfig, "capacity", 10000);
         Strategy strategy = Strategy.fromConfigValue(strategyStr);
         buffer = new MessageBuffer(capacity, strategy);
@@ -221,13 +251,20 @@ public class MqttMongoWriter implements Initializer {
         flushIntervalMs = configOrDefault(drainConfig, "flush-interval-ms", 500L);
         maxRetries = configOrDefault(drainConfig, "max-retries", 3);
         retryDelayMs = configOrDefault(drainConfig, "retry-delay-ms", 1000L);
+        shutdownTimeoutMs = configOrDefault(drainConfig, "shutdown-timeout-ms", 5000L);
 
         // ID strategy
         idStrategy = configOrDefault(config, "id-strategy", "auto");
         validateIdStrategy(idStrategy);
         idField = configOrDefault(config, "id-field", "messageId");
         validateIdField(idStrategy, idField);
-        deadLetterFile = configOrDefault(config, "dead-letter-file", "./mqtt-dead-letter.log");
+        // Resolved to an absolute path once, here. The configured default is relative, and a
+        // relative path resolves against the process working directory - which for a forked or
+        // containerised RESTHeart is not where the operator is standing. Logging the resolved
+        // path is the difference between a recoverable incident and a file nobody ever finds.
+        deadLetterFile = Path.of(configOrDefault(config, "dead-letter-file", "./mqtt-dead-letter.log"))
+            .toAbsolutePath().normalize().toString();
+        deadLetterMaxBytes = configOrDefault(config, "dead-letter-max-bytes", 100L * 1024 * 1024);
 
         // Mongo sinks
         @SuppressWarnings("unchecked")
@@ -315,9 +352,13 @@ public class MqttMongoWriter implements Initializer {
      *                        stops for this wake-up, even if the buffer is not yet empty
      */
     void drainUntilEmptyOrDeadline(long deadlineMillis) {
+        // Deliberately NOT conditioned on `running`. close() clears that flag before draining, so
+        // a loop that tested it would stop after a single batch - which is exactly what used to
+        // happen on a clean shutdown: 200 messages written, the rest of the buffer discarded. The
+        // drain loop does not need the flag here either; it tests `running` in its own while.
         do {
             flush();
-        } while (running && buffer.size() > 0 && System.currentTimeMillis() < deadlineMillis);
+        } while (buffer.size() > 0 && System.currentTimeMillis() < deadlineMillis);
     }
 
     /**
@@ -556,15 +597,42 @@ public class MqttMongoWriter implements Initializer {
      *
      * @param documents the documents to append; a null or empty list is a no-op
      */
+    /**
+     * Rotates the dead-letter file to {@code <file>.1} once it exceeds
+     * {@code dead-letter-max-bytes}, replacing any previous rotation.
+     * <p>
+     * One generation, not many: the point is a bound on disk usage, and keeping the most recent
+     * two windows is enough to diagnose what is failing. Rotating rather than refusing to write
+     * keeps the newest failures - the ones an operator is actually looking at - rather than
+     * preserving the oldest and discarding everything after.
+     * </p>
+     *
+     * @throws IOException if the rotation itself fails, so the caller reports it like any other
+     *                     dead-letter write failure rather than silently continuing
+     */
+    private void rotateDeadLetterIfOversized() throws IOException {
+        var file = Path.of(deadLetterFile);
+        if (!Files.exists(file) || Files.size(file) < deadLetterMaxBytes) {
+            return;
+        }
+        var rotated = Path.of(deadLetterFile + ".1");
+        Files.move(file, rotated, StandardCopyOption.REPLACE_EXISTING);
+        LOGGER.warn("Dead-letter file {} exceeded {} bytes and was rotated to {}; the previous "
+            + "rotation, if any, was replaced", deadLetterFile, deadLetterMaxBytes, rotated);
+    }
+
     private void deadLetter(List<Document> documents) {
         if (documents == null || documents.isEmpty()) {
             return;
         }
 
-        try (BufferedWriter out = new BufferedWriter(new FileWriter(deadLetterFile, true))) {
-            for (Document doc : documents) {
-                out.write(doc.toJson());
-                out.newLine();
+        try {
+            rotateDeadLetterIfOversized();
+            try (BufferedWriter out = new BufferedWriter(new FileWriter(deadLetterFile, true))) {
+                for (Document doc : documents) {
+                    out.write(doc.toJson());
+                    out.newLine();
+                }
             }
         } catch (IOException e) {
             LOGGER.error("Failed to write {} documents to dead-letter file {}", documents.size(), deadLetterFile, e);
@@ -628,8 +696,28 @@ public class MqttMongoWriter implements Initializer {
      */
     public void close() {
         running = false;
-        // Flush remaining messages
-        flush();
+
+        // Drain what is buffered, not just one batch of it. This is the only point in the whole
+        // path where messages used to disappear rather than reach disk: everywhere else a failure
+        // ends in the dead-letter file, but a clean shutdown wrote a single batch and dropped the
+        // rest. The two failures also arrive together in practice - RESTHeart gets restarted
+        // during a MongoDB incident, which is precisely when the buffer is full.
+        var remaining = buffer.size();
+        if (remaining > 0) {
+            LOGGER.info("Shutting down with {} buffered messages; draining for up to {} ms",
+                remaining, shutdownTimeoutMs);
+        }
+        drainUntilEmptyOrDeadline(System.currentTimeMillis() + shutdownTimeoutMs);
+
+        // Whatever the deadline did not cover goes to the dead-letter file rather than being
+        // dropped. A shutdown budget is not ours to set - a container SIGKILLs after its own
+        // grace period - so the guarantee has to be "on disk somewhere", not "written to MongoDB".
+        var stranded = buffer.drain(Integer.MAX_VALUE);
+        if (!stranded.isEmpty()) {
+            LOGGER.warn("Shutdown deadline of {} ms elapsed with {} messages still buffered; "
+                + "writing them to the dead-letter file {}", shutdownTimeoutMs, stranded.size(), deadLetterFile);
+            deadLetter(stranded.stream().map(this::toDocument).toList());
+        }
     }
 
     /**

@@ -705,4 +705,100 @@ public class MqttMongoWriterTest {
         assertFalse((boolean) getField(writer, "running"));
         verify(mclient, never()).close();
     }
+    // --- shutdown must not throw away the buffer ---
+    //
+    // close() used to be `running = false; flush();` - and flush() drains exactly one batch. So a
+    // clean shutdown with a full buffer wrote batchSize messages and discarded the rest. That is
+    // the only point in the whole path where messages disappeared rather than reaching disk:
+    // everywhere else a failure ends in the dead-letter file. The two failures also arrive
+    // together in practice, since RESTHeart gets restarted during a MongoDB incident, which is
+    // exactly when the buffer is full.
+
+    @Test
+    @DisplayName("close() drains the whole buffer, not just one batch")
+    void testCloseDrainsMoreThanOneBatch() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 200, 1, 1L, deadLetterPath());
+        setField(writer, "shutdownTimeoutMs", 10_000L);
+
+        MessageBuffer buffer = new MessageBuffer(2000, Strategy.RING);
+        for (int i = 0; i < 1000; i++) {
+            buffer.offer(msg("sensors/temp", "{\"n\":" + i + "}", 0));
+        }
+        setField(writer, "buffer", buffer);
+        setField(writer, "running", true);
+
+        writer.close();
+
+        assertEquals(0, buffer.size(), "the buffer must be empty after a clean shutdown");
+        // 1000 messages at a batch size of 200 is five insertMany calls. One would be the old
+        // behaviour, and 800 messages on the floor.
+        verify(coll, times(5)).insertMany(anyList(), any(InsertManyOptions.class));
+    }
+
+    @Test
+    @DisplayName("close() dead-letters whatever the shutdown deadline did not cover")
+    void testCloseDeadLettersWhatTheDeadlineLeaves() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        String deadLetter = deadLetterPath();
+        wireWriterForFlush(writer, "auto", 200, 1, 1L, deadLetter);
+        // Zero budget: drainUntilEmptyOrDeadline runs its body exactly once (it is a do/while),
+        // so one batch reaches MongoDB and the remaining 800 are past the deadline. Deterministic,
+        // where a real timeout would be a race.
+        setField(writer, "shutdownTimeoutMs", 0L);
+
+        MessageBuffer buffer = new MessageBuffer(2000, Strategy.RING);
+        for (int i = 0; i < 1000; i++) {
+            buffer.offer(msg("sensors/temp", "{\"n\":" + i + "}", 0));
+        }
+        setField(writer, "buffer", buffer);
+        setField(writer, "running", true);
+
+        writer.close();
+
+        assertEquals(0, buffer.size(), "nothing may be left holding a reference in the buffer");
+        var lines = Files.readAllLines(Path.of(deadLetter));
+        assertEquals(800, lines.size(),
+            "everything the deadline did not cover must reach the dead-letter file rather than "
+                + "being dropped; got " + lines.size() + " lines");
+    }
+
+    @Test
+    @DisplayName("the dead-letter file rotates once it passes dead-letter-max-bytes")
+    void testDeadLetterFileRotates() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        String deadLetter = deadLetterPath();
+        wireWriterForFlush(writer, "auto", 200, 1, 1L, deadLetter);
+        setField(writer, "deadLetterMaxBytes", 64L);
+        setField(writer, "shutdownTimeoutMs", 0L);
+
+        // Two rounds, each past the 64-byte cap: the first fills the file, the second finds it
+        // oversized and rotates before writing.
+        for (int round = 0; round < 2; round++) {
+            MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
+            for (int i = 0; i < 5; i++) {
+                buffer.offer(msg("sensors/temp", "{\"round\":" + round + ",\"n\":" + i + "}", 0));
+            }
+            setField(writer, "buffer", buffer);
+            setField(writer, "running", true);
+            setField(writer, "batchSize", 0); // nothing reaches MongoDB; everything is stranded
+            writer.close();
+        }
+
+        assertTrue(Files.exists(Path.of(deadLetter + ".1")),
+            "the oversized file must be rotated aside rather than growing without bound");
+        assertTrue(Files.exists(Path.of(deadLetter)),
+            "and a fresh file must carry the newest failures");
+    }
+
+    /**
+     * @return a dead-letter path under the module's target directory, unique per call, so tests
+     *         neither collide with one another nor leave files in the working directory
+     */
+    private static String deadLetterPath() throws Exception {
+        var dir = Path.of("target", "dead-letter-tests");
+        Files.createDirectories(dir);
+        return dir.resolve("dl-" + System.nanoTime() + ".log").toAbsolutePath().toString();
+    }
+
 }
