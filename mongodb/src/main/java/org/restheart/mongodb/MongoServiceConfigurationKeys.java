@@ -110,6 +110,17 @@ public interface MongoServiceConfigurationKeys {
     public static final String AGGREGATION_CHECK_OPERATORS = "aggregation-check-operators";
 
     /**
+     * Name of the collection holding the guard documents that serialize writes to collections
+     * declaring invariants.
+     */
+    public static final String INVARIANTS_GUARD_COLLECTION_KEY = "invariants-guard-collection";
+
+    /**
+     * Default value of invariants-guard-collection.
+     */
+    public static final String DEFAULT_INVARIANTS_GUARD_COLLECTION = "_invariants";
+
+    /**
      * the key for the mongo-uri property.
      */
     public static final String MONGO_URI_KEY = "mongo-uri";

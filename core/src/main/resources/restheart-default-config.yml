@@ -887,6 +887,23 @@ mongo:
   # The time limit in milliseconds for processing aggregations. Set to 0 for no time limit.
   aggregation-time-limit: 0 # in milliseconds
 
+  # Collections can declare integrity rules that span documents, as "invariants" metadata: an
+  # aggregation that must return no documents (or at least one, with holdsWhen: notEmpty). They are
+  # evaluated after the write and inside its transaction, so a broken rule aborts it and nothing was
+  # ever committed. See https://restheart.org/docs/mongodb-rest/invariants
+  #
+  # This names the collection holding their guard documents — one per guarded collection, in the
+  # same database as the collection, incremented inside the write's transaction. It exists to be
+  # contended and its content is irrelevant: without it two writes that are each valid on their own
+  # snapshot and invalid together would both commit, which is the anomaly an invariant exists to
+  # prevent. The cost is that writes to a collection declaring invariants serialize, which is why
+  # invariants are opt-in per collection.
+  #
+  # Declaring invariants requires MongoDB configured as a replica set: without transactions a write
+  # that breaks one could not be undone, and such writes are refused with 501 rather than let
+  # through unchecked.
+  invariants-guard-collection: _invariants
+
 # MongoDB GraphQL API
 # See https://restheart.org/docs/mongodb-graphql/
 graphql:

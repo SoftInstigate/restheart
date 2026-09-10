@@ -82,6 +82,8 @@ public class MongoServiceConfiguration {
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
     private final boolean aggregationCheckOperators;
+
+    private final String invariantsGuardCollection;
     private final int cursorBatchSize;
     private final int defaultPagesize;
     private final int maxPagesize;
@@ -170,6 +172,9 @@ public class MongoServiceConfiguration {
         queryTimeLimit = asLong(conf, QUERY_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationTimeLimit = asLong(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationCheckOperators = asBoolean(conf, AGGREGATION_CHECK_OPERATORS, true, silent);
+
+        invariantsGuardCollection = asString(conf, INVARIANTS_GUARD_COLLECTION_KEY,
+                DEFAULT_INVARIANTS_GUARD_COLLECTION, silent);
 
         localCacheEnabled = asBoolean(conf, LOCAL_CACHE_ENABLED_KEY, true, silent);
         localCacheTtl = asLong(conf, LOCAL_CACHE_TTL_KEY, (long) 1000, silent);
@@ -306,6 +311,18 @@ public class MongoServiceConfiguration {
      */
     public boolean getAggregationCheckOperators() {
         return aggregationCheckOperators;
+    }
+
+    /**
+     * The collection holding the guard documents that serialize writes to collections declaring
+     * invariants. One document per guarded collection, in the same database as the collection, and
+     * incremented inside the write's transaction: it exists to be contended, its content is
+     * irrelevant.
+     *
+     * @return the invariantsGuardCollection
+     */
+    public String getInvariantsGuardCollection() {
+        return invariantsGuardCollection;
     }
 
     /**
