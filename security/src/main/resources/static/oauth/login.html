@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<!--
+  An empty inline icon, declared so the browser does not go looking for /favicon.ico on its own.
+  That request is answered 401 with `WWW-Authenticate: Basic`, and the browser reacts by opening
+  its native credentials dialog on top of this page — a second, competing login prompt that has
+  nothing to do with the OAuth flow.
+-->
+<link rel="icon" href="data:,">
+<title>Sign in</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --fg: #1c1e21;
+    --muted: #6b7280;
+    --border: #d8dbe0;
+    --accent: #00a3e0;
+    --accent-fg: #ffffff;
+    --error-bg: #fdecec;
+    --error-fg: #a6231f;
+    --error-border: #f2c3c1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d;
+      --card: #1e2128;
+      --fg: #e8eaed;
+      --muted: #9aa0a6;
+      --border: #33373f;
+      --error-bg: #3a1f1f;
+      --error-fg: #f2b8b5;
+      --error-border: #5c2b28;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  main {
+    width: 100%;
+    max-width: 360px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px 28px;
+  }
+
+  p.brand {
+    margin: 0 0 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+
+  p.sub { margin: 0 0 24px; color: var(--muted); font-size: 13px; }
+  p.sub strong { color: var(--fg); font-weight: 600; word-break: break-all; }
+
+  label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; }
+
+  input {
+    width: 100%;
+    padding: 9px 11px;
+    margin-bottom: 16px;
+    font: inherit;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+  button {
+    width: 100%;
+    padding: 10px;
+    font: inherit;
+    font-weight: 600;
+    color: var(--accent-fg);
+    background: var(--accent);
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  button:hover { filter: brightness(0.94); }
+
+  .error {
+    margin: 0 0 18px;
+    padding: 9px 11px;
+    font-size: 13px;
+    color: var(--error-fg);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: 6px;
+  }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <p class="brand">RESTHeart</p>
+  <h1>Sign in</h1>
+  <p class="sub" id="sub">to continue to <strong id="client">the application</strong></p>
+
+  <p class="error" id="error" hidden>Wrong username or password.</p>
+
+  <!--
+    Posts straight to /authorize as a normal form submission, with the OAuth parameters
+    kept in the query string exactly as they arrived. No fetch, no JSON: RESTHeart answers
+    302 to the client's redirect_uri and the browser follows it, which is what completes
+    the authorization code flow.
+  -->
+  <form id="form" method="POST" autocomplete="on">
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+    <button type="submit">Sign in</button>
+  </form>
+</main>
+
+<script>
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+
+    // Everything the authorization endpoint sent us goes back untouched. Dropping or
+    // reordering a parameter here breaks PKCE or the state check, so nothing is rebuilt:
+    // the query string is forwarded as-is, minus the error flag we render ourselves.
+    var forwarded = new URLSearchParams(window.location.search);
+    forwarded.delete('error');
+
+    document.getElementById('form').action = '/authorize?' + forwarded.toString();
+
+    if (params.get('error')) {
+      document.getElementById('error').hidden = false;
+    }
+
+    // Name the destination by the host of redirect_uri — "claude.ai" — rather than by client_id,
+    // which with dynamic client registration is a freshly generated UUID that means nothing to the
+    // person being asked for their password. /authorize validates redirect_uri against the
+    // configured allow-list before redirecting here, so this host is one the operator permitted.
+    // textContent, never innerHTML.
+    var redirectUri = params.get('redirect_uri');
+    if (redirectUri) {
+      try {
+        document.getElementById('client').textContent = new URL(redirectUri).host;
+      } catch (e) {
+        document.getElementById('client').textContent = params.get('client_id') || 'the application';
+      }
+    }
+
+    // Landing here without OAuth parameters means the page was opened directly rather than
+    // reached through /authorize. Signing in would go nowhere, so say so instead.
+    if (!params.get('redirect_uri')) {
+      document.getElementById('sub').textContent =
+        'Open this page from an application’s sign-in link — it cannot be used on its own.';
+      document.getElementById('form').hidden = true;
+    }
+  })();
+</script>
+</body>
+</html>

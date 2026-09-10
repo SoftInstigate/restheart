@@ -329,12 +329,14 @@ oauthAuthorizationService:
   enabled: false
   # The login page GET /authorize redirects the user-agent to, with all OAuth parameters
   # forwarded as query string. The default is the page RESTHeart itself serves at /login
-  # (see static-resources above).
+  # (see static-resources above). The path says what it is: the page only works inside the
+  # authorization flow — opened on its own it has no redirect_uri to send the user back to, and
+  # says so instead of showing a form that would go nowhere.
   # Relative by design: the browser resolves it against the origin it is already on, which is
   # what keeps it correct behind a TLS-terminating proxy, where an absolute URL built from the
   # Host header would come out as http:// and break the flow.
   # Point it at your own page to replace it, e.g. https://myapp.example.com/login
-  login-url: /login
+  login-url: /oauth/login
   # Allowed redirect_uri values (supports * wildcard).
   # Example:
   #   - http://localhost:*
@@ -968,7 +970,7 @@ static-resources:
   # disabled: it is a static form that posts to /authorize, which answers 404 until you enable
   # the service. Replace it with your own by pointing `login-url` elsewhere.
   - what: static/oauth
-    where: /login
+    where: /oauth/login
     welcome-file: login.html
     embedded: true
 
