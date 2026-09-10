@@ -93,11 +93,14 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
         return request.isHandledBy("mongo")
                 && request.getCollectionProps() != null
                 && request.isPatch()
-                && request.isWriteDocument()
+                // isWriteDocument() is false for a bulk PATCH, whose resource type is
+                // BULK_DOCUMENTS; there what stands in for it is having the ids to re-read
+                && (request.isBulkDocuments()
+                        ? patchedIds(response) != null
+                        : request.isWriteDocument())
                 && request.getCollectionProps().containsKey("jsonSchema")
                 && request.getCollectionProps().get("jsonSchema").isDocument()
-                && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300)
-                && (!request.isBulkDocuments() || patchedIds(response) != null);
+                && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300);
     }
 
     /** The ids a bulk patch touched, or null when the write did not collect them. */

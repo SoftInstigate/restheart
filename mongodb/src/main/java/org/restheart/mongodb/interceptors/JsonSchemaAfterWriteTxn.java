@@ -65,8 +65,11 @@ public class JsonSchemaAfterWriteTxn implements MongoInterceptor {
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
                 && request.isPatch()
-                && request.isWriteDocument()
-                && (!request.isBulkDocuments() || ClientSessionInjector.transactionsAvailable())
+                // isWriteDocument() is false for a bulk PATCH, whose resource type is
+                // BULK_DOCUMENTS, so the two cases cannot share one condition
+                && (request.isBulkDocuments()
+                        ? ClientSessionInjector.transactionsAvailable()
+                        : request.isWriteDocument())
                 && request.getCollectionProps() != null
                 && request.getCollectionProps().containsKey("jsonSchema")
                 && request.getCollectionProps().get("jsonSchema").isDocument();

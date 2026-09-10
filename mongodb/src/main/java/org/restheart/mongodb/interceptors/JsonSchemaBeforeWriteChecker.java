@@ -226,9 +226,12 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
+                // a bulk PATCH is not a "write document": its resource type is BULK_DOCUMENTS, so
+                // isWriteDocument() is false for it. Repeating that condition outside the || — as
+                // this did — silently cancelled the branch that had just admitted it, and the 501
+                // below never fired: bulk PATCH went through unvalidated.
                 && ((request.isWriteDocument() && !request.isPatch())
                 || (request.isPatch() && request.isBulkDocuments()))
-                && request.isWriteDocument()
                 && request.getCollectionProps() != null
                 && request.getCollectionProps().containsKey("jsonSchema")
                 && request.getCollectionProps().get("jsonSchema").isDocument();
