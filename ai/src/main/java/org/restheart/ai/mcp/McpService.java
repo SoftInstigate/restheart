@@ -1461,8 +1461,11 @@ public class McpService implements ByteArrayService {
                         catalog (URIs, kinds, short descriptions) — optionally narrowed with `query`/`kind` and \
                         paged with `limit`/`cursor`. With a resource URI, returns full context: kind, supported \
                         transports, actions with parameter types, auth requirements, examples. On a deployment \
-                        with many resources, prefer a filtered call over an unfiltered one. Call this before \
-                        how_to_call to learn what you can do with a resource.\
+                        with many resources, prefer a filtered call over an unfiltered one.
+
+                        To READ a resource, use resources/read — it returns the data directly. Call this \
+                        before how_to_call only when you need to write, or to invoke something \
+                        resources/read does not cover.\
                         """)
                 .build();
     }
@@ -1477,6 +1480,11 @@ public class McpService implements ByteArrayService {
 
         return McpSchema.Tool.builder("how_to_call", inputSchema(properties, List.of("resource", "action")))
                 .description("""
+                        NOT FOR READS. If the resource appears in resources/list, read it with \
+                        resources/read: the data comes back inside the MCP response, with no request \
+                        for you to send and no token to fetch. Use this tool for writes, and for \
+                        anything resources/read does not cover.
+
                         Returns a request descriptor (transport, URL, headers, body) for invoking a known MCP \
                         resource. The tool COMPOSES the request — it does NOT execute it. After receiving the \
                         response, choose any client appropriate to the descriptor's transport and your host \
