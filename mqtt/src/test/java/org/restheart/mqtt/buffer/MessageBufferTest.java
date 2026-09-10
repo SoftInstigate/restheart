@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.restheart.mqtt.buffer.MessageBuffer.Pending;
 import org.restheart.mqtt.buffer.MessageBuffer.Strategy;
 import org.restheart.mqtt.model.MqttMessage;
 
@@ -77,9 +78,9 @@ public class MessageBufferTest {
     void testRingAcceptsUpToCapacity() {
         MessageBuffer buffer = new MessageBuffer(3, Strategy.RING);
 
-        assertTrue(buffer.offer(msg("t", "1")));
-        assertTrue(buffer.offer(msg("t", "2")));
-        assertTrue(buffer.offer(msg("t", "3")));
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> { })));
         assertEquals(3, buffer.size());
     }
 
@@ -88,14 +89,14 @@ public class MessageBufferTest {
     void testRingDropOldest() {
         MessageBuffer buffer = new MessageBuffer(2, Strategy.RING);
 
-        buffer.offer(msg("t", "old"));
-        buffer.offer(msg("t", "mid"));
-        buffer.offer(msg("t", "new")); // should drop "old"
+        buffer.offer(new Pending(msg("t", "old"), () -> { }));
+        buffer.offer(new Pending(msg("t", "mid"), () -> { }));
+        buffer.offer(new Pending(msg("t", "new"), () -> { })); // should drop "old"
 
         assertEquals(2, buffer.size());
-        List<MqttMessage> drained = buffer.drain(10);
-        assertEquals("mid", drained.get(0).getPayload());
-        assertEquals("new", drained.get(1).getPayload());
+        List<Pending> drained = buffer.drain(10);
+        assertEquals("mid", drained.get(0).message().getPayload());
+        assertEquals("new", drained.get(1).message().getPayload());
     }
 
     @Test
@@ -103,9 +104,9 @@ public class MessageBufferTest {
     void testRingAlwaysAccepts() {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.RING);
 
-        assertTrue(buffer.offer(msg("t", "1")));
-        assertTrue(buffer.offer(msg("t", "2"))); // drops "1"
-        assertTrue(buffer.offer(msg("t", "3"))); // drops "2"
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { }))); // drops "1"
+        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> { }))); // drops "2"
         assertEquals(1, buffer.size());
     }
 
@@ -114,15 +115,15 @@ public class MessageBufferTest {
     void testRingDropOldestIsCounted() {
         MessageBuffer buffer = new MessageBuffer(2, Strategy.RING);
 
-        buffer.offer(msg("t", "old"));
-        buffer.offer(msg("t", "mid"));
-        buffer.offer(msg("t", "new")); // "old" is the one dropped
+        buffer.offer(new Pending(msg("t", "old"), () -> { }));
+        buffer.offer(new Pending(msg("t", "mid"), () -> { }));
+        buffer.offer(new Pending(msg("t", "new"), () -> { })); // "old" is the one dropped
 
         assertEquals(1, buffer.droppedCount());
         assertEquals(3, buffer.acceptedCount());
 
-        List<MqttMessage> drained = buffer.drain(10);
-        assertTrue(drained.stream().noneMatch(m -> "old".equals(m.getPayload())),
+        List<Pending> drained = buffer.drain(10);
+        assertTrue(drained.stream().noneMatch(m -> "old".equals(m.message().getPayload())),
             "the dropped message must not still be in the buffer");
     }
 
@@ -133,9 +134,9 @@ public class MessageBufferTest {
     void testDropIncomingAcceptsUpToCapacity() {
         MessageBuffer buffer = new MessageBuffer(3, Strategy.DROP_INCOMING);
 
-        assertTrue(buffer.offer(msg("t", "1")));
-        assertTrue(buffer.offer(msg("t", "2")));
-        assertTrue(buffer.offer(msg("t", "3")));
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> { })));
         assertEquals(3, buffer.size());
     }
 
@@ -144,9 +145,9 @@ public class MessageBufferTest {
     void testDropIncomingRejectsWhenFull() {
         MessageBuffer buffer = new MessageBuffer(2, Strategy.DROP_INCOMING);
 
-        assertTrue(buffer.offer(msg("t", "1")));
-        assertTrue(buffer.offer(msg("t", "2")));
-        assertFalse(buffer.offer(msg("t", "3"))); // rejected
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { })));
+        assertFalse(buffer.offer(new Pending(msg("t", "3"), () -> { }))); // rejected
         assertEquals(2, buffer.size());
     }
 
@@ -155,13 +156,13 @@ public class MessageBufferTest {
     void testDropIncomingRejectedNotStoredAndCounted() {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.DROP_INCOMING);
 
-        buffer.offer(msg("t", "kept"));
-        boolean second = buffer.offer(msg("t", "rejected"));
+        buffer.offer(new Pending(msg("t", "kept"), () -> { }));
+        boolean second = buffer.offer(new Pending(msg("t", "rejected"), () -> { }));
 
         assertFalse(second);
-        List<MqttMessage> drained = buffer.drain(10);
+        List<Pending> drained = buffer.drain(10);
         assertEquals(1, drained.size());
-        assertEquals("kept", drained.get(0).getPayload());
+        assertEquals("kept", drained.get(0).message().getPayload());
 
         assertEquals(1, buffer.acceptedCount());
         assertEquals(1, buffer.droppedCount());
@@ -174,9 +175,9 @@ public class MessageBufferTest {
     void testBlockingAcceptsUpToCapacity() {
         MessageBuffer buffer = new MessageBuffer(3, Strategy.BLOCKING);
 
-        assertTrue(buffer.offer(msg("t", "1")));
-        assertTrue(buffer.offer(msg("t", "2")));
-        assertTrue(buffer.offer(msg("t", "3")));
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> { })));
         assertEquals(3, buffer.size());
     }
 
@@ -184,7 +185,7 @@ public class MessageBufferTest {
     @DisplayName("BLOCKING: producer blocks when full and proceeds once a consumer drains")
     void testBlockingBlocksUntilSpaceAvailable() throws Exception {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING);
-        buffer.offer(msg("t", "1")); // fill the buffer
+        buffer.offer(new Pending(msg("t", "1"), () -> { })); // fill the buffer
 
         CountDownLatch aboutToBlock = new CountDownLatch(1);
         CountDownLatch enqueued = new CountDownLatch(1);
@@ -192,7 +193,7 @@ public class MessageBufferTest {
 
         Thread producer = new Thread(() -> {
             aboutToBlock.countDown();
-            buffer.offer(msg("t", "2"));
+            buffer.offer(new Pending(msg("t", "2"), () -> { }));
             enqueued.countDown();
         });
         producer.start();
@@ -216,7 +217,7 @@ public class MessageBufferTest {
     @DisplayName("BLOCKING: interrupting a blocked producer returns false and preserves the interrupt flag")
     void testBlockingInterruptReturnsFalseAndSetsInterruptFlag() throws Exception {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING);
-        buffer.offer(msg("t", "1")); // fill the buffer
+        buffer.offer(new Pending(msg("t", "1"), () -> { })); // fill the buffer
 
         CountDownLatch aboutToBlock = new CountDownLatch(1);
         AtomicBoolean offerResult = new AtomicBoolean(true);
@@ -225,7 +226,7 @@ public class MessageBufferTest {
 
         Thread producer = new Thread(() -> {
             aboutToBlock.countDown();
-            boolean result = buffer.offer(msg("t", "2"));
+            boolean result = buffer.offer(new Pending(msg("t", "2"), () -> { }));
             offerResult.set(result);
             interruptFlagSet.set(Thread.currentThread().isInterrupted());
             done.countDown();
@@ -251,10 +252,10 @@ public class MessageBufferTest {
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
 
         for (int i = 0; i < 5; i++) {
-            buffer.offer(msg("t", String.valueOf(i)));
+            buffer.offer(new Pending(msg("t", String.valueOf(i)), () -> { }));
         }
 
-        List<MqttMessage> batch = buffer.drain(3);
+        List<Pending> batch = buffer.drain(3);
         assertEquals(3, batch.size());
         assertEquals(2, buffer.size()); // 5 - 3 = 2
     }
@@ -264,7 +265,7 @@ public class MessageBufferTest {
     void testDrainEmpty() {
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
 
-        List<MqttMessage> batch = buffer.drain(10);
+        List<Pending> batch = buffer.drain(10);
         assertNotNull(batch);
         assertTrue(batch.isEmpty());
     }
@@ -274,10 +275,10 @@ public class MessageBufferTest {
     void testDrainLessThanBatch() {
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
 
-        buffer.offer(msg("t", "1"));
-        buffer.offer(msg("t", "2"));
+        buffer.offer(new Pending(msg("t", "1"), () -> { }));
+        buffer.offer(new Pending(msg("t", "2"), () -> { }));
 
-        List<MqttMessage> batch = buffer.drain(100);
+        List<Pending> batch = buffer.drain(100);
         assertEquals(2, batch.size());
         assertEquals(0, buffer.size());
     }
@@ -289,8 +290,8 @@ public class MessageBufferTest {
     void testClear() {
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
 
-        buffer.offer(msg("t", "1"));
-        buffer.offer(msg("t", "2"));
+        buffer.offer(new Pending(msg("t", "1"), () -> { }));
+        buffer.offer(new Pending(msg("t", "2"), () -> { }));
         assertEquals(2, buffer.size());
 
         buffer.clear();
@@ -302,8 +303,8 @@ public class MessageBufferTest {
     void testClearDoesNotResetCounters() {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.DROP_INCOMING);
 
-        buffer.offer(msg("t", "1"));
-        buffer.offer(msg("t", "2")); // rejected, counted as dropped
+        buffer.offer(new Pending(msg("t", "1"), () -> { }));
+        buffer.offer(new Pending(msg("t", "2"), () -> { })); // rejected, counted as dropped
         assertEquals(1, buffer.acceptedCount());
         assertEquals(1, buffer.droppedCount());
 
@@ -370,7 +371,7 @@ public class MessageBufferTest {
             executor.submit(() -> {
                 try {
                     for (int i = 0; i < messagesPerProducer; i++) {
-                        buffer.offer(msg("t/" + producerId, String.valueOf(i)));
+                        buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> { }));
                     }
                 } finally {
                     latch.countDown();
@@ -392,11 +393,11 @@ public class MessageBufferTest {
             "accepted minus dropped must equal the final buffer size");
 
         // Drain all and verify no corruption
-        List<MqttMessage> all = buffer.drain(capacity + 100);
+        List<Pending> all = buffer.drain(capacity + 100);
         assertTrue(all.size() > 0, "Should have messages");
-        for (MqttMessage msg : all) {
-            assertNotNull(msg.getTopic());
-            assertNotNull(msg.getPayload());
+        for (Pending p : all) {
+            assertNotNull(p.message().getTopic());
+            assertNotNull(p.message().getPayload());
         }
     }
 
@@ -417,7 +418,7 @@ public class MessageBufferTest {
             executor.submit(() -> {
                 try {
                     for (int i = 0; i < messagesPerProducer; i++) {
-                        results.add(buffer.offer(msg("t/" + producerId, String.valueOf(i))));
+                        results.add(buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> { })));
                     }
                 } finally {
                     latch.countDown();
@@ -475,7 +476,7 @@ public class MessageBufferTest {
             executor.submit(() -> {
                 try {
                     for (int i = 0; i < messagesPerProducer; i++) {
-                        buffer.offer(msg("t/" + producerId, String.valueOf(i)));
+                        buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> { }));
                     }
                 } finally {
                     latch.countDown();

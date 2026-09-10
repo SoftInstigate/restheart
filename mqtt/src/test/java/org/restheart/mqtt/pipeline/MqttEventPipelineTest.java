@@ -625,6 +625,10 @@ public class MqttEventPipelineTest {
     @Test
     public void testThrottleStageConcurrentConsumptionNeverExceedsCapacity() throws Exception {
         int capacity = 50;
+        // Measured from construction, not from the start signal: ThrottleStage seeds its refill
+        // clock in its constructor, so the window it refills over includes the executor setup
+        // below, not just the concurrent phase.
+        long startedAt = System.nanoTime();
         ThrottleStage stage = new ThrottleStage(capacity);
 
         int threads = 8;
@@ -652,12 +656,23 @@ public class MqttEventPipelineTest {
         for (Future<?> f : futures) {
             f.get(5, TimeUnit.SECONDS);
         }
+        long elapsedNanos = System.nanoTime() - startedAt;
         pool.shutdown();
 
-        // With no time elapsed for refills, the bucket can never dispense
-        // more than its starting capacity, no matter how many threads race.
-        assertTrue(accepted.get() <= capacity,
-            "accepted " + accepted.get() + " exceeds bucket capacity " + capacity);
+        // The bucket refills with time, so "never more than capacity" is only true if the whole
+        // concurrent phase finishes before a single token comes back - at 50/s that is 20 ms, and
+        // 1600 calls across 8 threads exceed it whenever the machine is busy. Asserting the
+        // stricter invariant made this test pass on an idle laptop and fail under load, by one.
+        //
+        // The real invariant is that the bucket dispenses no more than it started with plus what
+        // legitimately refilled while the test ran. Computed the same way ThrottleStage computes
+        // it, so the two cannot disagree.
+        long refilled = (elapsedNanos * capacity) / 1_000_000_000L;
+        long ceiling = capacity + refilled;
+        assertTrue(accepted.get() <= ceiling,
+            "accepted " + accepted.get() + " exceeds the bucket's capacity of " + capacity
+                + " plus the " + refilled + " token(s) that refilled during the "
+                + (elapsedNanos / 1_000_000) + " ms the concurrent phase took");
         assertTrue(stage.getAvailableTokens() >= 0 && stage.getAvailableTokens() <= capacity);
     }
 

@@ -214,6 +214,19 @@ public class MqttStatusInitializer implements Initializer {
             }
         }
 
+        // mqtt-client without mqtt-router is now worse than useless, and silently so. The client
+        // is deliberately built but not connected during its own initialization - mqtt-router
+        // connects it, right after registering the consumer that redelivered messages need in
+        // order to have somewhere to arrive. With the router disabled nobody ever connects, so
+        // the module sits there configured and inert.
+        if (clientActive && !isActive(registry, "mqtt-router")) {
+            findings.add(new Finding(Level.WARN,
+                "mqtt-client is enabled but mqtt-router is not, so nothing ever connects to the broker: "
+                    + "the client is built during initialization and connected by mqtt-router, which also "
+                    + "registers the consumer that messages redelivered on a resumed session arrive at. "
+                    + "Set /mqtt-router/enabled to true"));
+        }
+
         var restActive = isActive(registry, "mqtt-rest");
         var sseActive = isActive(registry, "mqtt-sse");
         var mongoWriterActive = isActive(registry, "mqtt-mongo-writer");

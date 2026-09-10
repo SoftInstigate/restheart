@@ -168,11 +168,26 @@ public abstract class MqttITBase {
 
         beforeRestheartStarts();
 
+        restheart = startRestheart(overridesFile(), allRho(), getClass().getSimpleName() + ".log", standalone());
+    }
+
+    /**
+     * Every {@code RHO} pair a RESTHeart for this test class needs: the broker's probed port,
+     * which no static configuration file can know, plus whatever {@link #extraRho()} adds.
+     * <p>
+     * Extracted so a subclass that starts a <em>second</em> instance - or restarts the first, as
+     * {@code MqttDurabilityIT} does - composes it the same way rather than half of it. Passing
+     * only {@code extraRho()} leaves the new instance looking for a broker on port 1883, where
+     * nothing is listening.
+     * </p>
+     *
+     * @return the full RHO pair list, in application order
+     */
+    protected List<String> allRho() {
         var rho = new ArrayList<String>();
         rho.add("/mqtt-client/broker-url->\"tcp://localhost:" + brokerPort + "\"");
         rho.addAll(extraRho());
-
-        restheart = startRestheart(overridesFile(), rho, getClass().getSimpleName() + ".log", standalone());
+        return rho;
     }
 
     /**
@@ -467,7 +482,16 @@ public abstract class MqttITBase {
      *         documented on {@link #startRestheart(Path, List, String)}
      * @throws IOException if no ephemeral port could be probed at all
      */
-    private static int freePort() throws IOException {
+    /**
+     * Protected, not private: a subclass that stops and restarts a container of its own needs the
+     * same trick the broker uses. A dynamically published host port is reassigned by Docker on
+     * every start, so a container that has to keep its address across a restart must be bound to a
+     * port probed here instead.
+     *
+     * @return a port that was free a moment ago
+     * @throws IOException if no port could be probed
+     */
+    protected static int freePort() throws IOException {
         try (var s = new ServerSocket(0)) {
             return s.getLocalPort();
         }
@@ -762,6 +786,23 @@ public abstract class MqttITBase {
                 return Files.readString(logFile);
             } catch (IOException e) {
                 throw new IllegalStateException("failed to read " + logFile.toAbsolutePath(), e);
+            }
+        }
+
+        /**
+         * Kills the process outright, with no chance to run its shutdown hooks.
+         * <p>
+         * The opposite of {@link #close()}, and the point of it: a clean shutdown drains the
+         * writer's buffer, so a test that wants to know what the <em>broker</em> still owes has
+         * to deny the instance that opportunity. This is the crash, not the restart.
+         * </p>
+         */
+        public void kill() {
+            process.destroyForcibly();
+            try {
+                process.waitFor(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
 

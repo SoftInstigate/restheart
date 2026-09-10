@@ -74,6 +74,9 @@ public class HiveMqManualAckIT extends MqttITBase {
      */
     private static final String CLIENT_ID = "restheart-manual-ack-it";
 
+    private static final String TOPIC_TAKEOVER = "sensors/manual-ack-takeover";
+    private static final String CLIENT_ID_TAKEOVER = "restheart-manual-ack-takeover-it";
+
     @Test
     void unacknowledgedMessagesAreRedeliveredToAResumedSession() throws Exception {
         var received = new CopyOnWriteArrayList<String>();
@@ -129,13 +132,109 @@ public class HiveMqManualAckIT extends MqttITBase {
     }
 
     /**
+     * Measures whether unacknowledged messages survive a session takeover, which simulates a crash.
+     * <p>
+     * A crashed RESTHeart does not send a DISCONNECT packet to the broker; instead, the TCP
+     * connection is simply dropped, and after the broker's timeout the old session is replaced when
+     * a new client connects with the same identifier. This test reproduces that scenario by
+     * connecting a second client with the same id without first disconnecting the first, which
+     * causes the broker to take over the session and drop the older connection — the nearest
+     * reproducible equivalent of a crash inside a single JVM.
+     * </p>
+     * <p>
+     * The outcome determines whether the module's durability guarantee covers crashes or only
+     * clean shutdowns: if the messages come back, the broker's session is durable across the
+     * takeover and the design is sound; if they do not, the module must maintain its own durable
+     * queue from the moment a message arrives.
+     * </p>
+     */
+    @Test
+    void unacknowledgedMessagesSurviveASessionTakeover() throws Exception {
+        Mqtt3AsyncClient first = null;
+        Mqtt3AsyncClient second = null;
+        try {
+            var received = new CopyOnWriteArrayList<String>();
+
+            // --- first session: receive three, acknowledge only the first ---
+            first = newClientWithId(CLIENT_ID_TAKEOVER);
+            var gotThree = new CountDownLatch(3);
+            first.publishes(MqttGlobalPublishFilter.ALL, publish -> {
+                var payload = payloadOf(publish);
+                received.add(payload);
+                if (payload.equals("1")) {
+                    publish.acknowledge();
+                }
+                gotThree.countDown();
+            }, true);
+
+            first.connectWith().cleanSession(false).send().get(10, TimeUnit.SECONDS);
+            first.subscribeWith().topicFilter(TOPIC_TAKEOVER).qos(MqttQos.AT_LEAST_ONCE).send().get(10, TimeUnit.SECONDS);
+
+            for (var n : List.of("1", "2", "3")) {
+                publish(TOPIC_TAKEOVER, n);
+            }
+
+            assertTrue(gotThree.await(20, TimeUnit.SECONDS),
+                "the first session must receive all three; got " + received);
+            // Note: first.disconnect() is intentionally omitted to simulate a crash
+
+            // --- second session, same identifier: session takeover, what does the broker replay? ---
+            var redelivered = new CopyOnWriteArrayList<String>();
+            second = newClientWithId(CLIENT_ID_TAKEOVER);
+            var gotRedelivery = new CountDownLatch(2);
+            second.publishes(MqttGlobalPublishFilter.ALL, publish -> {
+                redelivered.add(payloadOf(publish));
+                publish.acknowledge();
+                gotRedelivery.countDown();
+            }, true);
+
+            second.connectWith().cleanSession(false).send().get(10, TimeUnit.SECONDS);
+
+            var replayed = gotRedelivery.await(20, TimeUnit.SECONDS);
+            second.disconnect().get(10, TimeUnit.SECONDS);
+
+            // The claim under test: unacknowledged messages survive a session takeover (crash).
+            // If this fails, the durability design has to change.
+            assertTrue(replayed,
+                "messages 2 and 3 were never acknowledged, so a session takeover must still deliver them "
+                    + "again; the broker replayed " + redelivered + " instead");
+            assertEquals(List.of("2", "3"), redelivered.stream().sorted().toList(),
+                "exactly the unacknowledged messages must come back after session takeover; got " + redelivered);
+        } finally {
+            // Clean up both clients, ignoring exceptions from the taken-over connection
+            if (first != null) {
+                try {
+                    first.disconnect().get(10, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    // The first connection was taken over, so it is expected to be gone
+                }
+            }
+            if (second != null) {
+                try {
+                    second.disconnect().get(10, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    // Ignore cleanup errors
+                }
+            }
+        }
+    }
+
+    /**
      * @return an unconnected MQTT 3.1.1 client on the harness's broker, with the fixed identifier
      *         a resumable session requires
      */
     private Mqtt3AsyncClient newClient() {
+        return newClientWithId(CLIENT_ID);
+    }
+
+    /**
+     * @param clientId the MQTT client identifier to use
+     * @return an unconnected MQTT 3.1.1 client on the harness's broker with the given identifier
+     */
+    private Mqtt3AsyncClient newClientWithId(String clientId) {
         return MqttClient.builder()
             .useMqttVersion3()
-            .identifier(CLIENT_ID)
+            .identifier(clientId)
             .serverHost("localhost")
             .serverPort(brokerPort)
             .buildAsync();

@@ -279,7 +279,12 @@ public class MqttMongoWriter implements Initializer {
 
         // Subscribe to topics
         for (MongoSink sink : sinks) {
-            router.subscribe(sink.topic(), Qos.AT_LEAST_ONCE, buffer::offer);
+            // subscribeDurable, not subscribe: the router must not acknowledge to the broker
+            // until this writer has genuinely taken the message. Buffering it is not taking it -
+            // the buffer is in memory - so the callback travels with the message and is invoked
+            // by flush(), after the write to MongoDB has succeeded.
+            router.subscribeDurable(sink.topic(), Qos.AT_LEAST_ONCE,
+                (msg, taken) -> buffer.offer(new MessageBuffer.Pending(msg, taken)));
             LOGGER.info("Subscribed to topic {} → {}.{}", sink.topic(), sink.database(), sink.collection());
         }
 
@@ -365,7 +370,7 @@ public class MqttMongoWriter implements Initializer {
      * Flushes buffered messages to MongoDB in batches.
      */
     void flush() {
-        List<MqttMessage> batch = buffer.drain(batchSize);
+        List<MessageBuffer.Pending> batch = buffer.drain(batchSize);
         if (batch.isEmpty()) {
             return;
         }
@@ -373,7 +378,8 @@ public class MqttMongoWriter implements Initializer {
         // Group by sink
         for (MongoSink sink : sinks) {
             List<Document> documents = new ArrayList<>();
-            for (MqttMessage msg : batch) {
+            for (MessageBuffer.Pending pending : batch) {
+                MqttMessage msg = pending.message();
                 if (MqttTopicMatcher.matches(msg.getTopic(), sink.topic())) {
                     documents.add(toDocument(msg));
                 }
@@ -381,6 +387,23 @@ public class MqttMongoWriter implements Initializer {
 
             if (!documents.isEmpty()) {
                 insertWithRetry(sink, documents);
+            }
+        }
+
+        // Every message in this batch has now either been written or dead-lettered - both count
+        // as having taken responsibility - so the broker may forget them. Released after the sink
+        // loop rather than per sink, because one message can match several sinks and must not be
+        // reported taken until the last of them is done with it.
+        //
+        // insertWithRetry never propagates: a batch it cannot write ends in the dead-letter file.
+        // If that ever changes, this release has to move inside the success path, or a message
+        // would be acknowledged without being anywhere.
+        for (MessageBuffer.Pending pending : batch) {
+            try {
+                pending.taken().run();
+            } catch (Exception e) {
+                LOGGER.error("Failed to report a message as taken for topic {}",
+                    pending.message().getTopic(), e);
             }
         }
     }
@@ -716,7 +739,9 @@ public class MqttMongoWriter implements Initializer {
         if (!stranded.isEmpty()) {
             LOGGER.warn("Shutdown deadline of {} ms elapsed with {} messages still buffered; "
                 + "writing them to the dead-letter file {}", shutdownTimeoutMs, stranded.size(), deadLetterFile);
-            deadLetter(stranded.stream().map(this::toDocument).toList());
+            deadLetter(stranded.stream().map(MessageBuffer.Pending::message).map(this::toDocument).toList());
+            // Dead-lettered is taken: the message is on disk and the broker need not keep it.
+            stranded.forEach(pending -> pending.taken().run());
         }
     }
 
@@ -747,10 +772,32 @@ public class MqttMongoWriter implements Initializer {
         if (args == null || !args.containsKey(key)) {
             return defaultValue;
         }
-        try {
-            return (V) args.get(key);
-        } catch (ClassCastException e) {
+
+        var raw = args.get(key);
+        if (raw == null || defaultValue == null) {
+            return raw == null ? defaultValue : (V) raw;
+        }
+
+        // YAML hands back the narrowest type that fits, so a long-valued setting written as
+        // "retry-delay-ms: 2000" arrives as an Integer. The cast below is erased, which is why the
+        // ClassCastException it used to raise surfaced at the CALLER's assignment rather than
+        // here - and why the catch that used to sit around it never fired, and a perfectly
+        // reasonable configuration took the server down at startup instead of being read.
+        if (defaultValue instanceof Long && raw instanceof Number n) {
+            return (V) Long.valueOf(n.longValue());
+        }
+        if (defaultValue instanceof Integer && raw instanceof Number n) {
+            return (V) Integer.valueOf(n.intValue());
+        }
+
+        if (!defaultValue.getClass().isInstance(raw)) {
+            // Falling back silently is the "configuration that is present but inert" trap this
+            // module has a whole sentinel for; say so instead.
+            LOGGER.warn("Configuration key '{}' is a {} where a {} was expected; ignoring it and using {}",
+                key, raw.getClass().getSimpleName(), defaultValue.getClass().getSimpleName(), defaultValue);
             return defaultValue;
         }
+
+        return (V) raw;
     }
 }

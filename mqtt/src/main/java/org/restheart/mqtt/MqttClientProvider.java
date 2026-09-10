@@ -185,8 +185,17 @@ public class MqttClientProvider implements Provider<MqttClient>{
         // Initialize the singleton with configuration
         MqttClientSingleton.init(mqttConfig);
 
-        // Force first connection to MQTT broker
-        MqttClientSingleton.getInstance().connect();
+        // Build the client, but deliberately do NOT connect it here.
+        //
+        // The broker redelivers everything a resumed session still owes the moment it sends
+        // CONNACK. Connecting at this point - before mqtt-router has registered its global publish
+        // consumer, which it does when it is initialized after this provider - means those
+        // redelivered messages arrive with nothing listening, and hivemq-mqtt-client acknowledges
+        // a publish no flow consumes (its issue #455). They were acknowledged and lost, on every
+        // reconnect with a persistent session, not only on a restart.
+        //
+        // MqttRouterProvider connects instead, immediately after registering that consumer.
+        MqttClientSingleton.getInstance().build();
 
         // RESTHeart has no plugin shutdown callback (Bootstrapper.stopServer does not notify
         // plugins), so a JVM shutdown hook is the only way to release the MQTT client cleanly.

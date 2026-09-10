@@ -97,6 +97,37 @@ public class MqttClientSingleton {
     private volatile boolean closed = false;
 
     /**
+     * Creates the client instance without connecting it.
+     * <p>
+     * Split from {@link #connect()} deliberately, and the split matters. The broker redelivers
+     * whatever a resumed session still owes as soon as it sends CONNACK - so anything that wants
+     * to consume those messages has to have registered before the connection is made. It used to
+     * be the other way round: {@code mqtt-client} connected during its own initialization and
+     * {@code mqtt-router} registered its global publish consumer afterwards, leaving a window in
+     * which redelivered messages arrived with nothing listening. hivemq-mqtt-client acknowledges
+     * a publish that no flow consumes (see its issue #455), so those messages were acknowledged
+     * and gone - on every reconnect with a persistent session, not merely on restart.
+     * </p>
+     * <p>
+     * Idempotent: the client is built once and reused.
+     * </p>
+     *
+     * @throws IllegalStateException if the singleton has not been initialized
+     */
+    public synchronized void build() {
+        if (!initialized || config == null) {
+            throw new IllegalStateException("MqttClientSingleton is not initialized");
+        }
+        if (mqttClient != null) {
+            return;
+        }
+        MqttEndpoint endpoint = resolveEndpoint(config.getBrokerUrl(), config.isTlsEnabled());
+        mqttClient = config.getProtocolVersion() == 5
+            ? buildMqtt5Client(endpoint)
+            : buildMqtt3Client(endpoint);
+    }
+
+    /**
      * Listeners invoked when a (re)connect establishes a new (non-persisted) session, i.e. when
      * the broker's CONNACK reports {@code sessionPresent=false}. Registered via
      * {@link #addOnNewSessionListener(Runnable)}.
@@ -193,12 +224,8 @@ public class MqttClientSingleton {
         BootstrapLogger.standalone(LOGGER, "Connecting to MQTT broker at {}...", config.getBrokerUrl());
 
         try {
-            MqttEndpoint endpoint = resolveEndpoint(config.getBrokerUrl(), config.isTlsEnabled());
-
-            MqttClient client = config.getProtocolVersion() == 5
-                ? buildMqtt5Client(endpoint)
-                : buildMqtt3Client(endpoint);
-            mqttClient = client;
+            build();
+            MqttClient client = mqttClient;
 
             CompletableFuture<Void> connectFuture;
             if (client instanceof Mqtt5AsyncClient m5) {

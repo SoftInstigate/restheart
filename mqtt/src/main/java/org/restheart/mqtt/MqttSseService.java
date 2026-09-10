@@ -738,11 +738,33 @@ public class MqttSseService implements SseService {
         if (args == null || !args.containsKey(key)) {
             return defaultValue;
         }
-        try {
-            return (V) args.get(key);
-        } catch (ClassCastException e) {
+
+        var raw = args.get(key);
+        if (raw == null || defaultValue == null) {
+            return raw == null ? defaultValue : (V) raw;
+        }
+
+        // YAML hands back the narrowest type that fits, so a long-valued setting written as
+        // "retry-delay-ms: 2000" arrives as an Integer. The cast below is erased, which is why the
+        // ClassCastException it used to raise surfaced at the CALLER's assignment rather than
+        // here - and why the catch that used to sit around it never fired, and a perfectly
+        // reasonable configuration took the server down at startup instead of being read.
+        if (defaultValue instanceof Long && raw instanceof Number n) {
+            return (V) Long.valueOf(n.longValue());
+        }
+        if (defaultValue instanceof Integer && raw instanceof Number n) {
+            return (V) Integer.valueOf(n.intValue());
+        }
+
+        if (!defaultValue.getClass().isInstance(raw)) {
+            // Falling back silently is the "configuration that is present but inert" trap this
+            // module has a whole sentinel for; say so instead.
+            LOGGER.warn("Configuration key '{}' is a {} where a {} was expected; ignoring it and using {}",
+                key, raw.getClass().getSimpleName(), defaultValue.getClass().getSimpleName(), defaultValue);
             return defaultValue;
         }
+
+        return (V) raw;
     }
 
     /**

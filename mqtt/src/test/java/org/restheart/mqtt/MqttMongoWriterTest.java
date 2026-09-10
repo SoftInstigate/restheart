@@ -56,6 +56,7 @@ import org.mockito.ArgumentCaptor;
 import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.metrics.Metrics;
 import org.restheart.mqtt.buffer.MessageBuffer;
+import org.restheart.mqtt.buffer.MessageBuffer.Pending;
 import org.restheart.mqtt.buffer.MessageBuffer.Strategy;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.plugins.InitPoint;
@@ -331,7 +332,7 @@ public class MqttMongoWriterTest {
             assertEquals(0L, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_dropped")));
 
             MessageBuffer buffer = (MessageBuffer) getField(writer, "buffer");
-            buffer.offer(msg("sensors/temp", "{\"temp\":1}", 0));
+            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> { }));
 
             assertEquals(1, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_size")));
             assertEquals(1L, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_accepted")));
@@ -497,8 +498,8 @@ public class MqttMongoWriterTest {
         MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 10, 3, 1L, "unused.log");
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(msg("sensors/temp", "{\"temp\":1}", 0));
-        buffer.offer(msg("sensors/temp", "{\"temp\":2}", 0));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0), () -> { }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -518,8 +519,8 @@ public class MqttMongoWriterTest {
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class))).thenReturn(mock(BulkWriteResult.class));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")));
-        buffer.offer(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -556,8 +557,8 @@ public class MqttMongoWriterTest {
             .thenThrow(bulkWriteException(new BulkWriteError(11000, "E11000 duplicate key error", new BsonDocument(), 0)));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")));
-        buffer.offer(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -583,8 +584,8 @@ public class MqttMongoWriterTest {
             .thenReturn(mock(BulkWriteResult.class));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")));
-        buffer.offer(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -613,7 +614,7 @@ public class MqttMongoWriterTest {
             .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(msg("sensors/temp", "{\"temp\":42}", 0, Instant.parse("2026-01-01T00:00:00Z")));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":42}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -638,7 +639,7 @@ public class MqttMongoWriterTest {
             .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(msg("sensors/temp", "{\"temp\":1}", 0));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> { }));
         setField(writer, "buffer", buffer);
 
         // must not throw despite the dead-letter write failing
@@ -655,7 +656,7 @@ public class MqttMongoWriterTest {
 
         MessageBuffer buffer = new MessageBuffer(20, Strategy.RING);
         for (int i = 0; i < 7; i++) {
-            buffer.offer(msg("sensors/temp", "{\"temp\":" + i + "}", 0));
+            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":" + i + "}", 0), () -> { }));
         }
         setField(writer, "buffer", buffer);
         setField(writer, "running", true);
@@ -677,7 +678,7 @@ public class MqttMongoWriterTest {
 
         MessageBuffer buffer = new MessageBuffer(20, Strategy.RING);
         for (int i = 0; i < 5; i++) {
-            buffer.offer(msg("sensors/temp", "{\"temp\":" + i + "}", 0));
+            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":" + i + "}", 0), () -> { }));
         }
         setField(writer, "buffer", buffer);
         setField(writer, "running", true);
@@ -723,7 +724,7 @@ public class MqttMongoWriterTest {
 
         MessageBuffer buffer = new MessageBuffer(2000, Strategy.RING);
         for (int i = 0; i < 1000; i++) {
-            buffer.offer(msg("sensors/temp", "{\"n\":" + i + "}", 0));
+            buffer.offer(new Pending(msg("sensors/temp", "{\"n\":" + i + "}", 0), () -> { }));
         }
         setField(writer, "buffer", buffer);
         setField(writer, "running", true);
@@ -749,7 +750,7 @@ public class MqttMongoWriterTest {
 
         MessageBuffer buffer = new MessageBuffer(2000, Strategy.RING);
         for (int i = 0; i < 1000; i++) {
-            buffer.offer(msg("sensors/temp", "{\"n\":" + i + "}", 0));
+            buffer.offer(new Pending(msg("sensors/temp", "{\"n\":" + i + "}", 0), () -> { }));
         }
         setField(writer, "buffer", buffer);
         setField(writer, "running", true);
@@ -777,7 +778,7 @@ public class MqttMongoWriterTest {
         for (int round = 0; round < 2; round++) {
             MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
             for (int i = 0; i < 5; i++) {
-                buffer.offer(msg("sensors/temp", "{\"round\":" + round + ",\"n\":" + i + "}", 0));
+                buffer.offer(new Pending(msg("sensors/temp", "{\"round\":" + round + ",\"n\":" + i + "}", 0), () -> { }));
             }
             setField(writer, "buffer", buffer);
             setField(writer, "running", true);
@@ -799,6 +800,54 @@ public class MqttMongoWriterTest {
         var dir = Path.of("target", "dead-letter-tests");
         Files.createDirectories(dir);
         return dir.resolve("dl-" + System.nanoTime() + ".log").toAbsolutePath().toString();
+    }
+
+    // --- configuration reading must survive YAML's choice of numeric type ---
+
+    @Test
+    @DisplayName("a long-valued setting written as a plain integer in YAML is read, not fatal")
+    void testIntegerValuedLongSettingIsCoerced() throws Exception {
+        // "retry-delay-ms: 2000" in YAML arrives as an Integer, while the default is 1000L. The
+        // reader used to cast blind; because the cast is erased, the ClassCastException surfaced
+        // at the assignment inside onInit and took the whole server down at startup with
+        // "Integer cannot be cast to Long". Every long-valued key here was affected -
+        // flush-interval-ms, retry-delay-ms, shutdown-timeout-ms, dead-letter-max-bytes.
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        setField(writer, "config", Map.of(
+            "id-strategy", "auto",
+            "mongo-sink", List.of(),
+            "drain", Map.of(
+                "retry-delay-ms", 2000,        // Integer where a Long is expected
+                "flush-interval-ms", 250,
+                "shutdown-timeout-ms", 7000)));
+
+        writer.onInit();
+        try {
+            assertEquals(2000L, getField(writer, "retryDelayMs"));
+            assertEquals(250L, getField(writer, "flushIntervalMs"));
+            assertEquals(7000L, getField(writer, "shutdownTimeoutMs"));
+        } finally {
+            writer.close();
+        }
+    }
+
+    @Test
+    @DisplayName("a setting of an unusable type falls back to the default and says so")
+    void testUnusableSettingTypeFallsBackToDefault() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        setField(writer, "config", Map.of(
+            "id-strategy", "auto",
+            "mongo-sink", List.of(),
+            "drain", Map.of("batch-size", "not a number")));
+
+        writer.onInit();
+        try {
+            // Silently running on a default is the "present but inert" trap the module has a
+            // sentinel for; the reader logs a warning naming the key rather than pretending.
+            assertEquals(200, getField(writer, "batchSize"));
+        } finally {
+            writer.close();
+        }
     }
 
 }

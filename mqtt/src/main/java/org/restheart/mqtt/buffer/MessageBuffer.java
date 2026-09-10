@@ -102,7 +102,7 @@ public class MessageBuffer {
         }
     }
 
-    private final ArrayBlockingQueue<MqttMessage> queue;
+    private final ArrayBlockingQueue<Pending> queue;
     private final Strategy strategy;
     private final int capacity;
     private final AtomicLong acceptedCount = new AtomicLong();
@@ -142,7 +142,7 @@ public class MessageBuffer {
      *         (with {@link Strategy#DROP_INCOMING}) or if the calling thread was
      *         interrupted while waiting for space (with {@link Strategy#BLOCKING})
      */
-    public boolean offer(MqttMessage message) {
+    public boolean offer(Pending message) {
         return switch (strategy) {
             case RING -> offerRing(message);
             case DROP_INCOMING -> offerDropIncoming(message);
@@ -150,11 +150,11 @@ public class MessageBuffer {
         };
     }
 
-    private boolean offerRing(MqttMessage message) {
+    private boolean offerRing(Pending message) {
         synchronized (queue) {
             while (!queue.offer(message)) {
                 // Buffer full — drop oldest to make room
-                MqttMessage dropped = queue.poll();
+                Pending dropped = queue.poll();
                 if (dropped != null) {
                     recordDropped(dropped);
                 }
@@ -164,7 +164,7 @@ public class MessageBuffer {
         return true;
     }
 
-    private boolean offerDropIncoming(MqttMessage message) {
+    private boolean offerDropIncoming(Pending message) {
         boolean accepted = queue.offer(message);
         if (accepted) {
             acceptedCount.incrementAndGet();
@@ -174,7 +174,7 @@ public class MessageBuffer {
         return accepted;
     }
 
-    private boolean offerBlocking(MqttMessage message) {
+    private boolean offerBlocking(Pending message) {
         try {
             queue.put(message);
             acceptedCount.incrementAndGet();
@@ -192,11 +192,11 @@ public class MessageBuffer {
      *
      * @param message the message that was dropped
      */
-    private void recordDropped(MqttMessage message) {
+    private void recordDropped(Pending message) {
         long count = droppedCount.incrementAndGet();
         if (count % 1000 == 0) {
             LOGGER.warn("Buffer overflow with strategy {}: {} messages dropped so far (last dropped topic: {})",
-                strategy, count, message.getTopic());
+                strategy, count, message.message().getTopic());
         }
     }
 
@@ -211,8 +211,8 @@ public class MessageBuffer {
      * @param batchSize maximum number of messages to drain
      * @return a list of drained messages (may be empty, never null)
      */
-    public List<MqttMessage> drain(int batchSize) {
-        List<MqttMessage> batch = new ArrayList<>();
+    public List<Pending> drain(int batchSize) {
+        List<Pending> batch = new ArrayList<>();
         queue.drainTo(batch, batchSize);
         return batch;
     }
@@ -273,4 +273,20 @@ public class MessageBuffer {
     public void clear() {
         queue.clear();
     }
+    /**
+     * A buffered message together with the callback that reports it as taken.
+     * <p>
+     * The two travel together because acknowledging to the broker at the moment a message enters
+     * this buffer would be a lie: the buffer is in memory, and a crash loses it. The callback is
+     * invoked by {@code MqttMongoWriter} once the message has actually reached MongoDB, or has
+     * been recorded somewhere durable, and only then is the broker told it may forget it.
+     * </p>
+     *
+     * @param message the message
+     * @param taken   invoked when responsibility for it has genuinely been taken; may be a no-op
+     *                for a message that arrived through a path with no acknowledgement to release
+     */
+    public record Pending(MqttMessage message, Runnable taken) {
+    }
+
 }

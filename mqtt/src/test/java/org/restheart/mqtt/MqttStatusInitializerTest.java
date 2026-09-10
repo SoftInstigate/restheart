@@ -434,7 +434,9 @@ public class MqttStatusInitializerTest {
         var config = configOf(Map.of("mqtt-client", Map.of(
             "enabled", true,
             "session-expiry-seconds", 3600)));
-        var registry = registryWithActive("mqtt-client");
+        // mqtt-router too: without it the sentinel rightly warns that nothing would ever
+        // connect, which is a different finding from the one under test here.
+        var registry = registryWithActive("mqtt-client", "mqtt-router");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
@@ -456,7 +458,9 @@ public class MqttStatusInitializerTest {
                 "payload", "offline",
                 "delay-seconds", 30,
                 "message-expiry-seconds", 60))));
-        var registry = registryWithActive("mqtt-client");
+        // mqtt-router too: without it the sentinel rightly warns that nothing would ever
+        // connect, which is a different finding from the one under test here.
+        var registry = registryWithActive("mqtt-client", "mqtt-router");
 
         var warning = onlyWarning(MqttStatusInitializer.findings(config, registry));
 
@@ -478,7 +482,9 @@ public class MqttStatusInitializerTest {
                 "topic", "status/restheart",
                 "payload", "offline",
                 "delay-seconds", 30))));
-        var registry = registryWithActive("mqtt-client");
+        // mqtt-router too: without it the sentinel rightly warns that nothing would ever
+        // connect, which is a different finding from the one under test here.
+        var registry = registryWithActive("mqtt-client", "mqtt-router");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
@@ -497,7 +503,9 @@ public class MqttStatusInitializerTest {
             "enabled", true,
             "protocol-version", "5",
             "session-expiry-seconds", 3600)));
-        var registry = registryWithActive("mqtt-client");
+        // mqtt-router too: without it the sentinel rightly warns that nothing would ever
+        // connect, which is a different finding from the one under test here.
+        var registry = registryWithActive("mqtt-client", "mqtt-router");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
