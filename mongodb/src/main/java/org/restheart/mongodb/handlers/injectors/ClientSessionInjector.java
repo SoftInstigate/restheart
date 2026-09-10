@@ -155,6 +155,23 @@ public class ClientSessionInjector extends PipelinedHandler {
 
         request.setClientSession(cs);
 
+        // Safety net for the one path that skips txnCloser: a RESPONSE interceptor that throws
+        // stops the executor's loop, so the interceptors after it — txnCloser included — never run.
+        // close() aborts a transaction still in progress and swallows its own errors, so a request
+        // that blew up leaves nothing open and nothing committed. On every normal request the
+        // transaction is already closed by then and this is a no-op.
+        request.getExchange().addExchangeCompleteListener((exchange, nextListener) -> {
+            try {
+                if (cs.hasActiveTransaction()) {
+                    LOGGER.warn("Transaction still open when the request ended, aborting it: "
+                            + "the write was not committed");
+                    cs.close();
+                }
+            } finally {
+                nextListener.proceed();
+            }
+        });
+
         LOGGER.debug("Request runs in a server-side transaction");
     }
 
