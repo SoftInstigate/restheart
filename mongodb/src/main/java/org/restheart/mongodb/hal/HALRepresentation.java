@@ -53,6 +53,16 @@ public class HALRepresentation implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // resolve() already says "not in error", but the executor evaluates every resolve up front,
+        // in one pass, and only then runs the interceptors in order — so an error raised by an
+        // interceptor that runs later is not visible there. Without this, a bulk write refused at
+        // RESPONSE time (jsonSchemaAfterWrite undoing it, say) has its error body overwritten here
+        // by a representation of the write that was just rolled back: the client gets a 400 whose
+        // body says how many documents were modified, and no reason.
+        if (response.isInError()) {
+            return;
+        }
+
         var content = response.getContent();
 
         BsonDocument hal;
