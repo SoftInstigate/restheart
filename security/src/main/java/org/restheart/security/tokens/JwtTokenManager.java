@@ -487,6 +487,11 @@ public class JwtTokenManager implements TokenManager {
             properties = null;
         }
 
+        // a token minted outside a renewal follows a real authentication, so the session starts now
+        // and has been renewed no times
+        builder = jwtIssuer.withClaim(builder, AUTH_TIME, Instant.now().getEpochSecond());
+        builder = jwtIssuer.withClaim(builder, RENEWALS, 0L);
+
         final var raw = jwtIssuer.sign(builder);
 
         return new Token(
@@ -541,6 +546,17 @@ public class JwtTokenManager implements TokenManager {
             properties = null;
         }
 
+        // Step 3: the session, as opposed to the token. Step 1 already carried both claims over when
+        // renewing from a JWT, which is what keeps them meaningful across a chain of renewals. They
+        // are absent when the caller authenticated afresh instead — basic auth on /token?renew —
+        // and then a new session starts here: it began now and has been renewed no times.
+        final var carried = carriedAuthTime(originalAccount);
+
+        builder = jwtIssuer.withClaim(builder, AUTH_TIME,
+                carried != null ? carried : Instant.now().getEpochSecond());
+        builder = jwtIssuer.withClaim(builder, RENEWALS,
+                carried != null ? carriedRenewals(originalAccount) + 1 : 0L);
+
         final var raw = jwtIssuer.sign(builder);
         return new Token(
                 raw.toCharArray(),
@@ -548,6 +564,80 @@ public class JwtTokenManager implements TokenManager {
                 renewedAccount.getRoles().toArray(new String[renewedAccount.getRoles().size()]),
                 properties);
     }
+
+    /**
+     * The session start carried by the token being renewed, or {@code null} when there is none —
+     * either because the caller authenticated afresh, or because the token predates the claim. Both
+     * cases are treated the same: there is no session age to continue, so a new session begins.
+     */
+    private static Long carriedAuthTime(final Account originalAccount) {
+        return originalAccount instanceof JwtAccount awp
+                ? asLong(awp.propertiesAsMap().get(AUTH_TIME))
+                : null;
+    }
+
+    /** The renewal count carried by the token being renewed; zero when it carries none. */
+    private static long carriedRenewals(final Account originalAccount) {
+        if (originalAccount instanceof JwtAccount awp) {
+            var carried = asLong(awp.propertiesAsMap().get(RENEWALS));
+
+            if (carried != null) {
+                return carried;
+            }
+        }
+
+        return 0L;
+    }
+
+    /** Reads a numeric claim, tolerating the string form a JSON round-trip can produce. */
+    private static Long asLong(final Object value) {
+        return value == null ? null : switch (value) {
+            case final Number n -> n.longValue();
+            case final String str -> {
+                try {
+                    yield Long.valueOf(str);
+                } catch (NumberFormatException e) {
+                    yield null;
+                }
+            }
+            default -> null;
+        };
+    }
+
+    /**
+     * When the user actually authenticated, in epoch seconds — the OIDC {@code auth_time} claim.
+     *
+     * <p>Distinct from {@code iat}, which is rewritten on every issuance and so says only when
+     * <em>this</em> token was minted. {@code auth_time} is carried through renewals unchanged, so
+     * it survives a chain of them and answers "how old is this session", not "how old is this
+     * token".
+     *
+     * <p>Recorded now, checked later: nothing refuses a renewal on its account yet. It has to be in
+     * tokens before any limit built on it can mean anything, since a token issued before this claim
+     * existed has no session age to judge.
+     */
+    public static final String AUTH_TIME = "auth_time";
+
+    /**
+     * How many times this token has been renewed since {@link #AUTH_TIME}: {@code 0} on a token
+     * that follows a real authentication, one more on each renewal.
+     *
+     * <p>Together with {@code auth_time} it describes the session rather than the token. It is a
+     * claim rather than a check so that a deployment can bound the renewal chain with an ACL
+     * permission and no code:
+     *
+     * <pre>
+     * "predicate": "path('/token') and method(POST) and lte(@user.renewals, 9)"
+     * </pre>
+     *
+     * <p>Two consequences of that being a permission rather than a check. It only applies to
+     * requests authenticated by a JWT: the claim is a property of the token, so a request that
+     * arrived with basic auth has none and the comparison is false. And a token issued before this
+     * claim existed also compares false — {@code lte} refuses an operand it cannot read rather than
+     * granting on it — which expires such tokens' renewal chain at the upgrade instead of letting
+     * it run on unbounded.
+     */
+    public static final String RENEWALS = "renewals";
 
     private String getAuthDb(Account account) {
         return account instanceof WithProperties<?> wp ? DefaultJwtIssuer.authDb(wp.propertiesAsMap()) : null;
