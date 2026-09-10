@@ -321,6 +321,40 @@ public class JwtTokenManager implements TokenManager {
         return get(account, null);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Mints a new token instead of returning the cached one, and re-reads the account first —
+     * the same two steps {@code GET /token?renew} performs, which until now were reachable only
+     * through that query parameter. The cache is updated so the rest of the request sees the new
+     * token rather than the one it replaces.
+     */
+    @Override
+    public PasswordCredential renew(final Account account, final Request<?> request) {
+        if (!enabled) {
+            LOGGER.debug("JwtTokenManager is disabled - cannot renew token");
+            return null;
+        }
+
+        try {
+            final var claims = DefaultJwtIssuer.claimsOverride(request);
+            final var ca = new ComparableAccount(account, claims);
+
+            final var renewedAccount = accountForRenew(request, account);
+            final var newToken = renewToken(account, renewedAccount, claims);
+
+            this.jwtCache.put(ca, newToken);
+
+            return new PwdCredentialAccount(
+                    account.getPrincipal().getName(),
+                    newToken.raw(),
+                    Sets.newTreeSet(renewedAccount.getRoles())).getCredentials();
+        } catch (Exception ex) {
+            LOGGER.error("Error renewing JWT token for user '{}'", account.getPrincipal().getName(), ex);
+            return null;
+        }
+    }
+
     @Override
     public PasswordCredential get(final Account account, final Request<?> request) {
         var tokenStartTime = System.currentTimeMillis();

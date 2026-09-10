@@ -66,6 +66,18 @@ public class AuthTokenService implements ByteArrayService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenService.class);
 
     private static final String TOKEN_ENDPOINT = "/token";
+
+    /**
+     * Default grace window, in seconds.
+     *
+     * <p>One minute, not one token lifetime. The window exists to cover the moment a client takes
+     * to notice a {@code 401} and renew, plus clock skew — both of which are seconds. It is not
+     * meant to keep an idle client alive: one away long enough for that to matter will be
+     * re-authenticating regardless, and since a grace window is equivalent to a longer {@code ttl}
+     * for whoever holds the token, matching it to {@code ttl} would double a leaked token's useful
+     * life and buy nothing.
+     */
+    private static final int DEFAULT_REFRESH_GRACE_SECONDS = 60;
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
     private static final String TOKEN_REDIRECT_ENDPOINT = "/token/redirect";
 
@@ -82,6 +94,15 @@ public class AuthTokenService implements ByteArrayService {
      * Verifier used to validate authorization-code JWTs (issued by OAuthAuthorizationService).
      */
     private JWTVerifier authCodeVerifier;
+
+    /**
+     * Verifies the token presented for {@code grant_type=refresh_token}, tolerating an expiry up to
+     * {@link #refreshGraceSeconds} old — see {@link #handleRefreshTokenGrant}.
+     */
+    private JWTVerifier refreshVerifier;
+
+    /** How long after expiry a token is still accepted, for renewal only. */
+    private long refreshGraceSeconds;
 
     @Inject("acl-registry")
     ACLRegistry aclRegistry;
@@ -101,6 +122,25 @@ public class AuthTokenService implements ByteArrayService {
         this.authCodeVerifier = JWT.require(algo)
                 .withIssuer(jwtConfig.issuer())
                 .build();
+
+        // RESTHeart has one token, renewed by presenting itself — there is no second, longer-lived
+        // credential. An OAuth client, though, keeps the token and refreshes it when it has expired;
+        // many wait for the 401. Accepting a recently expired token FOR RENEWAL ONLY is what makes
+        // the standard grant work against that model without inventing a refresh token.
+        // read as a Number: argOrDefault casts the configured value to the default's type, and YAML
+        // gives an Integer where a long is wanted
+        Number grace = argOrDefault(config, "refresh-grace-seconds", (Number) DEFAULT_REFRESH_GRACE_SECONDS);
+        this.refreshGraceSeconds = grace.longValue();
+
+        this.refreshVerifier = JWT.require(algo)
+                .withIssuer(jwtConfig.issuer())
+                .acceptExpiresAt(this.refreshGraceSeconds)
+                .build();
+
+        // Logged because it is otherwise invisible: an operator who sets refresh-grace-seconds has
+        // no way to tell from outside whether it took effect, short of timing a token's expiry.
+        LOGGER.info("Token renewal accepts a token expired up to {}s ago (grant_type=refresh_token)",
+                this.refreshGraceSeconds);
     }
 
     /**
@@ -166,6 +206,10 @@ public class AuthTokenService implements ByteArrayService {
                 var bodyParams = parseFormBody(request);
                 if ("authorization_code".equals(bodyParams.get("grant_type"))) {
                     handleAuthorizationCodeGrant(request, bodyParams, response);
+                    return;
+                }
+                if ("refresh_token".equals(bodyParams.get("grant_type"))) {
+                    handleRefreshTokenGrant(request, bodyParams, response);
                     return;
                 }
             }
@@ -306,6 +350,10 @@ public class AuthTokenService implements ByteArrayService {
             resp.add("expires_in", new JsonPrimitive(expiresIn));
         }
 
+        // Same token under both names — see handleRefreshTokenGrant. A client that stores
+        // refresh_token and presents it at expiry then finds a grant that accepts it.
+        resp.add("refresh_token", new JsonPrimitive(tokenString));
+
         response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
         response.getHeaders().put(HttpString.tryFromString("Pragma"), "no-cache");
         response.setContentTypeAsJson();
@@ -313,6 +361,94 @@ public class AuthTokenService implements ByteArrayService {
         response.setStatusCode(HttpStatus.SC_OK);
 
         LOGGER.debug("Token issued via authorization_code grant for user '{}'", username);
+    }
+
+    /**
+     * Handles {@code grant_type=refresh_token}.
+     *
+     * <p>RESTHeart has one token, not an access/refresh pair: a token is renewed by presenting
+     * itself, which {@code GET /token?renew} has always done. This grant exposes that same renewal
+     * through the mechanism an OAuth client actually looks for — without it, a client discovers no
+     * way to refresh and runs the whole Authorization Code flow again on every expiry, browser and
+     * consent included.
+     *
+     * <p>The one adjustment is the grace window. A client keeps the token and refreshes it once it
+     * has expired — many wait for the 401 — while {@code ?renew} requires one still valid. So a
+     * token is accepted here up to {@link #refreshGraceSeconds} past its expiry, <em>for renewal
+     * only</em>: it is verified by a separate verifier used nowhere else, so an expired token still
+     * opens nothing and reaches no data. Beyond the window the caller authenticates again, which by
+     * then is the right answer anyway.
+     */
+    private void handleRefreshTokenGrant(ByteArrayRequest request, Map<String, String> bodyParams, ByteArrayResponse response) {
+        var presented = bodyParams.get("refresh_token");
+
+        if (presented == null || presented.isBlank()) {
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_request", "refresh_token is required");
+            return;
+        }
+
+        com.auth0.jwt.interfaces.DecodedJWT decoded;
+
+        try {
+            decoded = refreshVerifier.verify(presented);
+        } catch (Exception e) {
+            LOGGER.debug("Refresh token verification failed: {}", e.getMessage());
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_grant",
+                    "the token is invalid, or expired longer ago than the renewal window allows");
+            return;
+        }
+
+        var username = decoded.getSubject();
+        var rolesArr = decoded.getClaim(OAuthAuthorizationService.CLAIM_ROLES).asArray(String.class);
+        var roles = rolesArr != null ? Set.of(rolesArr) : Set.<String>of();
+
+        // Rebuild the account from the token's own payload, exactly as the authorization_code grant
+        // does, so the renewed token carries the same claims rather than a reduced set.
+        var payload = new String(
+                java.util.Base64.getUrlDecoder().decode(decoded.getPayload()), StandardCharsets.UTF_8);
+        var account = new JwtAccount(username, roles, payload);
+
+        var tokenManagerRecord = this.registry.getTokenManager();
+
+        if (tokenManagerRecord == null) {
+            LOGGER.error("No token manager configured; cannot renew token for user '{}'", username);
+            sendTokenError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR, "server_error", "token manager not available");
+            return;
+        }
+
+        // renew(), not get(): get() answers "what is this account's token" and a caching manager
+        // hands back the same one, with the same expiry — renewing nothing. renew() also re-reads
+        // the account, so the new token carries current roles and a disabled user stops renewing.
+        var credential = tokenManagerRecord.getInstance().renew(account, request);
+
+        if (credential == null) {
+            LOGGER.error("Token manager returned null credential renewing for user '{}'", username);
+            sendTokenError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR, "server_error", "failed to issue token");
+            return;
+        }
+
+        var tokenString = new String(credential.getPassword());
+        var expiresIn = expiresInFromJwt(tokenString);
+
+        var resp = new JsonObject();
+        resp.add("access_token", new JsonPrimitive(tokenString));
+        resp.add("token_type", new JsonPrimitive("Bearer"));
+
+        if (expiresIn != null) {
+            resp.add("expires_in", new JsonPrimitive(expiresIn));
+        }
+
+        // The same token renews itself, so it is handed back under both names: a client that stores
+        // refresh_token separately, as most do, keeps something that works.
+        resp.add("refresh_token", new JsonPrimitive(tokenString));
+
+        response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
+        response.getHeaders().put(HttpString.tryFromString("Pragma"), "no-cache");
+        response.setContentTypeAsJson();
+        response.setContent(resp.toString());
+        response.setStatusCode(HttpStatus.SC_OK);
+
+        LOGGER.debug("Token renewed via refresh_token grant for user '{}'", username);
     }
 
     /**

@@ -297,6 +297,23 @@ jwtTokenManager:
 # See: https://restheart.org/docs/security/authentication#token-endpoint
 authTokenService:
   uri: /token
+  # How long after a token has expired POST /token with grant_type=refresh_token still accepts it,
+  # in seconds. RESTHeart has one token, renewed by presenting itself; an OAuth client keeps it and
+  # refreshes only once it has expired — many wait for the 401 — so without a window the standard
+  # grant would never succeed and the client would re-run the whole authorization flow instead.
+  # Be clear about what this buys: for anyone holding the token, a grace window is equivalent to a
+  # longer ttl. The window extends only the power to renew, not to read — but renewing yields a
+  # token that reads, so an attacker takes one extra step and is where it would have been with the
+  # longer ttl anyway. What it buys is client compatibility, not security, and that is enough of a
+  # reason: without it the standard grant simply does not work with clients that renew on the 401.
+  # Treat ttl + refresh-grace-seconds as the real lifetime of a leaked token, and note that neither
+  # bounds it: a renewed token is renewable in turn, so the chain has no end today.
+  # 60 is enough for what the window is for: the moment a client takes to notice a 401 and renew,
+  # plus clock skew between it and the server. It is deliberately NOT a token lifetime — the window
+  # does not need to cover a client that went idle, since one away long enough to care will be
+  # re-authenticating either way, and matching it to ttl would double a leaked token's useful life
+  # for no gain.
+  refresh-grace-seconds: 60
   # Redirect target for GET /token/redirect. null (default) means the endpoint
   # returns 400 unless a per-request override-redirect-url is attached instead.
   # Example: https://app.example.com/callback

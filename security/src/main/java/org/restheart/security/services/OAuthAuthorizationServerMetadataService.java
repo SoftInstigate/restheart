@@ -88,6 +88,7 @@ public class OAuthAuthorizationServerMetadataService implements JsonService {
                                 .add("code"))
                         .put("grant_types_supported", array()
                                 .add("authorization_code")
+                                .add("refresh_token")
                                 .add("password")
                                 .add("client_credentials"))
                         .put("code_challenge_methods_supported", array()
