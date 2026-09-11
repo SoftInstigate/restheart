@@ -407,9 +407,23 @@ public class McpService implements ByteArrayService {
                         () -> LOGGER.debug("resource {} cannot be watched; subscribers to it are never notified", uri));
     }
 
-    /** Stops watching what is no longer in the catalog — a collection that lost its {@code mcp} block, or was dropped. */
-    private void releaseWatchesFor(Collection<String> goneUris) {
+    /**
+     * Stops watching what is no longer in the catalog — a collection that lost its {@code mcp}
+     * block, or was dropped — and what the last subscriber has left.
+     *
+     * <p>Synchronized on the same monitor as {@link #startWatching}, and re-checking demand under
+     * it, because neither alone is enough. The caller decided to release when the last subscriber
+     * left; a new subscriber arriving in between would find the watch still in the map, skip
+     * opening one of its own, and then have it closed underneath. It would stay subscribed to
+     * something nobody is watching, and hear nothing for the life of its session.
+     */
+    private synchronized void releaseWatchesFor(Collection<String> goneUris) {
         goneUris.forEach(uri -> {
+            if (demand.hasSubscribers(uri)) {
+                LOGGER.debug("keeping the watch on {}: somebody subscribed while the last one was leaving", uri);
+                return;
+            }
+
             var handle = watches.remove(uri);
             if (handle != null) {
                 subscriptions.forget(uri);

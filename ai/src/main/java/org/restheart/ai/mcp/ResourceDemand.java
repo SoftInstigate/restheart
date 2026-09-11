@@ -89,6 +89,17 @@ public class ResourceDemand {
     }
 
     /** @return every URI still subscribed to — what shutdown has to release */
+    /**
+     * Whether anybody is subscribed to {@code uri} right now.
+     *
+     * <p>Asked when a watch is about to be released: the decision to release was taken when the
+     * last subscriber left, and by the time it is carried out a new one may have arrived.
+     */
+    public boolean hasSubscribers(String uri) {
+        var sessions = subscribersByUri.get(uri);
+        return sessions != null && !sessions.isEmpty();
+    }
+
     public List<String> all() {
         return List.copyOf(subscribersByUri.keySet());
     }
