@@ -252,6 +252,14 @@
       predicate: method(POST) and path[path="/graphql/test-visible"]
       priority: 0
 
+    # api-key-token-renewal.feature: a role narrower than the user who owns the key, allowed only
+    # to mint and renew its own token. Its point is the contrast — the user behind the key is
+    # admin, whose own roles are [user, admin], so a renewal that re-read the account would be
+    # visible as this role turning into those.
+    - role: keynarrow
+      predicate: path-prefix[path="/token"]
+      priority: 0
+
     - role: poweruser
       predicate: path-prefix[path="/testmytmpdb"]
       priority: 0
