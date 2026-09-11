@@ -82,10 +82,25 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
 
     private static final String ERROR_UNSUPPORTED_JWT_CLAIM_TYPE = "Cannot add claim {} to jwt because of unsupported type";
 
-    /** Fields never eligible to become a claim: one-shot credentials. */
+    /**
+     * Fields never eligible to become a claim, for two different reasons.
+     *
+     * <p>The one-shot credentials are here because a JWT payload is readable by whoever holds the
+     * token, and shipping a password-reset token to the browser on every request would hand out the
+     * means to take the account over.
+     *
+     * <p>The rest are the server's own assertions about the token: where the account came from,
+     * whether the token may be renewed, when its session began and how often it has been renewed.
+     * They decide what a renewal is allowed to do, so they must say what the server determined and
+     * not what a document happened to contain. The token manager writes them after the account's
+     * claims and would overwrite an injected value anyway; the other issuers — the accounts service,
+     * the OAuth authorization code — do not, and a property named {@code renewable} on a user
+     * document would otherwise become a claim asserting exactly that.
+     */
     public static final Set<String> DEFAULT_DENYLIST = Set.of(
             "emailVerificationToken", "emailVerificationCreatedAt",
-            "passwordResetToken", "passwordResetCreatedAt");
+            "passwordResetToken", "passwordResetCreatedAt",
+            "apiKey", "renewable", "auth_time", "renewals");
 
     /** Used when {@code mongoRealmAuthenticator/prop-password} cannot be resolved. */
     public static final String DEFAULT_PASSWORD_PROPERTY = "password";
@@ -225,7 +240,8 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
             var keys = keysFromPath(path);
 
             if (Arrays.stream(keys).anyMatch(this::isDenylisted)) {
-                LOGGER.debug("Refusing denylisted claim '{}': it is a credential and a JWT payload is readable by the client", path);
+                LOGGER.debug("Refusing denylisted claim '{}': it is either a credential, which a JWT payload would expose, "
+                        + "or one of the server's own assertions about the token, which a document must not be able to make", path);
                 continue;
             }
 
