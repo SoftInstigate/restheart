@@ -84,6 +84,13 @@ import com.github.dockerjava.api.model.ExposedPort;
  */
 public class MqttReconnectIT extends MqttITBase {
 
+    /**
+     * The topic filter {@code mqtt-router.subscriptions} establishes in {@code it-overrides.yml},
+     * which covers this test's own {@code sensors/reconnect} and is therefore the filter the
+     * router actually subscribes on the broker.
+     */
+    private static final String COVERING_FILTER = "sensors/#";
+
     @Test
     void clientReconnectsResubscribesAndDeliveryResumes() throws Exception {
         var topic = "sensors/reconnect";
@@ -145,9 +152,18 @@ public class MqttReconnectIT extends MqttITBase {
 
         // subscribeOnBroker logs this line once the broker acknowledges the re-issued
         // subscription; it must appear strictly after the "Re-subscribing to" marker above, not
-        // merely be a stale match against the topic filter's original, pre-restart subscription -
-        // which, as noted above, is already sitting earlier in this same log.
-        awaitLogContainsAfter("Subscribed to topic filter: " + topic, resubscribeIdx, 30);
+        // merely be a stale match against the original, pre-restart subscription - which is
+        // already sitting earlier in this same log.
+        //
+        // The filter waited for is the COVERING one, not this test's own topic. The router
+        // subscribes on the broker only to filters no other routed filter already covers, because
+        // MQTT 3.1.1 lets a broker deliver one copy per matching subscription: with
+        // mqtt-router.subscriptions holding "sensors/#" (see it-overrides.yml), "sensors/reconnect"
+        // is routed locally and deliberately never subscribed in its own right. Waiting for it
+        // here would wait forever for something that must not happen - and the final assertions
+        // below are what actually prove the subscription was restored, by receiving a message
+        // published after the restart.
+        awaitLogContainsAfter("Subscribed to topic filter: " + COVERING_FILTER, resubscribeIdx, 30);
 
         // Force this class's own publisher to reconnect before publishing the second message,
         // rather than trusting publish()'s ordinary lazy check. This client sat idle for the
