@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -919,6 +920,28 @@ record ComparableAccount(Account wrapped, List<String> claims) {
             return false;
         }
 
+        // Same name, different roles -> different token. Two accounts for one principal are not
+        // hypothetical: an API key is built with the roles named on the key document and never the
+        // user's, deliberately narrower than its owner.
+        //
+        // What used to keep those apart was authDb: mongoRealmAuthenticator always sets it and the
+        // API key authenticator does not, so the two keys differed there. That is a coincidence of
+        // where the accounts come from, not a statement about what makes a token different, and it
+        // does not hold for a realm that sets no authDb — a file realm, or an external issuer. There
+        // the two shared an entry, and a key could be served the full-privilege token its owner had
+        // just been issued for a password login.
+        if (!Objects.equals(rolesOf(this.wrapped), rolesOf(that.wrapped))) {
+            return false;
+        }
+
+        // And where the account came from, which is a claim of the issued token and decides
+        // whether a renewal may re-read it. A key naming exactly the roles its owner already has
+        // would otherwise still share an entry with them, and one of the two would be handed a
+        // token whose apiKey claim describes the other.
+        if (fromApiKeyAccount(this.wrapped) != fromApiKeyAccount(that.wrapped)) {
+            return false;
+        }
+
         // Compare authDb if present in account properties
         String thisAuthDb = getAuthDb(this.wrapped);
         String thatAuthDb = getAuthDb(that.wrapped);
@@ -929,7 +952,23 @@ record ComparableAccount(Account wrapped, List<String> claims) {
     public int hashCode() {
         String username = wrapped.getPrincipal() == null ? null : wrapped.getPrincipal().getName();
         String authDb = getAuthDb(wrapped);
-        return Objects.hash(username, authDb, claims);
+        return Objects.hash(username, authDb, claims, rolesOf(wrapped), fromApiKeyAccount(wrapped));
+    }
+
+    /** Mirrors JwtTokenManager.fromApiKey: what the token will say about where the account came from. */
+    private static boolean fromApiKeyAccount(Account account) {
+        if (!(account instanceof WithProperties<?> wp) || wp.propertiesAsMap() == null) {
+            return false;
+        }
+
+        var marker = wp.propertiesAsMap().get(JwtTokenManager.FROM_API_KEY);
+
+        return marker instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(marker));
+    }
+
+    /** Order must not matter: the same roles in a different order are the same account. */
+    private static Set<String> rolesOf(Account account) {
+        return account == null || account.getRoles() == null ? Set.of() : Set.copyOf(account.getRoles());
     }
 
     private String getAuthDb(Account account) {
