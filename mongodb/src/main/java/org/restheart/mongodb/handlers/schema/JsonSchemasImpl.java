@@ -116,6 +116,14 @@ public class JsonSchemasImpl implements JsonSchemas {
      * the branches are alternatives: flattening asks for the union of every branch's required keys,
      * which no valid document has. Each branch is labelled with its subschema {@code title} when
      * the schema author set one, so the reader can tell which alternative they were aiming at.
+     * <p>
+     * <b>A copy of this walk lives in {@code BodyValidator} in restheart-ai</b>, which reports the
+     * identical failure for a body an agent composed through the MCP server. The two are duplicated
+     * rather than shared because the walk needs everit and restheart-commons does not depend on it,
+     * so the shared home would push that dependency onto every module — and restheart-ai does not
+     * depend on restheart-mongodb either. Change one and change the other: the same schema and the
+     * same document must produce the same message whichever way the write arrived, and nothing in
+     * the build will tell you otherwise.
      */
     private static List<String> violations(ValidationException ve) {
         var leaves = new ArrayList<String>();

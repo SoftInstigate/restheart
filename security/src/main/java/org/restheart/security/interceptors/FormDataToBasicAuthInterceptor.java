@@ -131,7 +131,7 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                     // Validate grant_type
                     if (grantType == null || (!GRANT_TYPE_PASSWORD.equals(grantType) && !GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType)
                             && !GRANT_TYPE_AUTHORIZATION_CODE.equals(grantType) && !GRANT_TYPE_REFRESH_TOKEN.equals(grantType))) {
-                        LOGGER.debug("Invalid or missing grant_type for {}, expected 'password', 'client_credentials', or 'authorization_code', got '{}'",
+                        LOGGER.debug("Invalid or missing grant_type for {}, expected 'password', 'client_credentials', 'authorization_code' or 'refresh_token', got '{}'",
                                 path, grantType);
                         throw new IllegalArgumentException("Invalid grant_type. Must be 'password', 'client_credentials', 'authorization_code' or 'refresh_token'");
                     }
