@@ -114,6 +114,19 @@ public class ResourceSubscriptions {
                     Thread.currentThread().interrupt();
                 } finally {
                     windowOpen.set(false);
+
+                    // A change that arrived after the pending flag was read above, but before this
+                    // line, set the flag with nobody left scheduled to consume it: the window was
+                    // still open, so changed() took the else branch and returned. Another change
+                    // would pick it up, but on a resource that then goes quiet the last one is
+                    // simply never delivered — and "re-read" notifications going missing is
+                    // indistinguishable from nothing having happened.
+                    //
+                    // The CAS is what keeps this from firing twice: if changed() has already
+                    // reopened the window it has also fired and scheduled, and we do nothing.
+                    if (pending.get() && !cancelled.get() && windowOpen.compareAndSet(false, true)) {
+                        scheduleTrailing();
+                    }
                 }
             });
         }
