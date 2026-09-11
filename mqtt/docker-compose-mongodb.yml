@@ -1,0 +1,96 @@
+# Three-container environment for the parts of TUTORIALS.md that persist messages to MongoDB.
+#
+# docker-compose.yml is the two-container demo: RESTHeart and a broker, run with --standalone and
+# mqtt-mongo-writer left off, because the streaming and REST surfaces need no database. This file
+# is that demo plus MongoDB, and it exists because the durability half of the module cannot be
+# shown without one.
+#
+# Run it INSTEAD of docker-compose.yml, not alongside: both bind host ports 8080 and 1883.
+#
+#     ../mvnw -f ../pom.xml -pl mqtt package
+#     docker compose -f docker-compose-mongodb.yml up
+name: restheart-mqtt-mongodb
+
+services:
+  # RESTHeart with the mqtt plugin mounted, and MongoDB behind it
+  restheart:
+    # softinstigate/restheart-snapshot:latest, not softinstigate/restheart:latest, for the same
+    # reason docker-compose.yml gives: per-topic ACL enforcement on /mqtt-sse needs the
+    # mqtt-topic-authorizer / SseWildcardInterceptorsExecutor fix, which is on unreleased master.
+    image: softinstigate/restheart-snapshot:latest
+    # No --standalone here, unlike the other compose file. --standalone loads
+    # restheart-default-config-no-mongodb.yml, which disables the MongoDB client outright - and
+    # mqtt-mongo-writer injects it. So this one runs the full default configuration.
+    environment:
+      RHO: >
+        /http-listener/host->"0.0.0.0";
+        /mclient/connection-string->"mongodb://mongodb";
+        /basicAuthMechanism/authenticator->fileRealmAuthenticator;
+        /mongoAclAuthorizer/enabled->false;
+        /fileAclAuthorizer/enabled->true;
+        /fileAclAuthorizer/permissions->[{"role":"admin","predicate":"path-prefix('/')","priority":0}];
+        /fileRealmAuthenticator/enabled->true;
+        /fileRealmAuthenticator/users[userid='admin']/password->"secret";
+        /mqtt-client/enabled->true;
+        /mqtt-client/broker-url->"tcp://mosquitto:1883";
+        /mqtt-router/enabled->true;
+        /mqtt-router/subscriptions->[{"topic":"sensors/#","qos":1}];
+        /mqtt-sse/enabled->true;
+        /mqtt-rest/enabled->true;
+        /mqtt-mongo-writer/enabled->true;
+        /mqtt-mongo-writer/id-strategy->"payload-field";
+        /mqtt-mongo-writer/id-field->"messageId";
+        /mqtt-mongo-writer/mongo-sink->[{"topic":"sensors/#","database":"iot","collection":"sensor-events"}];
+        /mqtt-topic-authorizer/acl->{"admin":["sensors/#"]};
+      # Notes on the overrides above, since several are not obvious:
+      #
+      # - Authentication AND authorization are both taken out of MongoDB. Without --standalone the
+      #   full default configuration wires basicAuthMechanism to mongoRealmAuthenticator and turns
+      #   on mongoAclAuthorizer, so every request - GET /mqtt-sse included - would query the
+      #   database. One of these tutorials stops that database on purpose, and a demo whose
+      #   streaming endpoint dies with it teaches the opposite of the intended lesson: the live
+      #   path is meant to keep working while persistence is degraded.
+      #
+      # - mqtt-router.subscriptions is what fills the last-message cache /mqtt reads from. The
+      #   router only caches what something subscribed to, so without this the REST endpoint
+      #   answers 404 forever no matter what is published.
+      #
+      # - id-strategy is payload-field rather than the default auto, so a message redelivered
+      #   after a crash converges on one document instead of being written twice. Publish with a
+      #   "messageId" property to see it work; see "Durability" in README.md.
+    volumes:
+      # Mounted file by file, not the whole ./target. That directory also holds build output the
+      # plugin scanner must never see - notably it-plugins/, the full copy of core's plugins the
+      # mqtt-it profile stages for the integration tests. The scanner recurses two levels, so a
+      # bare "./target" mount loads those too, mixing their versions with the image's own and
+      # failing startup with a ClassNotFoundException that names a class nobody here asked for.
+      - ./target/restheart-mqtt.jar:/opt/restheart/plugins/custom/restheart-mqtt.jar:ro
+      - ./target/lib:/opt/restheart/plugins/custom/lib:ro
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    ports:
+      - "8080:8080"
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -W 3 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    ports:
+      - "1883:1883" # lets `mosquitto_pub` on the host reach the broker directly
+
+  mongodb:
+    # The same image the repository's own tests use, so what you see here is what CI sees.
+    image: mongodb/mongodb-atlas-local:preview
+    environment:
+      DO_NOT_TRACK: "1"
+    ports:
+      - "27017:27017" # so mongosh on the host can look at what was written

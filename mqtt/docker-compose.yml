@@ -73,12 +73,13 @@ services:
         /mqtt-sse/enabled->true;
         /mqtt-topic-authorizer/acl->{"admin":["sensors/#"]};
     volumes:
-      # Built by `../mvnw -pl mqtt package`: restheart-mqtt.jar plus lib/ (its
-      # runtime dependencies, which must not themselves be scanned for
-      # plugins - hence the "lib" directory name, per RESTHeart's plugin
-      # loading convention). The module is not in the image - it is not part of
-      # the RESTHeart distribution - so this mount is how the demo gets it.
-      - ./target:/opt/restheart/plugins/custom
+      # Mounted file by file, not the whole ./target. That directory also holds build output the
+      # plugin scanner must never see - notably it-plugins/, the full copy of core's plugins the
+      # mqtt-it profile stages for the integration tests. The scanner recurses two levels, so a
+      # bare "./target" mount loads those too, mixing their versions with the image's own and
+      # failing startup with a ClassNotFoundException that names a class nobody here asked for.
+      - ./target/restheart-mqtt.jar:/opt/restheart/plugins/custom/restheart-mqtt.jar:ro
+      - ./target/lib:/opt/restheart/plugins/custom/lib:ro
     depends_on:
       mosquitto:
         condition: service_healthy
