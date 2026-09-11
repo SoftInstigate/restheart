@@ -25,7 +25,7 @@ services:
       RHO: >
         /http-listener/host->"0.0.0.0";
         /mclient/connection-string->"mongodb://mongodb";
-        /basicAuthMechanism/authenticator->fileRealmAuthenticator;
+        /basicAuthMechanism/authenticator->"fileRealmAuthenticator";
         /mongoAclAuthorizer/enabled->false;
         /fileAclAuthorizer/enabled->true;
         /fileAclAuthorizer/permissions->[{"role":"admin","predicate":"path-prefix('/')","priority":0}];
