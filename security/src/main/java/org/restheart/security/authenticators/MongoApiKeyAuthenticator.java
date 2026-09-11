@@ -32,6 +32,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -43,6 +44,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
+import org.restheart.security.tokens.JwtTokenManager;
 import org.restheart.security.ApiKeyCredential;
 import org.restheart.security.MongoRealmAccount;
 import org.slf4j.Logger;
@@ -265,11 +267,17 @@ public class MongoApiKeyAuthenticator implements Authenticator {
 
         final var name = principal.asString().getValue();
 
+        // The apiKey marker travels with the account so that a token issued to it can be told
+        // apart later. Renewal re-reads the account from the users store, which would replace the
+        // roles this key was deliberately given with the user's own — widening a credential whose
+        // whole point is being narrower than its owner. Without the marker nothing would stop that
+        // except the absence of authDb, which is a coincidence rather than a rule.
         return new MongoRealmAccount(this.keysDb,
                 name,
                 new char[0],
                 rolesOf(key),
-                new BsonDocument("_id", new BsonString(name)));
+                new BsonDocument("_id", new BsonString(name))
+                        .append(JwtTokenManager.FROM_API_KEY, BsonBoolean.TRUE));
     }
 
     /**

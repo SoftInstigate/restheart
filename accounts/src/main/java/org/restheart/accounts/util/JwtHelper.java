@@ -6,6 +6,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.plugins.PluginsRegistry;
+import org.restheart.security.tokens.JwtTokenManager;
 import org.restheart.security.AuthCookie;
 import org.restheart.security.tokens.JwtConfigProvider;
 import org.restheart.security.tokens.DefaultJwtIssuer;
@@ -224,6 +225,13 @@ public class JwtHelper {
         // jwtTokenManager applies on /token.
         var builder = jwtIssuer.newBuilder(email, roles, Date.from(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES)))
                 .withIssuedAt(Instant.now());
+
+        // This is a session token: the caller signed in, activated an account or switched team, and
+        // carries this until it expires. jwtTokenManager renews only what is marked, so without
+        // this the holder would be sent back through the whole flow at every expiry. The
+        // single-use tokens behind an activation or reset link are issued by the deprecated method
+        // below, which deliberately does not carry the mark.
+        builder = jwtIssuer.withClaim(builder, JwtTokenManager.RENEWABLE, true);
 
         builder = jwtIssuer.applyAccountClaims(builder, properties, effectiveClaims);
 

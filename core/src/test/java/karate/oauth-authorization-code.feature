@@ -178,3 +178,47 @@ Scenario: POST /authorize with form body credentials (invalid) - should redirect
     And def location = responseHeaders['Location'][0]
     And match location contains 'http://localhost:3000/login'
     And match location contains 'error=invalid_credentials'
+
+Scenario: An authorization code cannot be redeemed as a refresh token
+
+    # The code and an access token are both JWTs signed with the same key and carrying the same
+    # issuer, sub and roles: the refresh grant's verifier cannot tell them apart on its own. If it
+    # accepted one, a stolen code would become a session without its code_verifier ever being
+    # presented — which is the whole of what PKCE protects against.
+    Given path '/authorize'
+    And param response_type = 'code'
+    And param client_id = 'test-client'
+    And param redirect_uri = 'http://localhost:3000/callback'
+    And param code_challenge = codeChallenge
+    And param code_challenge_method = 'S256'
+    And header Authorization = basic({username: 'admin', password: 'secret'})
+    When method POST
+    Then status 302
+    And def authCode = extractQueryParam(responseHeaders['Location'][0], 'code')
+
+    Given path '/token'
+    And form field grant_type = 'refresh_token'
+    And form field refresh_token = authCode
+    When method POST
+    Then status 400
+    And match response.error == 'invalid_grant'
+
+    # the control: exchanged properly, with the verifier, the same code still works
+    Given path '/token'
+    And form field grant_type = 'authorization_code'
+    And form field code = authCode
+    And form field redirect_uri = 'http://localhost:3000/callback'
+    And form field client_id = 'test-client'
+    And form field code_verifier = codeVerifier
+    When method POST
+    Then status 200
+    And match response.access_token == '#present'
+
+    # and the access token it yields IS renewable
+    * def issued = response.access_token
+    Given path '/token'
+    And form field grant_type = 'refresh_token'
+    And form field refresh_token = issued
+    When method POST
+    Then status 200
+    And match response.access_token == '#present'
