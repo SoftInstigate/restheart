@@ -110,4 +110,85 @@ public class MqttTopicMatcherTest {
         assertFalse(MqttTopicMatcher.matches(null, "sensors/#"));
         assertFalse(MqttTopicMatcher.matches("sensors/temp", null));
     }
+
+    // --- subsumes: the filter-to-filter relation the router uses to pick a minimal covering set
+    // of broker subscriptions. Overlapping subscriptions are not harmless - MQTT 3.1.1 lets a
+    // broker send one copy per matching subscription, and Mosquitto does. ---
+
+    @Test
+    @DisplayName("subsumes: a wildcard filter covers what it matches")
+    void testSubsumesBasicCovering() {
+        assertTrue(MqttTopicMatcher.subsumes("sensors/#", "sensors/temp"));
+        assertTrue(MqttTopicMatcher.subsumes("sensors/#", "sensors/temp/inner"));
+        assertTrue(MqttTopicMatcher.subsumes("sensors/#", "sensors/+"));
+        assertTrue(MqttTopicMatcher.subsumes("sensors/#", "sensors/#"));
+        assertTrue(MqttTopicMatcher.subsumes("sensors/+", "sensors/temp"));
+        assertTrue(MqttTopicMatcher.subsumes("#", "sensors/temp"));
+        assertTrue(MqttTopicMatcher.subsumes("+/+", "a/b"));
+    }
+
+    @Test
+    @DisplayName("subsumes: the narrower filter never covers the broader one")
+    void testSubsumesIsDirectional() {
+        assertFalse(MqttTopicMatcher.subsumes("sensors/temp", "sensors/#"));
+        assertFalse(MqttTopicMatcher.subsumes("sensors/temp", "sensors/+"));
+        assertFalse(MqttTopicMatcher.subsumes("sensors/+", "sensors/#"));
+        assertFalse(MqttTopicMatcher.subsumes("sensors/+", "sensors/temp/inner"));
+    }
+
+    @Test
+    @DisplayName("subsumes: unrelated filters cover nothing of each other")
+    void testSubsumesUnrelated() {
+        assertFalse(MqttTopicMatcher.subsumes("sensors/#", "traffic/x"));
+        assertFalse(MqttTopicMatcher.subsumes("sensors/#", "sensorsPrivate/x"));
+        assertFalse(MqttTopicMatcher.subsumes("a/b/c", "a/b"));
+        assertFalse(MqttTopicMatcher.subsumes("a/b", "a/b/c"));
+    }
+
+    @Test
+    @DisplayName("subsumes: a wildcard does not cover a filter that names a $ topic")
+    void testSubsumesExcludesSystemTopics() {
+        // $SYS/x matches "$SYS/#" but not "#", so dropping the $SYS subscription in favour of the
+        // wildcard would silently stop delivering those messages.
+        assertFalse(MqttTopicMatcher.subsumes("#", "$SYS/#"));
+        assertFalse(MqttTopicMatcher.subsumes("+/#", "$SYS/broker/uptime"));
+        assertTrue(MqttTopicMatcher.subsumes("$SYS/#", "$SYS/broker/uptime"));
+    }
+
+    @Test
+    @DisplayName("subsumes: a trailing # covers the parent level itself")
+    void testSubsumesParentLevel() {
+        assertTrue(MqttTopicMatcher.subsumes("sport/#", "sport"));
+        assertTrue(MqttTopicMatcher.matches("sport", "sport/#"));
+    }
+
+    @Test
+    @DisplayName("subsumes: null is never a relation")
+    void testSubsumesNulls() {
+        assertFalse(MqttTopicMatcher.subsumes(null, "a"));
+        assertFalse(MqttTopicMatcher.subsumes("a", null));
+        assertFalse(MqttTopicMatcher.subsumes(null, null));
+    }
+
+    @Test
+    @DisplayName("subsumes agrees with matches: anything the narrower filter matches, the broader one matches too")
+    void testSubsumesAgreesWithMatches() {
+        var filters = java.util.List.of("#", "+", "+/#", "a", "a/#", "a/+", "a/b", "a/b/c", "a/+/c", "$SYS/#");
+        var topics = java.util.List.of("a", "b", "a/b", "a/c", "a/b/c", "a/x/c", "a/b/c/d", "$SYS/x", "$SYS/x/y");
+
+        for (String broader : filters) {
+            for (String narrower : filters) {
+                if (!MqttTopicMatcher.subsumes(broader, narrower)) {
+                    continue;
+                }
+                for (String topic : topics) {
+                    if (MqttTopicMatcher.matches(topic, narrower)) {
+                        assertTrue(MqttTopicMatcher.matches(topic, broader),
+                            "'" + broader + "' claims to subsume '" + narrower + "' but does not match '"
+                                + topic + "', which '" + narrower + "' does");
+                    }
+                }
+            }
+        }
+    }
 }

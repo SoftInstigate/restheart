@@ -56,6 +56,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.restheart.mqtt.MqttMessageRouter.RouterStats;
@@ -126,6 +127,7 @@ public class MqttMessageRouterTest {
         final Mqtt5AsyncClient client = mock(Mqtt5AsyncClient.class);
         final Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete subscribeStage =
             mock(Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete.class);
+        final Mqtt5UnsubscribeBuilder.Send.Start<CompletableFuture<Mqtt5UnsubAck>> unsubscribeStart;
 
         @SuppressWarnings("unchecked")
         Mqtt5Fixture() {
@@ -134,8 +136,7 @@ public class MqttMessageRouterTest {
             when(subscribeStage.qos(any())).thenReturn(subscribeStage);
             when(subscribeStage.send()).thenReturn(new CompletableFuture<>());
 
-            Mqtt5UnsubscribeBuilder.Send.Start<CompletableFuture<Mqtt5UnsubAck>> unsubscribeStart =
-                mock(Mqtt5UnsubscribeBuilder.Send.Start.class);
+            unsubscribeStart = mock(Mqtt5UnsubscribeBuilder.Send.Start.class);
             Mqtt5UnsubscribeBuilder.Send.Complete<CompletableFuture<Mqtt5UnsubAck>> unsubscribeComplete =
                 mock(Mqtt5UnsubscribeBuilder.Send.Complete.class);
             when(client.unsubscribeWith()).thenReturn(unsubscribeStart);
@@ -698,6 +699,103 @@ public class MqttMessageRouterTest {
         assertEquals(5, durable.get(), "persistence must see every message, whatever the rate limit says");
         assertEquals(1, live.get(), "live delivery is what the rate limit governs");
         assertEquals(4, router.getStats().getMessagesDropped(), "and the four it refused are counted");
+    }
+
+
+    // --- Broker subscriptions are a minimal covering set, not one per routed filter.
+    //
+    // MQTT 3.1.1 lets a broker deliver one copy of a message per matching subscription, and
+    // Mosquitto does. Subscribing to every routed filter therefore meant that an SSE client asking
+    // for "sensors/temp" while mqtt-router.subscriptions held "sensors/#" - the configuration the
+    // README tells people to use - made every message on that topic arrive twice: two SSE events,
+    // two callbacks into a custom plugin, two MongoDB documents under id-strategy auto, and a
+    // doubled mqtt_router_messages_received. Measured against a real Mosquitto before the fix. ---
+
+    @Test
+    @DisplayName("a filter covered by a broader subscription is not subscribed on the broker")
+    void testCoveredFilterIsNotSubscribedOnTheBroker() {
+        Mqtt5Fixture fixture = new Mqtt5Fixture();
+        MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
+
+        router.subscribeFromConfig("sensors/#", Qos.AT_LEAST_ONCE);
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {});
+
+        ArgumentCaptor<String> filterCaptor = ArgumentCaptor.forClass(String.class);
+        verify(fixture.subscribeStage, times(1)).topicFilter(filterCaptor.capture());
+        assertEquals(List.of("sensors/#"), filterCaptor.getAllValues(),
+            "sensors/temp is already delivered by sensors/#; subscribing to both makes the broker "
+                + "send every matching message twice");
+    }
+
+    @Test
+    @DisplayName("a covered filter still receives its messages, routed locally")
+    void testCoveredFilterStillReceivesMessages() {
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
+
+        var delivered = new java.util.concurrent.CopyOnWriteArrayList<String>();
+        router.subscribeFromConfig("sensors/#", Qos.AT_LEAST_ONCE);
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> delivered.add(msg.getPayload()));
+
+        capturedGlobalConsumer(mockClient).accept(mockPublish("sensors/temp", "hello", MqttQos.AT_LEAST_ONCE));
+
+        // Not subscribing a covered filter on the broker is only safe because dispatch matches
+        // each message against every routed filter locally.
+        awaitCondition(() -> delivered.size() == 1, 5_000);
+        assertEquals(List.of("hello"), List.copyOf(delivered),
+            "exactly once - the whole point of covering is that it changes nothing but the copies");
+    }
+
+    @Test
+    @DisplayName("a broader filter arriving later takes over, and the narrower one is unsubscribed")
+    void testBroaderFilterSupersedesAnAlreadySubscribedNarrowerOne() {
+        Mqtt5Fixture fixture = new Mqtt5Fixture();
+        MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
+
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {});
+        router.subscribeFromConfig("sensors/#", Qos.AT_LEAST_ONCE);
+
+        ArgumentCaptor<String> subscribed = ArgumentCaptor.forClass(String.class);
+        verify(fixture.subscribeStage, times(2)).topicFilter(subscribed.capture());
+        assertEquals(List.of("sensors/temp", "sensors/#"), subscribed.getAllValues());
+
+        ArgumentCaptor<String> unsubscribed = ArgumentCaptor.forClass(String.class);
+        verify(fixture.unsubscribeStart, times(1)).topicFilter(unsubscribed.capture());
+        assertEquals("sensors/temp", unsubscribed.getValue(),
+            "once sensors/# is subscribed, keeping sensors/temp too duplicates every message");
+    }
+
+    @Test
+    @DisplayName("covering never downgrades QoS: the covering filter is subscribed at the highest QoS it covers")
+    void testCoveringFilterTakesTheHighestQosItCovers() {
+        Mqtt5Fixture fixture = new Mqtt5Fixture();
+        MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
+
+        router.subscribeFromConfig("sensors/#", Qos.AT_MOST_ONCE);
+        // A durable consumer needs at least QoS 1: QoS 0 has no acknowledgement to withhold.
+        router.subscribeDurable("sensors/temp", Qos.AT_LEAST_ONCE, (msg, taken) -> taken.run());
+
+        ArgumentCaptor<MqttQos> qosCaptor = ArgumentCaptor.forClass(MqttQos.class);
+        verify(fixture.subscribeStage, times(2)).qos(qosCaptor.capture());
+        assertEquals(MqttQos.AT_MOST_ONCE, qosCaptor.getAllValues().get(0));
+        assertEquals(MqttQos.AT_LEAST_ONCE, qosCaptor.getAllValues().get(1),
+            "sensors/# now stands in for a QoS 1 durable subscription and must be raised to match, "
+                + "or the durability guarantee is silently lost");
+    }
+
+    @Test
+    @DisplayName("a live listener going away does not take a durable listener's subscription with it")
+    void testLastLiveListenerDoesNotUnsubscribeAFilterADurableListenerNeeds() {
+        Mqtt5Fixture fixture = new Mqtt5Fixture();
+        MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
+
+        Consumer<MqttMessage> live = msg -> {};
+        router.subscribeDurable("sensors/temp", Qos.AT_LEAST_ONCE, (msg, taken) -> taken.run());
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, live);
+
+        router.unsubscribe("sensors/temp", live);
+
+        verify(fixture.unsubscribeStart, never()).topicFilter(anyString());
     }
 
 }

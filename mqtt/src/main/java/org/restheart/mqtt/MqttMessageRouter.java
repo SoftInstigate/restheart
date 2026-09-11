@@ -93,8 +93,25 @@ public class MqttMessageRouter {
      */
     private final Map<String, List<DurableListener>> durableListeners = new ConcurrentHashMap<>();
 
-    // Topic filter -> effective (highest requested) QoS currently subscribed on the broker
+    // Topic filter -> effective (highest requested) QoS the router routes for. Every filter any
+    // listener, durable listener or configured subscription asked for appears here; this is the
+    // routing table, not the set of broker subscriptions.
     private final Map<String, Qos> filterQos = new ConcurrentHashMap<>();
+
+    /**
+     * Topic filter -> QoS actually subscribed on the broker: the minimal subset of
+     * {@link #filterQos} that still covers all of it, recomputed by
+     * {@link #reconcileBrokerSubscriptions()}.
+     * <p>
+     * Kept apart from {@link #filterQos} because the two must differ. MQTT 3.1.1 permits a broker
+     * to deliver one copy of a message per matching subscription, and Mosquitto does: subscribing
+     * to every routed filter meant that an SSE client asking for {@code sensors/temp} while
+     * {@code mqtt-router.subscriptions} held {@code sensors/#} made every message on that topic
+     * arrive twice. Since {@link #dispatchMessage} matches each message against every routed
+     * filter locally, one subscription to the broader filter is all the broker owes us.
+     * </p>
+     */
+    private final Map<String, Qos> brokerFilters = new ConcurrentHashMap<>();
 
     // Topic filters established via configuration: these survive listener churn
     private final Set<String> configuredFilters = ConcurrentHashMap.newKeySet();
@@ -256,6 +273,8 @@ public class MqttMessageRouter {
             return list.isEmpty() ? null : list;
         });
 
+        releaseFilterIfUnused(topicFilter);
+
         LOGGER.debug("Removed durable listener for topic filter: {}", topicFilter);
     }
 
@@ -285,20 +304,145 @@ public class MqttMessageRouter {
      * @param qos         the QoS level requested
      */
     private void ensureBrokerSubscription(String topicFilter, Qos qos) {
-        boolean needsBrokerSubscribe;
         synchronized (filterQos) {
             Qos current = filterQos.get(topicFilter);
-            if (current == null || qos.code() > current.code()) {
-                filterQos.put(topicFilter, qos);
-                needsBrokerSubscribe = true;
-            } else {
-                needsBrokerSubscribe = false;
+            if (current != null && qos.code() <= current.code()) {
+                return; // already routed at this QoS or better, and the broker set already reflects it
             }
+            filterQos.put(topicFilter, qos);
         }
 
-        if (needsBrokerSubscribe) {
-            subscribeOnBroker(topicFilter, qos);
+        reconcileBrokerSubscriptions();
+    }
+
+    /**
+     * Brings the broker's subscriptions in line with {@link #filterQos}, subscribing to a minimal
+     * covering set rather than to every routed filter.
+     * <p>
+     * A filter is left unsubscribed when another routed filter subsumes it, because the broker
+     * will deliver its messages anyway and {@link #dispatchMessage} routes them locally. The
+     * covering filter is subscribed at the highest QoS any filter it covers asked for, so covering
+     * never silently downgrades a durable consumer to QoS 0.
+     * </p>
+     * <p>
+     * The whole desired set is recomputed from scratch on every call rather than adjusted
+     * incrementally. It is O(n²) in the number of distinct filters, which is a handful in every
+     * realistic configuration, and in exchange the broker state cannot drift: any sequence of
+     * subscribes and unsubscribes converges on the same answer.
+     * </p>
+     */
+    private void reconcileBrokerSubscriptions() {
+        Map<String, Qos> desired;
+        Map<String, Qos> toSubscribe = new HashMap<>();
+        List<String> toUnsubscribe = new ArrayList<>();
+
+        synchronized (filterQos) {
+            desired = minimalCoveringSet(filterQos);
+
+            for (Map.Entry<String, Qos> entry : desired.entrySet()) {
+                Qos onBroker = brokerFilters.get(entry.getKey());
+                // Re-issued when absent, and when the QoS must go up; MQTT treats a repeat
+                // SUBSCRIBE for a filter as replacing the existing one, so this never doubles up.
+                if (onBroker == null || onBroker.code() < entry.getValue().code()) {
+                    toSubscribe.put(entry.getKey(), entry.getValue());
+                }
+            }
+
+            for (String onBroker : brokerFilters.keySet()) {
+                if (!desired.containsKey(onBroker)) {
+                    toUnsubscribe.add(onBroker);
+                }
+            }
+
+            brokerFilters.keySet().retainAll(desired.keySet());
+            brokerFilters.putAll(toSubscribe);
         }
+
+        // Outside the lock: these talk to the broker, and the lock is held on the dispatch path.
+        for (String filter : toUnsubscribe) {
+            unsubscribeFromBroker(filter);
+        }
+        for (Map.Entry<String, Qos> entry : toSubscribe.entrySet()) {
+            subscribeOnBroker(entry.getKey(), entry.getValue());
+        }
+    }
+
+    /**
+     * Reduces a set of routed filters to those that must be subscribed on the broker, mapping each
+     * to the highest QoS among the filters it covers (itself included).
+     *
+     * @param routed every filter the router routes for, with the QoS it is routed at
+     * @return the filters to subscribe on the broker, with their effective QoS
+     */
+    private static Map<String, Qos> minimalCoveringSet(Map<String, Qos> routed) {
+        Map<String, Qos> result = new HashMap<>();
+
+        for (Map.Entry<String, Qos> candidate : routed.entrySet()) {
+            String filter = candidate.getKey();
+
+            boolean covered = false;
+            for (String other : routed.keySet()) {
+                if (covers(other, filter)) {
+                    covered = true;
+                    break;
+                }
+            }
+            if (covered) {
+                continue;
+            }
+
+            Qos effective = candidate.getValue();
+            for (Map.Entry<String, Qos> below : routed.entrySet()) {
+                if (covers(filter, below.getKey()) && below.getValue().code() > effective.code()) {
+                    effective = below.getValue();
+                }
+            }
+            result.put(filter, effective);
+        }
+
+        return result;
+    }
+
+    /**
+     * Whether {@code broader} should stand in for {@code narrower} on the broker: strict
+     * subsumption, plus a deterministic tie-break for the case of two different strings that match
+     * exactly the same topics ({@code #} and {@code +/#}, say). Without the tie-break each would
+     * cover the other and both would be dropped, leaving the router subscribed to neither.
+     *
+     * @param broader  the candidate covering filter
+     * @param narrower the filter that would be left unsubscribed
+     * @return {@code true} if {@code broader} covers {@code narrower}
+     */
+    private static boolean covers(String broader, String narrower) {
+        if (broader.equals(narrower) || !MqttTopicMatcher.subsumes(broader, narrower)) {
+            return false;
+        }
+        if (MqttTopicMatcher.subsumes(narrower, broader)) {
+            return broader.compareTo(narrower) < 0;
+        }
+        return true;
+    }
+
+    /**
+     * Stops routing {@code topicFilter} and reconciles the broker's subscriptions, unless
+     * something still needs it: a remaining live or durable listener, or a configured
+     * subscription, all of which are independent of one another.
+     *
+     * @param topicFilter the filter whose last listener of one kind has just gone away
+     */
+    private void releaseFilterIfUnused(String topicFilter) {
+        if (configuredFilters.contains(topicFilter)) {
+            return;
+        }
+        if (listeners.containsKey(topicFilter) || durableListeners.containsKey(topicFilter)) {
+            return;
+        }
+
+        synchronized (filterQos) {
+            filterQos.remove(topicFilter);
+        }
+
+        reconcileBrokerSubscriptions();
     }
 
     /**
@@ -338,13 +482,13 @@ public class MqttMessageRouter {
             return; // nothing was registered for this filter
         }
 
-        // Outside the compute, for the same reason as in subscribe: unsubscribeFromBroker talks
-        // to the broker, and must not run inside a remapping function.
-        if (remaining[0] == 0 && !configuredFilters.contains(topicFilter)) {
-            synchronized (filterQos) {
-                filterQos.remove(topicFilter);
-            }
-            unsubscribeFromBroker(topicFilter);
+        // Outside the compute, for the same reason as in subscribe: this talks to the broker, and
+        // must not run inside a remapping function.
+        if (remaining[0] == 0) {
+            // Not simply "unsubscribe from the broker": a durable listener may still be registered
+            // on this filter, and dropping it here used to take mqtt-mongo-writer's subscription
+            // down with the last SSE client on the same filter.
+            releaseFilterIfUnused(topicFilter);
         }
 
         LOGGER.debug("Removed listener for topic filter: {}, remaining: {}", topicFilter, remaining[0]);
@@ -675,7 +819,10 @@ public class MqttMessageRouter {
     public void resubscribeAll() {
         Map<String, Qos> snapshot;
         synchronized (filterQos) {
-            snapshot = new HashMap<>(filterQos);
+            // The broker set, not every routed filter: the filters it covers are routed locally
+            // and must stay unsubscribed, or the reconnect would reintroduce the duplicate
+            // delivery that covering exists to avoid.
+            snapshot = new HashMap<>(brokerFilters);
         }
 
         LOGGER.info("Re-subscribing to {} topic filters after reconnect", snapshot.size());

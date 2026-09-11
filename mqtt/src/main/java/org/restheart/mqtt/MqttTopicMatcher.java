@@ -100,4 +100,80 @@ public final class MqttTopicMatcher {
 
         return ti == topicLevels.length;
     }
+
+    /**
+     * Determines whether every topic matching {@code narrower} also matches {@code broader}, i.e.
+     * whether a broker subscription to {@code broader} already delivers everything a subscription
+     * to {@code narrower} would.
+     * <p>
+     * This is a relation between two <em>filters</em>, not between a topic and a filter, and it
+     * exists so the router can subscribe to a minimal covering set on the broker and fan out
+     * locally. Overlapping broker subscriptions are not harmless: MQTT 3.1.1 lets a broker deliver
+     * one copy of a message per matching subscription, and Mosquitto does exactly that, so a
+     * client subscribed to both {@code sensors/#} and {@code sensors/temp} receives every
+     * {@code sensors/temp} message twice.
+     * </p>
+     * <p>
+     * Note the asymmetry with a wildcard's treatment of {@code $}-prefixed topics: {@code #} does
+     * <strong>not</strong> subsume {@code $SYS/#}, because {@code $SYS/x} matches the latter and
+     * not the former. Two filters that both begin with a wildcard are unaffected, since both
+     * exclude the same {@code $} topics.
+     * </p>
+     *
+     * @param broader  the candidate covering filter
+     * @param narrower the filter that would be covered
+     * @return {@code true} if {@code broader} matches every topic {@code narrower} matches
+     */
+    public static boolean subsumes(String broader, String narrower) {
+        if (broader == null || narrower == null) {
+            return false;
+        }
+        if (broader.equals(narrower)) {
+            return true;
+        }
+
+        String[] b = broader.split("/", -1);
+        String[] n = narrower.split("/", -1);
+
+        // A wildcard first level never reaches $-topics, so a filter that names one explicitly
+        // reaches topics the wildcard cannot and is therefore not covered by it.
+        boolean broaderStartsWithWildcard = b.length > 0 && ("#".equals(b[0]) || "+".equals(b[0]));
+        boolean narrowerNamesSystem = n.length > 0 && n[0].startsWith("$");
+        if (broaderStartsWithWildcard && narrowerNamesSystem) {
+            return false;
+        }
+
+        int i = 0;
+        while (i < b.length) {
+            String bl = b[i];
+
+            if ("#".equals(bl)) {
+                // Absorbs every remaining level of the narrower filter, and matches the parent
+                // level itself, so nothing further need be checked.
+                return true;
+            }
+
+            if (i >= n.length) {
+                // The broader filter still demands levels the narrower one does not have.
+                return false;
+            }
+
+            String nl = n[i];
+
+            if ("+".equals(bl)) {
+                // A single-level wildcard covers any single level, but never a "#" - that spans
+                // any number of levels, including more than one.
+                if ("#".equals(nl)) {
+                    return false;
+                }
+            } else if (!bl.equals(nl)) {
+                // A literal level covers only itself: a "+" or "#" here is the wider of the two.
+                return false;
+            }
+
+            i++;
+        }
+
+        return i == n.length;
+    }
 }
