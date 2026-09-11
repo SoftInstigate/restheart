@@ -47,6 +47,7 @@ public class MqttLoggerService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttLoggerService.class);
     private static final int MAX_MESSAGES = 100;
+    private static final String DEFAULT_TOPIC = "sensors/#";
 
     /**
      * The MQTT router, injected from the {@code mqtt-router} provider.
@@ -69,7 +70,15 @@ public class MqttLoggerService implements JsonService {
      */
     @OnInit
     public void init() {
-        subscribedTopic = (String) config.getOrDefault("topic", "sensors/#");
+        // config is null - not an empty map - when the configuration file has no "mqtt-logger"
+        // block, which is the ordinary case for a plugin that is enabled by default and has a
+        // sensible default topic. Reading it unguarded throws inside @OnInit, and a plugin that
+        // throws there aborts plugin instantiation and stops RESTHeart from starting at all: one
+        // optional example plugin would take the whole server down. Always null-check an injected
+        // "config".
+        subscribedTopic = config == null
+            ? DEFAULT_TOPIC
+            : (String) config.getOrDefault("topic", DEFAULT_TOPIC);
 
         router.subscribe(subscribedTopic, Qos.AT_LEAST_ONCE, msg -> {
             // Add message to buffer, maintaining max size (FIFO drop oldest)
