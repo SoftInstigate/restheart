@@ -274,6 +274,7 @@ Most of these are silent: nothing refuses to start, and nothing complains unless
 - **A config block present without `enabled: true` leaves the plugin off.** The block looks complete and correct; it just isn't read, because `PluginRecord.isEnabled` falls back to the plugin's compiled default (`false` for every Tier 1/2 plugin) whenever the `enabled` key is absent.
 - **Plugin config blocks are top-level keys named after the plugin.** There is no `plugins-args:` wrapper: `PluginsFactory` looks up each plugin's arguments by name directly at the root of the configuration map. That wrapper form is not handled at all, so every setting nested under it is ignored and the plugin runs entirely on defaults. This is the one trap here that announces itself: core logs a WARN at startup naming every plugin whose block a `plugins-args` wrapper swallowed ([#723](https://github.com/SoftInstigate/restheart/issues/723)).
 - **`mqtt-rest` answers `404` forever** unless something populates the router's last-message cache (`mqtt-router.subscriptions`, a live SSE client, or the writer's `mongo-sink`) **and** `mqtt-router.last-message-cache` is `true`.
+- **After a restart, `mqtt-rest` answers `404` again until the next message arrives** — the cache is in memory and does not survive the process. There is a broker-side remedy that costs nothing: if publishers publish the latest state **retained**, the broker replays it on the SUBSCRIBE this module issues at every startup, and the cache is correct immediately. Measured: with a retained value, `GET /mqtt` answers `200` straight after a restart with nothing republished; without one, `404`. This does not replace `mqtt-router.subscriptions` — with no subscription there is no SUBSCRIBE and nothing is replayed — but it removes the blind window after every restart, which on a slow topic can last a long time.
 - **`mqtt-mongo-writer` with an empty `mongo-sink` runs and writes nothing.** With no sinks, the writer never subscribes to anything on the router at all, so nothing is ever offered to the buffer and it stays empty — not a buffer that fills and drains into nowhere.
 - **`mqtt-topic-authorizer` with no `acl` denies everything with `403`.** There is no permissive default.
 - **A request with no `?topic=` is not unauthenticated territory.** `mqtt-sse` subscribes such a request to its `default-topic` (`sensors/#` by default), so the ACL must grant that filter or the request is refused with `403`. Granting only specific topics while leaving `default-topic` at its default is the common mistake.
@@ -391,11 +392,22 @@ Subscriptions declared here survive a broker session reset: when the client reco
 | `default-topic` | `sensors/#` | used when the request omits `?topic=` |
 | `default-qos` | `1` | |
 | `per-connection-queue-capacity` | `256` | full queue drops the newest message for that client only |
-| `payload-envelope` | `false` | `true` wraps the payload as `{topic, payload, receivedAt, qos, cached}` |
+| `payload-envelope` | `false` | `true` wraps the payload as `{topic, payload, receivedAt, qos, replay, retain}` |
 | `last-message-cache` | `true` | on connect, replays the cached last message of **every** topic currently cached that matches the request's topic filter, sorted by `receivedAt` — not just one message |
 | `max-connections-per-topic` | `0` | `0` = unlimited |
 | `keep-alive-ms` | `20000` | period of the SSE keep-alive comment; `0` disables it |
 | `pipeline` | none | see below |
+
+**`replay` and `retain` are two different questions, and a consumer that wants live data must ask both.** They only exist with `payload-envelope: true`; the raw format has nowhere to put them.
+
+- `replay` — this delivery came from the router's last-message cache rather than from the live stream. It is a fact about *this* delivery, so two clients can legitimately disagree about the same message.
+- `retain` — the broker delivered this as the topic's last known state because the subscription was new. It is a fact about the *delivery from the broker*, so every consumer inside this instance agrees about it.
+
+  **It is not the publisher's retain flag.** MQTT 3.1.1 §3.3.1.3 has the server set RETAIN on delivery only when the message is sent as the result of a *new subscription*, and clear it for an established subscription however the publisher set it. So `retain: true` means "I was given this because I had just subscribed", not "the publisher asked for this to be retained" — which a subscriber cannot know. Measured both ways with `mosquitto_sub -F '%r'`: the same retained publish arrives with the flag set to a fresh subscription and clear to an established one.
+
+They are orthogonal, and the combination that catches people is `replay: false, retain: true`: the first client to subscribe to a filter receives the broker's retained value through the live path, so it arrives looking like an event that has just happened. **A genuinely new event is neither replayed nor retained.**
+
+`retain` also carries a warning about the timestamp next to it: `receivedAt` is always assigned locally when the message arrives, so a retained value published days ago is stamped with the moment this instance received it. MQTT 3.1.1 transports no publisher timestamp, so a retained message's true age cannot be recovered — `retain: true` tells you not to trust `receivedAt` as the time of measurement, not how wrong it is.
 
 **`keep-alive-ms` is how a departed client is noticed at all.** Nothing reads an SSE connection after the handshake, so the only way the server learns a client is gone is a write to its socket failing. On a busy topic that happens on the next message; on a quiet one it may never be attempted. Until it is, the connection's router listener stays registered, filling a queue nobody drains, and its broker subscription stays in place — so every message matching both that filter and a broader one is delivered to the module twice, duplicating SSE events for other clients, duplicating custom-plugin callbacks, and duplicating MongoDB documents under `id-strategy: auto`. With `clean-session: false` the leaked broker subscription outlives the process, because it lives in the broker's session. The periodic comment turns that into a bounded wait. Detection takes up to **two** periods, not one: the first write into a half-closed socket succeeds, and only the next one fails.
 
@@ -512,6 +524,10 @@ An unrecognised value fails at startup rather than silently falling back.
 | `auto` | ObjectId | `insertMany` |
 | `payload-field` | the `id-field` of the payload | upserting `bulkWrite` |
 | `topic-timestamp-hash` | hash of topic + timestamp | upserting `bulkWrite` |
+
+Every document also records `retain`, the flag the broker delivered the message with, so the collection records the event rather than an interpretation of it. Without it, a value delivered as a topic's stored last-known-state — possibly days old, and possibly already in the collection from before — is indistinguishable from a measurement just taken. In a steady-state deployment it is `false` on nearly every document, and `true` mainly on the messages delivered just after a (re)start, which is exactly when a row is most likely to be a re-record of an old value.
+
+What it does **not** record, because MQTT does not tell a subscriber, is whether the *publisher* asked for retention (see `mqtt-sse`'s `retain` above). A collection intended as a source for replaying a stream can reproduce topic, payload, QoS and ordering, but not that one publish option.
 
 The two deduplicating strategies write with upserts, so redelivery converges on one document instead of raising duplicate-key errors. Duplicate-key (11000) is counted as a success. `id-field` (default `messageId`) must be set and non-blank when `id-strategy` is `payload-field`; both keys are validated at startup, because a typo would otherwise disable deduplication silently.
 

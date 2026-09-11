@@ -104,6 +104,11 @@ public class MqttRestService implements JsonService {
         result.addProperty("payload", cached.getPayload());
         result.addProperty("receivedAt", cached.getReceivedAt().toString());
         result.addProperty("qos", cached.getQos());
+        // Always from the cache, so there is no "replay" flag to report here - but whether the
+        // broker called this a retained value is a property of the message, and it is the only
+        // warning that receivedAt is the moment we received it rather than the moment it was
+        // measured.
+        result.addProperty("retain", cached.isRetain());
         response.setContent(result);
         response.setStatusCode(HttpStatus.SC_OK);
     }

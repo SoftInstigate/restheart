@@ -590,7 +590,8 @@ public class MqttMessageRouter {
             publish.getTopic().toString(),
             new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8),
             publish.getQos().getCode(),
-            Instant.now()
+            Instant.now(),
+            publish.isRetain()
         );
 
         if (cacheEnabled) {
@@ -619,7 +620,8 @@ public class MqttMessageRouter {
             publish.getTopic().toString(),
             new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8),
             publish.getQos().getCode(),
-            Instant.now()
+            Instant.now(),
+            publish.isRetain()
         );
 
         if (cacheEnabled) {

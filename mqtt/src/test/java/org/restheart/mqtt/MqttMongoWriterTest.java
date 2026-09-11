@@ -202,6 +202,22 @@ public class MqttMongoWriterTest {
         assertEquals("{\"temp\":25}", doc.getString("payload"));
         assertEquals("2026-01-01T00:00:00Z", doc.getString("receivedAt"));
         assertEquals(1, doc.getInteger("qos"));
+        assertEquals(false, doc.getBoolean("retain"));
+    }
+
+    @Test
+    @DisplayName("toDocument records the retain flag rather than interpreting it away")
+    void testToDocumentRecordsRetain() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        MqttMessage retained = new MqttMessage(
+            "sensors/temp", "{\"temp\":25}", 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), true);
+
+        Document doc = writer.toDocument(retained);
+
+        // The collection is meant to be a faithful record of what the broker delivered - enough to
+        // replay the stream it came from. Dropping the flag makes a retained value, possibly days
+        // old, indistinguishable from a measurement just taken.
+        assertEquals(true, doc.getBoolean("retain"));
     }
 
     @Test

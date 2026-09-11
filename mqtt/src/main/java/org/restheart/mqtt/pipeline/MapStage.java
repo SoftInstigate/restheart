@@ -125,11 +125,14 @@ public class MapStage implements MqttEventStage {
             }
 
             // Create new message with transformed payload
+            // retain is carried over: this is the same broker delivery with a rewritten payload, so
+            // rewriting must not turn a retained value into something that looks live.
             MqttMessage transformed = new MqttMessage(
                 message.getTopic(),
                 transformedPayload,
                 message.getQos(),
-                message.getReceivedAt()
+                message.getReceivedAt(),
+                message.isRetain()
             );
 
             return Optional.of(transformed);

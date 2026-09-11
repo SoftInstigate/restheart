@@ -241,7 +241,8 @@ public class MqttSseServiceTest {
         assertTrue(payload.contains("\"topic\":\"sensors/temp\""));
         assertTrue(payload.contains("\"payload\":\"{\\\"temp\\\":25}\""));
         assertTrue(payload.contains("\"qos\":1"));
-        assertTrue(payload.contains("\"cached\":false"));
+        assertTrue(payload.contains("\"replay\":false"));
+        assertTrue(payload.contains("\"retain\":false"));
     }
 
     @Test
@@ -258,8 +259,8 @@ public class MqttSseServiceTest {
     }
 
     @Test
-    @DisplayName("Cached flag included when cached=true")
-    void testCachedFlagInEnvelope() throws Exception {
+    @DisplayName("replay flag is set for a message delivered from the cache")
+    void testReplayFlagInEnvelope() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("payload-envelope", true);
         callInit();
@@ -267,7 +268,44 @@ public class MqttSseServiceTest {
         MqttMessage msg = new MqttMessage("sensors/temp", "{}", 1, Instant.now());
         String payload = service.formatPayload(msg, true);
 
-        assertTrue(payload.contains("\"cached\":true"));
+        assertTrue(payload.contains("\"replay\":true"));
+    }
+
+    // --- replay and retain are orthogonal, which is the whole reason they are two fields.
+    //
+    // Measured against a real broker: a retained value published while nothing was subscribed is
+    // delivered live to the client whose connection triggered the SUBSCRIBE (replay false, retain
+    // true), and the same message is then replayed from the cache to the next client (replay true,
+    // retain true). Collapsing the two into one flag made those two clients disagree about the same
+    // message, and reporting only "cached" presented a value of unknown age as a fresh reading. ---
+
+    @Test
+    @DisplayName("a retained message delivered live is retain=true, replay=false")
+    void testRetainedMessageDeliveredLive() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("payload-envelope", true);
+        callInit();
+
+        MqttMessage retained = new MqttMessage("sensors/temp", "{}", 1, Instant.now(), true);
+        String payload = service.formatPayload(retained, false);
+
+        assertTrue(payload.contains("\"retain\":true"), "the broker's retain flag must reach the consumer: " + payload);
+        assertTrue(payload.contains("\"replay\":false"), "it did not come from our cache: " + payload);
+    }
+
+    @Test
+    @DisplayName("the same retained message replayed from the cache is retain=true, replay=true")
+    void testRetainedMessageReplayedFromCache() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("payload-envelope", true);
+        callInit();
+
+        MqttMessage retained = new MqttMessage("sensors/temp", "{}", 1, Instant.now(), true);
+        String payload = service.formatPayload(retained, true);
+
+        assertTrue(payload.contains("\"retain\":true"),
+            "two clients must not disagree about whether a message was retained: " + payload);
+        assertTrue(payload.contains("\"replay\":true"), payload);
     }
 
     // --- Pipeline selection tests (finding M9) ---
@@ -774,7 +812,7 @@ public class MqttSseServiceTest {
             ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
             verify(conn, times(2)).send(payloadCaptor.capture(), anyString(), anyString(), any());
             for (String payload : payloadCaptor.getAllValues()) {
-                assertTrue(payload.contains("\"cached\":true"), "cached messages must be flagged cached=true");
+                assertTrue(payload.contains("\"replay\":true"), "messages from the cache must be flagged replay=true");
             }
         } finally {
             open.set(false);

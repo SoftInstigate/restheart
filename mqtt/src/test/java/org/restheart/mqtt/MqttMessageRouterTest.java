@@ -92,10 +92,15 @@ public class MqttMessageRouterTest {
     }
 
     private static Mqtt5Publish mockPublish(String topic, String payload, MqttQos qos) {
+        return mockPublish(topic, payload, qos, false);
+    }
+
+    private static Mqtt5Publish mockPublish(String topic, String payload, MqttQos qos, boolean retain) {
         Mqtt5Publish publish = mock(Mqtt5Publish.class);
         when(publish.getTopic()).thenReturn(MqttTopic.of(topic));
         when(publish.getPayloadAsBytes()).thenReturn(payload.getBytes(StandardCharsets.UTF_8));
         when(publish.getQos()).thenReturn(qos);
+        when(publish.isRetain()).thenReturn(retain);
         return publish;
     }
 
@@ -798,4 +803,43 @@ public class MqttMessageRouterTest {
         verify(fixture.unsubscribeStart, never()).topicFilter(anyString());
     }
 
+
+    // --- The broker's retain flag has to survive the trip to the consumer.
+    //
+    // A retained message is the topic's last known state replayed to a new subscription, not an
+    // event that has just happened - and receivedAt cannot say so, because it is assigned locally
+    // on reception, so a value published days ago arrives stamped with today's time. The flag is the
+    // only warning available, the protocol provides it, and the router used to throw it away. ---
+
+    @Test
+    @DisplayName("a retained publish produces a message flagged retained")
+    void testRetainFlagReachesTheListener() {
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
+
+        var received = new java.util.concurrent.CopyOnWriteArrayList<MqttMessage>();
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, received::add);
+
+        Consumer<Mqtt5Publish> globalConsumer = capturedGlobalConsumer(mockClient);
+        globalConsumer.accept(mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, true));
+        globalConsumer.accept(mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, false));
+
+        awaitCondition(() -> received.size() == 2, 5_000);
+        assertTrue(received.get(0).isRetain(), "a retained publish must arrive flagged as retained");
+        assertFalse(received.get(1).isRetain(), "an ordinary publish must not be flagged as retained");
+    }
+
+    @Test
+    @DisplayName("the cached copy keeps the retain flag, so a replay does not contradict the live delivery")
+    void testCachedCopyKeepsTheRetainFlag() {
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
+
+        capturedGlobalConsumer(mockClient).accept(mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, true));
+
+        awaitCondition(() -> !router.getLastMessages("sensors/#").isEmpty(), 5_000);
+        assertTrue(router.getLastMessages("sensors/#").get(0).isRetain(),
+            "the client that triggers the subscribe and the client that gets the replay must agree "
+                + "that the message was retained");
+    }
 }

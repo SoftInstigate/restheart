@@ -108,6 +108,9 @@ public class SlidingWindowAggregator implements MqttEventStage {
                     return Optional.empty();
                 }
 
+                // The four-argument constructor, so retain is false: an aggregate is a value this
+                // module computed, not a retained delivery from the broker, whatever the messages
+                // it was computed from were.
                 MqttMessage aggregated = new MqttMessage(
                     message.getTopic(),
                     aggregatedPayload.get(),

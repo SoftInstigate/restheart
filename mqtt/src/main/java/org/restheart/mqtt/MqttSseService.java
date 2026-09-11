@@ -68,7 +68,15 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
  * </p>
  * <p>
  * If the last-message cache is enabled and a cached message exists for a matching
- * topic, it is sent as the first SSE event with {@code "cached": true}.
+ * topic, it is sent as the first SSE event with {@code "replay": true}.
+ * <p>
+ * With {@code payload-envelope: true} every event carries two independent flags, and a consumer
+ * that wants to know whether it is looking at something that has just happened must check both:
+ * {@code replay} says this delivery came from the router's cache rather than the live stream, and
+ * {@code retain} says the broker itself marked the message as the topic's last known state. They
+ * are orthogonal - the first message a new subscription receives can be a retained value delivered
+ * live ({@code replay: false, retain: true}), and the same message replayed to the next client is
+ * {@code replay: true, retain: true}. A genuinely new event is neither.
  * </p>
  * <p>
  * Every connection gets its own, freshly built {@link MqttEventPipeline}: the
@@ -331,17 +339,18 @@ public class MqttSseService implements SseService {
      * Formats an MQTT message as an SSE data payload.
      *
      * @param message the MQTT message
-     * @param cached  whether this is a cached message
+     * @param replay  whether this delivery comes from the last-message cache
      * @return the formatted payload string
      */
-    String formatPayload(MqttMessage message, boolean cached) {
+    String formatPayload(MqttMessage message, boolean replay) {
         if (payloadEnvelope) {
             JsonObject envelope = new JsonObject();
             envelope.addProperty("topic", message.getTopic());
             envelope.addProperty("payload", message.getPayload());
             envelope.addProperty("receivedAt", message.getReceivedAt().toString());
             envelope.addProperty("qos", message.getQos());
-            envelope.addProperty("cached", cached);
+            envelope.addProperty("replay", replay);
+            envelope.addProperty("retain", message.isRetain());
             return GSON.toJson(envelope);
         } else {
             return message.getPayload();
@@ -358,11 +367,12 @@ public class MqttSseService implements SseService {
      *
      * @param conn     the connection to send the event on
      * @param message  the message to send
-     * @param cached   whether this is a replayed, cached message
+     * @param replay   whether this delivery comes from the router's last-message cache rather than
+     *                 from the live stream
      * @param sequence the per-connection event sequence counter
      */
-    private void sendEvent(ServerSentEventConnection conn, MqttMessage message, boolean cached, AtomicLong sequence) {
-        String payload = formatPayload(message, cached);
+    private void sendEvent(ServerSentEventConnection conn, MqttMessage message, boolean replay, AtomicLong sequence) {
+        String payload = formatPayload(message, replay);
         String eventId = message.getTopic() + "-" + message.getReceivedAt().toEpochMilli() + "-" + sequence.getAndIncrement();
         conn.send(payload, "mqtt-message", eventId, null);
     }

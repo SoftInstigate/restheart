@@ -79,7 +79,11 @@ mqtt-sse:
                                               # one arrives twice. Detection takes up to two periods:
                                               # the first write into a half-closed socket succeeds.
   last-message-cache: true
-  payload-envelope: false                     # true = wrap in {topic, payload, receivedAt, qos}
+  payload-envelope: false                     # true = wrap in
+                                              # {topic, payload, receivedAt, qos, replay, retain}.
+                                              # replay = came from our cache, not the live stream;
+                                              # retain = the broker called it the topic's last known
+                                              # state. Orthogonal: a new event is neither. See README
   pipeline:                                   # optional per-topic pipeline overrides
     - topic: "sensors/#"
       stages:

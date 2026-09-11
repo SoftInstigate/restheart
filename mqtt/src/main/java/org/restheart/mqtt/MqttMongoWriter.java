@@ -680,6 +680,12 @@ public class MqttMongoWriter implements Initializer {
         doc.append("payload", msg.getPayload());
         doc.append("receivedAt", msg.getReceivedAt().toString());
         doc.append("qos", msg.getQos());
+        // Recorded, not interpreted. A stored MQTT event is only a faithful record of what the
+        // broker delivered if it keeps the retain flag: without it, a retained value - the topic's
+        // last known state, possibly days old - is indistinguishable in the collection from a
+        // measurement that had just been taken, and the collection cannot be replayed as the
+        // message stream it came from.
+        doc.append("retain", msg.isRetain());
 
         // Apply ID strategy
         if (idStrategy != null) {
