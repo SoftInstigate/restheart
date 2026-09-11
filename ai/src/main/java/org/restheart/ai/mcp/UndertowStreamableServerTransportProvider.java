@@ -384,6 +384,17 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
      * yet at that point, so the choice is still open, and dropping the extra messages would be
      * worse than a slightly unexpected content type.
      */
+    /** The request id, rendered as JSON: echoing it is what lets the client match the error to its call. */
+    private static String jsonId(McpSchema.JSONRPCRequest rpcReq) {
+        var id = rpcReq.id();
+
+        if (id == null) {
+            return "null";
+        }
+
+        return id instanceof Number ? id.toString() : "\"" + id.toString().replace("\"", "\\\"") + "\"";
+    }
+
     private void respondBuffered(McpStreamableServerSession session, McpSchema.JSONRPCRequest rpcReq,
                                  String sessionId, ByteArrayResponse res, McpTransportContext ctx) {
         var transport = new UndertowStreamableSessionTransport(sessionId, jsonMapper, false);
@@ -415,6 +426,22 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         if (messages.size() == 1) {
             res.setContentType(APPLICATION_JSON);
             res.setContent(messages.get(0));
+            return;
+        }
+
+        // No message at all means the session failed to produce one — responseStream threw, and
+        // the exception above was only logged, or it completed having emitted nothing. Falling
+        // through to SSE would answer 200 with a well-formed stream carrying zero events, and a
+        // client waiting for a reply to its request would wait for one that is never coming. A
+        // failure has to look like a failure.
+        if (messages.isEmpty()) {
+            LOGGER.warn("{} produced no message for session {}; answering 500 rather than an empty stream",
+                    rpcReq.method(), sessionId);
+
+            res.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            res.setContentType(APPLICATION_JSON);
+            res.setContent("{\"jsonrpc\":\"2.0\",\"id\":" + jsonId(rpcReq)
+                    + ",\"error\":{\"code\":-32603,\"message\":\"Internal error: the server produced no response\"}}");
             return;
         }
 
