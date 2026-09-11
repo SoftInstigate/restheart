@@ -20,6 +20,9 @@
  */
 package org.restheart.mongodb.interceptors;
 
+import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
+import static org.restheart.exchange.ExchangeKeys.TXNID_KEY;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
@@ -50,6 +53,22 @@ public class ConstraintsTxn implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         if (Constraint.getFromJson(request.getCollectionProps()).stream().noneMatch(Constraint::enabled)) {
+            return;
+        }
+
+        // A client session without a transaction (?sid= with no ?txn=) wins over the transaction we
+        // would open: ClientSessionInjector installs the client's session and startTxn() is then a
+        // no-op, so the write would run unguarded and the check would silently not happen. A
+        // constraint that a caller can switch off by adding a query parameter is not a constraint,
+        // so the write is refused instead. With ?sid=&txn= there IS a transaction and the check
+        // works, joined to the client's own.
+        final var query = request.getExchange().getQueryParameters();
+
+        if (query.containsKey(CLIENT_SESSION_KEY) && !query.containsKey(TXNID_KEY)) {
+            response.setInError(HttpStatus.SC_BAD_REQUEST,
+                    "collection '" + request.getCollectionName() + "' declares constraints, which are "
+                            + "checked inside the write's transaction. Either drop the 'sid' parameter, "
+                            + "or use a session with a transaction in progress ('txn').");
             return;
         }
 

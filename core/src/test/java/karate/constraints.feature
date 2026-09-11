@@ -236,3 +236,21 @@ Scenario: The old name is inert
     And request { "_id": "anything" }
     When method POST
     Then assert responseStatus == 201
+
+Scenario: A constraint cannot be switched off with a query parameter
+
+    # ?sid= installs the client's session, which wins over the transaction the check needs: without
+    # ?txn= there is no transaction, so the check would silently not run. A constraint a caller can
+    # disable by adding a parameter is not a constraint, so the write is refused instead.
+    * header Authorization = authHeader
+    Given path accounts
+    And param sid = '11111111-1111-4111-8111-111111111111'
+    And request { "_id": "eve", "balance": -999 }
+    When method POST
+    Then assert responseStatus == 400
+    And match response.message contains 'constraints'
+
+    * header Authorization = authHeader
+    Given path accounts + '/eve'
+    When method GET
+    Then assert responseStatus == 404
