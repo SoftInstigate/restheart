@@ -140,10 +140,18 @@ public class AuthTokenService implements ByteArrayService {
         Number grace = argOrDefault(config, "refresh-grace-seconds", (Number) DEFAULT_REFRESH_GRACE_SECONDS);
         this.refreshGraceSeconds = grace.longValue();
 
-        this.refreshVerifier = JWT.require(algo)
+        // The audience check is the one jwtTokenManager applies to every token it accepts. Leaving
+        // it out here would make this endpoint the weakest verifier on the server, and the one that
+        // hands back a fresh token.
+        final var refreshVerification = JWT.require(algo)
                 .withIssuer(jwtConfig.issuer())
-                .acceptExpiresAt(this.refreshGraceSeconds)
-                .build();
+                .acceptExpiresAt(this.refreshGraceSeconds);
+
+        if (jwtConfig.audience() != null && jwtConfig.audience().length > 0) {
+            refreshVerification.withAudience(jwtConfig.audience());
+        }
+
+        this.refreshVerifier = refreshVerification.build();
 
         // Logged because it is otherwise invisible: an operator who sets refresh-grace-seconds has
         // no way to tell from outside whether it took effect, short of timing a token's expiry.
@@ -403,6 +411,21 @@ public class AuthTokenService implements ByteArrayService {
             LOGGER.debug("Refresh token verification failed: {}", e.getMessage());
             sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_grant",
                     "the token is invalid, or expired longer ago than the renewal window allows");
+            return;
+        }
+
+        // An authorization code is a JWT too, signed with the same key and carrying the same issuer,
+        // sub and roles — the verifier above cannot tell the two apart. Redeeming a code here would
+        // yield a full access token without the code_verifier ever being presented, which is the
+        // whole of what PKCE protects against: a stolen code would become a stolen session.
+        //
+        // The code challenge is what a code has and a token does not, so its presence is the test.
+        if (!decoded.getClaim(OAuthAuthorizationService.CLAIM_CODE_CHALLENGE).isMissing()) {
+            LOGGER.warn("An authorization code was presented as a refresh_token by '{}' — refused",
+                    decoded.getSubject());
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_grant",
+                    "an authorization code cannot be used as a refresh token; exchange it with "
+                            + "grant_type=authorization_code and its code_verifier");
             return;
         }
 
