@@ -120,8 +120,13 @@ Three things worth noticing in that output:
   you dispatch on: `source.addEventListener('mqtt-message', ...)`. Listening only for the default
   `message` event gets you nothing.
 - **`data:` is your payload, untouched.** The module does not wrap or reinterpret it; set
-  `payload-envelope: true` if you would rather receive `{topic, payload, receivedAt, qos, cached}`,
-  which you will need as soon as one stream carries more than one topic.
+  `payload-envelope: true` if you would rather receive
+  `{topic, payload, receivedAt, qos, replay, retain}`, which you will need as soon as one stream
+  carries more than one topic — and which is the only way to tell a new event from the topic's
+  stored last value. With the raw format there is nowhere to put that, so everything looks live.
+  `replay` means the event came from RESTHeart's cache, `retain` that the broker handed it over as
+  last-known-state on subscribe; a genuinely new event is neither. See "Durability" in
+  [README.md](./README.md).
 - **The id is not resumable.** It is unique within this stream and meaningless outside it;
   `Last-Event-ID` is currently ignored, so a reconnecting client does not get a replay.
 
@@ -247,6 +252,25 @@ curl -u admin:secret 'http://localhost:8080/mqtt'
 curl -u admin:secret 'http://localhost:8080/mqtt?topic=traffic/x'
 {"msg":"Not authorized for topic: traffic/x"}             # 403 - the same ACL guards both endpoints
 ```
+
+### A remedy worth knowing, if you control the publishers
+
+The cache lives in memory, so every restart puts you back at `404` until the next message arrives —
+on a slow topic, a long blind window. There is a broker-side fix that costs nothing: publish the
+latest state **retained**.
+
+```
+docker compose exec -T mosquitto mosquitto_pub -r -q 1 -t sensors/temp -m '{"value":21.5}'
+```
+
+Now restart RESTHeart (`docker compose up -d --force-recreate restheart`) and poll again **without
+publishing anything**. It answers `200`. The broker replays its retained value on the SUBSCRIBE the
+module issues at every startup, so the cache is correct immediately. Drop the `-r` and repeat: `404`.
+
+This does not replace `mqtt-router.subscriptions` — with no subscription there is no SUBSCRIBE and
+nothing is replayed — it removes the window after each restart. With `payload-envelope: true` such a
+message arrives flagged `retain: true`, which is your warning that `receivedAt` is when *this
+instance* received it, not when the reading was taken.
 
 ### One surprise you may hit instead of the 404
 
