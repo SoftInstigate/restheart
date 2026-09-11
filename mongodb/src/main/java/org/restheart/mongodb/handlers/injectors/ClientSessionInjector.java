@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 
 /**
  *
@@ -73,6 +74,20 @@ public class ClientSessionInjector extends PipelinedHandler {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientSessionInjector.class);
+
+    /**
+     * Marks a transaction this server opened, as opposed to one the client owns and drives with
+     * {@code ?sid=&txn=}. Only the former is ours to commit.
+     */
+    private static final AttachmentKey<Boolean> SERVER_STARTED_TXN = AttachmentKey.create(Boolean.class);
+
+    /**
+     * @return true if the transaction the request runs in was opened by this server, and is
+     * therefore this server's to commit
+     */
+    public static boolean serverStartedTxn(MongoRequest request) {
+        return Boolean.TRUE.equals(request.getExchange().getAttachment(SERVER_STARTED_TXN));
+    }
 
     private ClientSessionFactory clientSessionFactory = ClientSessionFactory.getInstance();
 
@@ -154,6 +169,7 @@ public class ClientSessionInjector extends PipelinedHandler {
         }
 
         request.setClientSession(cs);
+        request.getExchange().putAttachment(SERVER_STARTED_TXN, Boolean.TRUE);
 
         // Safety net for the one path that skips txnCloser: a RESPONSE interceptor that throws
         // stops the executor's loop, so the interceptors after it — txnCloser included — never run.

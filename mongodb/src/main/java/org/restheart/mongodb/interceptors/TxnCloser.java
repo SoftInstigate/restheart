@@ -22,6 +22,7 @@ package org.restheart.mongodb.interceptors;
 
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.db.sessions.TxnClientSessionImpl;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
@@ -63,9 +64,12 @@ public class TxnCloser implements MongoInterceptor {
 
         if (response.isRollbackRequested()) {
             abort(txn, request);
-        } else {
+        } else if (ClientSessionInjector.serverStartedTxn(request)) {
             commit(txn, response);
         }
+        // else: the transaction belongs to a client driving it with ?sid=&txn=, and committing it
+        // here would end it after this one write — the rest of what the client meant to put in it
+        // would then fail with "transaction already committed". We only ever abort someone else's.
     }
 
     /**
@@ -113,7 +117,6 @@ public class TxnCloser implements MongoInterceptor {
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.getClientSession() != null
                 && request.getClientSession().hasActiveTransaction()
-                // a client's transaction is the client's to commit; we only ever abort it
                 && (request.isTxnRequested() || response.isRollbackRequested());
     }
 }
