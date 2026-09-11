@@ -41,6 +41,8 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
@@ -55,6 +57,8 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Documents {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Documents.class);
+
     private final Collections collections = Collections.get();
 
     private Documents() {
@@ -271,6 +275,19 @@ public class Documents {
         final List<BsonValue> patchedIds = inTransaction(cs)
                 ? idsOf(mcoll, cs.get(), _filter)
                 : null;
+
+        // Reading the ids is what makes the write checkable, and it is also the one part of this
+        // that scales with the collection rather than with the request. A wide filter would pull
+        // every _id into the heap before the update even runs — the transaction would fail later
+        // anyway, on its own 16MB limit, but the JVM gets there first. Refused rather than
+        // truncated: a partial set would mean checking part of the write and calling it validated.
+        if (patchedIds != null && patchedIds.size() > MAX_PATCHED_IDS) {
+            LOGGER.warn("Bulk patch on {}.{} matches more than {} documents; refused, because the "
+                    + "write could not be checked against the collection's constraints or schema",
+                    dbName, collName, MAX_PATCHED_IDS);
+
+            return new BulkOperationResult(HttpStatus.SC_REQUEST_TOO_LONG, null, null, null);
+        }
 
         patches.add(new UpdateManyModel<>(
                 patchedIds == null ? _filter : in("_id", patchedIds),
@@ -498,16 +515,28 @@ public class Documents {
         }
     }
 
+    /**
+     * How many documents one bulk patch may touch when it has to be checked afterwards. Well under
+     * what a transaction can carry, and far under what would trouble the heap.
+     */
+    private static final int MAX_PATCHED_IDS = 10_000;
+
     private static boolean inTransaction(final Optional<ClientSession> cs) {
         return cs.isPresent() && cs.get().hasActiveTransaction();
     }
 
-    /** The ids matching the filter, read in the caller's session so they are part of its snapshot. */
+    /**
+     * The ids matching the filter, read in the caller's session so they are part of its snapshot.
+     *
+     * <p>Reads one more than the cap, so the caller can tell "at the limit" from "over it" without
+     * a second query and without holding an unbounded list.
+     */
     private static List<BsonValue> idsOf(final MongoCollection<BsonDocument> mcoll, final ClientSession cs, final Bson filter) {
         final var ids = new ArrayList<BsonValue>();
 
         mcoll.find(cs, filter)
                 .projection(new BsonDocument("_id", new BsonInt32(1)))
+                .limit(MAX_PATCHED_IDS + 1)
                 .map(doc -> doc.get("_id"))
                 .into(ids);
 
