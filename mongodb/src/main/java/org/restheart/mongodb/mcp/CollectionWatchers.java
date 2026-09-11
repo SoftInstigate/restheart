@@ -77,14 +77,20 @@ public final class CollectionWatchers {
      *
      * @return a handle that removes this listener, and closes the stream when it was the last one
      */
-    public AutoCloseable watch(String db, String collection, Runnable onChange) {
+    public synchronized AutoCloseable watch(String db, String collection, Runnable onChange) {
         var key = new Key(db, collection);
 
-        var watch = watches.compute(key, (k, existing) -> {
-            var w = existing != null ? existing : new Watch();
-            w.listeners.add(onChange);
-            return w;
-        });
+        // Same monitor as release(), and for one reason: release() marks a Watch stopped and then
+        // removes it from the map, and between those two steps the entry is still there. Registering
+        // outside the lock could therefore attach this listener to a Watch about to be torn down —
+        // start() would then decline to open a cursor, because stopped is already true, and the
+        // subscriber would wait forever for notifications that nothing is producing. Nothing would
+        // look wrong: silence is what a quiet collection looks like too.
+        //
+        // A stopped Watch is never reused for the same reason: its thread is on its way out.
+        var watch = watches.compute(key, (k, existing) -> existing != null && !existing.stopped ? existing : new Watch());
+
+        watch.listeners.add(onChange);
 
         start(key, watch);
 
