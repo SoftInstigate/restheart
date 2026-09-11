@@ -4,6 +4,11 @@ Bridges an external MQTT broker into RESTHeart: incoming topic messages become S
 
 The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.0, and exposes what it receives through ordinary RESTHeart plugins. Brokers that require mutual TLS with a client certificate — AWS IoT Core among them — are not supported: the module exposes only trust-store settings (`tls`, `tls-trust-store`, `tls-trust-store-password`), never a key store or client certificate.
 
+> **New here? Start with [TUTORIALS.md](./TUTORIALS.md).** It is one progressive walkthrough in four
+> parts — stream a message to a browser, poll the last value, persist to MongoDB while deliberately
+> stopping the database, and consume messages from your own plugin — each part building on the
+> environment the previous one left running. This README is the reference; that is the way in.
+
 ## Not bundled
 
 `restheart-mqtt` does not ship with RESTHeart: it is not in the distribution zip and not in the Docker image. It is installed separately — see "Installing" below. This is deliberate. MQTT is far from RESTHeart's habitual use cases, and `hivemq-mqtt-client` brings 13 transitive jars including RxJava and seven Netty modules, a second network stack and reactive runtime that exists nowhere else in a product built on Undertow/XNIO. Bundling it would add all of that to every RESTHeart installation, including the ones that never touch MQTT.
