@@ -75,7 +75,8 @@ public class MqttLoggerService implements JsonService {
         // sensible default topic. Reading it unguarded throws inside @OnInit, and a plugin that
         // throws there aborts plugin instantiation and stops RESTHeart from starting at all: one
         // optional example plugin would take the whole server down. Always null-check an injected
-        // "config".
+        // "config" - see https://github.com/SoftInstigate/restheart/issues/732, which tracks making
+        // this unnecessary.
         subscribedTopic = config == null
             ? DEFAULT_TOPIC
             : (String) config.getOrDefault("topic", DEFAULT_TOPIC);

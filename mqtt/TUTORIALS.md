@@ -505,7 +505,9 @@ Three things to take from the real file rather than from this excerpt:
   named after your plugin — the ordinary case for a plugin that is enabled by default and has
   working defaults. Throwing inside `@OnInit` aborts plugin instantiation and **stops RESTHeart from
   starting at all**, so one optional plugin takes the whole server down. Null-check it. (This
-  example did not, until writing this tutorial found out.)
+  example did not, until writing this tutorial found out; whether the framework should hand out an
+  empty map instead is tracked in
+  [#732](https://github.com/SoftInstigate/restheart/issues/732).)
 - **`subscribe` is for live consumers.** Your listener never holds up an acknowledgement to the
   broker: throw, block, or fall behind, and ingestion carries on without you. If you need the
   message *kept*, that is `subscribeDurable`, which does not acknowledge until you say you have
