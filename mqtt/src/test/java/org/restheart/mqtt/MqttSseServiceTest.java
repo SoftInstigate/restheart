@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -646,6 +647,103 @@ public class MqttSseServiceTest {
         } finally {
             open3.set(false);
         }
+    }
+
+    // --- Liveness: nothing reads an SSE connection after the handshake, so a client that goes
+    // away is only noticed when a write to its socket fails. Without a keep-alive that write may
+    // never be attempted on a quiet topic, and the connection's router listener and broker
+    // subscription outlive the client indefinitely - which duplicates every message matching both
+    // the stale narrow filter and a broader one. Measured against a real broker before the fix:
+    // a killed client was still subscribed after five published messages and ~55 seconds. ---
+
+    @Test
+    @DisplayName("onConnect arms an SSE keep-alive by default, so a dead client is detected with no traffic")
+    void testOnConnectArmsKeepAliveByDefault() throws Exception {
+        config.put("default-topic", "sensors/#");
+        callInit();
+
+        MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
+        when(mockRouter.getLastMessages(anyString())).thenReturn(List.of());
+        injectMockRouter(mockRouter);
+
+        AtomicBoolean open = new AtomicBoolean(true);
+        ServerSentEventConnection conn = mockConnection("topic=sensors/%23", open);
+        try {
+            service.onConnect(conn, null);
+            verify(conn).setKeepAliveTime(20_000L);
+        } finally {
+            open.set(false);
+        }
+    }
+
+    @Test
+    @DisplayName("keep-alive-ms: 0 disables the keep-alive")
+    void testKeepAliveCanBeDisabled() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("keep-alive-ms", 0);
+        callInit();
+
+        MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
+        when(mockRouter.getLastMessages(anyString())).thenReturn(List.of());
+        injectMockRouter(mockRouter);
+
+        AtomicBoolean open = new AtomicBoolean(true);
+        ServerSentEventConnection conn = mockConnection("topic=sensors/%23", open);
+        try {
+            service.onConnect(conn, null);
+            verify(conn, never()).setKeepAliveTime(anyLong());
+        } finally {
+            open.set(false);
+        }
+    }
+
+    // --- The mqtt_sse_open_connections gauge reads connectionsPerTopic, which used to be
+    // maintained only when max-connections-per-topic was set. The default is 0 (unlimited), so on
+    // a default installation the gauge reported 0 however many clients were connected. ---
+
+    @Test
+    @DisplayName("open connections are counted with no max-connections-per-topic configured")
+    void testOpenConnectionsCountedWhenUnlimited() throws Exception {
+        config.put("default-topic", "sensors/#");
+        callInit();
+        assertEquals(0, maxConnectionsPerTopic(), "this test is only meaningful with no limit set");
+
+        MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
+        when(mockRouter.getLastMessages(anyString())).thenReturn(List.of());
+        injectMockRouter(mockRouter);
+
+        AtomicBoolean open = new AtomicBoolean(true);
+        ServerSentEventConnection conn = mockConnection("topic=sensors/%23", open);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<ChannelListener<ServerSentEventConnection>> closeTaskCaptor
+            = ArgumentCaptor.forClass(ChannelListener.class);
+
+        service.onConnect(conn, null);
+        verify(conn).addCloseTask(closeTaskCaptor.capture());
+        assertEquals(1, totalOpenConnections(), "an open connection must be counted even when unlimited");
+
+        open.set(false);
+        closeTaskCaptor.getValue().handleEvent(conn);
+        assertEquals(0, totalOpenConnections(), "closing must decrement the same counter");
+    }
+
+    /**
+     * @return the sum of the per-topic connection counters, i.e. what the
+     *         {@code mqtt_sse_open_connections} gauge reports
+     */
+    @SuppressWarnings("unchecked")
+    private int totalOpenConnections() throws Exception {
+        Field f = MqttSseService.class.getDeclaredField("connectionsPerTopic");
+        f.setAccessible(true);
+        var counters = (Map<String, java.util.concurrent.atomic.AtomicInteger>) f.get(service);
+        return counters.values().stream().mapToInt(java.util.concurrent.atomic.AtomicInteger::get).sum();
+    }
+
+    private int maxConnectionsPerTopic() throws Exception {
+        Field f = MqttSseService.class.getDeclaredField("maxConnectionsPerTopic");
+        f.setAccessible(true);
+        return (int) f.get(service);
     }
 
     // --- Test gap: onConnect must actually send router.getLastMessages(topicFilter) when

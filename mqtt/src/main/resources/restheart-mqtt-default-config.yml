@@ -67,8 +67,17 @@ mqtt-sse:
   enabled: true
   default-topic: "sensors/#"
   default-qos: 1
-  max-connections-per-topic: 100
+  max-connections-per-topic: 100              # 0 = unlimited, which is the compiled default
   per-connection-queue-capacity: 256          # per-client bounded queue; overflow = drop
+  keep-alive-ms: 20000                        # period of the SSE keep-alive comment; 0 disables it.
+                                              # Nothing reads an SSE connection after the handshake,
+                                              # so without this a client that goes away is only
+                                              # noticed when a write to its socket fails - which on a
+                                              # quiet topic may never be attempted. Until then its
+                                              # listener and its broker subscription survive it, and
+                                              # every message matching both that filter and a broader
+                                              # one arrives twice. Detection takes up to two periods:
+                                              # the first write into a half-closed socket succeeds.
   last-message-cache: true
   payload-envelope: false                     # true = wrap in {topic, payload, receivedAt, qos}
   pipeline:                                   # optional per-topic pipeline overrides

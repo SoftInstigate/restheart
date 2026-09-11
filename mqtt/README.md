@@ -389,7 +389,10 @@ Subscriptions declared here survive a broker session reset: when the client reco
 | `payload-envelope` | `false` | `true` wraps the payload as `{topic, payload, receivedAt, qos, cached}` |
 | `last-message-cache` | `true` | on connect, replays the cached last message of **every** topic currently cached that matches the request's topic filter, sorted by `receivedAt` — not just one message |
 | `max-connections-per-topic` | `0` | `0` = unlimited |
+| `keep-alive-ms` | `20000` | period of the SSE keep-alive comment; `0` disables it |
 | `pipeline` | none | see below |
+
+**`keep-alive-ms` is how a departed client is noticed at all.** Nothing reads an SSE connection after the handshake, so the only way the server learns a client is gone is a write to its socket failing. On a busy topic that happens on the next message; on a quiet one it may never be attempted. Until it is, the connection's router listener stays registered, filling a queue nobody drains, and its broker subscription stays in place — so every message matching both that filter and a broader one is delivered to the module twice, duplicating SSE events for other clients, duplicating custom-plugin callbacks, and duplicating MongoDB documents under `id-strategy: auto`. With `clean-session: false` the leaked broker subscription outlives the process, because it lives in the broker's session. The periodic comment turns that into a bounded wait. Detection takes up to **two** periods, not one: the first write into a half-closed socket succeeds, and only the next one fails.
 
 Query parameters: `?topic=<filter>&qos=<0-2>`. A `qos` that is unparseable or outside 0-2 falls back to `default-qos` with a warning rather than refusing the connection — by the time the service sees the request the SSE handshake has already been sent, so there is no status code left to return. `default-qos` itself is validated at startup, since it is that fallback.
 

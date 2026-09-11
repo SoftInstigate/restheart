@@ -118,6 +118,21 @@ public class MqttSseService implements SseService {
     private boolean lastMessageCacheEnabled;
     private int maxConnectionsPerTopic;
 
+    /**
+     * How often to write an SSE keep-alive comment, in milliseconds; {@code 0} disables it.
+     * <p>
+     * This is a liveness mechanism, not a nicety. Nothing reads from an SSE connection after the
+     * handshake, so a client that goes away is not noticed until a write to its socket fails —
+     * and on a quiet topic the next write may never come. Until then the connection's router
+     * listener stays registered, filling a queue nobody drains, and its broker subscription stays
+     * in place: every message matching both that stale filter and a broader one is then delivered
+     * to this client twice by the broker, duplicating SSE events, custom-plugin callbacks and —
+     * under {@code id-strategy: auto} — MongoDB documents. A periodic comment turns an indefinite
+     * leak into one bounded by this interval.
+     * </p>
+     */
+    private long keepAliveMs;
+
     private List<PipelineSpec> pipelineSpecs = List.of();
 
     /**
@@ -147,6 +162,7 @@ public class MqttSseService implements SseService {
         payloadEnvelope = argOrDefault(config, "payload-envelope", false);
         lastMessageCacheEnabled = argOrDefault(config, "last-message-cache", true);
         maxConnectionsPerTopic = argOrDefault(config, "max-connections-per-topic", 0);
+        keepAliveMs = ((Number) argOrDefault(config, "keep-alive-ms", 20_000)).longValue();
 
         pipelineSpecs = buildPipelineSpecs();
 
@@ -155,8 +171,9 @@ public class MqttSseService implements SseService {
         Metrics.registerGauge(MetricNameAndLabels.of("mqtt_sse_open_connections"), this::totalOpenConnections);
 
         LOGGER.info("MqttSseService initialized: defaultTopic={}, defaultQos={}, queueCapacity={}, envelope={}, "
-            + "maxConnectionsPerTopic={}",
-            defaultTopic, defaultQos, perConnectionQueueCapacity, payloadEnvelope, maxConnectionsPerTopic);
+            + "maxConnectionsPerTopic={}, keepAliveMs={}",
+            defaultTopic, defaultQos, perConnectionQueueCapacity, payloadEnvelope,
+            maxConnectionsPerTopic, keepAliveMs);
     }
 
     @Override
@@ -170,6 +187,12 @@ public class MqttSseService implements SseService {
                 maxConnectionsPerTopic, topicFilter);
             closeQuietly(conn);
             return;
+        }
+
+        // Armed before anything is registered on this connection, so that whatever follows is
+        // covered by the liveness check rather than depending on traffic to notice a dead peer.
+        if (keepAliveMs > 0) {
+            conn.setKeepAliveTime(keepAliveMs);
         }
 
         LOGGER.debug("SSE client connected: topic={}, qos={}", topicFilter, qos);
@@ -356,22 +379,21 @@ public class MqttSseService implements SseService {
      *         {@code topicFilter} has been reached
      */
     private boolean tryAcquireConnectionSlot(String topicFilter) {
-        if (maxConnectionsPerTopic <= 0) {
-            return true; // unlimited
-        }
-
+        // The counter is kept even when the limit is unlimited, which is the default. It used to
+        // be skipped entirely in that case, and mqtt_sse_open_connections - which reads it - then
+        // reported 0 on every default installation, however many clients were connected. Counting
+        // always and enforcing only when a limit is set keeps the gauge honest.
         // The whole decision happens inside compute(), under the same per-key lock
         // releaseConnectionSlot uses. Incrementing outside it would race with the eviction of a
         // now-idle counter there: the entry could be removed between this thread obtaining the
         // counter and incrementing it, leaving a live connection accounted for on an object no
         // longer in the map - and its later release decrementing a different one.
-        //
-        // maxConnectionsPerTopic is >= 1 by the guard above, so a freshly created counter always
-        // accepts and no zero-valued entry is ever left behind on the rejection path.
         var accepted = new boolean[1];
         connectionsPerTopic.compute(topicFilter, (k, existing) -> {
             var counter = existing == null ? new AtomicInteger() : existing;
-            if (counter.get() >= maxConnectionsPerTopic) {
+            // Rejection cannot leave a zero-valued entry behind: a limit is at least 1 here, so a
+            // freshly created counter reads 0 and is always accepted.
+            if (maxConnectionsPerTopic > 0 && counter.get() >= maxConnectionsPerTopic) {
                 accepted[0] = false;
                 return counter;
             }
@@ -384,15 +406,12 @@ public class MqttSseService implements SseService {
 
     /**
      * Releases a connection slot previously reserved by
-     * {@link #tryAcquireConnectionSlot(String)}. A no-op if
-     * {@code max-connections-per-topic} is unlimited.
+     * {@link #tryAcquireConnectionSlot(String)}. Always paired with it, limit or no limit, since
+     * the counter is maintained either way.
      *
      * @param topicFilter the requested topic filter the connection was accepted on
      */
     private void releaseConnectionSlot(String topicFilter) {
-        if (maxConnectionsPerTopic <= 0) {
-            return;
-        }
         // compute(), so the decrement and the eviction of a now-idle counter are one atomic step
         // under the map's per-key lock. Left to grow, this map accumulated one permanent entry
         // per distinct topic filter ever connected on - and the filters come from clients, so a
