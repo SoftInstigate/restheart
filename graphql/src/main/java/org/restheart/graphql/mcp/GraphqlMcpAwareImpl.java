@@ -47,29 +47,48 @@ public final class GraphqlMcpAwareImpl {
 
     /** Narrow read seam over the {@code gql-apps} collection, so orchestration is unit-testable without a real MongoDB. */
     interface MetadataSource {
-        List<BsonDocument> appDocuments();
+        List<BsonDocument> appDocuments(String db);
     }
 
     private final MetadataSource metadata;
 
-    GraphqlMcpAwareImpl(MetadataSource metadata) {
+    /** Where app definitions live when the deployment partitions nothing — {@code graphql.db}. */
+    private final String defaultAppDefDb;
+
+    GraphqlMcpAwareImpl(MetadataSource metadata, String defaultAppDefDb) {
         this.metadata = metadata;
+        this.defaultAppDefDb = defaultAppDefDb;
     }
 
     public static GraphqlMcpAwareImpl create(MongoClient mclient, String db, String collection) {
-        MetadataSource source = () -> {
+        MetadataSource source = appDefDb -> {
             var docs = new ArrayList<BsonDocument>();
-            mclient.getDatabase(db).getCollection(collection, BsonDocument.class).find().into(docs);
+            mclient.getDatabase(appDefDb).getCollection(collection, BsonDocument.class).find().into(docs);
             return docs;
         };
-        return new GraphqlMcpAwareImpl(source);
+        return new GraphqlMcpAwareImpl(source, db);
+    }
+
+    /**
+     * Which database to read app definitions from.
+     *
+     * <p>The configured {@code graphql.db} can be overridden per request, and a deployment that
+     * gives each caller its own apps does exactly that. That override cannot be used here: the MCP
+     * catalogue is built outside any request — on a scope, when its cache entry expires — so there
+     * is no exchange to read an override from. Binding the database at init instead, as this used
+     * to, described the same one default database's apps to every caller.
+     *
+     * <p>The scope is what is available here, and it names the database directly.
+     */
+    private String appDefDb(McpContext ctx) {
+        return ctx.unpartitioned() ? defaultAppDefDb : ctx.scope();
     }
 
     public List<McpResource> describeMcp(McpContext ctx) {
         var mountBase = ctx.baseUrl() + ctx.pluginUri();
         var resources = new ArrayList<McpResource>();
 
-        for (var doc : metadata.appDocuments()) {
+        for (var doc : metadata.appDocuments(appDefDb(ctx))) {
             if (!(doc.get("descriptor") instanceof BsonDocument descriptor) || !isEnabled(descriptor)) {
                 continue;
             }

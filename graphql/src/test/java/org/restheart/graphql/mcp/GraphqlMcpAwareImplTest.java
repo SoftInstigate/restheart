@@ -35,8 +35,22 @@ public class GraphqlMcpAwareImplTest {
 
     private static final McpContext CTX = new McpContext(null, "https://host", "graphql", "/graphql", Map.of());
 
+    private static final String APPS_DB = "gqlapps";
+
     private static MetadataSource of(BsonDocument... docs) {
-        return () -> List.of(docs);
+        return db -> List.of(docs);
+    }
+
+    /** Records which database was asked for, so the scope-to-database mapping can be asserted. */
+    private static MetadataSource recording(List<String> asked, BsonDocument... docs) {
+        return db -> {
+            asked.add(db);
+            return List.of(docs);
+        };
+    }
+
+    private static GraphqlMcpAwareImpl impl(MetadataSource source) {
+        return new GraphqlMcpAwareImpl(source, APPS_DB);
     }
 
     @Test
@@ -49,7 +63,7 @@ public class GraphqlMcpAwareImplTest {
                 }
                 """);
 
-        var resources = new GraphqlMcpAwareImpl(of(doc)).describeMcp(CTX);
+        var resources = impl(of(doc)).describeMcp(CTX);
 
         assertEquals(1, resources.size());
         assertEquals("https://host/graphql/warehouse", resources.get(0).uri());
@@ -66,7 +80,7 @@ public class GraphqlMcpAwareImplTest {
                 }
                 """);
 
-        assertTrue(new GraphqlMcpAwareImpl(of(doc)).describeMcp(CTX).isEmpty());
+        assertTrue(impl(of(doc)).describeMcp(CTX).isEmpty());
     }
 
     @Test
@@ -78,13 +92,13 @@ public class GraphqlMcpAwareImplTest {
                 }
                 """);
 
-        assertTrue(new GraphqlMcpAwareImpl(of(doc)).describeMcp(CTX).isEmpty());
+        assertTrue(impl(of(doc)).describeMcp(CTX).isEmpty());
     }
 
     @Test
     public void missingDescriptor_skippedWithoutError() {
         var doc = BsonDocument.parse("{\"schema\": \"type Query { x: String }\", \"mcp\": {\"description\": \"x\"}}");
-        assertTrue(new GraphqlMcpAwareImpl(of(doc)).describeMcp(CTX).isEmpty());
+        assertTrue(impl(of(doc)).describeMcp(CTX).isEmpty());
     }
 
     @Test
@@ -96,10 +110,33 @@ public class GraphqlMcpAwareImplTest {
                 {"descriptor": {"uri": "billing", "enabled": true}, "schema": "type Query { y: String }", "mcp": {"description": "b"}}
                 """);
 
-        var resources = new GraphqlMcpAwareImpl(of(warehouse, billing)).describeMcp(CTX);
+        var resources = impl(of(warehouse, billing)).describeMcp(CTX);
 
         var uris = resources.stream().map(r -> r.uri()).toList();
         assertTrue(uris.contains("https://host/graphql/warehouse"));
         assertTrue(uris.contains("https://host/graphql/billing"));
+    }
+
+    @Test
+    public void unpartitioned_readsTheConfiguredAppDefinitionDatabase() {
+        var asked = new java.util.ArrayList<String>();
+
+        impl(recording(asked)).describeMcp(CTX);
+
+        assertEquals(List.of(APPS_DB), asked);
+    }
+
+    @Test
+    public void partitioned_readsTheScopesOwnDatabase() {
+        // The configured database can be overridden per request, and a deployment giving each
+        // caller its own apps does exactly that — but the catalogue is built outside any request,
+        // so there is no override to read. The scope is what is available, and it names the
+        // database. Without this every caller was described the same default database's apps.
+        var asked = new java.util.ArrayList<String>();
+        var scoped = new McpContext(null, "https://host", "f0f0f0", "graphql", "/graphql", Map.of());
+
+        impl(recording(asked)).describeMcp(scoped);
+
+        assertEquals(List.of("f0f0f0"), asked);
     }
 }
