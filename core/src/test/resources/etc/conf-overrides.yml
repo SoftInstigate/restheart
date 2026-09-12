@@ -595,6 +595,12 @@
 # resolves the database per-request. Does not affect other tests.
 /dbOverrideInterceptor/enabled: true
 
+# Test provider: stands in for a deployment that partitions the MCP catalogue.
+# Resolves the scope from ?mcpScope=<scope>, and UNPARTITIONED for every request without
+# it — so the whole suite keeps today's behaviour and only McpScopeIT opts in. See
+# TestMcpScopeProvider.
+/testMcpScopeProvider/enabled: true
+
 # Test interceptor: attaches override-ai-mcp-public-base-url when
 # ?_mcp-baseurl-override=<url> is present, standing in for the Cloud deployment layer
 # that derives a service's base URL from its hostname. Used by McpScopeIT to give two
