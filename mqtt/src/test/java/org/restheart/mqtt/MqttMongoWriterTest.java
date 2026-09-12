@@ -60,6 +60,7 @@ import org.restheart.metrics.Metrics;
 import org.restheart.mqtt.buffer.MessageBuffer;
 import org.restheart.mqtt.buffer.MessageBuffer.Pending;
 import org.restheart.mqtt.buffer.MessageBuffer.Strategy;
+import org.restheart.mqtt.model.Mqtt5Properties;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
@@ -299,6 +300,75 @@ public class MqttMongoWriterTest {
         assertArrayEquals(NOT_UTF8, recovered.get("payload", org.bson.types.Binary.class).getData());
         assertEquals(java.util.Date.from(java.time.Instant.parse("2026-01-01T00:00:00Z")),
             recovered.getDate("receivedAt"));
+    }
+
+    /** The MQTT 5 properties used by the tests below, including a repeated user-property name. */
+    private static Mqtt5Properties mqtt5Sample() {
+        return new Mqtt5Properties(
+            List.of(new Mqtt5Properties.UserProperty("trace", "first"),
+                    new Mqtt5Properties.UserProperty("trace", "second"),
+                    new Mqtt5Properties.UserProperty("tenant", "acme")),
+            "application/json",
+            new byte[] { 1, 2, 3 },
+            "replies/acme",
+            1,
+            120L);
+    }
+
+    // --- MQTT 5 publish properties. A collection that keeps the readings but drops the correlation
+    // id, content type, response topic and user properties is not a record of the events, and
+    // cannot be replayed as the stream it came from. ---
+
+    @Test
+    @DisplayName("the MQTT 5 properties are recorded as a subdocument, with BSON types")
+    void testToDocumentRecordsMqtt5Properties() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        java.time.Instant receivedAt = java.time.Instant.parse("2026-01-01T00:00:00Z");
+        MqttMessage message = new MqttMessage("sensors/temp", "{}", 1, receivedAt, false, mqtt5Sample());
+
+        Document mqtt5 = writer.toDocument(message).get("mqtt5", Document.class);
+        assertNotNull(mqtt5, "the properties must be recorded");
+
+        @SuppressWarnings("unchecked")
+        List<Document> userProperties = (List<Document>) mqtt5.get("userProperties");
+        // An array of name/value documents, not a document keyed by name: MQTT 5 allows a repeated
+        // name and requires the order preserved, so keying by name would overwrite one of the two.
+        assertEquals(3, userProperties.size());
+        assertEquals(List.of("trace=first", "trace=second", "tenant=acme"),
+            userProperties.stream().map(d -> d.getString("name") + "=" + d.getString("value")).toList());
+
+        assertEquals("application/json", mqtt5.getString("contentType"));
+        assertArrayEquals(new byte[] { 1, 2, 3 },
+            mqtt5.get("correlationData", org.bson.types.Binary.class).getData());
+        assertEquals("replies/acme", mqtt5.getString("responseTopic"));
+        assertEquals(1, mqtt5.getInteger("payloadFormatIndicator"));
+    }
+
+    @Test
+    @DisplayName("message expiry is recorded as delivered and also derived into a queryable date")
+    void testToDocumentDerivesExpiresAt() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        java.time.Instant receivedAt = java.time.Instant.parse("2026-01-01T00:00:00Z");
+        MqttMessage message = new MqttMessage("sensors/temp", "{}", 1, receivedAt, false, mqtt5Sample());
+
+        Document mqtt5 = writer.toDocument(message).get("mqtt5", Document.class);
+
+        // The interval is what arrived - a countdown a server decrements by the time the message
+        // waited, so 120 here does not mean the publisher asked for 120. On its own, once stored, it
+        // says nothing; as a date beside receivedAt it answers "has this expired?".
+        assertEquals(120L, mqtt5.getLong("messageExpiryInterval"));
+        assertEquals(java.util.Date.from(receivedAt.plusSeconds(120)), mqtt5.getDate("expiresAt"));
+    }
+
+    @Test
+    @DisplayName("an MQTT 3.1.1 message has no mqtt5 subdocument at all")
+    void testToDocumentOmitsMqtt5ForMqtt3() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        MqttMessage message = msg("sensors/temp", "{}", 1);
+
+        // Absent, not empty: 3.1.1 has no such properties, and an empty subdocument would suggest a
+        // publisher that set nothing.
+        assertNull(writer.toDocument(message).get("mqtt5"));
     }
 
     @Test

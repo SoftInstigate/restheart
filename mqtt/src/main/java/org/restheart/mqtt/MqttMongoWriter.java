@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -44,6 +45,7 @@ import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.metrics.Metrics;
 import org.restheart.mqtt.buffer.MessageBuffer;
 import org.restheart.mqtt.buffer.MessageBuffer.Strategy;
+import org.restheart.mqtt.model.Mqtt5Properties;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.model.Qos;
 import org.restheart.plugins.InitPoint;
@@ -724,6 +726,14 @@ public class MqttMongoWriter implements Initializer {
         // message stream it came from.
         doc.append("retain", msg.isRetain());
 
+        // The MQTT 5 properties, as a subdocument, and only when there are any: absent means either
+        // MQTT 3.1.1, which has none, or a publisher that set nothing. Correlation data is BSON
+        // binary rather than base64, for the same reason the payload is.
+        var properties = msg.getMqtt5Properties();
+        if (properties != null && !properties.isEmpty()) {
+            doc.append("mqtt5", mqtt5Subdocument(properties, msg.getReceivedAt()));
+        }
+
         // Apply ID strategy
         if (idStrategy != null) {
             switch (idStrategy) {
@@ -748,6 +758,64 @@ public class MqttMongoWriter implements Initializer {
         }
 
         return doc;
+    }
+
+    /**
+     * Builds the {@code mqtt5} subdocument recording an MQTT 5 publish's properties.
+     * <p>
+     * {@code userProperties} is an array of {@code {name, value}} documents rather than one
+     * document keyed by name, because MQTT 5 permits a repeated name and requires the order to be
+     * preserved - keyed by name, a repeated property would silently overwrite its twin.
+     * </p>
+     * <p>
+     * {@code messageExpiryInterval} is recorded as delivered, which is the <strong>remaining</strong>
+     * interval rather than the one the publisher set: a server decrements it by the time the message
+     * waited - measured against Mosquitto, 120 seconds published came back as 99 after a 20 second
+     * wait. A stored message therefore cannot reproduce the publisher's chosen expiry, and a replay
+     * built from this collection has to decide what to set instead. That is a limit of what a
+     * subscriber can observe, not of what is recorded here. {@code expiresAt} is derived from it and
+     * {@code receivedAt}, since the interval on its own says nothing once stored.
+     * </p>
+     *
+     * @param properties the properties to record, neither null nor empty
+     * @param receivedAt when the message arrived, for deriving {@code expiresAt}
+     * @return the subdocument
+     */
+    private static Document mqtt5Subdocument(Mqtt5Properties properties, Instant receivedAt) {
+        var sub = new Document();
+
+        if (!properties.userProperties().isEmpty()) {
+            var entries = new ArrayList<Document>(properties.userProperties().size());
+            for (var property : properties.userProperties()) {
+                entries.add(new Document("name", property.name()).append("value", property.value()));
+            }
+            sub.append("userProperties", entries);
+        }
+        if (properties.contentType() != null) {
+            sub.append("contentType", properties.contentType());
+        }
+        if (properties.correlationData() != null) {
+            sub.append("correlationData", new Binary(properties.correlationData()));
+        }
+        if (properties.responseTopic() != null) {
+            sub.append("responseTopic", properties.responseTopic());
+        }
+        if (properties.payloadFormatIndicator() != null) {
+            sub.append("payloadFormatIndicator", properties.payloadFormatIndicator());
+        }
+        if (properties.messageExpiryInterval() != null) {
+            // Recorded as delivered: what arrived, not what was published.
+            sub.append("messageExpiryInterval", properties.messageExpiryInterval());
+            // And derived, because the interval alone is unusable once stored. A server decrements
+            // it by the time the message waited - measured against Mosquitto, 120 s published came
+            // back as 99 after a 20 s wait - so "99 seconds" only means something alongside the
+            // moment it was received. As a date it can be range-queried and indexed, which is what
+            // anyone asking "which of these has expired?" actually needs. This is the one derived
+            // field in the document; everything else is recorded verbatim.
+            sub.append("expiresAt", Date.from(receivedAt.plusSeconds(properties.messageExpiryInterval())));
+        }
+
+        return sub;
     }
 
     /**

@@ -38,6 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import org.restheart.mqtt.model.Mqtt5Properties;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.model.Qos;
 import org.slf4j.Logger;
@@ -594,7 +595,8 @@ public class MqttMessageRouter {
             publish.getPayloadAsBytes(),
             publish.getQos().getCode(),
             Instant.now(),
-            publish.isRetain()
+            publish.isRetain(),
+            mqtt5PropertiesOf(publish)
         );
 
         if (cacheEnabled) {
@@ -602,6 +604,44 @@ public class MqttMessageRouter {
         }
 
         Thread.ofVirtual().start(() -> dispatchMessage(message, publish::acknowledge));
+    }
+
+    /**
+     * Extracts the MQTT 5 publish properties into this module's own types.
+     * <p>
+     * Topic, payload, QoS and the retain flag are not the whole of an MQTT 5 message: a correlation
+     * id, a content type, a response topic and the user properties are part of what the publisher
+     * sent, and dropping them leaves a record of the readings that is not a record of the events.
+     * User properties are kept as an ordered list because the protocol permits a repeated name and
+     * requires the order to be preserved.
+     * </p>
+     *
+     * @param publish the MQTT 5 publish
+     * @return the properties, or {@code null} if the publisher set none of them - so that an absent
+     *         object means "nothing to report" for both MQTT versions
+     */
+    private static Mqtt5Properties mqtt5PropertiesOf(Mqtt5Publish publish) {
+        var userProperties = publish.getUserProperties().asList().stream()
+            .map(p -> new Mqtt5Properties.UserProperty(p.getName().toString(), p.getValue().toString()))
+            .toList();
+
+        var properties = new Mqtt5Properties(
+            userProperties,
+            publish.getContentType().map(Object::toString).orElse(null),
+            publish.getCorrelationData().map(buffer -> {
+                // A read-only view into the client's buffer: copied into a byte[] here, and copied
+                // again by Mqtt5Properties, rather than handing out something that moves.
+                var bytes = new byte[buffer.remaining()];
+                buffer.duplicate().get(bytes);
+                return bytes;
+            }).orElse(null),
+            publish.getResponseTopic().map(Object::toString).orElse(null),
+            publish.getPayloadFormatIndicator().map(indicator -> indicator.getCode()).orElse(null),
+            publish.getMessageExpiryInterval().isPresent()
+                ? publish.getMessageExpiryInterval().getAsLong()
+                : null);
+
+        return properties.isEmpty() ? null : properties;
     }
 
     /**
@@ -628,6 +668,8 @@ public class MqttMessageRouter {
             publish.getQos().getCode(),
             Instant.now(),
             publish.isRetain()
+            // No MQTT 5 properties: 3.1.1 has none, so the message carries null rather than an
+            // empty object, and a consumer can tell the protocol apart from a silent publisher.
         );
 
         if (cacheEnabled) {

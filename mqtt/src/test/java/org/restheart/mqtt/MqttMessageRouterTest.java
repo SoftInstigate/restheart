@@ -20,6 +20,7 @@
  */
 package org.restheart.mqtt;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,6 +43,8 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.OptionalLong;
+import java.util.Optional;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -66,7 +69,10 @@ import org.restheart.mqtt.model.Qos;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.datatypes.MqttTopic;
+import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperty;
+import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.Mqtt5UnsubscribeBuilder;
@@ -101,6 +107,15 @@ public class MqttMessageRouterTest {
         when(publish.getPayloadAsBytes()).thenReturn(payload.getBytes(StandardCharsets.UTF_8));
         when(publish.getQos()).thenReturn(qos);
         when(publish.isRetain()).thenReturn(retain);
+        // The MQTT 5 property getters, stubbed as the real type behaves rather than left to return
+        // Mockito's null: getUserProperties() returns an empty Mqtt5UserProperties when the
+        // publisher set none - it is not Optional - and the rest are empty Optionals.
+        when(publish.getUserProperties()).thenReturn(Mqtt5UserProperties.of());
+        when(publish.getContentType()).thenReturn(Optional.empty());
+        when(publish.getCorrelationData()).thenReturn(Optional.empty());
+        when(publish.getResponseTopic()).thenReturn(Optional.empty());
+        when(publish.getPayloadFormatIndicator()).thenReturn(Optional.empty());
+        when(publish.getMessageExpiryInterval()).thenReturn(OptionalLong.empty());
         return publish;
     }
 
@@ -846,5 +861,86 @@ public class MqttMessageRouterTest {
         assertTrue(router.getLastMessages("sensors/#").get(0).isRetain(),
             "the client that triggers the subscribe and the client that gets the replay must agree "
                 + "that the message was retained");
+    }
+
+    // --- MQTT 5 publish properties. Topic, payload, QoS and retain are not the whole of an MQTT 5
+    // message: a correlation id, a content type, a response topic and the user properties are part
+    // of what the publisher sent, and the router used to read none of them. ---
+
+    @Test
+    @DisplayName("MQTT 5 publish properties reach the listener, user properties in order and duplicates kept")
+    void testMqtt5PropertiesReachTheListener() {
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
+
+        var received = new java.util.concurrent.CopyOnWriteArrayList<MqttMessage>();
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, received::add);
+
+        Mqtt5Publish publish = mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, false);
+        // Two properties with the SAME name, which is legal in MQTT 5 and whose order the spec
+        // requires preserved - a Map<String,String> model would have dropped one of them silently.
+        when(publish.getUserProperties()).thenReturn(Mqtt5UserProperties.of(
+            Mqtt5UserProperty.of("trace", "first"),
+            Mqtt5UserProperty.of("trace", "second"),
+            Mqtt5UserProperty.of("tenant", "acme")));
+        when(publish.getContentType()).thenReturn(Optional.of(MqttUtf8String.of("application/json")));
+        when(publish.getCorrelationData()).thenReturn(Optional.of(java.nio.ByteBuffer.wrap(new byte[] { 1, 2, 3 })));
+        when(publish.getResponseTopic()).thenReturn(Optional.of(MqttTopic.of("replies/acme")));
+        when(publish.getMessageExpiryInterval()).thenReturn(OptionalLong.of(120L));
+
+        capturedGlobalConsumer(mockClient).accept(publish);
+
+        awaitCondition(() -> received.size() == 1, 5_000);
+        var properties = received.get(0).getMqtt5Properties();
+        assertNotNull(properties, "the MQTT 5 properties must reach the listener");
+
+        assertEquals(
+            List.of("trace=first", "trace=second", "tenant=acme"),
+            properties.userProperties().stream().map(p -> p.name() + "=" + p.value()).toList(),
+            "both properties named 'trace' must survive, in the order received");
+        assertEquals("application/json", properties.contentType());
+        assertArrayEquals(new byte[] { 1, 2, 3 }, properties.correlationData());
+        assertEquals("replies/acme", properties.responseTopic());
+        assertEquals(120L, properties.messageExpiryInterval());
+    }
+
+    @Test
+    @DisplayName("a publish with no MQTT 5 properties carries null, not an empty object")
+    void testNoMqtt5PropertiesMeansNull() {
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
+
+        var received = new java.util.concurrent.CopyOnWriteArrayList<MqttMessage>();
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, received::add);
+
+        capturedGlobalConsumer(mockClient).accept(mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, false));
+
+        awaitCondition(() -> received.size() == 1, 5_000);
+        // Absent rather than empty, so a consumer can tell "the protocol has no such thing" - an
+        // MQTT 3.1.1 delivery - from "the publisher set nothing".
+        assertNull(received.get(0).getMqtt5Properties());
+    }
+
+    @Test
+    @DisplayName("correlation data is copied, so the client's buffer cannot be read twice or mutated under us")
+    void testCorrelationDataIsCopiedFromTheBuffer() {
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
+
+        var received = new java.util.concurrent.CopyOnWriteArrayList<MqttMessage>();
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, received::add);
+
+        byte[] original = { 9, 8, 7 };
+        var buffer = java.nio.ByteBuffer.wrap(original);
+        Mqtt5Publish publish = mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, false);
+        when(publish.getCorrelationData()).thenReturn(Optional.of(buffer));
+
+        capturedGlobalConsumer(mockClient).accept(publish);
+
+        awaitCondition(() -> received.size() == 1, 5_000);
+        assertArrayEquals(original, received.get(0).getMqtt5Properties().correlationData());
+        // The extraction must not have consumed the caller's buffer: reading it destructively would
+        // leave anything else that looks at the publish with nothing.
+        assertEquals(original.length, buffer.remaining(), "the client's buffer position must be untouched");
     }
 }

@@ -142,7 +142,8 @@ public class MapStage implements MqttEventStage {
                 transformedPayload,
                 message.getQos(),
                 message.getReceivedAt(),
-                message.isRetain()
+                message.isRetain(),
+                message.getMqtt5Properties()
             );
 
             return Optional.of(transformed);

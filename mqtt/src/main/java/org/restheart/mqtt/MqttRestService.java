@@ -112,6 +112,10 @@ public class MqttRestService implements JsonService {
         // warning that receivedAt is the moment we received it rather than the moment it was
         // measured.
         result.addProperty("retain", cached.isRetain());
+        var mqtt5 = Mqtt5Json.mqtt5PropertiesAsJson(cached.getMqtt5Properties());
+        if (mqtt5 != null) {
+            result.add("mqtt5", mqtt5);
+        }
         response.setContent(result);
         response.setStatusCode(HttpStatus.SC_OK);
     }

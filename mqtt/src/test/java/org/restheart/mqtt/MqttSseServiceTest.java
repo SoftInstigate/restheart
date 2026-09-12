@@ -24,6 +24,7 @@ package org.restheart.mqtt;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.metrics.Metrics;
+import org.restheart.mqtt.model.Mqtt5Properties;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.model.Qos;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;
@@ -279,6 +281,53 @@ public class MqttSseServiceTest {
     // true), and the same message is then replayed from the cache to the next client (replay true,
     // retain true). Collapsing the two into one flag made those two clients disagree about the same
     // message, and reporting only "cached" presented a value of unknown age as a fresh reading. ---
+
+    /** MQTT 5 properties including a repeated user-property name, which a map model would lose. */
+    private static Mqtt5Properties mqtt5Sample() {
+        return new Mqtt5Properties(
+            List.of(new Mqtt5Properties.UserProperty("trace", "first"),
+                    new Mqtt5Properties.UserProperty("trace", "second")),
+            "application/json", new byte[] { 1, 2, 3 }, "replies/acme", 1, 120L);
+    }
+
+    @Test
+    @DisplayName("the envelope carries the MQTT 5 properties, user properties ordered and duplicates kept")
+    void testEnvelopeCarriesMqtt5Properties() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("payload-envelope", true);
+        callInit();
+
+        MqttMessage msg = new MqttMessage("sensors/temp", "{}", 1, Instant.now(), false, mqtt5Sample());
+        var envelope = com.google.gson.JsonParser.parseString(service.formatPayload(msg, false)).getAsJsonObject();
+
+        var mqtt5 = envelope.getAsJsonObject("mqtt5");
+        assertNotNull(mqtt5, "the properties must reach the consumer: " + envelope);
+
+        var userProperties = mqtt5.getAsJsonArray("userProperties");
+        assertEquals(2, userProperties.size(), "both properties named 'trace' must survive");
+        assertEquals("first", userProperties.get(0).getAsJsonObject().get("value").getAsString());
+        assertEquals("second", userProperties.get(1).getAsJsonObject().get("value").getAsString());
+
+        assertEquals("application/json", mqtt5.get("contentType").getAsString());
+        // base64: correlation data is binary and JSON cannot carry bytes.
+        assertArrayEquals(new byte[] { 1, 2, 3 },
+            java.util.Base64.getDecoder().decode(mqtt5.get("correlationData").getAsString()));
+        assertEquals("replies/acme", mqtt5.get("responseTopic").getAsString());
+        assertEquals(120L, mqtt5.get("messageExpiryInterval").getAsLong());
+    }
+
+    @Test
+    @DisplayName("an MQTT 3.1.1 message gets no mqtt5 field, rather than an empty one")
+    void testEnvelopeOmitsMqtt5ForMqtt3() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("payload-envelope", true);
+        callInit();
+
+        MqttMessage msg = new MqttMessage("sensors/temp", "{}", 1, Instant.now(), false);
+        var envelope = com.google.gson.JsonParser.parseString(service.formatPayload(msg, false)).getAsJsonObject();
+
+        assertFalse(envelope.has("mqtt5"), "absence means the protocol has none: " + envelope);
+    }
 
     /** 0x80 is a continuation byte with no lead byte: never valid UTF-8. */
     private static final byte[] NOT_UTF8 = new byte[] { (byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE };

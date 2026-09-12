@@ -23,6 +23,7 @@ package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.mock;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -337,5 +339,30 @@ public class MqttRestServiceTest {
         var obj = ex.response().getContent().getAsJsonObject();
         assertEquals("text", obj.get("payloadEncoding").getAsString());
         assertEquals("{\"temp\":25}", obj.get("payload").getAsString());
+    }
+
+    @Test
+    @DisplayName("handle(): the last value reports its MQTT 5 properties, and omits the field when there are none")
+    void testHandleGetReportsMqtt5Properties() {
+        var properties = new org.restheart.mqtt.model.Mqtt5Properties(
+            List.of(new org.restheart.mqtt.model.Mqtt5Properties.UserProperty("tenant", "acme")),
+            "application/json", new byte[] { 7 }, "replies/acme", 1, 60L);
+        cacheMessage("sensors/temp",
+            new MqttMessage("sensors/temp", "{}", 1, Instant.parse("2026-01-01T00:00:00Z"), false, properties));
+
+        var service = serviceWithRouter(router);
+        var ex = exchangeFor(METHOD.GET, "sensors/temp");
+        service.handle(ex.request(), ex.response());
+
+        var mqtt5 = ex.response().getContent().getAsJsonObject().getAsJsonObject("mqtt5");
+        assertEquals("acme", mqtt5.getAsJsonArray("userProperties").get(0).getAsJsonObject().get("value").getAsString());
+        assertEquals("application/json", mqtt5.get("contentType").getAsString());
+        assertEquals(60L, mqtt5.get("messageExpiryInterval").getAsLong());
+
+        // And an MQTT 3.1.1 message carries no such field at all.
+        cacheMessage("sensors/plain", new MqttMessage("sensors/plain", "{}", 1, Instant.now(), false));
+        var ex3 = exchangeFor(METHOD.GET, "sensors/plain");
+        serviceWithRouter(router).handle(ex3.request(), ex3.response());
+        assertFalse(ex3.response().getContent().getAsJsonObject().has("mqtt5"));
     }
 }

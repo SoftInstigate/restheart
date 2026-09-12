@@ -398,6 +398,10 @@ Subscriptions declared here survive a broker session reset: when the client reco
 | `keep-alive-ms` | `20000` | period of the SSE keep-alive comment; `0` disables it |
 | `pipeline` | none | see below |
 
+**On MQTT 5, an `mqtt5` object reports the publish properties** — `userProperties`, `contentType`, `correlationData` (base64), `responseTopic`, `payloadFormatIndicator` and `messageExpiryInterval`. It is **omitted** on MQTT 3.1.1, which has no such properties, and omitted when the publisher set none, so its presence means something.
+
+`userProperties` is an **array of `{name, value}` pairs, not an object**, because MQTT 5 permits a repeated name and requires the order preserved. Measured against Mosquitto: publishing `dup=first`, `other=in-between`, `dup=second` delivers all three, in that order — a JSON object would have kept one `dup` and lost the ordering.
+
 **Payloads are bytes, and `payloadEncoding` says how they reached you.** An MQTT payload is arbitrary bytes — protobuf, CBOR, an image, anything compressed — and JSON cannot carry bytes. So the envelope sends `payload` as text when the bytes are valid UTF-8 and as base64 when they are not, and `payloadEncoding` is always present, `"text"` or `"base64"`, because a base64 string is indistinguishable by inspection from a text payload that happens to look like base64.
 
 The raw format (`payload-envelope: false`) has nowhere to put that label, and SSE is a UTF-8 text protocol whose `data:` lines cannot carry arbitrary bytes at all. A non-text payload is therefore sent as **unlabelled** base64 and the service warns once. **If your payloads are not all text, enable the envelope.**
@@ -545,6 +549,10 @@ Documents use BSON types rather than strings, so the collection can be queried a
 | `receivedAt` | `date` | range-queryable and indexable as a date |
 | `receivedAtNanos` | `int` | the sub-millisecond remainder, `0`–`999999` |
 | `retain` | `bool` | see below |
+| `mqtt5` | `object` | the MQTT 5 publish properties; absent on MQTT 3.1.1 and when the publisher set none |
+| `mqtt5.correlationData` | `binData` | binary, like the payload |
+| `mqtt5.messageExpiryInterval` | `int64` | as delivered — see the warning below |
+| `mqtt5.expiresAt` | `date` | **derived**: `receivedAt` + the interval above |
 
 `receivedAtNanos` exists because BSON dates are milliseconds and `receivedAt` carries nanoseconds. Two messages inside one millisecond are ordinary at sensor rates, and a collection meant to be replayable must not lose the order they arrived in.
 
@@ -552,7 +560,14 @@ Documents use BSON types rather than strings, so the collection can be queried a
 
 Every document also records `retain`, the flag the broker delivered the message with, so the collection records the event rather than an interpretation of it. Without it, a value delivered as a topic's stored last-known-state — possibly days old, and possibly already in the collection from before — is indistinguishable from a measurement just taken. In a steady-state deployment it is `false` on nearly every document, and `true` mainly on the messages delivered just after a (re)start, which is exactly when a row is most likely to be a re-record of an old value.
 
-What it does **not** record, because MQTT does not tell a subscriber, is whether the *publisher* asked for retention (see `mqtt-sse`'s `retain` above). A collection intended as a source for replaying a stream can reproduce topic, payload, QoS and ordering, but not that one publish option.
+**`mqtt5.messageExpiryInterval` is a countdown, not what the publisher set.** A server decrements it by the time the message waited before delivery: measured against Mosquitto, 120 seconds published came back as **99** after a 20-second wait, and 300 came back as 283 after 15 seconds. Stored on its own the number is meaningless, so `mqtt5.expiresAt` is derived from it and `receivedAt` — the one derived field in the document, and the one that answers "which of these has expired?" with a date that can be indexed. Everything else is recorded verbatim.
+
+**Two things a subscriber cannot know, so the collection cannot record them.** Both limit how faithfully a stored stream can be replayed, and neither is a gap in this module:
+
+- whether the *publisher* asked for retention — the delivered `retain` flag answers a different question (see `mqtt-sse`'s `retain` above);
+- the publisher's chosen message expiry, for the reason just given.
+
+Everything else a replay needs is there: topic, payload byte for byte, QoS, ordering to the nanosecond, and the MQTT 5 properties. Note also that a **message published with MQTT 5 properties and delivered to an MQTT 3.1.1 subscriber arrives with every property silently stripped** — measured; no error, no warning. If you intend to persist them, `mqtt-client` must be configured with `protocol-version: 5`.
 
 The two deduplicating strategies write with upserts, so redelivery converges on one document instead of raising duplicate-key errors. Duplicate-key (11000) is counted as a success. `id-field` (default `messageId`) must be set and non-blank when `id-strategy` is `payload-field`; both keys are validated at startup, because a typo would otherwise disable deduplication silently.
 

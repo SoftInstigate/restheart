@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.restheart.mqtt.model.Mqtt5Properties;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.model.Qos;
 import org.restheart.mqtt.pipeline.FilterStage;
@@ -361,6 +362,10 @@ public class MqttSseService implements SseService {
             envelope.addProperty("qos", message.getQos());
             envelope.addProperty("replay", replay);
             envelope.addProperty("retain", message.isRetain());
+            var mqtt5 = Mqtt5Json.mqtt5PropertiesAsJson(message.getMqtt5Properties());
+            if (mqtt5 != null) {
+                envelope.add("mqtt5", mqtt5);
+            }
             return GSON.toJson(envelope);
         }
 

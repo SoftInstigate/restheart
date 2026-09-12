@@ -15,7 +15,11 @@
 mqtt-client:
   enabled: true
   broker-url: "tcp://localhost:1883"          # tcp:// (default), ssl:// or mqtts://, ws://, wss://
-  protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0
+  protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0.
+                                              # Only 5 carries publish properties (user properties,
+                                              # content-type, correlation data, response topic).
+                                              # A broker strips them silently for a 3.1.1
+                                              # subscriber, so set 5 if you need them recorded.
   client-id: ~                                # ~ (null/blank) generates "restheart-" + instance name;
                                                # must be unique per concurrently connected instance
   username: ~

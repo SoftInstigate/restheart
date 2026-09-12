@@ -38,6 +38,7 @@ import java.util.Objects;
  * - QoS: Quality of Service level (0, 1, or 2)
  * - ReceivedAt: Timestamp when the message was received by RESTHeart
  * - Retain: whether the broker delivered this as a retained message
+ * - Mqtt5Properties: the MQTT 5.0 publish properties, absent on MQTT 3.1.1
  *
  * Instances are created by the MqttMessageRouter when messages arrive from
  * the broker and are distributed to registered listeners.
@@ -66,6 +67,13 @@ public class MqttMessage {
     private final boolean retain;
 
     /**
+     * The MQTT 5.0 publish properties, or {@code null} on MQTT 3.1.1, which has none - absent
+     * rather than empty, so a consumer can tell "the protocol has no such thing" from "the
+     * publisher set nothing".
+     */
+    private final Mqtt5Properties mqtt5Properties;
+
+    /**
      * Create a new MQTT message from the bytes the broker delivered.
      *
      * @param topic The MQTT topic
@@ -74,7 +82,8 @@ public class MqttMessage {
      * @param receivedAt Timestamp when message was received
      * @param retain whether the broker flagged this delivery as retained; see {@link #isRetain()}
      */
-    public MqttMessage(String topic, byte[] payload, int qos, Instant receivedAt, boolean retain) {
+    public MqttMessage(String topic, byte[] payload, int qos, Instant receivedAt, boolean retain,
+            Mqtt5Properties mqtt5Properties) {
         this.topic = topic;
         // Copied, or this would not be immutable: the caller still holds the array.
         this.payload = payload == null ? null : payload.clone();
@@ -82,6 +91,20 @@ public class MqttMessage {
         this.qos = qos;
         this.receivedAt = receivedAt;
         this.retain = retain;
+        this.mqtt5Properties = mqtt5Properties;
+    }
+
+    /**
+     * Create a new MQTT message with no MQTT 5 properties, as an MQTT 3.1.1 delivery has none.
+     *
+     * @param topic The MQTT topic
+     * @param payload The message payload as delivered; copied, and may be {@code null}
+     * @param qos Quality of Service level (0, 1, or 2)
+     * @param receivedAt Timestamp when message was received
+     * @param retain whether the broker flagged this delivery as retained; see {@link #isRetain()}
+     */
+    public MqttMessage(String topic, byte[] payload, int qos, Instant receivedAt, boolean retain) {
+        this(topic, payload, qos, receivedAt, retain, null);
     }
 
     /**
@@ -94,7 +117,23 @@ public class MqttMessage {
      * @param retain whether the broker flagged this delivery as retained; see {@link #isRetain()}
      */
     public MqttMessage(String topic, String payload, int qos, Instant receivedAt, boolean retain) {
-        this(topic, payload == null ? null : payload.getBytes(StandardCharsets.UTF_8), qos, receivedAt, retain);
+        this(topic, payload, qos, receivedAt, retain, null);
+    }
+
+    /**
+     * Create a new MQTT message from text, which is encoded to UTF-8 bytes.
+     *
+     * @param topic The MQTT topic
+     * @param payload The message payload as text; may be {@code null}
+     * @param qos Quality of Service level (0, 1, or 2)
+     * @param receivedAt Timestamp when message was received
+     * @param retain whether the broker flagged this delivery as retained; see {@link #isRetain()}
+     * @param mqtt5Properties the MQTT 5 publish properties, or {@code null}
+     */
+    public MqttMessage(String topic, String payload, int qos, Instant receivedAt, boolean retain,
+            Mqtt5Properties mqtt5Properties) {
+        this(topic, payload == null ? null : payload.getBytes(StandardCharsets.UTF_8), qos, receivedAt,
+            retain, mqtt5Properties);
     }
 
     /**
@@ -230,6 +269,16 @@ public class MqttMessage {
         return retain;
     }
 
+    /**
+     * The MQTT 5.0 publish properties - user properties, content type, correlation data, response
+     * topic, payload format indicator and the remaining message expiry interval.
+     *
+     * @return the properties, or {@code null} on MQTT 3.1.1, which has none
+     */
+    public Mqtt5Properties getMqtt5Properties() {
+        return mqtt5Properties;
+    }
+
     @Override
     public String toString() {
         return String.format("MqttMessage{topic='%s', qos=%d, receivedAt=%s, retain=%s, payload=%s}",
@@ -256,7 +305,8 @@ public class MqttMessage {
             && retain == other.retain
             && Objects.equals(topic, other.topic)
             && Arrays.equals(payload, other.payload)
-            && Objects.equals(receivedAt, other.receivedAt);
+            && Objects.equals(receivedAt, other.receivedAt)
+            && Objects.equals(mqtt5Properties, other.mqtt5Properties);
     }
 
     /**
@@ -267,6 +317,6 @@ public class MqttMessage {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(topic, Arrays.hashCode(payload), qos, receivedAt, retain);
+        return Objects.hash(topic, Arrays.hashCode(payload), qos, receivedAt, retain, mqtt5Properties);
     }
 }
