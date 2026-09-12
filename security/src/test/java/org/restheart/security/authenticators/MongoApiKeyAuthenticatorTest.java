@@ -37,6 +37,7 @@ import org.bson.BsonString;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.restheart.security.ApiKeyCredential;
+import org.restheart.security.tokens.JwtTokenManager;
 
 public class MongoApiKeyAuthenticatorTest {
 
@@ -160,9 +161,14 @@ public class MongoApiKeyAuthenticatorTest {
     }
 
     @Test
-    void theAccountCarriesNothingBeyondIdentity() throws Exception {
+    void theAccountCarriesNothingBeyondIdentityAndTheApiKeyMarker() throws Exception {
         // The key document holds the hash, and is the tenant's to shape — what
-        // else is in it was not written with an ACL predicate in mind.
+        // else is in it was not written with an ACL predicate in mind, so `_id`
+        // is all of it that reaches the account.
+        //
+        // `apiKey` is the one addition, and it does not come from the document:
+        // RESTHeart stamps it so JwtTokenManager can refuse to renew a token
+        // minted from a key (#729). A marker, never key material.
         set("keysDb", "restheart");
 
         final var account = this.authenticator.accountOf(key()
@@ -170,7 +176,7 @@ public class MongoApiKeyAuthenticatorTest {
                 .append("name", new BsonString("CI deploy"))
                 .append("roles", new BsonArray(java.util.List.of(new BsonString("cli")))));
 
-        assertEquals(Set.of("_id"), account.properties().keySet());
+        assertEquals(Set.of("_id", JwtTokenManager.FROM_API_KEY), account.properties().keySet());
         assertEquals(Set.of("cli"), account.getRoles());
     }
 
