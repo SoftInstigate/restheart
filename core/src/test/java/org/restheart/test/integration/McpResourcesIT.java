@@ -306,6 +306,36 @@ public class McpResourcesIT extends AbstactIT {
 
     // ------------------------------------------------------------ read: error
 
+    /**
+     * The MCP SDK refuses a read whose URI carries a host it did not register, before any of our
+     * code runs — its registry is built once for the whole server and it matches the exact URI,
+     * falling back only to templates that carry the same host.
+     *
+     * <p>This is what makes per-tenant resource URIs impossible on SDK 2.x. A multi-tenant
+     * deployment would want every tenant's catalogue to name that tenant's own host; the listing
+     * could be rewritten on the way out, but the reads that followed would all be refused right
+     * here. Per-caller repositories are java-sdk#578, targeted at SDK 3.0.
+     *
+     * <p>Kept as a test rather than a note: if a future SDK starts routing these to us, this fails
+     * and tells us the limitation is gone.
+     */
+    @Test
+    public void readingAUriWithAnUnregisteredHost_isRefusedByTheSdk() throws Exception {
+        var known = mcp.rpc("resources/read", """
+                {"uri":"%s?page=1"}
+                """.formatted(TEST_COLL));
+
+        assertFalse(isFailure(known), "the control must succeed, or this proves nothing: " + known.toJson());
+
+        var foreign = mcp.rpc("resources/read", """
+                {"uri":"%s?page=1"}
+                """.formatted(TEST_COLL.replace("http://localhost:8080", "http://tenant-a.local:8080")));
+
+        assertTrue(isFailure(foreign), "same resource, unregistered host: " + foreign.toJson());
+        assertTrue(foreign.toJson().contains("Resource not found"),
+                "expected the SDK's own refusal, meaning our code was never reached: " + foreign.toJson());
+    }
+
     @Test
     public void readingAnUnknownResource_isAnError() throws Exception {
         var envelope = mcp.rpc("resources/read", """
