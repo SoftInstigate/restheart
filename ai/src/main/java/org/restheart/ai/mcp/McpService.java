@@ -1592,8 +1592,15 @@ public class McpService implements ByteArrayService {
 
         var identity = RequestDescriptor.of(exchange);
 
+        // The same base URL the rest of the request uses, not the static one. Two different
+        // values here mean two catalogue cache entries for one scope, and whichever expires last
+        // decides which host the scope's resource registry is rebuilt with.
+        var request = Request.of(exchange);
+        var baseUrl = self.effectiveBaseUrl(exchange);
+        var scope = self.resolveScope(request);
+
         return uri -> CatalogVisibility.isReadable(self.authorization, identity,
-                CatalogVisibility.pathOf(uri), self.readMethodOf(identity, self.resolveScope(Request.of(exchange)), uri));
+                CatalogVisibility.pathOf(uri), self.readMethodOf(identity, baseUrl, scope, uri));
     }
 
     /**
@@ -1601,8 +1608,8 @@ public class McpService implements ByteArrayService {
      * that URI, otherwise the method of the resource it hangs off — {@code /coll/_size} reads as
      * {@code /coll} does — and {@code GET} when neither is known.
      */
-    private String readMethodOf(RequestDescriptor identity, String scope, String uri) {
-        var exact = resourceLookup.find(identity.principal(), publicBaseUrl, scope, uri);
+    private String readMethodOf(RequestDescriptor identity, String baseUrl, String scope, String uri) {
+        var exact = resourceLookup.find(identity.principal(), baseUrl, scope, uri);
 
         if (exact.isPresent()) {
             return CatalogVisibility.methodOf(CatalogVisibility.readAction(exact.get()));
@@ -1611,7 +1618,7 @@ public class McpService implements ByteArrayService {
         var lastSlash = uri.lastIndexOf('/');
 
         if (lastSlash > 0) {
-            var owner = resourceLookup.find(identity.principal(), publicBaseUrl, scope, uri.substring(0, lastSlash));
+            var owner = resourceLookup.find(identity.principal(), baseUrl, scope, uri.substring(0, lastSlash));
 
             if (owner.isPresent()) {
                 return CatalogVisibility.methodOf(CatalogVisibility.readAction(owner.get()));
