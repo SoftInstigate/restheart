@@ -84,6 +84,7 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.HttpHeaders;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -281,14 +282,35 @@ public class McpService implements ByteArrayService {
      * "no partitioning": on a shared process the difference between those two is the difference
      * between refusing a request and handing over everybody's catalogue.
      */
+    /**
+     * The scope, for the authorization paths that run outside {@link #handle}'s own resolution and
+     * need a value rather than a refusal. A provider that fails answers {@link
+     * McpScopeProvider#UNRESOLVED} here, which matches no catalogue and so hides everything — the
+     * safe answer when visibility cannot be decided. {@code handle} does its own resolution, and
+     * tells the two failures apart.
+     */
     private String resolveScope(Request<?> req) {
         try {
             var scope = scopeProvider.scopeOf(req);
             return scope == null || scope.isBlank() ? McpScopeProvider.UNRESOLVED : scope;
         } catch (Exception e) {
-            LOGGER.error("McpScopeProvider failed; refusing the request rather than serving the whole catalogue", e);
+            LOGGER.error("McpScopeProvider failed; hiding every resource rather than showing what nobody checked", e);
             return McpScopeProvider.UNRESOLVED;
         }
+    }
+
+    /**
+     * Refuses a request before the JSON-RPC layer, with a body a client can act on.
+     *
+     * <p>Not a JSON-RPC error: the scope is resolved before the body is parsed — it has to be,
+     * since it chooses which server parses it — and a {@code GET} opening the notification stream
+     * carries no body at all. There is no request id to answer, so this answers at the transport
+     * level, where an MCP client already handles HTTP failures.
+     */
+    private void refuse(ByteArrayResponse res, int status, String error, String message) {
+        res.setStatusCode(status);
+        res.setContentType("application/json");
+        res.setContent("{\"error\":\"%s\",\"message\":\"%s\"}".formatted(error, message));
     }
 
     /** The server serving {@code scope}, created on that scope's first request. */
@@ -925,7 +947,7 @@ public class McpService implements ByteArrayService {
     private McpSchema.ReadResourceResult readBareResource(McpTransportContext ctx, String uri, ConcreteEntry entry) {
         var principal = principal(ctx);
         return readOperation(ctx, principal, entry.resource().uri(), entry.actionName(), Map.of())
-                .orElseGet(() -> errorResourceResult(uri, "failed to read resource"));
+                .orElseThrow(() -> readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "failed to read resource"));
     }
 
     /** {@code query} is preferred (the natural "give me the collection" action) over any other {@code readable} action a future kind might declare. */
@@ -1019,9 +1041,10 @@ public class McpService implements ByteArrayService {
                 // a real catalog entry (e.g. an aggregation whose pipeline didn't clear the
                 // security checker), but nothing document-shaped to read — resources/read must
                 // always mean "here is data", never a description; use how_to_call for this one
-                return errorResourceResult(base, "resource has no readable data; use how_to_call to invoke its actions");
+                throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS,
+                        "resource has no readable data; use how_to_call to invoke its actions");
             }
-            return readOperation(ctx, principal, base, actionName, queryArgs).orElseGet(() -> unknownResourceResult(uri));
+            return readOperation(ctx, principal, base, actionName, queryArgs).orElseThrow(() -> unknownResource(uri));
         }
 
         var lastSlash = base.lastIndexOf('/');
@@ -1034,7 +1057,7 @@ public class McpService implements ByteArrayService {
             // ".../inventory/_size?filter={...}" looks for a document whose _id is "_size".
             var byPath = readableActionAtPath(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), parent, "/" + segment);
             if (byPath != null) {
-                return readOperation(ctx, principal, parent, byPath, queryArgs).orElseGet(() -> unknownResourceResult(uri));
+                return readOperation(ctx, principal, parent, byPath, queryArgs).orElseThrow(() -> unknownResource(uri));
             }
 
             var args = new LinkedHashMap<String, Object>(queryArgs);
@@ -1045,7 +1068,7 @@ public class McpService implements ByteArrayService {
             }
         }
 
-        return unknownResourceResult(uri);
+        throw unknownResource(uri);
     }
 
     /** The name of {@code resourceUri}'s readable action whose {@code pathTemplate} is exactly {@code path}, or {@code null} if it has none. */
@@ -1063,10 +1086,20 @@ public class McpService implements ByteArrayService {
         return TextResourceContents.builder(uri, text).mimeType(mimeType).build();
     }
 
-    private static McpSchema.ReadResourceResult unknownResourceResult(String uri) {
-        return McpSchema.ReadResourceResult
-                .builder(List.of(textContents(uri, "text/plain", "Error: unknown or not MCP-enabled resource: " + uri)))
-                .build();
+    /**
+     * A read that cannot be served is a JSON-RPC error, not a successful result whose text begins
+     * with "Error:".
+     *
+     * <p>The old shape was indistinguishable from data: an agent asked for documents and got back
+     * a content block, and nothing in the envelope said the read had failed — it had to notice a
+     * prefix in prose. Clients have a branch for a JSON-RPC error and no branch for that.
+     */
+    private static McpError readFailed(int code, String message) {
+        return McpError.builder(code).message(message).build();
+    }
+
+    private static McpError unknownResource(String uri) {
+        return readFailed(McpSchema.ErrorCodes.RESOURCE_NOT_FOUND, "unknown or not MCP-enabled resource: " + uri);
     }
 
     /**
@@ -1092,18 +1125,19 @@ public class McpService implements ByteArrayService {
 
         var action = resource.actions().get(actionName);
         if (action == null || !action.readable()) {
-            return Optional.of(errorResourceResult(resourceUri, "resource has no readable data; use how_to_call to invoke its actions"));
+            throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS,
+                    "resource has no readable data; use how_to_call to invoke its actions");
         }
 
         var args = coerceArgs(rawArgs, action);
         var errors = ParamValidator.validate(action, args);
         if (!errors.isEmpty()) {
-            return Optional.of(errorResourceResult(resourceUri, String.join("; ", errors)));
+            throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS, String.join("; ", errors));
         }
 
         var owner = resourceLookup.findOwner(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), resourceUri);
         if (owner.isEmpty()) {
-            return Optional.of(errorResourceResult(resourceUri, "internal error: resource owner not found"));
+            throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "resource owner not found");
         }
 
         var readCtx = new McpContext(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), owner.get().pluginName(), owner.get().pluginUri(),
@@ -1112,10 +1146,14 @@ public class McpService implements ByteArrayService {
         try {
             return Optional.of(owner.get().instance().readResource(readCtx, resourceUri, actionName, args)
                     .map(result -> toReadResourceResult(resourceUri, result))
-                    .orElseGet(() -> errorResourceResult(resourceUri, "failed to read resource")));
+                    .orElseThrow(() -> readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "failed to read resource")));
+        } catch (McpError e) {
+            // Already the answer the client gets — rethrown so the catch below does not turn a
+            // precise error into a generic one.
+            throw e;
         } catch (Exception e) {
             LOGGER.error("readResource failed for {} action {}", resourceUri, actionName, e);
-            return Optional.of(errorResourceResult(resourceUri, "internal error: " + e.getMessage()));
+            throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, e.getMessage());
         }
     }
 
@@ -1137,13 +1175,11 @@ public class McpService implements ByteArrayService {
             return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, "application/json", text))).build();
         } catch (Exception e) {
             LOGGER.error("Failed to serialize documents-mode read result for {}", uri, e);
-            return errorResourceResult(uri, "internal error: " + e.getMessage());
+            throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, e.getMessage());
         }
     }
 
-    private static McpSchema.ReadResourceResult errorResourceResult(String uri, String message) {
-        return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, "text/plain", "Error: " + message))).build();
-    }
+
 
     /** Parses a raw {@code key=value&...} query string into string-valued args — types are coerced afterward, once the target action's declared param types are known. */
     private static Map<String, Object> parseQueryArgs(String queryString) {
@@ -1384,13 +1420,25 @@ public class McpService implements ByteArrayService {
             return;
         }
 
-        var scope = resolveScope(req);
+        // Refused either way, never served an empty catalogue: empty is indistinguishable from
+        // "you have not created anything yet". But the two failures are not the same failure, and
+        // the status says which — a request that does not carry what the provider needs is the
+        // caller's to fix, a provider that broke is ours.
+        String scope;
 
-        if (McpScopeProvider.UNRESOLVED.equals(scope)) {
-            // Refused, not served an empty catalogue: empty is indistinguishable from "you have
-            // not created anything yet", and would cost an afternoon of support to tell apart.
+        try {
+            scope = scopeProvider.scopeOf(req);
+        } catch (Exception e) {
+            LOGGER.error("McpScopeProvider failed; refusing the request rather than serving the whole catalogue", e);
+            refuse(res, HttpStatus.SC_INTERNAL_SERVER_ERROR, "scope_provider_failed",
+                    "the server could not determine which scope serves this request");
+            return;
+        }
+
+        if (scope == null || scope.isBlank() || McpScopeProvider.UNRESOLVED.equals(scope)) {
             LOGGER.warn("Refusing an MCP request whose scope could not be resolved");
-            res.setStatusCode(HttpStatus.SC_FORBIDDEN);
+            refuse(res, HttpStatus.SC_BAD_REQUEST, "scope_unresolved",
+                    "this request does not carry what is needed to determine its scope");
             return;
         }
 

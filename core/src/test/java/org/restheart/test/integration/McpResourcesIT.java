@@ -346,6 +346,25 @@ public class McpResourcesIT extends AbstactIT {
     }
 
     @Test
+    public void aFailedRead_isAJsonRpcError_notContentSayingError() throws Exception {
+        // The shape matters as much as the failure. A result whose text begins with "Error:" is
+        // indistinguishable from data: the envelope says success, and an agent has to notice a
+        // prefix in prose to learn its read did not happen. Clients branch on `error`; none of
+        // them branch on that.
+        var envelope = mcp.rpc("resources/read", """
+                {"uri":"%s/does-not-exist?page=1"}
+                """.formatted(TEST_DB));
+
+        assertTrue(envelope.containsKey("error"),
+                "a failed read must answer with a JSON-RPC error: " + envelope.toJson());
+        assertFalse(envelope.containsKey("result"),
+                "a failed read must not also carry a result: " + envelope.toJson());
+
+        var code = envelope.getDocument("error").getInt32("code").getValue();
+        assertEquals(-32002, code, "unknown resource must be RESOURCE_NOT_FOUND: " + envelope.toJson());
+    }
+
+    @Test
     public void readingAnMcpDisabledCollection_isAnError() throws Exception {
         // opting in is per-resource: a collection with no mcp block does not exist for an agent,
         // even though the URI is otherwise perfectly valid

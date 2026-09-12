@@ -1,5 +1,6 @@
 package org.restheart.test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -136,6 +137,22 @@ public class McpScopeIT extends AbstactIT {
 
         assertFalse(a.stream().anyMatch(u -> u.contains("/" + DB_B + "/")), "A sees B: " + a);
         assertFalse(b.stream().anyMatch(u -> u.contains("/" + DB_A + "/")), "B sees A: " + b);
+    }
+
+    // ------------------------------------------------------------------ refusal
+
+    @Test
+    public void aRequestWhoseScopeCannotBeResolved_isRefusedWithBadRequest() throws Exception {
+        // Not served an empty catalogue, which reads as "you have not created anything yet", and
+        // not served the whole one either. 400 rather than 403: the request does not carry what
+        // the provider needs, which is the caller's to fix, not a permission it lacks.
+        var mcp = new McpTestClient(BASE, ADMIN_BASIC, "?mcpScope=%3F");
+
+        var response = mcp.tryInitialize();
+
+        assertEquals(400, response.statusCode(), "body: " + response.body());
+        assertTrue(response.body().contains("scope_unresolved"),
+                "the client is given nothing to act on: " + response.body());
     }
 
     // ------------------------------------------------------------------ reading
