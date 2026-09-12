@@ -27,13 +27,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +163,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     public Mono<Void> notifyClients(String method, Object params) {
         if (sessions.isEmpty()) return Mono.empty();
         return Mono.fromRunnable(() ->
-                sessions.values().parallelStream().forEach(session -> {
+                onEverySession("notifying clients of " + method, session -> {
                     try {
                         session.sendNotification(method, params).block();
                     } catch (Exception e) {
@@ -187,6 +190,37 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         );
     }
 
+    /**
+     * Runs {@code action} once per live session, one virtual thread each, and returns when they
+     * have all finished.
+     *
+     * <p>Not {@code parallelStream()}, which was here before: that runs on the JVM-wide
+     * {@code ForkJoinPool.commonPool} — platform threads — and every action here blocks, on an SSE
+     * write or on a session close. Blocking a shared, CPU-sized pool is the one thing it must not
+     * be used for, and it contradicts RESTHeart's threading model, where blocking work belongs on
+     * a virtual thread. The fan-out is kept: a slow client must not delay the notification of the
+     * others.
+     */
+    private void onEverySession(String what, Consumer<McpStreamableServerSession> action) {
+        var tasks = sessions.values().stream()
+                .map(session -> (Callable<Void>) () -> {
+                    action.accept(session);
+                    return null;
+                })
+                .toList();
+
+        if (tasks.isEmpty()) {
+            return;
+        }
+
+        try {
+            ThreadsUtils.virtualThreadsExecutor().invokeAll(tasks);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Interrupted while {}", what);
+        }
+    }
+
     private static boolean isMissingStream(Exception e) {
         return e instanceof IllegalStateException && e.getMessage() != null && e.getMessage().startsWith("Stream unavailable for session");
     }
@@ -195,7 +229,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     public Mono<Void> closeGracefully() {
         return Mono.fromRunnable(() -> {
             isClosing = true;
-            sessions.values().parallelStream().forEach(session -> {
+            onEverySession("closing sessions", session -> {
                 try {
                     session.closeGracefully().block();
                 } catch (Exception ignored) {
