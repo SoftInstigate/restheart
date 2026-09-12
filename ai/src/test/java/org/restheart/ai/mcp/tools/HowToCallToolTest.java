@@ -32,6 +32,7 @@ import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.ai.mcp.RegisteredMcpAware;
+import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
@@ -52,7 +53,7 @@ public class HowToCallToolTest {
 
     private static HowToCallTool toolFor(McpResource resource) {
         var registry = McpAwareRegistry.of(List.of(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of())));
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), key -> {
         });
         return new HowToCallTool(lookup);
     }
@@ -66,7 +67,7 @@ public class HowToCallToolTest {
         var tool = toolFor(McpResource.builder().uri("https://host/a").action("query", a -> a.method("GET")).build());
 
         assertThrows(UnknownResourceException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "query", Map.of(), null, r -> false));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "query", Map.of(), null, r -> false));
     }
 
     @Test
@@ -75,7 +76,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         assertThrows(UnknownResourceException.class,
-                () -> tool.call(null, "https://host", "https://host/does-not-exist", "query", Map.of(), null, VISIBLE));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/does-not-exist", "query", Map.of(), null, VISIBLE));
     }
 
     @Test
@@ -84,7 +85,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(UnknownActionException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "delete", Map.of(), null, VISIBLE));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "delete", Map.of(), null, VISIBLE));
         assertTrue(ex.validActions().contains("query"));
     }
 
@@ -97,7 +98,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "get", Map.of(), null, VISIBLE));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "get", Map.of(), null, VISIBLE));
         assertEquals(1, ex.errors().size());
     }
 
@@ -112,7 +113,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("other", "x")), null, VISIBLE));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/echo", "echo", Map.of("body", Map.of("other", "x")), null, VISIBLE));
         assertTrue(!ex.errors().isEmpty());
     }
 
@@ -124,7 +125,7 @@ public class HowToCallToolTest {
                 .build();
         var tool = toolFor(resource);
 
-        var descriptor = tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("message", "hi")), null, VISIBLE);
+        var descriptor = tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/echo", "echo", Map.of("body", Map.of("message", "hi")), null, VISIBLE);
 
         assertEquals("http", descriptor.get("transport"));
         assertEquals(Map.of("message", "hi"), descriptor.get("body"));

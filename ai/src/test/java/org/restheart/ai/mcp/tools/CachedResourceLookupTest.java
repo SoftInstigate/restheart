@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.ai.mcp.RegisteredMcpAware;
+import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
@@ -69,11 +70,11 @@ public class CachedResourceLookupTest {
     public void withinTtl_secondCallDoesNotRecompute() {
         var callCount = new AtomicInteger();
         var registry = countingRegistry(callCount, McpResource.builder().uri("https://host/a").build());
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), key -> {
         }, new MutableTicker(), Scheduler.disabledScheduler());
 
-        lookup.all(null, "https://host");
-        lookup.all(null, "https://host");
+        lookup.all(null, "https://host", McpScopeProvider.UNPARTITIONED);
+        lookup.all(null, "https://host", McpScopeProvider.UNPARTITIONED);
 
         assertEquals(1, callCount.get());
     }
@@ -84,11 +85,11 @@ public class CachedResourceLookupTest {
         var registry = countingRegistry(callCount, McpResource.builder().uri("https://host/a").build());
         var ticker = new MutableTicker();
         var expired = new AtomicBoolean(false);
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> expired.set(true), ticker, Scheduler.disabledScheduler());
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), key -> expired.set(true), ticker, Scheduler.disabledScheduler());
 
-        lookup.all(null, "https://host");
+        lookup.all(null, "https://host", McpScopeProvider.UNPARTITIONED);
         ticker.advance(Duration.ofMinutes(6));
-        lookup.all(null, "https://host");
+        lookup.all(null, "https://host", McpScopeProvider.UNPARTITIONED);
 
         assertEquals(2, callCount.get());
         assertTrue(expired.get());
@@ -100,11 +101,11 @@ public class CachedResourceLookupTest {
         var registry = countingRegistry(callCount, McpResource.builder().uri("https://host/a").build());
         var ticker = new MutableTicker();
         var expired = new AtomicBoolean(false);
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> expired.set(true), ticker, Scheduler.disabledScheduler());
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), key -> expired.set(true), ticker, Scheduler.disabledScheduler());
 
-        lookup.all(null, "https://host");
+        lookup.all(null, "https://host", McpScopeProvider.UNPARTITIONED);
         ticker.advance(Duration.ofMinutes(1));
-        lookup.all(null, "https://host");
+        lookup.all(null, "https://host", McpScopeProvider.UNPARTITIONED);
 
         assertEquals(1, callCount.get());
         assertTrue(!expired.get());
@@ -114,11 +115,11 @@ public class CachedResourceLookupTest {
     public void differentBaseUrls_cachedIndependently() {
         var callCount = new AtomicInteger();
         var registry = countingRegistry(callCount, McpResource.builder().uri("https://host/a").build());
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), key -> {
         }, new MutableTicker(), Scheduler.disabledScheduler());
 
-        lookup.all(null, "https://host1");
-        lookup.all(null, "https://host2");
+        lookup.all(null, "https://host1", McpScopeProvider.UNPARTITIONED);
+        lookup.all(null, "https://host2", McpScopeProvider.UNPARTITIONED);
 
         assertEquals(2, callCount.get());
     }
@@ -133,10 +134,10 @@ public class CachedResourceLookupTest {
                         return List.of(resource);
                     }
                 }, "p1", "/x", Map.of())));
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), key -> {
         });
 
-        assertEquals("https://host/a", lookup.find(null, "https://host", "https://host/a").orElseThrow().uri());
-        assertTrue(lookup.find(null, "https://host", "https://host/missing").isEmpty());
+        assertEquals("https://host/a", lookup.find(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a").orElseThrow().uri());
+        assertTrue(lookup.find(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/missing").isEmpty());
     }
 }

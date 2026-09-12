@@ -50,8 +50,8 @@ final class ResourceLookup {
     record Catalog(List<McpResource> resources, Map<String, RegisteredMcpAware> owners) {
     }
 
-    static List<McpResource> all(McpAwareRegistry registry, BaseAccount principal, String baseUrl) {
-        return catalog(registry, principal, baseUrl).resources();
+    static List<McpResource> all(McpAwareRegistry registry, BaseAccount principal, String baseUrl, String scope) {
+        return catalog(registry, principal, baseUrl, scope).resources();
     }
 
     /**
@@ -59,11 +59,11 @@ final class ResourceLookup {
      * produced each {@link McpResource} — needed to dispatch a documents-mode {@code
      * resources/read} to the right plugin's {@code readResource(...)} (see #617).
      */
-    static Catalog catalog(McpAwareRegistry registry, BaseAccount principal, String baseUrl) {
+    static Catalog catalog(McpAwareRegistry registry, BaseAccount principal, String baseUrl, String scope) {
         var resources = new ArrayList<McpResource>();
         var owners = new LinkedHashMap<String, RegisteredMcpAware>();
         for (var registered : registry.registered()) {
-            var ctx = new McpContext(principal, baseUrl, registered.pluginName(), registered.pluginUri(), registered.pluginConfiguration());
+            var ctx = new McpContext(principal, baseUrl, scope, registered.pluginName(), registered.pluginUri(), registered.pluginConfiguration());
             for (var resource : registered.instance().describeMcp(ctx)) {
                 resources.add(resource);
                 owners.put(resource.uri(), registered);
@@ -73,10 +73,10 @@ final class ResourceLookup {
     }
 
     /** Same per-plugin {@code McpContext} construction as {@link #all}, for {@code describeTemplates(ctx)} instead of {@code describeMcp(ctx)}. */
-    static List<McpResourceTemplate> templates(McpAwareRegistry registry, String baseUrl) {
+    static List<McpResourceTemplate> templates(McpAwareRegistry registry, String baseUrl, String scope) {
         var result = new ArrayList<McpResourceTemplate>();
         for (var registered : registry.registered()) {
-            var ctx = new McpContext(null, baseUrl, registered.pluginName(), registered.pluginUri(), registered.pluginConfiguration());
+            var ctx = new McpContext(null, baseUrl, scope, registered.pluginName(), registered.pluginUri(), registered.pluginConfiguration());
             result.addAll(registered.instance().describeTemplates(ctx));
         }
         return result;

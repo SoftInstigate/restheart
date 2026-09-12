@@ -50,22 +50,22 @@ public final class ListApisTool {
      * @param resourceUri optional; when given, {@code query}/{@code kind}/{@code limit}/{@code cursor} are ignored
      * @throws UnknownResourceException if {@code resourceUri} matches no known resource
      */
-    public Map<String, Object> list(BaseAccount principal, String baseUrl, String resourceUri,
+    public Map<String, Object> list(BaseAccount principal, String baseUrl, String scope, String resourceUri,
                                     String query, String kind, Integer limit, String cursor,
                                     Predicate<McpResource> visible) {
         if (resourceUri != null) {
-            return lookup.find(principal, baseUrl, resourceUri)
+            return lookup.find(principal, baseUrl, scope, resourceUri)
                     .filter(visible)
                     .map(McpResource::toMap)
                     .orElseThrow(() -> new UnknownResourceException(resourceUri));
         }
 
-        return catalog(principal, baseUrl, query, kind, limit, cursor, visible);
+        return catalog(principal, baseUrl, scope, query, kind, limit, cursor, visible);
     }
 
-    private Map<String, Object> catalog(BaseAccount principal, String baseUrl, String query, String kind,
+    private Map<String, Object> catalog(BaseAccount principal, String baseUrl, String scope, String query, String kind,
                                         Integer limit, String cursor, Predicate<McpResource> visible) {
-        var resources = new ArrayList<>(lookup.all(principal, baseUrl));
+        var resources = new ArrayList<>(lookup.all(principal, baseUrl, scope));
         resources.sort(Comparator.comparing(McpResource::uri));
 
         var filtered = resources.stream()

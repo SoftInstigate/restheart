@@ -59,6 +59,7 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
@@ -76,6 +77,7 @@ import org.slf4j.LoggerFactory;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapperSupplier;
+import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
 import io.modelcontextprotocol.json.schema.jackson3.JacksonJsonSchemaValidatorSupplier;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -119,6 +121,7 @@ public class McpService implements ByteArrayService {
     private static final String CTX_PRINCIPAL = "principal";
     private static final String CTX_BASE_URL = "baseUrl";
     private static final String CTX_REQUEST = "request";
+    private static final String CTX_SCOPE = "scope";
 
     private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
 
@@ -141,12 +144,40 @@ public class McpService implements ByteArrayService {
     @Inject("config")
     private Map<String, Object> config;
 
-    private UndertowStreamableServerTransportProvider provider;
     private ListApisTool listApisTool;
     private HowToCallTool howToCallTool;
     private McpJsonMapper jsonMapper;
     private CachedResourceLookup resourceLookup;
-    private McpSyncServer server;
+    private JsonSchemaValidator schemaValidator;
+
+    /**
+     * Decides which partition of the catalogue a request belongs to. Never {@code null}: with no
+     * implementation registered this answers {@link McpScopeProvider#UNPARTITIONED} for
+     * everything, which is what makes partitioning opt-in with no configuration switch.
+     */
+    private McpScopeProvider scopeProvider;
+
+    /**
+     * One MCP server per scope, created on that scope's first request.
+     *
+     * <p>Not one server with a per-request view: {@code resources/list} is answered from the SDK's
+     * own registry, which belongs to the server, so a request-scoped value can never reach it.
+     * And not one server per (scope, service) either — a session talks to exactly one server, and
+     * the catalogue is aggregated across every {@code McpAware}, so splitting by service would
+     * leave a client seeing part of it with no way to know.
+     *
+     * <p>One provider each, not one shared: {@code setSessionFactory} is singular, and
+     * {@code McpServer.sync(provider)} installs the server as that provider's session factory —
+     * one provider can only ever serve one server.
+     */
+    private final Map<String, ScopedServer> scopes = new ConcurrentHashMap<>();
+
+    /** An MCP server, its transport, and whether its registry has been populated yet. */
+    private record ScopedServer(String scope,
+                                UndertowStreamableServerTransportProvider provider,
+                                McpSyncServer server,
+                                AtomicBoolean resourcesInitialized) {
+    }
 
     /** Resolved lazily via {@link PluginModelResolver}, not in {@code @OnInit} — see its own javadoc on plugin init ordering. */
     private final Map<String, JwtIssuer> resolvedJwtIssuers = new ConcurrentHashMap<>();
@@ -162,9 +193,6 @@ public class McpService implements ByteArrayService {
      */
     private String publicBaseUrl;
 
-    /** Guards the one-time initial resource-registry population — see {@link #handle} and {@link #init()}'s comment on why it can't happen in {@code init()} itself. */
-    private final AtomicBoolean resourcesInitialized = new AtomicBoolean(false);
-
     /**
      * The running service, so {@link McpCatalogFilterInterceptor} can reuse this catalog and this
      * visibility rule instead of building its own. There is exactly one instance: RESTHeart plugins
@@ -179,10 +207,8 @@ public class McpService implements ByteArrayService {
         var mcpAwareRegistry = McpAwareRegistry.discover(pluginsRegistry);
 
         jsonMapper = new JacksonMcpJsonMapperSupplier().get();
-        var schemaValidator = new JacksonJsonSchemaValidatorSupplier().get();
-
-        provider = new UndertowStreamableServerTransportProvider(jsonMapper);
-        provider.onSessionEnded(this::sessionEnded);
+        schemaValidator = new JacksonJsonSchemaValidatorSupplier().get();
+        scopeProvider = discoverScopeProvider();
 
         publicBaseUrl = config != null && config.get("public-base-url") instanceof String s && !s.isBlank() ? s : null;
 
@@ -198,27 +224,6 @@ public class McpService implements ByteArrayService {
         listApisTool = new ListApisTool(resourceLookup);
         howToCallTool = new HowToCallTool(resourceLookup);
 
-        var serverBuilder = McpServer.sync(provider)
-                // Keeps handlers on the caller's virtual thread: without it the SDK wraps every one in subscribeOn(Schedulers.boundedElastic()), a pool of up to 10x CPU platform threads — a default meant for event-loop callers, and the opposite of RESTHeart's threading model
-                .immediateExecution(true)
-                .serverInfo("restheart-mcp", "1.0.0")
-                .jsonMapper(jsonMapper)
-                .jsonSchemaValidator(schemaValidator)
-                .capabilities(capabilities())
-                .toolCall(listApisToolDefinition(), this::callListApis)
-                .toolCall(howToCallToolDefinition(), this::callHowToCall)
-                .toolCall(getTokenToolDefinition(), this::callGetToken);
-
-        // Neither resources nor templates are registered here: both are built by calling
-        // describeMcp()/describeTemplates() on every registered McpAware plugin, and @OnInit
-        // methods run in an unspecified cross-plugin order (see OnInit's own javadoc) — another
-        // plugin's own @OnInit (e.g. GraphQLService's) may not have run yet, leaving its internal
-        // state null and throwing (confirmed live). list_apis/how_to_call avoid this by only ever
-        // calling describeMcp() from an actual incoming request, which can't happen before every
-        // plugin's @OnInit has completed — resources and templates must be seeded the same way,
-        // in handle() on first real traffic, not here.
-        server = serverBuilder.build();
-
         // Without this, a client's open GET/SSE stream (or an in-flight tool-call's SSE
         // response) blocks its worker thread forever inside
         // UndertowStreamableServerTransportProvider's queue.take() loop — nothing signals
@@ -227,15 +232,97 @@ public class McpService implements ByteArrayService {
         // (and so every associated queue), which is what actually lets the pending
         // request complete. Same fix Sophia's own MCP service applies for the same reason.
         Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
-            LOGGER.info("MCP shutdown: closing transport provider...");
-            provider.closeGracefully().block();
-            LOGGER.info("MCP shutdown: transport provider closed.");
+            LOGGER.info("MCP shutdown: closing {} transport provider(s)...", scopes.size());
+            scopes.values().forEach(scoped -> scoped.provider().closeGracefully().block());
+            LOGGER.info("MCP shutdown: transport providers closed.");
         }));
 
         LOGGER.info("MCP service initialized on {} (Streamable HTTP transport)", "/mcp");
         if (publicBaseUrl != null) {
             LOGGER.info("MCP resources primitive enabled, public-base-url={}", publicBaseUrl);
         }
+    }
+
+    /**
+     * The deployment's {@link McpScopeProvider}, or one answering
+     * {@link McpScopeProvider#UNPARTITIONED} for everything when none is registered.
+     *
+     * <p>Found by the type it provides rather than by an agreed name: a deployment that
+     * partitions should not also have to match a string, and nothing else in RESTHeart provides
+     * this type.
+     */
+    private McpScopeProvider discoverScopeProvider() {
+        var self = pluginsRegistry.getServices().stream()
+                .filter(r -> r.getInstance() == this)
+                .findFirst()
+                .orElse(null);
+
+        for (var record : pluginsRegistry.getProviders()) {
+            var instance = record.getInstance();
+            if (!McpScopeProvider.class.isAssignableFrom(instance.rawType())) {
+                continue;
+            }
+
+            if (instance.get(self) instanceof McpScopeProvider resolved) {
+                LOGGER.info("MCP catalogue partitioned by scope, resolved by '{}'", record.getName());
+                return resolved;
+            }
+
+            LOGGER.warn("Provider '{}' declares McpScopeProvider but supplied nothing — the MCP catalogue stays unpartitioned", record.getName());
+        }
+
+        return request -> McpScopeProvider.UNPARTITIONED;
+    }
+
+    /**
+     * The scope this request belongs to, resolved once per request.
+     *
+     * <p>A provider that throws is treated as one that could not decide, not as one that said
+     * "no partitioning": on a shared process the difference between those two is the difference
+     * between refusing a request and handing over everybody's catalogue.
+     */
+    private String resolveScope(Request<?> req) {
+        try {
+            var scope = scopeProvider.scopeOf(req);
+            return scope == null || scope.isBlank() ? McpScopeProvider.UNRESOLVED : scope;
+        } catch (Exception e) {
+            LOGGER.error("McpScopeProvider failed; refusing the request rather than serving the whole catalogue", e);
+            return McpScopeProvider.UNRESOLVED;
+        }
+    }
+
+    /** The server serving {@code scope}, created on that scope's first request. */
+    private ScopedServer scopedServer(String scope) {
+        return scopes.computeIfAbsent(scope, this::newScopedServer);
+    }
+
+    private ScopedServer newScopedServer(String scope) {
+        var scopedProvider = new UndertowStreamableServerTransportProvider(jsonMapper);
+        scopedProvider.onSessionEnded(this::sessionEnded);
+
+        // Neither resources nor templates are registered here: both are built by calling
+        // describeMcp()/describeTemplates() on every registered McpAware plugin, and @OnInit
+        // methods run in an unspecified cross-plugin order (see OnInit's own javadoc) — another
+        // plugin's own @OnInit (e.g. GraphQLService's) may not have run yet, leaving its internal
+        // state null and throwing (confirmed live). list_apis/how_to_call avoid this by only ever
+        // calling describeMcp() from an actual incoming request, which can't happen before every
+        // plugin's @OnInit has completed — resources and templates must be seeded the same way,
+        // on this scope's first real traffic, not here.
+        var scopedSrv = McpServer.sync(scopedProvider)
+                // Keeps handlers on the caller's virtual thread: without it the SDK wraps every one in subscribeOn(Schedulers.boundedElastic()), a pool of up to 10x CPU platform threads — a default meant for event-loop callers, and the opposite of RESTHeart's threading model
+                .immediateExecution(true)
+                .serverInfo("restheart-mcp", "1.0.0")
+                .jsonMapper(jsonMapper)
+                .jsonSchemaValidator(schemaValidator)
+                .capabilities(capabilities())
+                .toolCall(listApisToolDefinition(), this::callListApis)
+                .toolCall(howToCallToolDefinition(), this::callHowToCall)
+                .toolCall(getTokenToolDefinition(), this::callGetToken)
+                .build();
+
+        LOGGER.debug("MCP server created for scope '{}'", scope);
+
+        return new ScopedServer(scope, scopedProvider, scopedSrv, new AtomicBoolean(false));
     }
 
     /**
@@ -267,7 +354,7 @@ public class McpService implements ByteArrayService {
             }
 
             if (McpSchema.METHOD_RESOURCES_SUBSCRIBE.equals(rpc.method())) {
-                var resource = resourceLookup.find(principal(ctx), effectiveBaseUrl(ctx), uri);
+                var resource = resourceLookup.find(principal(ctx), effectiveBaseUrl(ctx), effectiveScope(ctx), uri);
 
                 if (resource.isEmpty() || !resource.get().subscribable()) {
                     refuseSubscription(res, rpc, uri, resource.map(McpResource::kind).orElse(null));
@@ -287,7 +374,7 @@ public class McpService implements ByteArrayService {
                 // already subscribed" would then leave the resource unwatched for good, with the
                 // subscribers still recorded and never told anything again. startWatching is a
                 // no-op when a live watch is already there.
-                startWatching(principal(ctx), effectiveBaseUrl(ctx), uri);
+                startWatching(principal(ctx), effectiveBaseUrl(ctx), effectiveScope(ctx), uri);
             } else if (McpSchema.METHOD_RESOURCES_UNSUBSCRIBE.equals(rpc.method())
                     && demand.unsubscribed(uri, sessionId)) {
                 releaseWatchesFor(List.of(uri));
@@ -392,21 +479,21 @@ public class McpService implements ByteArrayService {
     }
 
     /** One watch per resource URI; the owning plugin decides what that costs — for a collection, one shared change stream. */
-    private synchronized void startWatching(BaseAccount principal, String baseUrl, String uri) {
+    private synchronized void startWatching(BaseAccount principal, String baseUrl, String scope, String uri) {
         if (watches.containsKey(uri)) {
             return;
         }
 
-        var owner = resourceLookup.findOwner(principal, baseUrl, uri);
+        var owner = resourceLookup.findOwner(principal, baseUrl, scope, uri);
         if (owner.isEmpty()) {
             return;
         }
 
-        var watchCtx = new McpContext(principal, baseUrl, owner.get().pluginName(),
+        var watchCtx = new McpContext(principal, baseUrl, scope, owner.get().pluginName(),
                 owner.get().pluginUri(), owner.get().pluginConfiguration());
 
         owner.get().instance().watch(watchCtx, uri, () -> subscriptions.changed(uri))
-                .ifPresentOrElse(handle -> watches.put(uri, handle),
+                .ifPresentOrElse(handle -> watches.put(uri, new Watch(scope, handle)),
                         () -> LOGGER.debug("resource {} cannot be watched; subscribers to it are never notified", uri));
     }
 
@@ -427,11 +514,11 @@ public class McpService implements ByteArrayService {
                 return;
             }
 
-            var handle = watches.remove(uri);
-            if (handle != null) {
+            var watch = watches.remove(uri);
+            if (watch != null) {
                 subscriptions.forget(uri);
                 try {
-                    handle.close();
+                    watch.handle().close();
                 } catch (Exception e) {
                     LOGGER.warn("failed to stop watching {}", uri, e);
                 }
@@ -439,8 +526,21 @@ public class McpService implements ByteArrayService {
         });
     }
 
+    /**
+     * Only the scope that watches this URI is told. Its clients are the only ones that could have
+     * subscribed to it, and on a shared process a notification is itself information — that
+     * something, somewhere, changed.
+     */
     private void notifyResourceUpdated(String uri) {
-        server.notifyResourcesUpdated(new McpSchema.ResourcesUpdatedNotification(uri));
+        var watch = watches.get(uri);
+        if (watch == null) {
+            return;
+        }
+
+        var scoped = scopes.get(watch.scope());
+        if (scoped != null) {
+            scoped.server().notifyResourcesUpdated(new McpSchema.ResourcesUpdatedNotification(uri));
+        }
     }
 
     private McpSchema.ServerCapabilities capabilities() {
@@ -456,15 +556,26 @@ public class McpService implements ByteArrayService {
      * already-connected agents to refetch tools, and — if the resources primitive is enabled —
      * re-syncs the MCP SDK's resource registry against the same fresh catalog.
      */
-    private void onCatalogExpired() {
-        notifyToolsListChanged();
+    /**
+     * The expired key names one scope's catalogue, and only that scope is rebuilt and notified.
+     * Waking every connected client because some other partition changed is work they cannot use
+     * and news they should not have.
+     */
+    private void onCatalogExpired(CachedResourceLookup.CatalogKey key) {
+        var scoped = scopes.get(key.scope());
+        if (scoped == null) {
+            return;
+        }
+
+        notifyToolsListChanged(scoped);
+
         if (publicBaseUrl != null) {
-            syncResourceRegistry();
+            syncResourceRegistry(scoped, key.baseUrl());
         }
     }
 
-    private void notifyToolsListChanged() {
-        provider.notifyClients("notifications/tools/list_changed", null)
+    private void notifyToolsListChanged(ScopedServer scoped) {
+        scoped.provider().notifyClients("notifications/tools/list_changed", null)
                 .subscribe(v -> {
                 }, err -> LOGGER.warn("Failed to notify clients of tools/list_changed: {}", err.getMessage()));
     }
@@ -503,7 +614,14 @@ public class McpService implements ByteArrayService {
     private ResourceSubscriptions subscriptions;
 
     /** Open watches, by resource URI — see {@link #startWatching}. */
-    private final Map<String, AutoCloseable> watches = new ConcurrentHashMap<>();
+    private final Map<String, Watch> watches = new ConcurrentHashMap<>();
+
+    /**
+     * An open watch, and the scope whose clients asked for it — needed to send the change
+     * notification to that scope's server and no other.
+     */
+    private record Watch(String scope, AutoCloseable handle) {
+    }
 
     /** Who still wants each resource, so a watch outlives no one — see {@link ResourceDemand}. */
     private final ResourceDemand demand = new ResourceDemand();
@@ -545,7 +663,7 @@ public class McpService implements ByteArrayService {
      * collection registers as a template only, and every real call necessarily satisfies the
      * matcher.
      */
-    private void syncResourceRegistry() {
+    private void syncResourceRegistry(ScopedServer scoped, String baseUrl) {
         // The desired state is computed first, before anything is touched. Rebuilding it is the
         // slow part — this runs on catalog expiry, so resourceLookup is always a miss here and
         // goes out to every McpAware plugin (a MongoDB round trip for Mongo's). Clearing the
@@ -555,7 +673,7 @@ public class McpService implements ByteArrayService {
         var desiredResources = new LinkedHashMap<String, ConcreteEntry>();
         var desiredTemplates = new LinkedHashMap<String, McpResourceTemplate>();
 
-        resourceLookup.all(null, publicBaseUrl).forEach(r -> r.actions().forEach((actionName, action) -> {
+        resourceLookup.all(null, baseUrl, scoped.scope()).forEach(r -> r.actions().forEach((actionName, action) -> {
             if (!action.readable()) {
                 return;
             }
@@ -611,10 +729,10 @@ public class McpService implements ByteArrayService {
             }
         }));
 
-        resourceLookup.templates(publicBaseUrl).forEach(t -> desiredTemplates.putIfAbsent(t.uriTemplate(), t));
+        resourceLookup.templates(baseUrl, scoped.scope()).forEach(t -> desiredTemplates.putIfAbsent(t.uriTemplate(), t));
 
-        var currentResourceUris = server.listResources().stream().map(McpSchema.Resource::uri).toList();
-        var currentTemplateUris = server.listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList();
+        var currentResourceUris = scoped.server().listResources().stream().map(McpSchema.Resource::uri).toList();
+        var currentTemplateUris = scoped.server().listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList();
 
         var changed = false;
 
@@ -622,7 +740,7 @@ public class McpService implements ByteArrayService {
 
         for (var uri : currentResourceUris) {
             if (!desiredResources.containsKey(uri)) {
-                server.removeResource(uri);
+                scoped.server().removeResource(uri);
                 gone.add(uri);
                 changed = true;
             }
@@ -634,7 +752,7 @@ public class McpService implements ByteArrayService {
 
         for (var uriTemplate : currentTemplateUris) {
             if (!desiredTemplates.containsKey(uriTemplate)) {
-                server.removeResourceTemplate(uriTemplate);
+                scoped.server().removeResourceTemplate(uriTemplate);
                 changed = true;
             }
         }
@@ -646,7 +764,7 @@ public class McpService implements ByteArrayService {
         for (var e : desiredResources.entrySet()) {
             if (!currentResourceUris.contains(e.getKey())) {
                 var hasTemplate = desiredTemplates.keySet().stream().anyMatch(t -> t.startsWith(e.getKey() + "{?"));
-                server.addResource(toResourceSpec(e.getKey(), e.getValue(), concreteName(e.getValue()),
+                scoped.server().addResource(toResourceSpec(e.getKey(), e.getValue(), concreteName(e.getValue()),
                         concreteTitle(e.getValue(), hasTemplate)));
                 changed = true;
             }
@@ -654,7 +772,7 @@ public class McpService implements ByteArrayService {
 
         for (var e : desiredTemplates.entrySet()) {
             if (!currentTemplateUris.contains(e.getKey())) {
-                server.addResourceTemplate(toTemplateSpec(e.getValue()));
+                scoped.server().addResourceTemplate(toTemplateSpec(e.getValue()));
                 changed = true;
             }
         }
@@ -662,7 +780,7 @@ public class McpService implements ByteArrayService {
         // Only when something actually moved: this runs every catalog TTL, and notifying on an
         // unchanged catalog wakes every connected client for nothing.
         if (changed) {
-            server.notifyResourcesListChanged();
+            scoped.server().notifyResourcesListChanged();
         }
     }
 
@@ -888,12 +1006,13 @@ public class McpService implements ByteArrayService {
     private McpSchema.ReadResourceResult readTemplateMatch(McpTransportContext ctx, String uri) {
         var principal = principal(ctx);
         var baseUrl = effectiveBaseUrl(ctx);
+        var scope = effectiveScope(ctx);
 
         var queryIdx = uri.indexOf('?');
         var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
         var queryArgs = queryIdx >= 0 ? parseQueryArgs(uri.substring(queryIdx + 1)) : Map.<String, Object>of();
 
-        var resource = resourceLookup.find(principal, baseUrl, base);
+        var resource = resourceLookup.find(principal, baseUrl, scope, base);
         if (resource.isPresent()) {
             var actionName = defaultReadableAction(resource.get());
             if (actionName == null) {
@@ -913,7 +1032,7 @@ public class McpService implements ByteArrayService {
             // An action with a literal path of its own — /_size — addresses something else on the
             // same resource, and has to be recognized before the single-document reading, or
             // ".../inventory/_size?filter={...}" looks for a document whose _id is "_size".
-            var byPath = readableActionAtPath(principal, effectiveBaseUrl(ctx), parent, "/" + segment);
+            var byPath = readableActionAtPath(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), parent, "/" + segment);
             if (byPath != null) {
                 return readOperation(ctx, principal, parent, byPath, queryArgs).orElseGet(() -> unknownResourceResult(uri));
             }
@@ -930,8 +1049,8 @@ public class McpService implements ByteArrayService {
     }
 
     /** The name of {@code resourceUri}'s readable action whose {@code pathTemplate} is exactly {@code path}, or {@code null} if it has none. */
-    private String readableActionAtPath(BaseAccount principal, String baseUrl, String resourceUri, String path) {
-        return resourceLookup.find(principal, baseUrl, resourceUri)
+    private String readableActionAtPath(BaseAccount principal, String baseUrl, String scope, String resourceUri, String path) {
+        return resourceLookup.find(principal, baseUrl, scope, resourceUri)
                 .flatMap(r -> r.actions().entrySet().stream()
                         .filter(e -> e.getValue().readable() && path.equals(e.getValue().pathTemplate()))
                         .map(Map.Entry::getKey)
@@ -965,7 +1084,7 @@ public class McpService implements ByteArrayService {
      * else would apply them.
      */
     private Optional<McpSchema.ReadResourceResult> readOperation(McpTransportContext ctx, BaseAccount principal, String resourceUri, String actionName, Map<String, Object> rawArgs) {
-        var resourceOpt = resourceLookup.find(principal, effectiveBaseUrl(ctx), resourceUri);
+        var resourceOpt = resourceLookup.find(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), resourceUri);
         if (resourceOpt.isEmpty()) {
             return Optional.empty();
         }
@@ -982,12 +1101,12 @@ public class McpService implements ByteArrayService {
             return Optional.of(errorResourceResult(resourceUri, String.join("; ", errors)));
         }
 
-        var owner = resourceLookup.findOwner(principal, effectiveBaseUrl(ctx), resourceUri);
+        var owner = resourceLookup.findOwner(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), resourceUri);
         if (owner.isEmpty()) {
             return Optional.of(errorResourceResult(resourceUri, "internal error: resource owner not found"));
         }
 
-        var readCtx = new McpContext(principal, effectiveBaseUrl(ctx), owner.get().pluginName(), owner.get().pluginUri(),
+        var readCtx = new McpContext(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), owner.get().pluginName(), owner.get().pluginUri(),
                 owner.get().pluginConfiguration(), authorization(ctx));
 
         try {
@@ -1148,6 +1267,10 @@ public class McpService implements ByteArrayService {
     /** @return a descriptor for the underlying REST-equivalent operation, or {@code null} if this request isn't a documents-mode-eligible {@code resources/read}. */
     private RequestDescriptor documentsModeDescriptor(HttpServerExchange exchange) throws Exception {
         final var baseUrl = effectiveBaseUrl(exchange);
+        // Resolved from the request, exactly as handle() does: this path runs outside the MCP
+        // transport context, and answering with a different scope than the one serving the
+        // session would authorize against a catalogue the caller is not being served.
+        final var scope = resolveScope(Request.of(exchange));
         var body = ByteArrayRequest.of(exchange).getContent();
         if (body == null || body.length == 0) {
             return null;
@@ -1174,7 +1297,7 @@ public class McpService implements ByteArrayService {
         var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
         var queryParameters = queryIdx >= 0 ? parseQueryParameters(uri.substring(queryIdx + 1)) : Map.<String, Deque<String>>of();
 
-        var resource = resourceLookup.find(principal, baseUrl, base);
+        var resource = resourceLookup.find(principal, baseUrl, scope, base);
         if (resource.isPresent()) {
             // A bare or filtered resource read defaults to documents-mode whenever the resource
             // has a readable action (McpService.readBareResource/readTemplateMatch, #617) — a
@@ -1192,8 +1315,8 @@ public class McpService implements ByteArrayService {
         var lastSlash = base.lastIndexOf('/');
         if (lastSlash > 0) {
             var parent = base.substring(0, lastSlash);
-            if (readableActionAtPath(principal, baseUrl, parent, base.substring(lastSlash)) != null
-                    || isReadableAction(principal, baseUrl, parent, "get")) {
+            if (readableActionAtPath(principal, baseUrl, scope, parent, base.substring(lastSlash)) != null
+                    || isReadableAction(principal, baseUrl, scope, parent, "get")) {
                 return withMethodPathAndQuery(identity, pathOf(base), queryParameters);
             }
         }
@@ -1201,8 +1324,8 @@ public class McpService implements ByteArrayService {
         return null;
     }
 
-    private boolean isReadableAction(BaseAccount principal, String baseUrl, String resourceUri, String actionName) {
-        return resourceLookup.find(principal, baseUrl, resourceUri)
+    private boolean isReadableAction(BaseAccount principal, String baseUrl, String scope, String resourceUri, String actionName) {
+        return resourceLookup.find(principal, baseUrl, scope, resourceUri)
                 .map(McpResource::actions)
                 .map(actions -> actions.get(actionName))
                 .map(McpResource.Action::readable)
@@ -1254,28 +1377,44 @@ public class McpService implements ByteArrayService {
         // init finishes), so it's the earliest SAFE point to call describeMcp() on other
         // plugins. See init()'s comment: doing this inside mcpService's own @OnInit crashed on
         // GraphQLService's not-yet-initialized state (cross-plugin @OnInit order is unspecified).
-        if (publicBaseUrl != null && resourcesInitialized.compareAndSet(false, true)) {
-            syncResourceRegistry();
-        }
-
+        // Before the scope is resolved: a CORS preflight carries no credentials and no session,
+        // so there is nothing to resolve a scope from and nothing it could leak.
         if (req.isOptions()) {
             handleOptions(req);
             return;
         }
 
-        var ctx = buildContext(req);
+        var scope = resolveScope(req);
+
+        if (McpScopeProvider.UNRESOLVED.equals(scope)) {
+            // Refused, not served an empty catalogue: empty is indistinguishable from "you have
+            // not created anything yet", and would cost an afternoon of support to tell apart.
+            LOGGER.warn("Refusing an MCP request whose scope could not be resolved");
+            res.setStatusCode(HttpStatus.SC_FORBIDDEN);
+            return;
+        }
+
+        var scoped = scopedServer(scope);
+        var ctx = buildContext(req, scope);
+
+        // Per scope, not per process: one flag for the whole instance would let whichever scope
+        // arrived first switch initialisation off for every other, leaving the second caller a
+        // registry that is never populated.
+        if (publicBaseUrl != null && scoped.resourcesInitialized().compareAndSet(false, true)) {
+            syncResourceRegistry(scoped, effectiveBaseUrl(req.getExchange()));
+        }
 
         if (req.isPost()) {
             // Opened on demand, before the SDK records the subscription: the SDK keeps that map
             // private, so this is how we learn a resource is wanted. Watching every exposed
             // collection instead would pay for streams nobody asked for.
             if (watchIfSubscribing(req, res, ctx)) {
-                provider.handlePost(req, res, ctx);
+                scoped.provider().handlePost(req, res, ctx);
             }
         } else if (req.isGet()) {
-            provider.handleGet(req, res, ctx);
+            scoped.provider().handleGet(req, res, ctx);
         } else if (req.isDelete()) {
-            provider.handleDelete(req, res, ctx);
+            scoped.provider().handleDelete(req, res, ctx);
         } else {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
@@ -1300,10 +1439,13 @@ public class McpService implements ByteArrayService {
     // Per-request context: principal + public base URL
     // -------------------------------------------------------------------------
 
-    private McpTransportContext buildContext(ByteArrayRequest req) {
+    private McpTransportContext buildContext(ByteArrayRequest req, String scope) {
         var ctx = new HashMap<String, Object>();
         ctx.put(CTX_BASE_URL, resolveBaseUrl(req));
         ctx.put(CTX_REQUEST, req);
+        // Carried, not recomputed: the scope decided which server serves this request, and a
+        // second resolution could disagree with the first.
+        ctx.put(CTX_SCOPE, scope);
         if (req.getAuthenticatedAccount() instanceof BaseAccount principal) {
             ctx.put(CTX_PRINCIPAL, principal);
         }
@@ -1368,6 +1510,11 @@ public class McpService implements ByteArrayService {
      * non-null is what says the resources primitive is enabled on this node. That is a property of
      * the deployment; which host the URIs name is a property of the caller.
      */
+    /** The scope this request was routed to — put there by {@link #buildContext}, never recomputed. */
+    private static String effectiveScope(McpTransportContext ctx) {
+        return ctx.get(CTX_SCOPE) instanceof String s && !s.isBlank() ? s : McpScopeProvider.UNPARTITIONED;
+    }
+
     private String effectiveBaseUrl(McpTransportContext ctx) {
         return RequestOverrides.str(request(ctx), RequestOverrides.MCP_PUBLIC_BASE_URL, publicBaseUrl);
     }
@@ -1428,20 +1575,25 @@ public class McpService implements ByteArrayService {
      * method the read uses, falling back to the owning resource's and then to {@code GET}. Not
      * finding a URI is never a reason to show it.
      *
-     * <p>The one case that stays open is the service not being initialized, when there is no
-     * catalog and no authorization to consult yet.
+     * <p><strong>Undecidable means not visible.</strong> With no catalog and no authorization to
+     * consult — the service not initialized yet — this hides everything rather than showing
+     * everything. On a process serving one tenant that costs an empty listing and a warning; on a
+     * shared one, answering "visible" to a question it cannot answer hands a caller the names of
+     * resources belonging to someone else. In practice this branch is unreachable: the interceptor
+     * that calls it only runs on a response {@code mcpService} itself produced.
      */
     static Predicate<String> catalogVisibility(HttpServerExchange exchange) {
         var self = instance;
 
         if (self == null || self.resourceLookup == null || self.publicBaseUrl == null || self.authorization == null) {
-            return uri -> true;
+            LOGGER.warn("Catalog visibility asked before mcpService is ready — hiding every entry rather than showing entries nobody has checked");
+            return uri -> false;
         }
 
         var identity = RequestDescriptor.of(exchange);
 
         return uri -> CatalogVisibility.isReadable(self.authorization, identity,
-                CatalogVisibility.pathOf(uri), self.readMethodOf(identity, uri));
+                CatalogVisibility.pathOf(uri), self.readMethodOf(identity, self.resolveScope(Request.of(exchange)), uri));
     }
 
     /**
@@ -1449,8 +1601,8 @@ public class McpService implements ByteArrayService {
      * that URI, otherwise the method of the resource it hangs off — {@code /coll/_size} reads as
      * {@code /coll} does — and {@code GET} when neither is known.
      */
-    private String readMethodOf(RequestDescriptor identity, String uri) {
-        var exact = resourceLookup.find(identity.principal(), publicBaseUrl, uri);
+    private String readMethodOf(RequestDescriptor identity, String scope, String uri) {
+        var exact = resourceLookup.find(identity.principal(), publicBaseUrl, scope, uri);
 
         if (exact.isPresent()) {
             return CatalogVisibility.methodOf(CatalogVisibility.readAction(exact.get()));
@@ -1459,7 +1611,7 @@ public class McpService implements ByteArrayService {
         var lastSlash = uri.lastIndexOf('/');
 
         if (lastSlash > 0) {
-            var owner = resourceLookup.find(identity.principal(), publicBaseUrl, uri.substring(0, lastSlash));
+            var owner = resourceLookup.find(identity.principal(), publicBaseUrl, scope, uri.substring(0, lastSlash));
 
             if (owner.isPresent()) {
                 return CatalogVisibility.methodOf(CatalogVisibility.readAction(owner.get()));
@@ -1598,7 +1750,7 @@ public class McpService implements ByteArrayService {
 
         try {
             var result = listApisTool.list(
-                    principal(ctx), baseUrl(ctx),
+                    principal(ctx), baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "query"), stringArg(args, "kind"),
                     intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx));
             return textResult(jsonMapper.writeValueAsString(result));
@@ -1618,7 +1770,7 @@ public class McpService implements ByteArrayService {
         try {
             var actionArgs = args.get("args") instanceof Map<?, ?> m ? (Map<String, Object>) m : null;
             var result = howToCallTool.call(
-                    principal(ctx), baseUrl(ctx),
+                    principal(ctx), baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
                     stringArg(args, "transport"), visibleTo(ctx));
             return textResult(jsonMapper.writeValueAsString(result));

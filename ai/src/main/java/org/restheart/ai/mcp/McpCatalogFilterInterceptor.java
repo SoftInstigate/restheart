@@ -52,10 +52,12 @@ import com.google.gson.JsonParser;
  * {@code DescriptorAuthorization}, the same one applied to a real request, so a listing cannot
  * disagree with what a read would do.
  *
- * <p><strong>This filter fails loudly, not open.</strong> It is coupled to the SDK's result shape,
- * and a security filter that silently stops matching is worse than none: if the payload is not the
- * shape it expects, it says so at WARN and leaves the response alone rather than pretending to
- * have filtered it.
+ * <p><strong>This filter fails loudly and closed.</strong> It is coupled to the SDK's result
+ * shape, and a security filter that silently stops matching is worse than none. An entry it cannot
+ * read the URI of is one whose visibility it cannot decide, so it is dropped and the fact is
+ * logged at WARN. It used to pass such a response through untouched, which on a process serving
+ * several callers means handing one of them the names of another's resources — a missing entry and
+ * a loud log is the cheaper failure.
  */
 @RegisterPlugin(
         name = "mcpCatalogFilterInterceptor",
@@ -118,9 +120,10 @@ public class McpCatalogFilterInterceptor implements ByteArrayInterceptor {
             if (uri == null) {
                 LOGGER.warn("""
                         mcpCatalogFilterInterceptor: an entry of '{}' has no '{}' — the SDK's result shape has \
-                        changed and the catalog is NOT being filtered\
+                        changed; the entry is being dropped, because its visibility cannot be decided\
                         """, listed.getKey(), listed.getValue());
-                return;
+                dropped++;
+                continue;
             }
 
             if (visible.test(stripTemplate(uri))) {

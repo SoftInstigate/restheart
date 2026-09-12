@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.ai.mcp.RegisteredMcpAware;
@@ -60,9 +61,20 @@ import com.github.benmanes.caffeine.cache.Ticker;
 public final class CachedResourceLookup {
 
     private final McpAwareRegistry registry;
-    private final Cache<String, ResourceLookup.Catalog> cache;
+    private final Cache<CatalogKey, ResourceLookup.Catalog> cache;
 
-    public CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Runnable onExpire) {
+    /**
+     * What one cached catalogue belongs to.
+     *
+     * <p>The base URL alone was the key until scopes existed, and it is not enough: on an instance
+     * reached through a single hostname every scope shares one base URL, so one scope's catalogue
+     * would be served to all of them — the very leak partitioning exists to close, reappearing
+     * inside the cache where no test on a per-hostname deployment would ever see it.
+     */
+    public record CatalogKey(String baseUrl, String scope) {
+    }
+
+    public CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Consumer<CatalogKey> onExpire) {
         // Dispatched to the framework's shared virtual-threads executor (ThreadsUtils), not run
         // on the shared, JVM-wide CompletableFuture/Caffeine delay-scheduler thread (named
         // "ForkJoinPool.commonPool-delayScheduler" — confirmed by decompiling Caffeine's
@@ -77,13 +89,13 @@ public final class CachedResourceLookup {
     }
 
     /** Test seam: a controllable {@link Ticker} and no real {@link Scheduler}, so tests advance time deterministically without waiting. */
-    CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Runnable onExpire, Ticker ticker, Scheduler scheduler) {
+    CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Consumer<CatalogKey> onExpire, Ticker ticker, Scheduler scheduler) {
         // Runs onExpire synchronously (not on a virtual thread) so tests can assert its effect
         // right after triggering expiry, with no race to wait out.
         this(registry, ttl, onExpire, ticker, scheduler, Runnable::run);
     }
 
-    private CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Runnable onExpire, Ticker ticker, Scheduler scheduler, Executor onExpireExecutor) {
+    private CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Consumer<CatalogKey> onExpire, Ticker ticker, Scheduler scheduler, Executor onExpireExecutor) {
         this.registry = registry;
         this.cache = Caffeine.newBuilder()
                 .expireAfterWrite(ttl)
@@ -93,34 +105,36 @@ public final class CachedResourceLookup {
                 // without waiting on a background thread) — onExpire's own dispatch is handled
                 // separately via onExpireExecutor, see the public constructor's comment
                 .executor(Runnable::run)
-                .removalListener((String key, ResourceLookup.Catalog value, RemovalCause cause) -> {
+                // The key is handed on, not dropped: it names the scope whose catalogue expired,
+                // and only that scope's clients have anything to be told about.
+                .removalListener((CatalogKey key, ResourceLookup.Catalog value, RemovalCause cause) -> {
                     if (cause == RemovalCause.EXPIRED) {
-                        onExpireExecutor.execute(onExpire);
+                        onExpireExecutor.execute(() -> onExpire.accept(key));
                     }
                 })
                 .build();
     }
 
     /** Public: also called by {@code McpService} (a different package) to sync the MCP SDK's resource registry — see #617. */
-    public List<McpResource> all(BaseAccount principal, String baseUrl) {
-        return catalog(principal, baseUrl).resources();
+    public List<McpResource> all(BaseAccount principal, String baseUrl, String scope) {
+        return catalog(principal, baseUrl, scope).resources();
     }
 
     /** Public: also called by {@code McpService} (a different package) for resource-template read dispatch — see #617. */
-    public Optional<McpResource> find(BaseAccount principal, String baseUrl, String resourceUri) {
-        return all(principal, baseUrl).stream().filter(r -> r.uri().equals(resourceUri)).findFirst();
+    public Optional<McpResource> find(BaseAccount principal, String baseUrl, String scope, String resourceUri) {
+        return all(principal, baseUrl, scope).stream().filter(r -> r.uri().equals(resourceUri)).findFirst();
     }
 
     /**
      * Public: also called by {@code McpService} to resolve which plugin owns a resource, for
      * documents-mode {@code resources/read} dispatch (its {@code readResource(...)}) — see #617.
      */
-    public Optional<RegisteredMcpAware> findOwner(BaseAccount principal, String baseUrl, String resourceUri) {
-        return Optional.ofNullable(catalog(principal, baseUrl).owners().get(resourceUri));
+    public Optional<RegisteredMcpAware> findOwner(BaseAccount principal, String baseUrl, String scope, String resourceUri) {
+        return Optional.ofNullable(catalog(principal, baseUrl, scope).owners().get(resourceUri));
     }
 
-    private ResourceLookup.Catalog catalog(BaseAccount principal, String baseUrl) {
-        return cache.get(baseUrl, k -> ResourceLookup.catalog(registry, principal, baseUrl));
+    private ResourceLookup.Catalog catalog(BaseAccount principal, String baseUrl, String scope) {
+        return cache.get(new CatalogKey(baseUrl, scope), k -> ResourceLookup.catalog(registry, principal, k.baseUrl(), k.scope()));
     }
 
     /**
@@ -128,7 +142,7 @@ public final class CachedResourceLookup {
      * — see #617. Not cached: unlike {@link #all}, only computed when the resource registry
      * itself is (re)synced (boot, and on every catalog TTL expiry), never per MCP request.
      */
-    public List<McpResourceTemplate> templates(String baseUrl) {
-        return ResourceLookup.templates(registry, baseUrl);
+    public List<McpResourceTemplate> templates(String baseUrl, String scope) {
+        return ResourceLookup.templates(registry, baseUrl, scope);
     }
 }
