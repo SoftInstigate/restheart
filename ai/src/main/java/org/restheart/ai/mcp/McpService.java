@@ -199,6 +199,8 @@ public class McpService implements ByteArrayService {
         howToCallTool = new HowToCallTool(resourceLookup);
 
         var serverBuilder = McpServer.sync(provider)
+                // Keeps handlers on the caller's virtual thread: without it the SDK wraps every one in subscribeOn(Schedulers.boundedElastic()), a pool of up to 10x CPU platform threads — a default meant for event-loop callers, and the opposite of RESTHeart's threading model
+                .immediateExecution(true)
                 .serverInfo("restheart-mcp", "1.0.0")
                 .jsonMapper(jsonMapper)
                 .jsonSchemaValidator(schemaValidator)
