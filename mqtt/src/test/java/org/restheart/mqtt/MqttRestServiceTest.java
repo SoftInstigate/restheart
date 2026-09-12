@@ -22,6 +22,7 @@
 package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -285,5 +287,55 @@ public class MqttRestServiceTest {
 
         assertDoesNotThrow(() -> service.handle(ex.request(), ex.response()));
         assertEquals(HttpStatus.SC_OK, ex.response().getStatusCode());
+    }
+
+    // --- The REST surface is JSON, so the same rule as the SSE envelope applies: bytes become
+    // base64 and payloadEncoding says so, rather than leaving a consumer to guess. A base64 string
+    // is indistinguishable by inspection from a text payload that happens to look like base64. ---
+
+    /** 0x80 is a continuation byte with no lead byte: never valid UTF-8. */
+    private static final byte[] NOT_UTF8 = new byte[] { (byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE };
+
+    /** Puts a message straight into the router's cache, which is all mqtt-rest ever reads. */
+    private void cacheMessage(String topic, MqttMessage msg) {
+        try {
+            Field cacheField = MqttMessageRouter.class.getDeclaredField("lastMessageCache");
+            cacheField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<String, MqttMessage> cache = (Map<String, MqttMessage>) cacheField.get(router);
+            cache.put(topic, msg);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    @DisplayName("handle(): a non-text last value is returned as labelled base64")
+    void testHandleGetBinaryPayloadIsBase64() {
+        cacheMessage("sensors/raw",
+            new MqttMessage("sensors/raw", NOT_UTF8, 1, Instant.parse("2026-01-01T00:00:00Z"), false));
+
+        var service = serviceWithRouter(router);
+        var ex = exchangeFor(METHOD.GET, "sensors/raw");
+        service.handle(ex.request(), ex.response());
+
+        assertEquals(HttpStatus.SC_OK, ex.response().getStatusCode());
+        var obj = ex.response().getContent().getAsJsonObject();
+        assertEquals("base64", obj.get("payloadEncoding").getAsString());
+        assertArrayEquals(NOT_UTF8, Base64.getDecoder().decode(obj.get("payload").getAsString()));
+    }
+
+    @Test
+    @DisplayName("handle(): a text last value is returned as text, labelled as such")
+    void testHandleGetTextPayloadIsLabelledText() {
+        cacheMessage("sensors/temp", "{\"temp\":25}", 1);
+
+        var service = serviceWithRouter(router);
+        var ex = exchangeFor(METHOD.GET, "sensors/temp");
+        service.handle(ex.request(), ex.response());
+
+        var obj = ex.response().getContent().getAsJsonObject();
+        assertEquals("text", obj.get("payloadEncoding").getAsString());
+        assertEquals("{\"temp\":25}", obj.get("payload").getAsString());
     }
 }

@@ -21,6 +21,7 @@
 
 package org.restheart.mqtt;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -200,9 +201,104 @@ public class MqttMongoWriterTest {
 
         assertEquals("sensors/temp", doc.getString("topic"));
         assertEquals("{\"temp\":25}", doc.getString("payload"));
-        assertEquals("2026-01-01T00:00:00Z", doc.getString("receivedAt"));
+        // A BSON date, not an ISO-8601 string: the string sorted correctly but could not be
+        // range-queried or indexed as a date without converting it on every read.
+        assertEquals(java.util.Date.from(java.time.Instant.parse("2026-01-01T00:00:00Z")), doc.getDate("receivedAt"));
         assertEquals(1, doc.getInteger("qos"));
         assertEquals(false, doc.getBoolean("retain"));
+    }
+
+    /** 0x80 is a continuation byte with no lead byte: never valid UTF-8. */
+    private static final byte[] NOT_UTF8 = new byte[] { (byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE };
+
+    @Test
+    @DisplayName("a non-text payload is stored as BSON binary, byte for byte")
+    void testToDocumentStoresBinaryPayload() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        MqttMessage message = new MqttMessage(
+            "sensors/raw", NOT_UTF8, 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), false);
+
+        Document doc = writer.toDocument(message);
+
+        // BSON has a type for bytes, so the type itself says which, and the payload survives intact.
+        // Storing new String(bytes, UTF_8) here - the old behaviour - replaced every undecodable
+        // sequence with U+FFFD, and nothing downstream could tell or undo it.
+        Object payload = doc.get("payload");
+        assertTrue(payload instanceof org.bson.types.Binary, "expected BSON binary, got " + payload);
+        assertArrayEquals(NOT_UTF8, ((org.bson.types.Binary) payload).getData());
+    }
+
+    @Test
+    @DisplayName("a text payload is still stored as a queryable string")
+    void testToDocumentKeepsTextPayloadAsString() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        MqttMessage message = msg("sensors/temp", "{\"temp\":25}", 1);
+
+        assertEquals("{\"temp\":25}", writer.toDocument(message).getString("payload"));
+    }
+
+    @Test
+    @DisplayName("sub-millisecond precision is kept beside the BSON date, which only holds millis")
+    void testToDocumentKeepsSubMillisecondPrecision() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        java.time.Instant t = java.time.Instant.parse("2026-01-01T00:00:00Z").plusNanos(123_456);
+        MqttMessage message = new MqttMessage("sensors/temp", "{}", 1, t, false);
+
+        Document doc = writer.toDocument(message);
+
+        // Two messages within one millisecond are ordinary at sensor rates, and a collection meant
+        // to be replayable must not lose the order they arrived in - which a millisecond-precision
+        // date alone would.
+        assertEquals(java.util.Date.from(t), doc.getDate("receivedAt"));
+        assertEquals(123_456, doc.getInteger("receivedAtNanos"));
+    }
+
+    @Test
+    @DisplayName("the stored timestamp reconstructs the original Instant exactly, to the nanosecond")
+    void testReceivedAtRoundTripsLosslessly() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+
+        // A BSON date holds milliseconds and an Instant holds nanoseconds, so the date alone would
+        // silently truncate. These cases cover a bare second, a sub-millisecond value that a date
+        // rounds away entirely, and a nanosecond count just short of the next second.
+        for (java.time.Instant original : java.util.List.of(
+                java.time.Instant.parse("2026-01-01T00:00:00Z"),
+                java.time.Instant.parse("2026-01-01T00:00:00Z").plusNanos(123_456),
+                java.time.Instant.parse("2026-06-30T12:34:56Z").plusNanos(987_654_321),
+                java.time.Instant.parse("2026-06-30T12:34:56Z").plusNanos(999_999_999))) {
+
+            Document doc = writer.toDocument(new MqttMessage("sensors/temp", "{}", 1, original, false));
+
+            java.time.Instant reconstructed = java.time.Instant
+                .ofEpochMilli(doc.getDate("receivedAt").getTime())
+                .plusNanos(doc.getInteger("receivedAtNanos"));
+
+            assertEquals(original, reconstructed,
+                "receivedAt + receivedAtNanos must give back exactly what arrived: " + original);
+            assertEquals(original.getNano(), reconstructed.getNano(), "nanosecond component lost");
+        }
+    }
+
+    @Test
+    @DisplayName("a dead-lettered binary payload stays recoverable, as Extended JSON")
+    void testDeadLetterJsonKeepsBinaryAndDate() {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        MqttMessage message = new MqttMessage(
+            "sensors/raw", NOT_UTF8, 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), false);
+
+        // The dead-letter file is written with Document.toJson(), so a binary payload and a date
+        // both survive as Extended JSON rather than being flattened into something unreadable.
+        String json = writer.toDocument(message).toJson();
+
+        assertTrue(json.contains("$binary"), json);
+        assertTrue(json.contains("$date"), json);
+
+        // Parsed back: the point is that a message dead-lettered because MongoDB was unreachable
+        // can still be recovered from the file exactly as it arrived.
+        Document recovered = Document.parse(json);
+        assertArrayEquals(NOT_UTF8, recovered.get("payload", org.bson.types.Binary.class).getData());
+        assertEquals(java.util.Date.from(java.time.Instant.parse("2026-01-01T00:00:00Z")),
+            recovered.getDate("receivedAt"));
     }
 
     @Test

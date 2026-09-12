@@ -161,6 +161,10 @@ public class MqttSseService implements SseService {
     /** Cumulative SSE queue-full drops across all connections, for the mqtt_sse_dropped gauge. */
     private final AtomicLong totalDroppedMessages = new AtomicLong();
 
+    /** Guards the one-off warning about binary payloads in the raw (non-envelope) format. */
+    private final java.util.concurrent.atomic.AtomicBoolean rawBinaryWarningPending =
+        new java.util.concurrent.atomic.AtomicBoolean();
+
     @OnInit
     public void init() {
         defaultTopic = argOrDefault(config, "default-topic", DEFAULT_TOPIC);
@@ -343,18 +347,37 @@ public class MqttSseService implements SseService {
      * @return the formatted payload string
      */
     String formatPayload(MqttMessage message, boolean replay) {
+        boolean text = message.isTextPayload();
+
         if (payloadEnvelope) {
             JsonObject envelope = new JsonObject();
             envelope.addProperty("topic", message.getTopic());
-            envelope.addProperty("payload", message.getPayload());
+            envelope.addProperty("payload", text ? message.getPayload() : message.getPayloadAsBase64());
+            // Always present, both values spelled out. A base64 string is indistinguishable from a
+            // text payload that happens to look like base64, so a consumer that has to guess will
+            // eventually guess wrong.
+            envelope.addProperty("payloadEncoding", text ? "text" : "base64");
             envelope.addProperty("receivedAt", message.getReceivedAt().toString());
             envelope.addProperty("qos", message.getQos());
             envelope.addProperty("replay", replay);
             envelope.addProperty("retain", message.isRetain());
             return GSON.toJson(envelope);
-        } else {
+        }
+
+        if (text) {
             return message.getPayload();
         }
+
+        // The raw format has nowhere to say "this is base64", and SSE is a UTF-8 text protocol: a
+        // data: line cannot carry arbitrary bytes at all. So a non-text payload is unrepresentable
+        // here, and base64 without a label is the least bad answer. Anyone carrying binary payloads
+        // wants payload-envelope: true, where the label exists.
+        if (rawBinaryWarningPending.compareAndSet(false, true)) {
+            LOGGER.warn("Payload on {} is not valid UTF-8 and payload-envelope is false, so it is sent "
+                + "as unlabelled base64: SSE cannot carry raw bytes. Set payload-envelope: true to "
+                + "receive payloadEncoding alongside it. This is logged once.", message.getTopic());
+        }
+        return message.getPayloadAsBase64();
     }
 
     /**

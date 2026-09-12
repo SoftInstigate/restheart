@@ -79,8 +79,13 @@ mqtt-sse:
                                               # one arrives twice. Detection takes up to two periods:
                                               # the first write into a half-closed socket succeeds.
   last-message-cache: true
-  payload-envelope: false                     # true = wrap in
-                                              # {topic, payload, receivedAt, qos, replay, retain}.
+  payload-envelope: false                     # true = wrap in {topic, payload, payloadEncoding,
+                                              # receivedAt, qos, replay, retain}.
+                                              # payloadEncoding is "text" or "base64": MQTT payloads
+                                              # are arbitrary bytes and JSON cannot carry bytes, so
+                                              # anything that is not valid UTF-8 is base64. The raw
+                                              # format has nowhere to put that label - enable this if
+                                              # your payloads are not all text.
                                               # replay = came from our cache, not the live stream;
                                               # retain = the broker called it the topic's last known
                                               # state. Orthogonal: a new event is neither. See README

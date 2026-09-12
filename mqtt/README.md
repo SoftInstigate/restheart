@@ -392,11 +392,17 @@ Subscriptions declared here survive a broker session reset: when the client reco
 | `default-topic` | `sensors/#` | used when the request omits `?topic=` |
 | `default-qos` | `1` | |
 | `per-connection-queue-capacity` | `256` | full queue drops the newest message for that client only |
-| `payload-envelope` | `false` | `true` wraps the payload as `{topic, payload, receivedAt, qos, replay, retain}` |
+| `payload-envelope` | `false` | `true` wraps the payload as `{topic, payload, payloadEncoding, receivedAt, qos, replay, retain}` |
 | `last-message-cache` | `true` | on connect, replays the cached last message of **every** topic currently cached that matches the request's topic filter, sorted by `receivedAt` — not just one message |
 | `max-connections-per-topic` | `0` | `0` = unlimited |
 | `keep-alive-ms` | `20000` | period of the SSE keep-alive comment; `0` disables it |
 | `pipeline` | none | see below |
+
+**Payloads are bytes, and `payloadEncoding` says how they reached you.** An MQTT payload is arbitrary bytes — protobuf, CBOR, an image, anything compressed — and JSON cannot carry bytes. So the envelope sends `payload` as text when the bytes are valid UTF-8 and as base64 when they are not, and `payloadEncoding` is always present, `"text"` or `"base64"`, because a base64 string is indistinguishable by inspection from a text payload that happens to look like base64.
+
+The raw format (`payload-envelope: false`) has nowhere to put that label, and SSE is a UTF-8 text protocol whose `data:` lines cannot carry arbitrary bytes at all. A non-text payload is therefore sent as **unlabelled** base64 and the service warns once. **If your payloads are not all text, enable the envelope.**
+
+`mqtt-rest` follows the same rule and returns `payloadEncoding` alongside `payload`.
 
 **`replay` and `retain` are two different questions, and a consumer that wants live data must ask both.** They only exist with `payload-envelope: true`; the raw format has nowhere to put them.
 
@@ -524,6 +530,19 @@ An unrecognised value fails at startup rather than silently falling back.
 | `auto` | ObjectId | `insertMany` |
 | `payload-field` | the `id-field` of the payload | upserting `bulkWrite` |
 | `topic-timestamp-hash` | hash of topic + timestamp | upserting `bulkWrite` |
+
+Documents use BSON types rather than strings, so the collection can be queried and indexed as what it is:
+
+| field | BSON type | notes |
+|---|---|---|
+| `payload` | `string` \| `binData` | a string when the bytes are valid UTF-8, binary when they are not — the type itself is the discriminator, so no companion field can go stale |
+| `receivedAt` | `date` | range-queryable and indexable as a date |
+| `receivedAtNanos` | `int` | the sub-millisecond remainder, `0`–`999999` |
+| `retain` | `bool` | see below |
+
+`receivedAtNanos` exists because BSON dates are milliseconds and `receivedAt` carries nanoseconds. Two messages inside one millisecond are ordinary at sensor rates, and a collection meant to be replayable must not lose the order they arrived in.
+
+`payload-field` only applies to text payloads; a binary one falls through to `auto`, since there is no JSON document to read a field from.
 
 Every document also records `retain`, the flag the broker delivered the message with, so the collection records the event rather than an interpretation of it. Without it, a value delivered as a topic's stored last-known-state — possibly days old, and possibly already in the collection from before — is indistinguishable from a measurement just taken. In a steady-state deployment it is `false` on nearly every document, and `true` mainly on the messages delivered just after a (re)start, which is exactly when a row is most likely to be a re-record of an old value.
 

@@ -150,6 +150,11 @@ public class FilterStage implements MqttEventStage {
     private boolean evaluateJsonPath(MqttMessage message) {
         try {
             String payload = message.getPayload();
+            if (payload == null) {
+                // Not valid UTF-8: there is no text for a JSONPath or a substring test to look at.
+                // Treated as non-matching rather than crashing the dispatch of every message.
+                return false;
+            }
 
             // Extract value using JSONPath
             Object value = JsonPath.read(payload, jsonPath);

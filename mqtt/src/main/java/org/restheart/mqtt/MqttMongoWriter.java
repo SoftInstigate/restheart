@@ -31,6 +31,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.metrics.Metrics;
 import org.restheart.mqtt.buffer.MessageBuffer;
@@ -677,8 +679,29 @@ public class MqttMongoWriter implements Initializer {
     Document toDocument(MqttMessage msg) {
         Document doc = new Document();
         doc.append("topic", msg.getTopic());
-        doc.append("payload", msg.getPayload());
-        doc.append("receivedAt", msg.getReceivedAt().toString());
+
+        // A String when the payload is text, a BSON binary when it is not. BSON has a type for
+        // bytes, so the type itself says which and no companion field can go stale; base64 here
+        // would be a third of extra storage and not queryable as binary. What must not happen is
+        // the old behaviour: decoding every payload as UTF-8 and storing the U+FFFD wreckage of
+        // anything that was not text.
+        if (msg.isTextPayload()) {
+            doc.append("payload", msg.getPayload());
+        } else {
+            byte[] bytes = msg.getPayloadBytes();
+            doc.append("payload", bytes == null ? null : new Binary(bytes));
+        }
+
+        // A BSON date, not its toString(). An ISO-8601 string happens to sort correctly, which is
+        // why this went unnoticed, but it cannot be range-queried, indexed as a date, or aggregated
+        // over time without converting it on every read.
+        //
+        // BSON dates are milliseconds, and receivedAt carries nanoseconds, so the remainder is kept
+        // beside it: two messages in one millisecond are ordinary at sensor rates, and a collection
+        // meant to be replayable must not lose the order they arrived in.
+        doc.append("receivedAt", Date.from(msg.getReceivedAt()));
+        doc.append("receivedAtNanos", msg.getReceivedAt().getNano() % 1_000_000);
+
         doc.append("qos", msg.getQos());
         // Recorded, not interpreted. A stored MQTT event is only a faithful record of what the
         // broker delivered if it keeps the retain flag: without it, a retained value - the topic's
@@ -691,6 +714,11 @@ public class MqttMongoWriter implements Initializer {
         if (idStrategy != null) {
             switch (idStrategy) {
                 case "payload-field" -> {
+                    // Only a text payload can be parsed for a field. A binary one falls through to
+                    // the auto strategy rather than relying on the catch below.
+                    if (!msg.isTextPayload()) {
+                        break;
+                    }
                     try {
                         Document payload = Document.parse(msg.getPayload());
                         Object idValue = payload.get(idField);

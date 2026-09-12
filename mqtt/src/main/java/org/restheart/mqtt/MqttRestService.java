@@ -101,7 +101,10 @@ public class MqttRestService implements JsonService {
 
         JsonObject result = new JsonObject();
         result.addProperty("topic", cached.getTopic());
-        result.addProperty("payload", cached.getPayload());
+        boolean text = cached.isTextPayload();
+        result.addProperty("payload", text ? cached.getPayload() : cached.getPayloadAsBase64());
+        // Spelled out rather than inferred: base64 and text are not distinguishable by inspection.
+        result.addProperty("payloadEncoding", text ? "text" : "base64");
         result.addProperty("receivedAt", cached.getReceivedAt().toString());
         result.addProperty("qos", cached.getQos());
         // Always from the cache, so there is no "replay" flag to report here - but whether the

@@ -121,12 +121,13 @@ Three things worth noticing in that output:
   `message` event gets you nothing.
 - **`data:` is your payload, untouched.** The module does not wrap or reinterpret it; set
   `payload-envelope: true` if you would rather receive
-  `{topic, payload, receivedAt, qos, replay, retain}`, which you will need as soon as one stream
-  carries more than one topic — and which is the only way to tell a new event from the topic's
-  stored last value. With the raw format there is nowhere to put that, so everything looks live.
-  `replay` means the event came from RESTHeart's cache, `retain` that the broker handed it over as
-  last-known-state on subscribe; a genuinely new event is neither. See "Durability" in
-  [README.md](./README.md).
+  `{topic, payload, payloadEncoding, receivedAt, qos, replay, retain}`, which you will need as soon
+  as one stream carries more than one topic — and which is the only way to tell a new event from the
+  topic's stored last value. With the raw format there is nowhere to put any of that, so everything
+  looks live and text. `replay` means the event came from RESTHeart's cache, `retain` that the broker
+  handed it over as last-known-state on subscribe — a genuinely new event is neither — and
+  `payloadEncoding` is `text` or `base64`, because an MQTT payload is arbitrary bytes and JSON cannot
+  carry bytes. See [README.md](./README.md).
 - **The id is not resumable.** It is unique within this stream and meaningless outside it;
   `Last-Event-ID` is currently ignored, so a reconnecting client does not get a replay.
 

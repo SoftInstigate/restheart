@@ -588,7 +588,10 @@ public class MqttMessageRouter {
 
         MqttMessage message = new MqttMessage(
             publish.getTopic().toString(),
-            new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8),
+            // The bytes, not new String(..., UTF_8): that substituted U+FFFD for anything that was
+            // not text and destroyed the payload here, before any consumer or the database could
+            // see it. MqttMessage decodes strictly and reports what it got.
+            publish.getPayloadAsBytes(),
             publish.getQos().getCode(),
             Instant.now(),
             publish.isRetain()
@@ -618,7 +621,10 @@ public class MqttMessageRouter {
 
         MqttMessage message = new MqttMessage(
             publish.getTopic().toString(),
-            new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8),
+            // The bytes, not new String(..., UTF_8): that substituted U+FFFD for anything that was
+            // not text and destroyed the payload here, before any consumer or the database could
+            // see it. MqttMessage decodes strictly and reports what it got.
+            publish.getPayloadAsBytes(),
             publish.getQos().getCode(),
             Instant.now(),
             publish.isRetain()

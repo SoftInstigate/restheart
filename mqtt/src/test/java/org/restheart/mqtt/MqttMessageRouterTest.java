@@ -821,12 +821,17 @@ public class MqttMessageRouterTest {
         router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, received::add);
 
         Consumer<Mqtt5Publish> globalConsumer = capturedGlobalConsumer(mockClient);
-        globalConsumer.accept(mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, true));
-        globalConsumer.accept(mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, false));
+        globalConsumer.accept(mockPublish("sensors/temp", "{\"n\":\"retained\"}", MqttQos.AT_LEAST_ONCE, true));
+        globalConsumer.accept(mockPublish("sensors/temp", "{\"n\":\"ordinary\"}", MqttQos.AT_LEAST_ONCE, false));
 
         awaitCondition(() -> received.size() == 2, 5_000);
-        assertTrue(received.get(0).isRetain(), "a retained publish must arrive flagged as retained");
-        assertFalse(received.get(1).isRetain(), "an ordinary publish must not be flagged as retained");
+
+        // Matched by payload, not by index: the router dispatches each message on its own virtual
+        // thread, so the order they reach a listener in is not the order they arrived in.
+        MqttMessage retained = received.stream().filter(m -> m.getPayload().contains("retained")).findFirst().orElseThrow();
+        MqttMessage ordinary = received.stream().filter(m -> m.getPayload().contains("ordinary")).findFirst().orElseThrow();
+        assertTrue(retained.isRetain(), "a retained publish must arrive flagged as retained");
+        assertFalse(ordinary.isRetain(), "an ordinary publish must not be flagged as retained");
     }
 
     @Test

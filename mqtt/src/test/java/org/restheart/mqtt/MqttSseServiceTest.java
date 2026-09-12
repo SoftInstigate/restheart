@@ -21,6 +21,7 @@
 
 package org.restheart.mqtt;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -278,6 +279,61 @@ public class MqttSseServiceTest {
     // true), and the same message is then replayed from the cache to the next client (replay true,
     // retain true). Collapsing the two into one flag made those two clients disagree about the same
     // message, and reporting only "cached" presented a value of unknown age as a fresh reading. ---
+
+    /** 0x80 is a continuation byte with no lead byte: never valid UTF-8. */
+    private static final byte[] NOT_UTF8 = new byte[] { (byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE };
+
+    // --- JSON cannot carry arbitrary bytes and SSE is a UTF-8 text protocol, so a non-text payload
+    // has to be base64 - and a base64 string is indistinguishable by inspection from a text payload
+    // that happens to look like base64. payloadEncoding says which, always, so nobody has to guess. ---
+
+    @Test
+    @DisplayName("a non-text payload is sent as labelled base64 in the envelope")
+    void testBinaryPayloadIsBase64InEnvelope() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("payload-envelope", true);
+        callInit();
+
+        MqttMessage msg = new MqttMessage("sensors/raw", NOT_UTF8, 1, Instant.now(), false);
+        String payload = service.formatPayload(msg, false);
+
+        // Parsed, not substring-matched: Gson escapes '=' as \u003d, which is valid JSON that any
+        // parser decodes back - so what matters is what a consumer actually reads.
+        var envelope = com.google.gson.JsonParser.parseString(payload).getAsJsonObject();
+        assertEquals("base64", envelope.get("payloadEncoding").getAsString());
+        assertArrayEquals(NOT_UTF8, java.util.Base64.getDecoder().decode(envelope.get("payload").getAsString()));
+    }
+
+    @Test
+    @DisplayName("a text payload is labelled as text and sent unchanged")
+    void testTextPayloadIsLabelledText() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("payload-envelope", true);
+        callInit();
+
+        MqttMessage msg = new MqttMessage("sensors/temp", "{\"t\":25}", 1, Instant.now(), false);
+        String payload = service.formatPayload(msg, false);
+
+        var envelope = com.google.gson.JsonParser.parseString(payload).getAsJsonObject();
+        assertEquals("text", envelope.get("payloadEncoding").getAsString());
+        assertEquals("{\"t\":25}", envelope.get("payload").getAsString());
+    }
+
+    @Test
+    @DisplayName("raw format: text passes through untouched, bytes fall back to base64")
+    void testRawFormatWithBinaryPayload() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("payload-envelope", false);
+        callInit();
+
+        assertEquals("{\"t\":25}",
+            service.formatPayload(new MqttMessage("sensors/temp", "{\"t\":25}", 1, Instant.now(), false), false));
+
+        // Unlabelled, because the raw format has nowhere to put a label - which is exactly why the
+        // service warns once and the README tells anyone carrying binary to enable the envelope.
+        assertEquals(java.util.Base64.getEncoder().encodeToString(NOT_UTF8),
+            service.formatPayload(new MqttMessage("sensors/raw", NOT_UTF8, 1, Instant.now(), false), false));
+    }
 
     @Test
     @DisplayName("a retained message delivered live is retain=true, replay=false")

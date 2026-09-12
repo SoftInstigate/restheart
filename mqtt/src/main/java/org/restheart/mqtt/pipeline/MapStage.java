@@ -110,6 +110,16 @@ public class MapStage implements MqttEventStage {
 
     @Override
     public Optional<MqttMessage> process(MqttMessage message) {
+        // Every transformation below is a text operation - a JSONPath extraction, a key rename, a
+        // template substitution. Applying one to a payload that is not valid UTF-8 would mean
+        // rebuilding the message from a mojibake string and replacing the original bytes with
+        // U+FFFD, so a binary payload passes through untouched instead.
+        if (!message.isTextPayload()) {
+            LOGGER.debug("Passing through a non-text payload on {} unchanged: map stages transform text",
+                message.getTopic());
+            return Optional.of(message);
+        }
+
         try {
             String transformedPayload;
 
