@@ -183,12 +183,43 @@ public class McpScopeIT extends AbstactIT {
                 "a caller scoped to " + DB_A + " read " + foreign + "; body: " + response.body());
     }
 
+    // ------------------------------------------------------------------ lifecycle
+
+    @Test
+    public void aScopeSurvivesItsSessionsEndingAndComingBack() throws Exception {
+        // A scope with no session left and no request inside it is disposed, transport and all —
+        // otherwise their number grows with the services that have ever connected rather than with
+        // those connected now. What this guards is the other side of that: the next caller for the
+        // same scope must get a working server, not the one just closed.
+        var first = new McpTestClient(BASE, ADMIN_BASIC, query(HOST_A, DB_A));
+        first.initialize();
+        assertTrue(urisOf(first).stream().anyMatch(u -> u.contains("/" + DB_A + "/" + COLL)),
+                "the first caller sees nothing of its own");
+
+        assertEquals(200, first.endSession().statusCode());
+
+        var second = new McpTestClient(BASE, ADMIN_BASIC, query(HOST_A, DB_A));
+        second.initialize();
+
+        var uris = urisOf(second);
+        assertTrue(uris.stream().anyMatch(u -> u.contains("/" + DB_A + "/" + COLL)),
+                "the scope did not come back after being disposed; got " + uris);
+        assertTrue(uris.stream().allMatch(u -> u.startsWith(HOST_A)),
+                "the rebuilt catalogue lost the caller's host; got " + uris);
+        assertFalse(uris.stream().anyMatch(u -> u.contains("/" + DB_B + "/")),
+                "the rebuilt catalogue is not scoped; got " + uris);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private List<String> resourceUrisFor(String host, String scope) throws Exception {
         var mcp = new McpTestClient(BASE, ADMIN_BASIC, query(host, scope));
         mcp.initialize();
 
+        return urisOf(mcp);
+    }
+
+    private static List<String> urisOf(McpTestClient mcp) throws Exception {
         return mcp.rpc("resources/list", null).getDocument("result").getArray("resources").stream()
                 .map(r -> r.asDocument().getString("uri").getValue())
                 .toList();

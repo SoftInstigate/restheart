@@ -159,6 +159,16 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         });
     }
 
+    /**
+     * Whether any session is still live on this transport.
+     *
+     * <p>Read when a session ends, to decide whether the scope this transport serves still has a
+     * reason to exist.
+     */
+    boolean hasSessions() {
+        return !sessions.isEmpty();
+    }
+
     @Override
     public Mono<Void> notifyClients(String method, Object params) {
         if (sessions.isEmpty()) return Mono.empty();

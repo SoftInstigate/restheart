@@ -286,6 +286,28 @@ final class McpTestClient {
         }
     }
 
+    /**
+     * Ends this client's session, as a client closing down does — {@code DELETE /mcp} with the
+     * session header, per the Streamable HTTP transport.
+     */
+    HttpResponse<String> endSession() throws Exception {
+        if (sessionId == null) {
+            throw new IllegalStateException("call initialize() first");
+        }
+
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(mcpUrl))
+                .header("Authorization", basicAuth)
+                .header("Mcp-Session-Id", sessionId)
+                .header("Mcp-Protocol-Version", "2025-03-26")
+                .DELETE()
+                .build();
+
+        var response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        sessionId = null;
+        return response;
+    }
+
     private HttpResponse<String> send(String jsonRpcBody, String sessionIdHeader) throws Exception {
         var builder = HttpRequest.newBuilder()
                 .uri(URI.create(mcpUrl))

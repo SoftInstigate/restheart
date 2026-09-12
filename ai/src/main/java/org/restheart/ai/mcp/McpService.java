@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -173,11 +174,20 @@ public class McpService implements ByteArrayService {
      */
     private final Map<String, ScopedServer> scopes = new ConcurrentHashMap<>();
 
-    /** An MCP server, its transport, and whether its registry has been populated yet. */
+    /**
+     * An MCP server, its transport, whether its registry has been populated, and how many requests
+     * are currently inside it.
+     *
+     * <p>{@code inFlight} exists for disposal. Without it there is a window between a thread
+     * taking a scope out of the map and that thread's request creating its session, in which the
+     * scope looks unused: a session ending on another thread would dispose it, and the first
+     * request would then land on a closed transport.
+     */
     private record ScopedServer(String scope,
                                 UndertowStreamableServerTransportProvider provider,
                                 McpSyncServer server,
-                                AtomicBoolean resourcesInitialized) {
+                                AtomicBoolean resourcesInitialized,
+                                AtomicInteger inFlight) {
     }
 
     /** Resolved lazily via {@link PluginModelResolver}, not in {@code @OnInit} — see its own javadoc on plugin init ordering. */
@@ -313,14 +323,69 @@ public class McpService implements ByteArrayService {
         res.setContent("{\"error\":\"%s\",\"message\":\"%s\"}".formatted(error, message));
     }
 
-    /** The server serving {@code scope}, created on that scope's first request. */
-    private ScopedServer scopedServer(String scope) {
-        return scopes.computeIfAbsent(scope, this::newScopedServer);
+    /**
+     * The server serving {@code scope}, created on that scope's first request, with this request
+     * counted as inside it. The caller must {@link #release} it when done.
+     *
+     * <p>{@code compute}, not {@code computeIfAbsent}: taking the scope and marking it busy has to
+     * happen under the map's own lock, or disposal can slip between the two.
+     */
+    private ScopedServer acquire(String scope) {
+        return scopes.compute(scope, (k, existing) -> {
+            var scoped = existing != null ? existing : newScopedServer(k);
+            scoped.inFlight().incrementAndGet();
+            return scoped;
+        });
+    }
+
+    private void release(ScopedServer scoped) {
+        scoped.inFlight().decrementAndGet();
+    }
+
+    /**
+     * Drops a scope once nothing is using it: no live session, and no request inside it.
+     *
+     * <p>Called when a session ends. Without this the number of scopes grows with the services
+     * that have <em>ever</em> connected rather than with those connected now — on a long-running
+     * shared process, that only ever goes up.
+     *
+     * <p>Both conditions are re-checked inside {@code computeIfPresent}, so the decision and the
+     * removal are one step as far as {@link #acquire} is concerned.
+     */
+    private void disposeIfUnused(String scope) {
+        var removed = new java.util.concurrent.atomic.AtomicReference<ScopedServer>();
+
+        scopes.computeIfPresent(scope, (k, scoped) -> {
+            if (scoped.inFlight().get() > 0 || scoped.provider().hasSessions()) {
+                return scoped;
+            }
+
+            removed.set(scoped);
+            return null;
+        });
+
+        var gone = removed.get();
+        if (gone == null) {
+            return;
+        }
+
+        // Outside the map's mapping function: closeGracefully blocks, and blocking there holds a
+        // lock every other request for any scope may be waiting on.
+        try {
+            gone.provider().closeGracefully().block();
+        } catch (Exception e) {
+            LOGGER.warn("failed to close the transport of scope '{}'", scope, e);
+        }
+
+        LOGGER.debug("MCP server disposed for scope '{}'", scope);
     }
 
     private ScopedServer newScopedServer(String scope) {
         var scopedProvider = new UndertowStreamableServerTransportProvider(jsonMapper);
-        scopedProvider.onSessionEnded(this::sessionEnded);
+        scopedProvider.onSessionEnded(sessionId -> {
+            sessionEnded(sessionId);
+            disposeIfUnused(scope);
+        });
 
         // Neither resources nor templates are registered here: both are built by calling
         // describeMcp()/describeTemplates() on every registered McpAware plugin, and @OnInit
@@ -344,7 +409,7 @@ public class McpService implements ByteArrayService {
 
         LOGGER.debug("MCP server created for scope '{}'", scope);
 
-        return new ScopedServer(scope, scopedProvider, scopedSrv, new AtomicBoolean(false));
+        return new ScopedServer(scope, scopedProvider, scopedSrv, new AtomicBoolean(false), new AtomicInteger());
     }
 
     /**
@@ -1442,30 +1507,40 @@ public class McpService implements ByteArrayService {
             return;
         }
 
-        var scoped = scopedServer(scope);
-        var ctx = buildContext(req, scope);
+        var scoped = acquire(scope);
 
-        // Per scope, not per process: one flag for the whole instance would let whichever scope
-        // arrived first switch initialisation off for every other, leaving the second caller a
-        // registry that is never populated.
-        if (publicBaseUrl != null && scoped.resourcesInitialized().compareAndSet(false, true)) {
-            syncResourceRegistry(scoped, effectiveBaseUrl(req.getExchange()));
-        }
+        try {
+            var ctx = buildContext(req, scope);
 
-        if (req.isPost()) {
-            // Opened on demand, before the SDK records the subscription: the SDK keeps that map
-            // private, so this is how we learn a resource is wanted. Watching every exposed
-            // collection instead would pay for streams nobody asked for.
-            if (watchIfSubscribing(req, res, ctx)) {
-                scoped.provider().handlePost(req, res, ctx);
+            // Per scope, not per process: one flag for the whole instance would let whichever scope
+            // arrived first switch initialisation off for every other, leaving the second caller a
+            // registry that is never populated.
+            if (publicBaseUrl != null && scoped.resourcesInitialized().compareAndSet(false, true)) {
+                syncResourceRegistry(scoped, effectiveBaseUrl(req.getExchange()));
             }
-        } else if (req.isGet()) {
-            scoped.provider().handleGet(req, res, ctx);
-        } else if (req.isDelete()) {
-            scoped.provider().handleDelete(req, res, ctx);
-        } else {
-            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+
+            if (req.isPost()) {
+                // Opened on demand, before the SDK records the subscription: the SDK keeps that map
+                // private, so this is how we learn a resource is wanted. Watching every exposed
+                // collection instead would pay for streams nobody asked for.
+                if (watchIfSubscribing(req, res, ctx)) {
+                    scoped.provider().handlePost(req, res, ctx);
+                }
+            } else if (req.isGet()) {
+                scoped.provider().handleGet(req, res, ctx);
+            } else if (req.isDelete()) {
+                scoped.provider().handleDelete(req, res, ctx);
+            } else {
+                res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+        } finally {
+            release(scoped);
         }
+
+        // A DELETE ends the session the client was holding; a GET stream ending may have been the
+        // last thing keeping the scope alive. Either way the check belongs after the request has
+        // left, when inFlight no longer counts it.
+        disposeIfUnused(scope);
     }
 
     @Override
