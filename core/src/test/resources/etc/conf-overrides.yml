@@ -595,6 +595,12 @@
 # resolves the database per-request. Does not affect other tests.
 /dbOverrideInterceptor/enabled: true
 
+# Test interceptor: attaches override-ai-mcp-public-base-url when
+# ?_mcp-baseurl-override=<url> is present, standing in for the Cloud deployment layer
+# that derives a service's base URL from its hostname. Used by McpScopeIT to give two
+# callers two different scopes on one instance. Does not affect other tests.
+/mcpBaseUrlOverrideInterceptor/enabled: true
+
 # Test interceptor: attaches override-accounts-account-properties-claims when
 # ?_claims-override=<a,b,c> is present. Used by
 # account-properties-claims-override.feature to verify the per-request override (#661)

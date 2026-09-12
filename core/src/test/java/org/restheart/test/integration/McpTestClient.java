@@ -56,7 +56,17 @@ final class McpTestClient {
     private String sessionId;
 
     McpTestClient(String baseUrl, String basicAuth) {
-        this.mcpUrl = baseUrl + "/mcp";
+        this(baseUrl, basicAuth, "");
+    }
+
+    /**
+     * Same, with a query string appended to every call on {@code /mcp} — for the test
+     * interceptors that stand in for a deployment layer attaching per-request overrides.
+     *
+     * @param query e.g. {@code "?_mcp-baseurl-override=http://svc-a.local:8080"}, or empty
+     */
+    McpTestClient(String baseUrl, String basicAuth, String query) {
+        this.mcpUrl = baseUrl + "/mcp" + query;
         this.basicAuth = basicAuth;
     }
 
