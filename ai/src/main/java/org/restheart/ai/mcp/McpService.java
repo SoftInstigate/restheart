@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import org.restheart.ai.util.RequestOverrides;
 import org.restheart.ai.mcp.tools.CachedResourceLookup;
 import org.restheart.ai.mcp.tools.HowToCallTool;
 import org.restheart.ai.mcp.tools.ListApisTool;
@@ -264,7 +265,7 @@ public class McpService implements ByteArrayService {
             }
 
             if (McpSchema.METHOD_RESOURCES_SUBSCRIBE.equals(rpc.method())) {
-                var resource = resourceLookup.find(principal(ctx), publicBaseUrl, uri);
+                var resource = resourceLookup.find(principal(ctx), effectiveBaseUrl(ctx), uri);
 
                 if (resource.isEmpty() || !resource.get().subscribable()) {
                     refuseSubscription(res, rpc, uri, resource.map(McpResource::kind).orElse(null));
@@ -284,7 +285,7 @@ public class McpService implements ByteArrayService {
                 // already subscribed" would then leave the resource unwatched for good, with the
                 // subscribers still recorded and never told anything again. startWatching is a
                 // no-op when a live watch is already there.
-                startWatching(principal(ctx), uri);
+                startWatching(principal(ctx), effectiveBaseUrl(ctx), uri);
             } else if (McpSchema.METHOD_RESOURCES_UNSUBSCRIBE.equals(rpc.method())
                     && demand.unsubscribed(uri, sessionId)) {
                 releaseWatchesFor(List.of(uri));
@@ -389,17 +390,17 @@ public class McpService implements ByteArrayService {
     }
 
     /** One watch per resource URI; the owning plugin decides what that costs — for a collection, one shared change stream. */
-    private synchronized void startWatching(BaseAccount principal, String uri) {
+    private synchronized void startWatching(BaseAccount principal, String baseUrl, String uri) {
         if (watches.containsKey(uri)) {
             return;
         }
 
-        var owner = resourceLookup.findOwner(principal, publicBaseUrl, uri);
+        var owner = resourceLookup.findOwner(principal, baseUrl, uri);
         if (owner.isEmpty()) {
             return;
         }
 
-        var watchCtx = new McpContext(principal, publicBaseUrl, owner.get().pluginName(),
+        var watchCtx = new McpContext(principal, baseUrl, owner.get().pluginName(),
                 owner.get().pluginUri(), owner.get().pluginConfiguration());
 
         owner.get().instance().watch(watchCtx, uri, () -> subscriptions.changed(uri))
@@ -884,12 +885,13 @@ public class McpService implements ByteArrayService {
      */
     private McpSchema.ReadResourceResult readTemplateMatch(McpTransportContext ctx, String uri) {
         var principal = principal(ctx);
+        var baseUrl = effectiveBaseUrl(ctx);
 
         var queryIdx = uri.indexOf('?');
         var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
         var queryArgs = queryIdx >= 0 ? parseQueryArgs(uri.substring(queryIdx + 1)) : Map.<String, Object>of();
 
-        var resource = resourceLookup.find(principal, publicBaseUrl, base);
+        var resource = resourceLookup.find(principal, baseUrl, base);
         if (resource.isPresent()) {
             var actionName = defaultReadableAction(resource.get());
             if (actionName == null) {
@@ -909,7 +911,7 @@ public class McpService implements ByteArrayService {
             // An action with a literal path of its own — /_size — addresses something else on the
             // same resource, and has to be recognized before the single-document reading, or
             // ".../inventory/_size?filter={...}" looks for a document whose _id is "_size".
-            var byPath = readableActionAtPath(principal, parent, "/" + segment);
+            var byPath = readableActionAtPath(principal, effectiveBaseUrl(ctx), parent, "/" + segment);
             if (byPath != null) {
                 return readOperation(ctx, principal, parent, byPath, queryArgs).orElseGet(() -> unknownResourceResult(uri));
             }
@@ -926,8 +928,8 @@ public class McpService implements ByteArrayService {
     }
 
     /** The name of {@code resourceUri}'s readable action whose {@code pathTemplate} is exactly {@code path}, or {@code null} if it has none. */
-    private String readableActionAtPath(BaseAccount principal, String resourceUri, String path) {
-        return resourceLookup.find(principal, publicBaseUrl, resourceUri)
+    private String readableActionAtPath(BaseAccount principal, String baseUrl, String resourceUri, String path) {
+        return resourceLookup.find(principal, baseUrl, resourceUri)
                 .flatMap(r -> r.actions().entrySet().stream()
                         .filter(e -> e.getValue().readable() && path.equals(e.getValue().pathTemplate()))
                         .map(Map.Entry::getKey)
@@ -961,7 +963,7 @@ public class McpService implements ByteArrayService {
      * else would apply them.
      */
     private Optional<McpSchema.ReadResourceResult> readOperation(McpTransportContext ctx, BaseAccount principal, String resourceUri, String actionName, Map<String, Object> rawArgs) {
-        var resourceOpt = resourceLookup.find(principal, publicBaseUrl, resourceUri);
+        var resourceOpt = resourceLookup.find(principal, effectiveBaseUrl(ctx), resourceUri);
         if (resourceOpt.isEmpty()) {
             return Optional.empty();
         }
@@ -978,12 +980,12 @@ public class McpService implements ByteArrayService {
             return Optional.of(errorResourceResult(resourceUri, String.join("; ", errors)));
         }
 
-        var owner = resourceLookup.findOwner(principal, publicBaseUrl, resourceUri);
+        var owner = resourceLookup.findOwner(principal, effectiveBaseUrl(ctx), resourceUri);
         if (owner.isEmpty()) {
             return Optional.of(errorResourceResult(resourceUri, "internal error: resource owner not found"));
         }
 
-        var readCtx = new McpContext(principal, publicBaseUrl, owner.get().pluginName(), owner.get().pluginUri(),
+        var readCtx = new McpContext(principal, effectiveBaseUrl(ctx), owner.get().pluginName(), owner.get().pluginUri(),
                 owner.get().pluginConfiguration(), authorization(ctx));
 
         try {
@@ -1143,6 +1145,7 @@ public class McpService implements ByteArrayService {
 
     /** @return a descriptor for the underlying REST-equivalent operation, or {@code null} if this request isn't a documents-mode-eligible {@code resources/read}. */
     private RequestDescriptor documentsModeDescriptor(HttpServerExchange exchange) throws Exception {
+        final var baseUrl = effectiveBaseUrl(exchange);
         var body = ByteArrayRequest.of(exchange).getContent();
         if (body == null || body.length == 0) {
             return null;
@@ -1169,7 +1172,7 @@ public class McpService implements ByteArrayService {
         var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
         var queryParameters = queryIdx >= 0 ? parseQueryParameters(uri.substring(queryIdx + 1)) : Map.<String, Deque<String>>of();
 
-        var resource = resourceLookup.find(principal, publicBaseUrl, base);
+        var resource = resourceLookup.find(principal, baseUrl, base);
         if (resource.isPresent()) {
             // A bare or filtered resource read defaults to documents-mode whenever the resource
             // has a readable action (McpService.readBareResource/readTemplateMatch, #617) — a
@@ -1187,8 +1190,8 @@ public class McpService implements ByteArrayService {
         var lastSlash = base.lastIndexOf('/');
         if (lastSlash > 0) {
             var parent = base.substring(0, lastSlash);
-            if (readableActionAtPath(principal, parent, base.substring(lastSlash)) != null
-                    || isReadableAction(principal, parent, "get")) {
+            if (readableActionAtPath(principal, baseUrl, parent, base.substring(lastSlash)) != null
+                    || isReadableAction(principal, baseUrl, parent, "get")) {
                 return withMethodPathAndQuery(identity, pathOf(base), queryParameters);
             }
         }
@@ -1196,8 +1199,8 @@ public class McpService implements ByteArrayService {
         return null;
     }
 
-    private boolean isReadableAction(BaseAccount principal, String resourceUri, String actionName) {
-        return resourceLookup.find(principal, publicBaseUrl, resourceUri)
+    private boolean isReadableAction(BaseAccount principal, String baseUrl, String resourceUri, String actionName) {
+        return resourceLookup.find(principal, baseUrl, resourceUri)
                 .map(McpResource::actions)
                 .map(actions -> actions.get(actionName))
                 .map(McpResource.Action::readable)
@@ -1355,6 +1358,32 @@ public class McpService implements ByteArrayService {
      * multi-tenant deployment selects a different claim set per tenant that way, and a token
      * missing those claims would fail ACL rules written against them.
      */
+    /**
+     * The base URL this request's resource URIs are built from: the tenant's own when an
+     * interceptor attached one, the configured value otherwise.
+     *
+     * <p>Separate from the {@link #publicBaseUrl} field, which keeps its other job — being
+     * non-null is what says the resources primitive is enabled on this node. That is a property of
+     * the deployment; which host the URIs name is a property of the caller.
+     */
+    private String effectiveBaseUrl(McpTransportContext ctx) {
+        return RequestOverrides.str(request(ctx), RequestOverrides.MCP_PUBLIC_BASE_URL, publicBaseUrl);
+    }
+
+    /**
+     * The same, for {@code operationsToAuthorize}: it runs before the service, with the exchange
+     * and no transport context. Resolving with the wrong base would fail to identify the resource
+     * the URI names, and an authorization decision would then be taken about the wrong thing.
+     */
+    private String effectiveBaseUrl(HttpServerExchange exchange) {
+        try {
+            return RequestOverrides.str(Request.of(exchange), RequestOverrides.MCP_PUBLIC_BASE_URL, publicBaseUrl);
+        } catch (final Exception e) {
+            LOGGER.debug("could not read the base URL override from the exchange; using the configured one", e);
+            return publicBaseUrl;
+        }
+    }
+
     private static Request<?> request(McpTransportContext ctx) {
         return ctx.get(CTX_REQUEST) instanceof Request<?> r ? r : null;
     }

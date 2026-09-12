@@ -104,6 +104,19 @@ public final class RequestOverrides {
      * (no override, no static {@code rerank-provider} configured), reranking falls back
      * to the Atlas Reranking API directly — Phase 1 behavior, unchanged.
      */
+    /**
+     * The base URL the MCP {@code resources} primitive builds resource URIs from, per tenant.
+     *
+     * <p>A tenant is a hostname, and every URI the catalogue advertises has to carry the tenant's
+     * own. Without this the whole server answers with one host: an agent served the catalogue of
+     * tenant A receives URIs pointing at tenant B, and a request composed from one of them arrives
+     * somewhere it was never meant to.
+     *
+     * <p>The static {@code mcpService.public-base-url} still decides whether the resources
+     * primitive is on at all, which is a property of the node and not of a tenant.
+     */
+    public static final String MCP_PUBLIC_BASE_URL = "override-ai-mcp-public-base-url";
+
     public static final String RERANK_PROVIDER = "override-ai-rerank-provider";
 
     private RequestOverrides() {
