@@ -28,12 +28,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,11 +72,12 @@ import com.mongodb.client.model.WriteModel;
  * <p>
  * Subscribes to configured topic filters via the {@link MqttMessageRouter},
  * buffers incoming messages in a {@link MessageBuffer}, and drains them in
- * batches to MongoDB. Documents produced by a deduplicating id strategy
- * ({@code payload-field} or {@code topic-timestamp-hash}) are written with
- * {@code bulkWrite} using upserting {@link ReplaceOneModel}s, so redelivery
- * of the same message (e.g. from another RESTHeart node) is idempotent; the
- * {@code auto} strategy uses a plain {@code insertMany}.
+ * batches to MongoDB. Documents produced by {@code id-strategy: payload-field}
+ * are keyed on a field of the message itself and written with {@code bulkWrite}
+ * using upserting {@link ReplaceOneModel}s, so redelivery of the same message
+ * (e.g. from another RESTHeart node) converges on one document; the {@code auto}
+ * strategy uses a plain {@code insertMany} and every redelivery is a new
+ * document.
  * </p>
  * <p>
  * This class is a RESTHeart {@link Initializer}: {@code @OnInit} fires as soon as
@@ -107,7 +105,7 @@ import com.mongodb.client.model.WriteModel;
  *       flush-interval-ms: 500
  *       max-retries: 3
  *       retry-delay-ms: 1000
- *     id-strategy: "auto"       # "auto", "payload-field", "topic-timestamp-hash"
+ *     id-strategy: "auto"       # "auto" or "payload-field"
  *     id-field: "messageId"
  *     dead-letter-file: "./mqtt-dead-letter.log"
  *     mongo-sink:
@@ -423,12 +421,13 @@ public class MqttMongoWriter implements Initializer {
      * Writes documents into MongoDB with bounded retries, retrying only the documents that
      * actually failed on a partial bulk-write failure.
      * <p>
-     * Deduplicating id strategies ({@code payload-field}, {@code topic-timestamp-hash}) write
-     * with {@code bulkWrite} using upserting {@link ReplaceOneModel}s keyed on {@code _id}: a
-     * duplicate-key error (code {@value #DUPLICATE_KEY_ERROR_CODE}) then means another node
-     * already stored the message, so it is counted as a success, not retried and not
-     * dead-lettered. The {@code auto} strategy writes with a plain {@code insertMany}, where a
-     * duplicate-key error is a genuine failure.
+     * {@code payload-field} writes with {@code bulkWrite} using upserting
+     * {@link ReplaceOneModel}s keyed on {@code _id}; {@code auto} writes with a plain
+     * {@code insertMany}. Either way a duplicate-key error (code
+     * {@value #DUPLICATE_KEY_ERROR_CODE}) means the document is already stored - under
+     * {@code auto} the {@code _id} is an ObjectId generated for that very document, so it can only
+     * be there because this writer put it there - and is counted as a success rather than retried
+     * or dead-lettered.
      * </p>
      * <p>
      * Once {@code max-retries} is exhausted for the documents still failing, they are appended
@@ -460,7 +459,14 @@ public class MqttMongoWriter implements Initializer {
                 Set<Integer> failedIndices = new HashSet<>();
                 int duplicates = 0;
                 for (BulkWriteError err : writeErrors) {
-                    if (dedup && err.getCode() == DUPLICATE_KEY_ERROR_CODE) {
+                    // A duplicate key means this document is already stored, whatever the id
+                    // strategy: under auto the _id is an ObjectId the driver generated for this very
+                    // document, so it can only already be in the collection because we put it
+                    // there. This used to be gated on the strategy, and under auto a retry after a
+                    // connection-level failure - where the batch is re-sent whole, and part of it
+                    // may already have landed - treated the already-stored documents as failures
+                    // and eventually dead-lettered documents that were in the database.
+                    if (err.getCode() == DUPLICATE_KEY_ERROR_CODE) {
                         duplicates++;
                     } else {
                         failedIndices.add(err.getIndex());
@@ -472,7 +478,7 @@ public class MqttMongoWriter implements Initializer {
                         duplicates, pending.size(), sink.database(), sink.collection());
                 }
                 if (failedIndices.isEmpty()) {
-                    // every error was a duplicate key on a deduplicating strategy: overall success
+                    // every error was a duplicate key: everything in this batch is stored
                     return;
                 }
                 List<Document> retryDocs = failedIndices.stream()
@@ -508,16 +514,24 @@ public class MqttMongoWriter implements Initializer {
     }
 
     /**
-     * Returns {@code true} if the configured id strategy is one of the deduplicating strategies
-     * ({@code payload-field} or {@code topic-timestamp-hash}), for which documents are written
-     * with an upserting {@code bulkWrite} rather than a plain {@code insertMany}.
+     * Returns {@code true} if the configured id strategy keys documents on something the message
+     * itself carries, so that the same message written twice converges on one document. Such
+     * documents are written with an upserting {@code bulkWrite} rather than a plain
+     * {@code insertMany}.
+     * <p>
+     * Only {@code payload-field} qualifies, and that is not an accident of the current list:
+     * nothing the receiver computes locally can be stable across two receptions of the same
+     * message, so convergence needs an identity that travels with it. {@code receivedAt} is
+     * assigned on reception and the retain flag depends on subscription timing, so neither can
+     * serve.
+     * </p>
      */
     private boolean isDeduplicatingStrategy() {
-        return "payload-field".equals(idStrategy) || "topic-timestamp-hash".equals(idStrategy);
+        return "payload-field".equals(idStrategy);
     }
 
     /** The only accepted values for the {@code id-strategy} configuration key. */
-    private static final Set<String> VALID_ID_STRATEGIES = Set.of("auto", "payload-field", "topic-timestamp-hash");
+    private static final Set<String> VALID_ID_STRATEGIES = Set.of("auto", "payload-field");
 
     /**
      * Validates the {@code id-strategy} configuration key, failing fast at {@link #onInit()}
@@ -532,7 +546,7 @@ public class MqttMongoWriter implements Initializer {
         if (!VALID_ID_STRATEGIES.contains(value)) {
             throw new IllegalArgumentException(
                 "Invalid value for id-strategy: \"" + value
-                    + "\". Accepted values are: auto, payload-field, topic-timestamp-hash");
+                    + "\". Accepted values are: auto, payload-field");
         }
     }
 
@@ -729,27 +743,11 @@ public class MqttMongoWriter implements Initializer {
                         // Payload is not valid JSON or field missing — use auto
                     }
                 }
-                case "topic-timestamp-hash" -> {
-                    doc.append("_id", computeHash(msg.getTopic(), msg.getReceivedAt().toString()));
-                }
                 // "auto" — let MongoDB generate ObjectId
             }
         }
 
         return doc;
-    }
-
-    /**
-     * Computes a SHA-256 hash of topic + timestamp, truncated to 24 hex chars (12 bytes).
-     */
-    static String computeHash(String topic, String timestamp) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((topic + timestamp).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash).substring(0, 24);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**

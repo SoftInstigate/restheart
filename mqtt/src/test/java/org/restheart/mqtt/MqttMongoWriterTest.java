@@ -353,34 +353,6 @@ public class MqttMongoWriterTest {
         assertNull(doc.get("_id"), "Should fall back to auto when field missing");
     }
 
-    @Test
-    @DisplayName("ID strategy 'topic-timestamp-hash' generates deterministic hash")
-    void testIdStrategyTopicTimestampHash() throws Exception {
-        MqttMongoWriter writer = new MqttMongoWriter();
-        setField(writer, "idStrategy", "topic-timestamp-hash");
-
-        MqttMessage message = msg("sensors/temp", "{\"temp\":25}", 1);
-        Document doc = writer.toDocument(message);
-
-        String id = doc.getString("_id");
-        assertNotNull(id);
-        assertEquals(24, id.length(), "Hash should be 24 hex chars (12 bytes)");
-
-        // Same topic + timestamp = same hash
-        MqttMessage message2 = msg("sensors/temp", "{\"temp\":30}", 1);
-        Document doc2 = writer.toDocument(message2);
-        assertEquals(id, doc2.getString("_id"), "Same topic+timestamp should produce same hash");
-    }
-
-    @Test
-    @DisplayName("Different topics produce different hashes")
-    void testDifferentTopicsDifferentHashes() {
-        String hash1 = MqttMongoWriter.computeHash("sensors/temp", "2026-01-01T00:00:00Z");
-        String hash2 = MqttMongoWriter.computeHash("sensors/humidity", "2026-01-01T00:00:00Z");
-
-        assertFalse(hash1.equals(hash2), "Different topics should produce different hashes");
-    }
-
     // --- id-strategy / id-field validation at onInit (an unknown id-strategy must not silently
     // disable deduplication) ---
 
@@ -396,14 +368,14 @@ public class MqttMongoWriterTest {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
         assertTrue(ex.getMessage().contains("id-strategy"), "message should name the offending key");
         assertTrue(ex.getMessage().contains("paylod-field"), "message should name the offending value");
-        assertTrue(ex.getMessage().contains("payload-field") && ex.getMessage().contains("topic-timestamp-hash")
-            && ex.getMessage().contains("auto"), "message should list the accepted values");
+        assertTrue(ex.getMessage().contains("payload-field") && ex.getMessage().contains("auto"),
+            "message should list the accepted values");
     }
 
     @Test
-    @DisplayName("onInit() accepts each of the three documented id-strategy values and completes initialization")
+    @DisplayName("onInit() accepts each documented id-strategy value and completes initialization")
     void testOnInitAcceptsValidIdStrategies() throws Exception {
-        for (String value : List.of("auto", "payload-field", "topic-timestamp-hash")) {
+        for (String value : List.of("auto", "payload-field")) {
             MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
             Map<String, Object> config = Map.of(
                 "id-strategy", value,
@@ -625,15 +597,17 @@ public class MqttMongoWriterTest {
     }
 
     @Test
-    @DisplayName("id-strategy 'topic-timestamp-hash' writes with bulkWrite using upserting ReplaceOneModels")
+    @DisplayName("id-strategy 'payload-field' writes with bulkWrite using upserting ReplaceOneModels")
     void testDedupStrategyUsesUpsertingBulkWrite() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "topic-timestamp-hash", 10, 3, 1L, "unused.log");
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L, "unused.log");
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class))).thenReturn(mock(BulkWriteResult.class));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
+        // The payloads carry messageId, which is what payload-field keys on: with no such field
+        // there is no id to upsert against and buildUpsertModels falls back to an InsertOneModel.
+        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"a\",\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"b\",\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -662,7 +636,7 @@ public class MqttMongoWriterTest {
     void testDuplicateKeyTreatedAsSuccess() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
         Path deadLetter = Files.createTempFile("mqtt-dead-letter", ".log");
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "topic-timestamp-hash", 10, 3, 1L,
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L,
             deadLetter.toString());
 
         // 2 documents; only index 0 is reported as an error (duplicate key) — index 1 succeeded silently
@@ -683,13 +657,43 @@ public class MqttMongoWriterTest {
         Files.deleteIfExists(deadLetter);
     }
 
+    @Test
+    @DisplayName("A duplicate-key error under 'auto' is also already-stored, not a failure to retry and dead-letter")
+    void testDuplicateKeyUnderAutoIsTreatedAsSuccess() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        Path deadLetter = Files.createTempFile("mqtt-dead-letter", ".log");
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 10, 3, 1L, deadLetter.toString());
+
+        // auto writes with insertMany, and the driver assigns each Document an _id while encoding
+        // it. So a duplicate key here can only mean this writer already stored that very document -
+        // which is what a retry after a connection-level failure runs into, since the whole batch is
+        // re-sent and part of it may already have landed. This used to be counted as a genuine
+        // failure, retried until max-retries, and then dead-lettered: documents that were in the
+        // database ended up in the dead-letter file, ready to be inserted a second time.
+        when(coll.insertMany(anyList(), any(InsertManyOptions.class)))
+            .thenThrow(bulkWriteException(new BulkWriteError(11000, "E11000 duplicate key error", new BsonDocument(), 0)));
+
+        MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
+        setField(writer, "buffer", buffer);
+
+        writer.flush();
+
+        verify(coll, times(1)).insertMany(anyList(), any(InsertManyOptions.class));
+        assertEquals(1, writer.getDuplicateCount(), "the duplicate must be counted, not hidden");
+        assertEquals(0, Files.size(deadLetter), "a document already in the database must not be dead-lettered");
+
+        Files.deleteIfExists(deadLetter);
+    }
+
     // --- partial failure retries only the failed documents (finding M10) ---
 
     @Test
     @DisplayName("A genuine bulk-write error retries only the failed indices, not the whole batch")
     void testPartialFailureRetriesOnlyFailedDocuments() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "topic-timestamp-hash", 10, 3, 1L, "unused.log");
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L, "unused.log");
 
         // First attempt: 2 documents submitted, index 0 fails with a genuine (non-duplicate-key) error
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
@@ -720,7 +724,7 @@ public class MqttMongoWriterTest {
         MqttMongoWriter writer = new MqttMongoWriter();
         Path deadLetterPath = tempDir.resolve("dead-letter.log");
         // maxRetries=1: the initial attempt plus exactly one retry, both failing, then dead-letter
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "topic-timestamp-hash", 10, 1, 1L,
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 1, 1L,
             deadLetterPath.toString());
 
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
@@ -745,7 +749,7 @@ public class MqttMongoWriterTest {
     void testDeadLetterWriteFailureDoesNotThrow() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
         // A directory cannot be opened as a FileWriter target, so writing the dead-letter will fail
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "topic-timestamp-hash", 10, 0, 1L,
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 0, 1L,
             Files.createTempDirectory("mqtt-dead-letter-dir").toString());
 
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))

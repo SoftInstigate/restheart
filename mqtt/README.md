@@ -502,7 +502,8 @@ mqtt-mongo-writer:
     max-retries: 3
     retry-delay-ms: 1000
     shutdown-timeout-ms: 5000
-  id-strategy: "topic-timestamp-hash"
+  id-strategy: "payload-field"
+  id-field: "messageId"
   dead-letter-file: "./mqtt-dead-letter.log"
   dead-letter-max-bytes: 104857600
   mongo-sink:
@@ -529,7 +530,12 @@ An unrecognised value fails at startup rather than silently falling back.
 |---|---|---|
 | `auto` | ObjectId | `insertMany` |
 | `payload-field` | the `id-field` of the payload | upserting `bulkWrite` |
-| `topic-timestamp-hash` | hash of topic + timestamp | upserting `bulkWrite` |
+
+Two values, not three, and the reason is worth stating because it also answers every future request for a clever third: **nothing the receiver computes locally can be stable across two receptions of the same message.** A redelivery is a fresh reception, so `receivedAt` differs, and the retain flag depends on subscription timing. Convergence needs an identity that travels *with* the message, which means the publisher has to supply one. That is a boundary of MQTT 3.1.1, not a gap in this module.
+
+There used to be a `topic-timestamp-hash` value, keyed on `SHA-256(topic + receivedAt)`. It could not deduplicate a redelivery — the timestamp is assigned on reception, so the second delivery hashed to a different `_id` — which is exactly what it was documented to do. It has been removed rather than left as an option that reads like protection and is not.
+
+A duplicate-key error is treated as "already stored" under **either** strategy, so neither retries nor dead-letters a document that is in the database. That matters for `auto` too: when a write fails at the connection level the whole batch is re-sent, and part of it may already have landed.
 
 Documents use BSON types rather than strings, so the collection can be queried and indexed as what it is:
 
@@ -552,7 +558,7 @@ The two deduplicating strategies write with upserts, so redelivery converges on 
 
 With `payload-field`, if the payload is not valid JSON or the field is absent, the failure is swallowed: no `_id` is computed, and that one document falls back to a plain insert instead of an upsert — deduplication is lost silently, per message, rather than failing the write.
 
-**Only `payload-field` converges across a cluster.** `topic-timestamp-hash` deduplicates redelivery within a single node, but not across nodes: its timestamp component is `receivedAt`, set independently by each node's own `Instant.now()` when the message arrives, so two nodes receiving the same broker message compute two different `_id`s and both write a document. Use `payload-field` — keyed on something the broker message itself carries — when several RESTHeart nodes receive the same messages and must converge on one document.
+**Only `payload-field` converges**, and it converges everywhere: across a redelivery to the same instance, and across nodes that all receive the same broker message. `auto` converges nowhere — every redelivery is a new document, which is a legitimate choice when you would rather keep every delivery than key on something the publisher controls.
 
 Every `mongo-sink` entry must carry all three of `topic`, `database` and `collection`, each a string; a missing or mistyped key fails at startup naming the entry. An absent or empty `mongo-sink` list is legal and simply means nothing is persisted.
 
@@ -596,7 +602,7 @@ The router's API is expressed entirely in this module's own types (`Qos`, `MqttM
 
 **`max-inflight-messages-per-second` governs live delivery only.** It used to cut before the fan-out, so a number chosen to protect a dashboard silently governed what reached storage as well. It now applies to SSE and REST delivery; a message refused there is still handed to `mqtt-mongo-writer` and still persisted. `mqtt_router_messages_dropped` therefore counts live drops, and `mqtt_router_messages_received` counts everything the broker delivered — the two overlap deliberately, so their ratio is the live loss rate.
 
-**Clustering.** On MQTT 3.1.1 there are no shared subscriptions, so every RESTHeart node receives every message. For MongoDB persistence, use `payload-field` so the nodes converge instead of duplicating — `topic-timestamp-hash` only deduplicates within a single node (see "`mqtt-mongo-writer`" above). On MQTT 5.0, shared subscriptions are the cleaner answer — tracked in [#602](https://github.com/SoftInstigate/restheart/issues/602).
+**Clustering.** On MQTT 3.1.1 there are no shared subscriptions, so every RESTHeart node receives every message. For MongoDB persistence that means `payload-field` is the only strategy that converges: it is the one keyed on something the message itself carries, so all the nodes compute the same `_id` (see "`mqtt-mongo-writer`" above). On MQTT 5.0, shared subscriptions are the cleaner answer — tracked in [#602](https://github.com/SoftInstigate/restheart/issues/602).
 
 **Topic authorization on `/mqtt-sse`** is enforced end to end: a request for a topic filter granted by the ACL subscribes normally, and a request for an ungranted filter is rejected with `403` and a body of `{"msg":"Not authorized for topic: <filter>"}` before it ever reaches the router. This depends on RESTHeart running the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`, wired into `plugSseService`) — without it, SSE handshake requests pass through no interceptor at all, so `mqtt-topic-authorizer` resolves but is never invoked on that path, and `/mqtt-sse` ends up authenticated but not authorized per topic. Make sure the RESTHeart build this module is deployed against includes that fix.
 

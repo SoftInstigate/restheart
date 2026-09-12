@@ -149,7 +149,13 @@ mqtt-sse:
 #     retry-delay-ms: 1000
 #     shutdown-timeout-ms: 5000                 # how long a clean shutdown may drain into MongoDB
 #                                               # before the rest goes to the dead-letter file
-#   id-strategy: "auto"                         # "auto" | "payload-field" | "topic-timestamp-hash"
+#   id-strategy: "auto"                         # "auto" | "payload-field"
+#                                               # auto: every redelivery is a new document.
+#                                               # payload-field: keyed on a field the message itself
+#                                               # carries, so a redelivery - or another node -
+#                                               # converges on one document. Only an id supplied by
+#                                               # the publisher can do that: anything the receiver
+#                                               # computes differs between two receptions.
 #   id-field: "messageId"                       # field name when id-strategy = "payload-field"
 #   dead-letter-file: "./mqtt-dead-letter.log"  # documents dropped after exhausting max-retries, one JSON per line
 #   dead-letter-max-bytes: 104857600            # rotates to <file>.1 past this size; footprint bounded at 2x
