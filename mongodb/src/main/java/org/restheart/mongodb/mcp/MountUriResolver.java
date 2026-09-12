@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.restheart.plugins.mcp.McpScopeProvider;
+
 import org.restheart.mongodb.MongoServiceConfiguration;
 
 /**
@@ -67,12 +69,33 @@ import org.restheart.mongodb.MongoServiceConfiguration;
  * listing every reachable path as a separate catalog entry.
  *
  * <p>A database/collection with no matching mount is not reachable over HTTP at all and resolves
- * to {@link Optional#empty()}; parametric (multi-tenant, {@code {host[0]}}) mounts are not
- * supported here and are simply skipped.
+ * to {@link Optional#empty()}.
+ *
+ * <p><strong>Parametric mounts.</strong> A {@code what} of {@code /{host[0]}/{*}} names the
+ * database by the first label of the hostname, which is exactly what an MCP scope names too — so
+ * the scope is what binds it. Given one, {@code {host[0]}} is substituted before matching and the
+ * mount resolves like any other; given {@link McpScopeProvider#UNPARTITIONED}, there is nothing to
+ * bind it to and the mount is skipped, as it always was. This is why a parametric deployment used
+ * to advertise an empty catalogue.
  */
 final class MountUriResolver {
 
+    /** Same token as {@code MongoMountResolver.HOST_0}, which is package-private to another package. */
+    private static final String HOST_0 = "{host[0]}";
+
     record Mount(String what, String where) {
+    }
+
+    /**
+     * The mount's {@code what} with {@code {host[0]}} bound to the scope, or {@code null} when it
+     * cannot be bound and the mount has to be skipped.
+     */
+    private static String boundWhat(String what, String scope) {
+        if (what == null || !what.contains(HOST_0)) {
+            return what;
+        }
+
+        return McpScopeProvider.UNPARTITIONED.equals(scope) ? null : what.replace(HOST_0, scope);
     }
 
     private final List<Mount> mounts;
@@ -93,13 +116,18 @@ final class MountUriResolver {
     }
 
     /** @return the database's URL path (e.g. {@code /warehouse}), or empty if no mount exposes it */
-    Optional<String> databasePath(String dbName) {
+    Optional<String> databasePath(String dbName, String scope) {
         for (var mount : mounts) {
-            if ("*".equals(mount.what())) {
+            var what = boundWhat(mount.what(), scope);
+            if (what == null) {
+                continue;
+            }
+
+            if ("*".equals(what)) {
                 return Optional.of(join(mount.where(), dbName));
             }
 
-            var resource = stripLeadingSlash(mount.what());
+            var resource = stripLeadingSlash(what);
             if (resource.endsWith("/{*}")) {
                 if (resource.substring(0, resource.length() - 4).equals(dbName)) {
                     return Optional.of(normalizeRoot(mount.where()));
@@ -119,10 +147,15 @@ final class MountUriResolver {
      *         a concrete resource instead (see {@link #databasePath}), not a template, and a
      *         fixed-collection mount ({@code "db/coll"}) exposes no database-level URL at all.
      */
-    List<String> databasePathTemplates() {
+    List<String> databasePathTemplates(String scope) {
         var templates = new ArrayList<String>();
         for (var mount : mounts) {
-            if ("*".equals(mount.what())) {
+            var what = boundWhat(mount.what(), scope);
+            if (what == null) {
+                continue;
+            }
+
+            if ("*".equals(what)) {
                 templates.add(join(mount.where(), "{db}"));
             }
         }
@@ -135,15 +168,20 @@ final class MountUriResolver {
      *         mount ({@code "db/coll"}) contributes nothing since it exposes exactly one, already
      *         concrete, collection (see {@link #collectionPath}).
      */
-    List<String> collectionPathTemplates() {
+    List<String> collectionPathTemplates(String scope) {
         var templates = new ArrayList<String>();
         for (var mount : mounts) {
-            if ("*".equals(mount.what())) {
+            var what = boundWhat(mount.what(), scope);
+            if (what == null) {
+                continue;
+            }
+
+            if ("*".equals(what)) {
                 templates.add(join(mount.where(), "{db}", "{collection}"));
                 continue;
             }
 
-            var resource = stripLeadingSlash(mount.what());
+            var resource = stripLeadingSlash(what);
             if (resource.endsWith("/{*}") || !resource.contains("/")) {
                 templates.add(join(mount.where(), "{collection}"));
             }
@@ -153,13 +191,18 @@ final class MountUriResolver {
     }
 
     /** @return the collection's URL path (e.g. {@code /warehouse/inventory}), or empty if no mount exposes it */
-    Optional<String> collectionPath(String dbName, String collName) {
+    Optional<String> collectionPath(String dbName, String collName, String scope) {
         for (var mount : mounts) {
-            if ("*".equals(mount.what())) {
+            var what = boundWhat(mount.what(), scope);
+            if (what == null) {
+                continue;
+            }
+
+            if ("*".equals(what)) {
                 return Optional.of(join(mount.where(), dbName, collName));
             }
 
-            var resource = stripLeadingSlash(mount.what());
+            var resource = stripLeadingSlash(what);
             if (resource.endsWith("/{*}")) {
                 if (resource.substring(0, resource.length() - 4).equals(dbName)) {
                     return Optional.of(join(mount.where(), collName));

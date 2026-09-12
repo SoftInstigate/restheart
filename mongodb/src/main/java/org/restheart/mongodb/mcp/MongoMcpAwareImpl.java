@@ -24,6 +24,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +81,9 @@ import com.mongodb.MongoCommandException;
 public final class MongoMcpAwareImpl {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoMcpAwareImpl.class);
+
+    /** Scopes already warned about, so a lasting misconfiguration is reported once and not every catalogue rebuild. */
+    private final Set<String> emptyScopesWarned = ConcurrentHashMap.newKeySet();
 
     /** Narrow read seam over {@link Databases}, so this class's orchestration is unit-testable without a real MongoDB. */
     interface MetadataSource {
@@ -173,13 +178,14 @@ public final class MongoMcpAwareImpl {
 
     public List<McpResource> describeMcp(McpContext ctx) {
         var baseUrl = ctx.baseUrl();
+        var scope = ctx.scope();
         var resources = new ArrayList<McpResource>();
 
-        for (var dbName : metadata.databaseNames()) {
+        for (var dbName : databasesInScope(ctx)) {
             var enabledCollectionUris = new ArrayList<String>();
 
             for (var collName : metadata.collectionNames(dbName)) {
-                var collPath = mountResolver.collectionPath(dbName, collName);
+                var collPath = mountResolver.collectionPath(dbName, collName, scope);
                 if (collPath.isEmpty()) {
                     continue;
                 }
@@ -193,7 +199,7 @@ public final class MongoMcpAwareImpl {
                 describeCollection(dbName, collUri, collProps, resources, enabledCollectionUris);
             }
 
-            mountResolver.databasePath(dbName).ifPresent(dbPath -> {
+            mountResolver.databasePath(dbName, scope).ifPresent(dbPath -> {
                 var dbUri = baseUrl + dbPath;
                 var dbProps = metadata.databaseProperties(dbName);
                 var dbMcp = dbProps != null ? asDocument(dbProps.get("mcp")) : null;
@@ -201,9 +207,51 @@ public final class MongoMcpAwareImpl {
             });
         }
 
+        warnIfNothingReachable(ctx, !resources.isEmpty());
+
         return resources;
     }
 
+    /**
+     * The databases this scope may describe.
+     *
+     * <p>The filter is here, before any URI is built, and not applied to the finished list: a
+     * mount can hide the database name — {@code what: /a/inventory} and {@code what: /b/inventory}
+     * both landing on {@code /inv} — so by the time URIs exist one database has already
+     * overwritten the other, and filtering then would filter whichever survived.
+     *
+     * <p>It also decides the cost. Unpartitioned, this lists every database on the instance, which
+     * is the right answer for a single deployment. Partitioned, the scope already names the one
+     * database to look at, so the scan no longer grows with the databases of callers who are not
+     * asking.
+     */
+    private List<String> databasesInScope(McpContext ctx) {
+        if (ctx.unpartitioned()) {
+            return metadata.databaseNames();
+        }
+
+        if (MongoRequest.isReservedDbName(ctx.scope())) {
+            LOGGER.warn("MCP scope '{}' names a reserved database; describing nothing for it", ctx.scope());
+            return List.of();
+        }
+
+        return List.of(ctx.scope());
+    }
+
+    /**
+     * Warns once per scope that nothing of its database is reachable, so its catalogue is empty.
+     * Staying silent is the difference between a caller who can see why their collection is
+     * missing and one who opens a support request.
+     */
+    private void warnIfNothingReachable(McpContext ctx, boolean anyResource) {
+        if (ctx.unpartitioned() || anyResource || !emptyScopesWarned.add(ctx.scope())) {
+            return;
+        }
+
+        LOGGER.warn("No mongo-mount exposes anything of database '{}', so the MCP catalogue for that scope is empty."
+                + " A database that is in scope but not mounted is not reachable over HTTP, and cannot be advertised.",
+                ctx.scope());
+    }
     // No describeTemplates() override: McpService.syncResourceRegistry() now derives a
     // resource-specific template directly from each readable action's own declared params
     // (generic across every McpAware implementation, not just Mongo's) — there's no longer a
