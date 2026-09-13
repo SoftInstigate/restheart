@@ -340,11 +340,28 @@ docker compose -f docker-compose-mongodb.yml exec -T mongodb \
 ```
 
 ```
-[ { _id: 'm1', topic: 'sensors/temp', payload: '{"messageId":"m1","value":21.5}', ... } ]
+[
+  {
+    _id: 'm1',
+    topic: 'sensors/temp',
+    payload: '{"messageId":"m1","value":21.5}',
+    receivedAt: ISODate('2026-09-13T18:02:30.090Z'),
+    receivedAtNanos: 295068,
+    qos: 1,
+    retain: false
+  }
+]
 ```
 
 `_id` is `m1`, taken from the payload. Publish the same message again and the collection still holds
 one document.
+
+The other fields are BSON types, not strings, so the collection can be queried as what it is.
+`receivedAt` is a date, which has millisecond precision, so the sub-millisecond remainder is kept
+next to it in `receivedAtNanos`. Two messages inside one millisecond are ordinary at sensor rates,
+and without that field the order they arrived in would be lost. `retain` records the flag the
+broker delivered the message with. A payload that is not valid UTF-8 would be stored as BSON
+binary, byte for byte, instead of a string.
 
 ### Now break it
 
@@ -387,7 +404,8 @@ docker compose -f docker-compose-mongodb.yml exec -T mongodb \
 [{"_id":"m1"},{"_id":"dn1"},{"_id":"dn2"},{"_id":"dn3"},{"_id":"dn4"},{"_id":"dn5"}]
 ```
 
-All five arrived, within a couple of seconds of the database accepting connections again. Nothing
+All five arrived, within a few seconds of the database starting again (three, when this was last
+run). Nothing
 was lost and nothing was duplicated.
 
 ### What you have just established, and what you have not
@@ -526,13 +544,14 @@ public void init() {
 
 Three things to take from the real file rather than from this excerpt:
 
-- **`@Inject("config")` gives you `null`, not an empty map**, when the configuration has no block
-  named after your plugin — the ordinary case for a plugin that is enabled by default and has
-  working defaults. Throwing inside `@OnInit` aborts plugin instantiation and **stops RESTHeart from
-  starting at all**, so one optional plugin takes the whole server down. Null-check it. (This
-  example did not, until writing this tutorial found out; whether the framework should hand out an
-  empty map instead is tracked in
-  [#732](https://github.com/SoftInstigate/restheart/issues/732).)
+- **`@Inject("config")` is an empty map when your plugin has no configuration block**, which is
+  the ordinary case for a plugin that is enabled by default and has working defaults, so
+  `config.getOrDefault(...)` is enough. It was not always so: before RESTHeart 10 it was `null`,
+  and since a plugin that throws inside `@OnInit` aborts plugin instantiation, this very example
+  stopped the whole server from starting when dropped in with no block. Writing this tutorial found
+  that out; it is fixed in core
+  ([#732](https://github.com/SoftInstigate/restheart/issues/732)). If you target an older
+  RESTHeart, null-check it.
 - **`subscribe` is for live consumers.** Your listener never holds up an acknowledgement to the
   broker: throw, block, or fall behind, and ingestion carries on without you. If you need the
   message *kept*, that is `subscribeDurable`, which does not acknowledge until you say you have
