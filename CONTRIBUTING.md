@@ -55,7 +55,28 @@ The integration tests need a MongoDB instance and a running RESTHeart, and `veri
 - **`mongodb`** starts a `mongodb/mongodb-atlas-local:${mongodb.version}` container (fabric8 `docker-maven-plugin`) in `pre-integration-test` and stops it afterwards — bundles mongod + mongot as a self-initializing single-node replica set, so `$vectorSearch`/`createSearchIndexes` (restheart-ai) work without extra setup. Docker must be running. If you already have MongoDB on `localhost:27017`, disable it with `-P-mongodb`.
 - **`start-server`** builds and starts RESTHeart before the tests and stops it after.
 
-All integration tests live in the `core` module.
+This runs the integration tests of the `core` module. It does **not** run the `mqtt` module's, which are opt-in — see the next section.
+
+### Run the mqtt module's integration tests
+
+`mqtt` is an optional module with integration tests of its own, behind the `mqtt-it` profile, and a plain `verify` skips them without saying so: without the profile its `org/restheart/mqtt/it` package is not even compiled, so `verify` runs only its unit tests. They need Docker, and they start RESTHeart from `core/target/restheart.jar` — the core built in this checkout — so that has to exist first:
+
+```bash
+./mvnw install -DskipTests                  # once, and again after changing core or a module it stages
+./mvnw clean verify -pl mqtt -Pmqtt-it      # as often as needed, ~3 minutes
+```
+
+`-pl mqtt -am` is **not** a substitute for the first command: `mqtt` deliberately has no Maven dependency on `core`, so `-am` does not build it. See "Building" in [`mqtt/README.md`](mqtt/README.md).
+
+To run **every** integration test — core's and mqtt's — in one go:
+
+```bash
+./mvnw clean verify -Pmqtt-it
+```
+
+`-Pmqtt-it` does not switch off core's own test profiles (`mongodb` and `start-server` are activated by a property, not by default), and the reactor builds `mqtt` after `core` is completely done — its server and MongoDB container already stopped — so mqtt's tests find the core that was just built. This takes about 15 minutes: 193 core and 21 mqtt integration tests. It combines with the same options as core's suite, for example `-P-mongodb,mongodb-classic,mqtt-it -Dmongodb.version=8.0`.
+
+If core's tests fail immediately with `Conflict. The container name "/mongodb-atlas-local-1" is already in use`, a previous run was interrupted before it could stop its MongoDB container. Unless you kept it on purpose to re-run tests against it (see "Re-run tests without rebuilding" below), remove it with `docker rm -f -v mongodb-atlas-local-1`.
 
 ### Skip integration tests
 
@@ -218,7 +239,8 @@ Add your module to the default `<modules>` section in the root `pom.xml`:
     <module>polyglot</module>
     <module>metrics</module>
     <module>your-module</module>   <!-- ← add here -->
-    <module>core</module>          <!-- core must remain last -->
+    <module>core</module>          <!-- bundled modules go before core -->
+    <module>mqtt</module>          <!-- an optional module tested against core's build goes after it -->
 </modules>
 ```
 
@@ -238,7 +260,7 @@ Add your module to the default `<modules>` section in the root `pom.xml`:
 | Scenario | Action |
 |----------|--------|
 | **Bundled** — always loaded at runtime | Add it as a dependency of `core/pom.xml` |
-| **Optional plugin** — loaded only when the JAR is placed in `plugins/` | Do **not** add it to `core/pom.xml`; document the manual installation step in the module's `README.md` |
+| **Optional plugin** — loaded only when the JAR is placed in `plugins/` | Do **not** add it to `core/pom.xml`; document the manual installation step in the module's `README.md`. If its integration tests run against core's build, declare it **after** `core` in the root `pom.xml` and put those tests behind a profile, as `mqtt` does with `mqtt-it` |
 
 ### 4. Native-image profile (if applicable)
 

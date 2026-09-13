@@ -1,0 +1,278 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-mqtt
+ * %%
+ * Copyright (C) 2014 - 2026 SoftInstigate
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * =========================LICENSE_END==================================
+ */
+package org.restheart.mqtt;
+
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.restheart.configuration.Configuration;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.Provider;
+import org.restheart.plugins.RegisterPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.hivemq.client.mqtt.MqttClient;
+
+/**
+ * RESTHeart provider plugin that supplies a configured and connected HiveMQ {@link MqttClient}.
+ * <p>
+ * This provider extracts MQTT configuration options from RESTHeart configuration,
+ * initializes the {@link MqttClientSingleton}, and triggers the initial connection to the MQTT broker.
+ * </p>
+ * <p>
+ * RESTHeart has no plugin shutdown callback, so this provider registers a JVM shutdown hook
+ * (once) that closes the {@link MqttClientSingleton}, cancelling any pending automatic
+ * reconnect before disconnecting.
+ * </p>
+ * <p>
+ * <strong>Tier 1 of 2 - the module switch.</strong> This is the root of the {@code mqtt} module's
+ * injection graph ({@code mqtt-client} &larr; {@code mqtt-router} &larr; {@code mqtt-sse} /
+ * {@code mqtt-rest} / {@code mqtt-mongo-writer}), so it is registered with
+ * {@code enabledByDefault = false}: dropping the {@code mqtt} jar into {@code plugins/} must not,
+ * by itself, open a connection to an MQTT broker. Disabling this provider cascades - silently, at
+ * DEBUG - to every plugin that (transitively) requires it, so this single switch is enough to make
+ * the whole module dormant on installation. An operator who wants MQTT must explicitly enable this
+ * plugin in configuration; every other class in the module then follows from there (see Tier 2 on
+ * {@link org.restheart.mqtt.MqttSseService}, {@link org.restheart.mqtt.MqttRestService} and
+ * {@link org.restheart.mqtt.MqttMongoWriter}).
+ * </p>
+ *
+ * @see Provider
+ * @see MqttClient
+ * @see MqttClientSingleton
+ *
+ * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+ */
+@RegisterPlugin(
+    name = "mqtt-client",
+    description = "Provides a connected MQTT client",
+    priority = 10,
+    enabledByDefault = false
+)
+public class MqttClientProvider implements Provider<MqttClient>{
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttClientProvider.class);
+
+    /** Guards against registering the shutdown hook more than once per classloader. */
+    private static final AtomicBoolean SHUTDOWN_HOOK_REGISTERED = new AtomicBoolean(false);
+
+    /** Package-private, for test visibility only: the currently registered shutdown hook, if any. */
+    static volatile Thread mqttShutdownHookThread;
+
+    /**
+     * Configuration map containing properties for the MQTT client plugin,
+     * injected automatically by RESTHeart.
+     */
+    @Inject("config")
+    private Map<String, Object> config;
+
+    /**
+     * The whole RESTHeart configuration, read for one thing only: the instance name, which is
+     * what makes the default {@code client-id} stable across restarts. See
+     * {@link #resolveClientId(String, boolean)}.
+     */
+    @Inject("rh-config")
+    private Configuration rhConfig;
+
+    /**
+     * Initializes the MQTT client configuration, sets default values for missing configuration keys,
+     * configures the {@link MqttClientSingleton}, and establishes the initial connection to the broker.
+     * <p>
+     * Supported configuration keys in the {@code config} map:
+     * <ul>
+     *   <li>{@code broker-url} - The broker endpoint URL (default: "tcp://localhost:1883")</li>
+     *   <li>{@code protocol-version} - MQTT version, 3 or 5 (default: 3)</li>
+     *   <li>{@code client-id} - Identifier for the MQTT client; if null or blank, defaults to
+     *       "restheart-" + random UUID, otherwise used verbatim</li>
+     *   <li>{@code username} - Username for broker authentication (default: null)</li>
+     *   <li>{@code password} - Password for broker authentication (default: null)</li>
+     *   <li>{@code clean-session} - Whether to discard session state on connection (default: false)</li>
+     *   <li>{@code keep-alive-seconds} - Keep-alive time interval (default: 60)</li>
+     *   <li>{@code connect-timeout-seconds} - Timeout for establishing connection (default: 10)</li>
+     *   <li>{@code tls} - Force SSL/TLS encryption regardless of the broker-url scheme (default: false)</li>
+     *   <li>{@code tls-trust-store} - Path to a JKS/PKCS12 trust store for validating the broker's
+     *       certificate (default: null, uses the JVM default trust manager)</li>
+     *   <li>{@code tls-trust-store-password} - Password protecting {@code tls-trust-store} (default: null)</li>
+     *   <li>{@code session-expiry-seconds} - Session expiry interval, MQTT 5 only (default: 4294967295,
+     *       i.e. the session never expires)</li>
+     *   <li>{@code reconnect/enabled} - Enable automatic reconnect (default: true)</li>
+     *   <li>{@code reconnect/initial-delay-ms} - Reconnect initial delay in ms (default: 1000)</li>
+     *   <li>{@code reconnect/max-delay-ms} - Reconnect max delay in ms (default: 30000)</li>
+     * </ul>
+     * </p>
+     */
+    @OnInit
+    public void init() {
+        final String brokerUrl = argOrDefault(config, "broker-url", "tcp://localhost:1883");
+        final int protocolVersion = argOrDefault(config, "protocol-version", 3);
+        final String configuredClientId = argOrDefault(config, "client-id", (String) null);
+        final String username = argOrDefault(config, "username", null);
+        final String password = argOrDefault(config, "password", null);
+        final boolean cleanSession = argOrDefault(config, "clean-session", false);
+        final String clientId = resolveClientId(configuredClientId, cleanSession);
+        final int keepAliveSeconds = argOrDefault(config, "keep-alive-seconds", 60);
+        final int connectTimeoutSeconds = argOrDefault(config, "connect-timeout-seconds", 10);
+        final boolean tlsEnabled = argOrDefault(config, "tls", false);
+        final String tlsTrustStore = argOrDefault(config, "tls-trust-store", null);
+        final String tlsTrustStorePassword = argOrDefault(config, "tls-trust-store-password", null);
+
+        final long sessionExpirySeconds = argOrDefault(config, "session-expiry-seconds", 0xFFFFFFFFL);
+
+        // Reconnect configuration
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> reconnectConfigMap = (Map<String, Object>) config.get("reconnect");
+        final boolean reconnectEnabled = argOrDefault(reconnectConfigMap, "enabled", true);
+        final long initialDelayMs = argOrDefault(reconnectConfigMap, "initial-delay-ms", 1000L);
+        final long maxDelayMs = argOrDefault(reconnectConfigMap, "max-delay-ms", 30000L);
+
+        // Will message configuration
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> willConfigMap = (Map<String, Object>) config.get("will");
+        final String willTopic = argOrDefault(willConfigMap, "topic", null);
+        final String willPayload = argOrDefault(willConfigMap, "payload", null);
+        final int willQos = argOrDefault(willConfigMap, "qos", 0);
+        final boolean willRetain = argOrDefault(willConfigMap, "retain", false);
+        final long willDelaySeconds = argOrDefault(willConfigMap, "delay-seconds", 0L);
+        final Long willMessageExpirySeconds = argOrDefault(willConfigMap, "message-expiry-seconds", null);
+
+        // Build configuration objects
+        MqttConfig.ReconnectConfig reconnectConfig= new MqttConfig.ReconnectConfig(
+            reconnectEnabled, 
+            initialDelayMs, 
+            maxDelayMs);
+
+        MqttConfig.WillConfig willConfig = new MqttConfig.WillConfig(willTopic, willPayload, willQos, willRetain, willDelaySeconds, willMessageExpirySeconds);
+
+        MqttConfig mqttConfig = new MqttConfig.Builder()
+            .brokerUrl(brokerUrl)
+            .protocolVersion(protocolVersion)
+            .clientId(clientId)
+            .username(username)
+            .password(password)
+            .cleanSession(cleanSession)
+            .keepAliveSeconds(keepAliveSeconds)
+            .sessionExpirySeconds(sessionExpirySeconds)
+            .connectTimeoutSeconds(connectTimeoutSeconds)
+            .tlsEnabled(tlsEnabled)
+            .tlsTrustStore(tlsTrustStore)
+            .tlsTrustStorePassword(tlsTrustStorePassword)
+            .reconnectConfig(reconnectConfig)
+            .willConfig(willConfig)
+            .build();
+
+        // Initialize the singleton with configuration
+        MqttClientSingleton.init(mqttConfig);
+
+        // Build the client, but deliberately do NOT connect it here.
+        //
+        // The broker redelivers everything a resumed session still owes the moment it sends
+        // CONNACK. Connecting at this point - before mqtt-router has registered its global publish
+        // consumer, which it does when it is initialized after this provider - means those
+        // redelivered messages arrive with nothing listening, and hivemq-mqtt-client acknowledges
+        // a publish no flow consumes (its issue #455). They were acknowledged and lost, on every
+        // reconnect with a persistent session, not only on a restart.
+        //
+        // MqttRouterProvider connects instead, immediately after registering that consumer.
+        MqttClientSingleton.getInstance().build();
+
+        // RESTHeart has no plugin shutdown callback (Bootstrapper.stopServer does not notify
+        // plugins), so a JVM shutdown hook is the only way to release the MQTT client cleanly.
+        registerShutdownHookOnce();
+    }
+
+    /**
+     * Registers, at most once per classloader, a JVM shutdown hook that closes the
+     * {@link MqttClientSingleton}.
+     */
+    private static void registerShutdownHookOnce() {
+        if (SHUTDOWN_HOOK_REGISTERED.compareAndSet(false, true)) {
+            final Thread hook = new Thread(() -> {
+                if (MqttClientSingleton.isInitialized()) {
+                    MqttClientSingleton.getInstance().close();
+                }
+            }, "mqtt-client-shutdown");
+
+            Runtime.getRuntime().addShutdownHook(hook);
+            mqttShutdownHookThread = hook;
+        }
+    }
+
+    /**
+     * Returns the singleton {@link MqttClient} instance.
+     *
+     * @param caller the plugin record representing the caller requesting the client
+     * @return the configured and connected {@link MqttClient} instance
+     */
+    @Override
+    public MqttClient get(final PluginRecord<?> caller) {
+        return MqttClientSingleton.getInstance().getClient();
+    }
+
+    /**
+     * The client identifier to connect with: the configured one, or a default derived from the
+     * RESTHeart instance name.
+     * <p>
+     * It used to be {@code restheart-<random UUID>}, regenerated on every start. That is fatal to
+     * any durability guarantee: an MQTT session is keyed by client identifier, so a restarted
+     * instance presented itself as a brand-new client, the broker had no session to resume, and
+     * everything it was still holding for the old one was discarded. With {@code clean-session:
+     * false} the operator has asked for a resumable session; a fresh identifier silently denies
+     * it.
+     * </p>
+     * <p>
+     * Deriving it from the instance name makes it stable across restarts of the same instance.
+     * The hazard that introduces is the opposite one: a client identifier must be <em>unique</em>
+     * across concurrently connected clients, and a broker disconnects the existing client when a
+     * new one connects with the same identifier. Two RESTHeart instances sharing a name would
+     * therefore knock each other off the broker in a loop. That is why an instance still carrying
+     * the stock name is warned about rather than left to discover it in production.
+     * </p>
+     *
+     * @param configured   the {@code client-id} from configuration, or {@code null}/blank if unset
+     * @param cleanSession whether the session is disposable, in which case stability buys nothing
+     * @return the identifier to connect with, never {@code null}
+     */
+    private String resolveClientId(String configured, boolean cleanSession) {
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+
+        var instanceName = rhConfig == null ? null : rhConfig.coreModule().name();
+        if (instanceName == null || instanceName.isBlank()) {
+            instanceName = "default";
+        }
+
+        if (!cleanSession && "default".equals(instanceName)) {
+            LOGGER.warn("mqtt-client has no client-id and this instance still carries the stock name "
+                + "'default', so the identifier is 'restheart-default'. With clean-session: false the "
+                + "broker keys the resumable session on that identifier - two RESTHeart instances "
+                + "sharing it will disconnect each other in a loop. Set /mqtt-client/client-id, or "
+                + "give each instance its own /core/name");
+        }
+
+        return "restheart-" + instanceName;
+    }
+
+}

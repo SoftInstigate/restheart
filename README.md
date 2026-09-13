@@ -13,9 +13,9 @@
 
 ## What RESTHeart is
 
-RESTHeart turns a MongoDB database into a REST, GraphQL, WebSocket, and SSE API, with authentication, authorization, and real-time change streams already wired in.
+Every application built on MongoDB ends up with the same backend layer: routes that map to collections, permission checks on each endpoint, pagination and filtering logic, a way to push updates to clients in real time. That layer is largely mechanical, and writing it by hand for each project is where a lot of backend code goes.
 
-Point it at a MongoDB instance and the API is there: no routes to write, no permission checks to hand-code, no pagination or filtering logic to duplicate across endpoints. Permissions and behavior are configured declaratively. Custom logic goes into plugins, written in Java, Kotlin, JavaScript, or TypeScript, only for what a data API cannot express.
+RESTHeart generates that layer directly from the database. Point it at a MongoDB instance and it exposes the data through REST, GraphQL, WebSocket, and SSE APIs, with authentication, authorization, and real-time change streams already in place. Permissions and behavior are configured declaratively; custom logic is added only for the parts a data API cannot express, through plugins written in Java, Kotlin, JavaScript, or TypeScript.
 
 ![RESTHeart logical architecture](docs/restheart_logic_architecture.png)
 
@@ -36,7 +36,7 @@ No route was written for `/messages`. It is a MongoDB collection, and the query 
 - [**Authentication and Authorization**](https://restheart.org/docs/security/overview): JWT, OAuth2, LDAP, MongoDB-based users, ACL rules defined as data, not code
 - [**Plugin framework**](https://restheart.org/docs/framework/overview): custom services, interceptors, and initializers in Java, Kotlin, JavaScript, or TypeScript, for the logic a declarative API cannot cover
 - [**Metrics and monitoring**](https://restheart.org/docs/deployment/monitoring): a Prometheus-compatible endpoint plus a browser dashboard at `/metrics-ui`, tracking request rates, latency percentiles, and HTTP status distribution
-- **IoT / MQTT**: ingest device telemetry directly into MongoDB *(coming soon)*
+- [**IoT / MQTT**](./mqtt/README.md): bridge an MQTT broker into RESTHeart — topic messages become Server-Sent Events, REST responses, or MongoDB documents. A separate module, installed into an instance rather than shipped with it.
 
 Distributed as a Docker image and a GraalVM native binary. Built on Java 25, Undertow, and virtual threads.
 

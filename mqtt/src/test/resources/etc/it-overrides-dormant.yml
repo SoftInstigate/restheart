@@ -1,0 +1,21 @@
+# RESTHeart configuration overrides for MqttPluginLoadingIT's "dormant" case.
+#
+# Deliberately carries NO mqtt-* configuration at all: this is a RESTHeart with the module
+# installed - the same plugins directory as it-overrides.yml - and never opted in to. It is what
+# every operator who does not use MQTT gets, and the test asserts that /mqtt-sse is unbound and
+# that mqtt-status says so.
+#
+# This is the case core's IT suite structurally could not cover: it shares one already-configured
+# server across every test class, so there was nowhere to stand a second, unconfigured instance.
+# Being able to start one per test class is a direct benefit of the module testing itself.
+
+---
+/fileRealmAuthenticator:
+  enabled: true
+  users:
+    - userid: admin
+      password: secret
+      roles: [admin, user]
+
+/logging/log-level: INFO
+/logging/no-colors: true

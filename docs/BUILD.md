@@ -29,6 +29,8 @@ To execute the integration test suite:
 
 The `verify` goal starts the RESTHeart process and a MongoDB Docker container before running the integration tests.
 
+This runs the integration tests of the `core` module only. The optional `mqtt` module has its own, behind the `mqtt-it` profile, and they need core to be built first; see "Run the mqtt module's integration tests" in [CONTRIBUTING.md](../CONTRIBUTING.md#run-the-mqtt-modules-integration-tests).
+
 To avoid starting the MongoDB Docker container, specify the system property `-P-mongodb`.
 
 The integration tests use the MongoDB connection string `mongodb://127.0.0.1` by default. To use a different connection string, specify the property `test-connection-string`.

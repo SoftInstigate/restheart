@@ -14,6 +14,10 @@ on:
       - ".github/workflows/*.yml"
       - "**/*.feature"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"

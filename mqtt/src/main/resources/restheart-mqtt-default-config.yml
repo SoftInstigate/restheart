@@ -1,0 +1,172 @@
+# Sample configuration for the restheart-mqtt module.
+#
+# Use as an override file:
+#   java -jar restheart.jar -o restheart-mqtt-default-config.yml
+#
+# All plugin configuration keys must be top-level (there is no "plugins-args:"
+# wrapper - PluginsFactory looks up each plugin's arguments by its own name
+# directly at the root of the configuration map).
+#
+# mqtt-client is the root of the module's injection graph and ships with
+# enabledByDefault = false in code, so the module is dormant when the jar is
+# simply dropped into plugins/. Setting "enabled: true" below arms it.
+# mqtt-sse, mqtt-rest and mqtt-mongo-writer are separate, second-tier opt-ins
+# on top of that; enabling mqtt-client alone does not expose any of them.
+mqtt-client:
+  enabled: true
+  broker-url: "tcp://localhost:1883"          # tcp:// (default), ssl:// or mqtts://, ws://, wss://
+  protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0.
+                                              # Only 5 carries publish properties (user properties,
+                                              # content-type, correlation data, response topic).
+                                              # A broker strips them silently for a 3.1.1
+                                              # subscriber, so set 5 if you need them recorded.
+  client-id: ~                                # ~ (null/blank) generates "restheart-" + instance name;
+                                               # must be unique per concurrently connected instance
+  username: ~
+  password: ~
+  clean-session: false
+  keep-alive-seconds: 60
+  session-expiry-seconds: 4294967295          # MQTT 5 only (0xFFFFFFFF = never expires)
+  connect-timeout-seconds: 10
+  tls: false
+  tls-trust-store: ~                          # path to JKS/PKCS12
+  tls-trust-store-password: ~
+  will:
+    topic: ~
+    payload: ~
+    qos: 0
+    retain: false
+    delay-seconds: 0
+    message-expiry-seconds: ~
+  reconnect:
+    enabled: true
+    initial-delay-ms: 1000                    # exponential backoff: 1s, 2s, 4s, 8s, 16...
+    max-delay-ms: 30000                       # max delay cap (HiveMQ client uses fixed 2.0 multiplier)
+
+# MQTT Router - shared in-process fanout/rate-limit/cache for MQTT messages.
+# Registered with enabledByDefault = false in code, same as mqtt-client: a
+# disabled provider is never instantiated, so it does not automatically
+# follow mqtt-client through the provider dependency graph, and it must be
+# enabled explicitly alongside mqtt-client (enabling mqtt-client without
+# mqtt-router leaves the module with no message routing). "enabled: true"
+# below is required. last-message-cache and subscriptions below are what let
+# mqtt-rest answer immediately once it is enabled (see below).
+mqtt-router:
+  enabled: true
+  max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
+  last-message-cache: true
+  last-message-cache-size: 1000
+  subscriptions:                              # subscribed at startup with no listener, purely to
+                                               # populate the last-message cache for mqtt-rest
+                                               # polling with no SSE client connected; these
+                                               # survive listener churn
+    - topic: "sensors/#"
+      qos: 1
+    - topic: "traffic/#"
+      qos: 0
+
+# MQTT SSE Service - Stream MQTT messages as Server-sent Events.
+# Tier 2 opt-in: enabledByDefault = false in code, enabled here explicitly.
+mqtt-sse:
+  enabled: true
+  default-topic: "sensors/#"
+  default-qos: 1
+  max-connections-per-topic: 100              # 0 = unlimited, which is the compiled default
+  per-connection-queue-capacity: 256          # per-client bounded queue; overflow = drop
+  keep-alive-ms: 20000                        # period of the SSE keep-alive comment; 0 disables it.
+                                              # Nothing reads an SSE connection after the handshake,
+                                              # so without this a client that goes away is only
+                                              # noticed when a write to its socket fails - which on a
+                                              # quiet topic may never be attempted. Until then its
+                                              # listener and its broker subscription survive it, and
+                                              # every message matching both that filter and a broader
+                                              # one arrives twice. Detection takes up to two periods:
+                                              # the first write into a half-closed socket succeeds.
+  last-message-cache: true
+  payload-envelope: false                     # true = wrap in {topic, payload, payloadEncoding,
+                                              # receivedAt, qos, replay, retain}.
+                                              # payloadEncoding is "text" or "base64": MQTT payloads
+                                              # are arbitrary bytes and JSON cannot carry bytes, so
+                                              # anything that is not valid UTF-8 is base64. The raw
+                                              # format has nowhere to put that label - enable this if
+                                              # your payloads are not all text.
+                                              # replay = came from our cache, not the live stream;
+                                              # retain = the broker called it the topic's last known
+                                              # state. Orthogonal: a new event is neither. See README
+  pipeline:                                   # optional per-topic pipeline overrides
+    - topic: "sensors/#"
+      stages:
+        - type: throttle
+          max-events-per-second: 10
+        - type: tumbling-window
+          window-ms: 1000
+          function: avg                       # avg | min | max | count | last
+          field: "$.value"                    # JSONPath to numeric field to aggregate
+
+# MQTT REST Service - Poll last message per topic.
+# Tier 2 opt-in: enabledByDefault = false in code, left disabled here too.
+# Before enabling: it only ever answers from the mqtt-router last-message
+# cache, so mqtt-router above must have "last-message-cache: true" and a
+# "subscriptions" entry for every topic you intend to poll - otherwise this
+# service returns 404 forever, for every topic, since nothing ever primes
+# the cache.
+# mqtt-rest:
+#   enabled: true
+
+# MQTT Topic Authorizer - checks MQTT topic access against ACL entries.
+# Runs after authentication (mqtt-sse and mqtt-rest are secure: true) and
+# denies any request whose authenticated account has no matching ACL entry
+# for the requested topic, with HTTP 403. This interceptor is enabled by
+# default in code (deliberately not gated with mqtt-sse/mqtt-rest) and fails
+# closed: with no "acl" configured, every request to a Tier 2 endpoint is
+# denied 403, even before you enable one. Uncomment and adjust to grant
+# access per role - a role with no entry here has NO access to any topic.
+# mqtt-topic-authorizer:
+#   acl:
+#     iot-reader:
+#       - "sensors/#"
+#       - "devices/+/status"
+#     admin:
+#       - "#"
+
+# MQTT MongoDB Writer - Persist MQTT messages to MongoDB.
+# Tier 2 opt-in: enabledByDefault = false in code, left disabled here too.
+# Before enabling: it needs a running MongoDB (restheart-mongodb configured
+# and connected) and a non-empty "mongo-sink" list below - with an empty or
+# absent mongo-sink there is nothing to route incoming messages to and no
+# document is ever written.
+# mqtt-mongo-writer:
+#   enabled: true
+#   buffer:
+#     strategy: "blocking-queue"                # default; applies backpressure. "ring-buffer" and
+#                                               # "drop-incoming" lose messages under load - see README
+#     capacity: 10000
+#     max-wait-ms: 30000                        # blocking-queue only: how long to wait for room
+#                                               # before dropping and acknowledging. Covers a fast
+#                                               # database restart; a long outage is a replica-set
+#                                               # problem, and an unbounded wait would stall SSE
+#                                               # too. 0 waits forever.
+#   drain:
+#     batch-size: 200
+#     flush-interval-ms: 500
+#     max-retries: 3
+#     retry-delay-ms: 1000
+#     shutdown-timeout-ms: 5000                 # how long a clean shutdown may drain into MongoDB
+#                                               # before the rest goes to the dead-letter file
+#   id-strategy: "auto"                         # "auto" | "payload-field"
+#                                               # auto: every redelivery is a new document.
+#                                               # payload-field: keyed on a field the message itself
+#                                               # carries, so a redelivery - or another node -
+#                                               # converges on one document. Only an id supplied by
+#                                               # the publisher can do that: anything the receiver
+#                                               # computes differs between two receptions.
+#   id-field: "messageId"                       # field name when id-strategy = "payload-field"
+#   dead-letter-file: "./mqtt-dead-letter.log"  # documents dropped after exhausting max-retries, one JSON per line
+#   dead-letter-max-bytes: 104857600            # rotates to <file>.1 past this size; footprint bounded at 2x
+#   mongo-sink:
+#     - topic: "sensors/#"
+#       database: "iot"
+#       collection: "sensor-events"
+#     - topic: "traffic/#"
+#       database: "iot"
+#       collection: "traffic-events"
