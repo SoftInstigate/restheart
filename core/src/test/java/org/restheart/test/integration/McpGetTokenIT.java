@@ -133,14 +133,30 @@ public class McpGetTokenIT extends AbstactIT {
     public void tamperedToken_isRefused() throws Exception {
         var accessToken = mcp.callTool("get_token", "{}").getString("access_token").getValue();
 
-        // flip the last character of the signature: proves the 200 above came from a verified
-        // signature and not from some unauthenticated fallback path
-        var lastChar = accessToken.charAt(accessToken.length() - 1);
-        var tampered = accessToken.substring(0, accessToken.length() - 1) + (lastChar == 'A' ? 'B' : 'A');
-
-        var response = Unirest.get(SECURED_URL).header("Authorization", "Bearer " + tampered).asString();
+        var response = Unirest.get(SECURED_URL).header("Authorization", "Bearer " + tamper(accessToken)).asString();
 
         assertEquals(401, response.getStatus(), "a token with a broken signature must not authenticate");
+    }
+
+    /**
+     * Breaks a JWT's signature, so that a 200 from the token above can only have come from a
+     * verified signature rather than from some unauthenticated fallback path.
+     *
+     * <p>Flips a bit of the decoded signature rather than a character of its encoding. Editing the
+     * last base64url character looks equivalent and is not: a 32-byte HS256 signature encodes to 43
+     * characters carrying 258 bits, so the final character's low 2 bits are padding a decoder
+     * ignores. Four different final characters therefore decode to the same signature, and changing
+     * it left the token genuinely valid about 6% of the time — which is what made
+     * {@code tamperedToken_isRefused} fail intermittently in CI with a 200 that was, in those runs,
+     * the correct answer to a token that had not actually been tampered with (restheart#728).
+     */
+    private static String tamper(String jwt) {
+        var parts = jwt.split("\\.");
+        var signature = Base64.getUrlDecoder().decode(parts[2]);
+
+        signature[0] ^= 0x01;
+
+        return parts[0] + "." + parts[1] + "." + Base64.getUrlEncoder().withoutPadding().encodeToString(signature);
     }
 
     @Test
