@@ -6,12 +6,14 @@ Works in **standalone mode** — no MongoDB connection required. Requires an MQT
 
 ## Build
 
-From the repository root, install the commons artifact first (if not already done), then build the plugin:
+From the repository root, install the two artifacts the plugin compiles against first (if not already done), then build the plugin:
 
 ```bash
-./mvnw install -pl commons -DskipTests
+./mvnw install -pl commons,mqtt -DskipTests
 cd examples/mqtt-logger && ../../mvnw package -DskipTests
 ```
+
+`mqtt` is needed as well as `commons`: the plugin depends on `restheart-mqtt`, and without it in the local repository the build cannot resolve `MqttMessageRouter`.
 
 ### Dependencies
 
@@ -22,17 +24,20 @@ The plugin compiles against two `provided` dependencies—both supplied by the R
 
 Note what is *not* here: `hivemq-mqtt-client`. The router's API is expressed entirely in `restheart-mqtt`'s own types (`Qos`, `MqttMessage`), so a plugin that consumes messages never compiles against the MQTT client library. Add it only if you inject `mqtt-client` to reach the raw HiveMQ client for protocol features the router does not expose.
 
-Since these are declared with `provided` scope, the plugin JAR contains no runtime dependencies; the server supplies them from `plugins/restheart-mqtt.jar` and its transitive dependencies.
+Since these are declared with `provided` scope, the plugin JAR contains no runtime dependencies; the server supplies them from `restheart-mqtt.jar` and the jars in its `lib/` directory.
 
 ## Run
 
-Copy the plugin JAR and the mqtt module JAR to RESTHeart's `plugins/` directory and start the server in standalone mode:
+Copy the plugin JAR, the mqtt module JAR **and the mqtt module's `lib/` directory** into a subdirectory of RESTHeart's plugins directory, then start the server in standalone mode:
 
 ```bash
-cp examples/mqtt-logger/target/mqtt-logger.jar core/target/plugins/
-cp mqtt/target/restheart-mqtt.jar core/target/plugins/
+mkdir -p core/target/plugins/mqtt
+cp -r mqtt/target/restheart-mqtt.jar mqtt/target/lib core/target/plugins/mqtt/
+cp examples/mqtt-logger/target/mqtt-logger.jar core/target/plugins/mqtt/
 java -jar core/target/restheart.jar -s
 ```
+
+The `lib/` directory is not optional. It holds `hivemq-mqtt-client` and its Netty and RxJava dependencies; without them `mqtt-client` cannot be loaded. The subdirectory keeps those jars out of the shared `plugins/lib`, and the plugin scanner treats any `lib` directory as classpath-only, so the layout above is picked up as it is — it is the same layout the module's installable archive and its integration tests use.
 
 The server requires an MQTT broker running on `localhost:1883` (the default), and configuration to enable the `mqtt-client` and `mqtt-router` providers and this plugin. See `mqtt/README.md` for full configuration details.
 

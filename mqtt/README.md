@@ -632,10 +632,20 @@ For a synchronous JSON view of the router's own counters without a Prometheus sc
 ```
 ./mvnw -pl mqtt test                      # this module's unit tests, no Docker needed
 ./mvnw -pl mqtt package                   # also produces the installable archive — see "Installing"
-./mvnw -pl mqtt -am verify -Pmqtt-it      # plus the integration tests
 ```
 
-The integration tests are opt-in, behind the `mqtt-it` profile: they need Docker, and nobody who is not working on MQTT should have to pay for it. They run against **the core built alongside this module**, not a published image — `MqttITBase` launches `core/target/restheart.jar` as a subprocess with this module staged into its own plugins directory, alongside a Mosquitto broker container. That is why `-am` is needed: it builds core first.
+The integration tests are opt-in, behind the `mqtt-it` profile: they need Docker, and nobody who is not working on MQTT should have to pay for it. They run against **the core built in this checkout**, not a published image: `MqttITBase` launches `core/target/restheart.jar` as a subprocess, with core's plugins and this module staged into its plugins directory, next to a Mosquitto broker container (and a MongoDB one for the writer's tests).
+
+That core has to exist before the tests start, and **`-am` does not build it.** This module has no Maven dependency on core, on purpose — it would put Undertow and the MongoDB driver on the classpath of unit tests that do not want them — so `-pl mqtt -am` builds only the parent POM and `restheart-commons`. Build the whole reactor once instead:
+
+```
+./mvnw install -DskipTests                  # once, and again after changing core or a module it stages
+./mvnw clean verify -pl mqtt -Pmqtt-it      # the mqtt integration tests, as often as needed (~3 minutes)
+```
+
+A full install, not `-pl core -am`, because `core/copy-plugins.xml` stages plugin jars that are not Maven dependencies of core. Skip it and the build stops at `pre-integration-test` with a message saying so. This is the sequence CI runs, in `.github/workflows/mqtt.yml`.
+
+To run these together with core's own integration tests, see "Building and Testing" in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Roadmap
 

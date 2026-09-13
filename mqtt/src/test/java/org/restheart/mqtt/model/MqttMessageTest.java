@@ -37,7 +37,11 @@ public class MqttMessageTest {
     @DisplayName("A message is equal to itself")
     void testReflexive() {
         MqttMessage a = new MqttMessage("sensors/temp", "{\"temp\":25}", 1, T1);
-        assertEquals(a, a);
+        // Comparing an object to itself is the point: this checks the reflexive clause of the
+        // equals contract. java:S5863 exists to catch that comparison when it is an accident, so it
+        // is suppressed on this line only. The rewrite that would silence it, assertTrue(a.equals(a)),
+        // trips java:S5785 instead and says the same thing less clearly.
+        assertEquals(a, a); // NOSONAR java:S5863 - deliberate: tests equals reflexivity
     }
 
     @Test
