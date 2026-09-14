@@ -189,16 +189,35 @@ public class MongoApiKeyAuthenticator implements Authenticator {
     }
 
     /**
+     * The database a key is looked up in for this request.
+     *
+     * <p>An override that is present but unusable — blank, or not a string —
+     * yields {@code null}, and the key is refused. It is never read as absent:
+     * that would look the key up in the configured {@code keys-db}, and a
+     * resolver that failed to name a tenant would silently accept the keys of
+     * the default one.
+     *
      * @param req the request
-     * @return the keys database, taking into account the {@value #OVERRIDE_KEYS_DB} attached parameter
+     * @return the keys database, taking into account the {@value #OVERRIDE_KEYS_DB}
+     *         attached parameter; {@code null} when the override is unusable
      */
     public String getKeysDb(final Request<?> req) {
-        final String overrideKeysDb = req == null ? null : req.<String>attachedParam(OVERRIDE_KEYS_DB);
-        return overrideKeysDb != null ? overrideKeysDb : this.keysDb;
+        final Object override = req == null ? null : req.attachedParam(OVERRIDE_KEYS_DB);
+
+        if (override == null) {
+            return this.keysDb;
+        }
+
+        return override instanceof final String db && !db.isBlank() ? db : null;
     }
 
     private Account verifyIn(final String db, final Credential credential) {
         if (!(credential instanceof final ApiKeyCredential apiKey)) {
+            return null;
+        }
+
+        if (db == null) {
+            LOGGER.warn("Refusing API key: {} is set but names no usable database", OVERRIDE_KEYS_DB);
             return null;
         }
 
@@ -251,14 +270,16 @@ public class MongoApiKeyAuthenticator implements Authenticator {
      * key is unknown or spent.
      */
     private MongoRealmAccount findKey(final KeyRef ref) {
-        final var coll = mclient.getDatabase(ref.db())
-                .getCollection(this.keysCollection)
-                .withDocumentClass(BsonDocument.class);
-
         final BsonDocument key;
 
+        // getDatabase() inside the try: it throws for a name MongoDB rejects,
+        // and a per-request override can carry one. That is a refusal, not a 500.
         try {
-            key = coll.find(eq(this.propHash, ref.hash())).first();
+            key = mclient.getDatabase(ref.db())
+                    .getCollection(this.keysCollection)
+                    .withDocumentClass(BsonDocument.class)
+                    .find(eq(this.propHash, ref.hash()))
+                    .first();
         } catch (final Throwable t) {
             LOGGER.error("Error finding API key in {}.{}", ref.db(), this.keysCollection, t);
             return null;

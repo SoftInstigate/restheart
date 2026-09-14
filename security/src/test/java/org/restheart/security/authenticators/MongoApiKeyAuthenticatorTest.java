@@ -269,6 +269,75 @@ public class MongoApiKeyAuthenticatorTest {
     }
 
     @Test
+    void aKeyWorksOnlyOnItsTenantAlsoWithTheCacheOff() throws Exception {
+        // The same property without the cache, so that it is the lookup itself
+        // being tested and not only the cache key.
+        final var mclient = mock(MongoClient.class);
+        set("config", Map.of("cache-enabled", false));
+        this.authenticator.init();
+        set("mclient", mclient);
+
+        keysIn(mclient, "tenant_a", key());
+        keysIn(mclient, "tenant_b", null);
+
+        assertNull(this.authenticator.verify(requestFor("tenant_b"), new ApiKeyCredential(KEY)));
+        assertNotNull(this.authenticator.verify(requestFor("tenant_a"), new ApiKeyCredential(KEY)));
+        assertNull(this.authenticator.verify(requestFor("tenant_b"), new ApiKeyCredential(KEY)));
+    }
+
+    @Test
+    void theSameKeyInTwoTenantsYieldsEachTenantsOwnAccount() throws Exception {
+        // The worst case for a cache keyed on the hash alone: the key exists in
+        // both databases, so a leak would not be a refusal turning into an
+        // acceptance but one tenant's roles and principal handed to the other —
+        // and nothing would look wrong.
+        final var mclient = initialised();
+        keysIn(mclient, "tenant_a", new BsonDocument("user", new BsonString("alice"))
+                .append("roles", new BsonArray(java.util.List.of(new BsonString("admin")))));
+        keysIn(mclient, "tenant_b", new BsonDocument("user", new BsonString("bob"))
+                .append("roles", new BsonArray(java.util.List.of(new BsonString("reader")))));
+
+        for (int i = 0;i < 2;i++) {
+            final var a = (MongoRealmAccount) this.authenticator.verify(requestFor("tenant_a"), new ApiKeyCredential(KEY));
+            final var b = (MongoRealmAccount) this.authenticator.verify(requestFor("tenant_b"), new ApiKeyCredential(KEY));
+
+            assertEquals("alice", a.getPrincipal().getName());
+            assertEquals(Set.of("admin"), a.getRoles());
+            assertEquals(new BsonString("tenant_a"), a.properties().get("authDb"));
+
+            assertEquals("bob", b.getPrincipal().getName());
+            assertEquals(Set.of("reader"), b.getRoles());
+            assertEquals(new BsonString("tenant_b"), b.properties().get("authDb"));
+        }
+    }
+
+    @Test
+    void anUnusableOverrideIsRefusedNeverReadAsAbsent() throws Exception {
+        // Fail closed. A resolver that attached the param but failed to name a
+        // tenant must not fall back to keys-db: that would accept the default
+        // tenant's keys on a request meant for some other tenant.
+        final var mclient = initialised();
+        keysIn(mclient, "restheart", key());
+
+        assertNull(this.authenticator.verify(requestFor(""), new ApiKeyCredential(KEY)));
+        assertNull(this.authenticator.verify(requestFor("   "), new ApiKeyCredential(KEY)));
+
+        final Request<?> notAString = mock(Request.class);
+        when(notAString.<Object>attachedParam(MongoApiKeyAuthenticator.OVERRIDE_KEYS_DB)).thenReturn(7);
+        assertNull(this.authenticator.verify(notAString, new ApiKeyCredential(KEY)));
+
+        Mockito.verify(mclient, never()).getDatabase(any());
+    }
+
+    @Test
+    void aDatabaseNameMongoRejectsIsARefusalNotAnError() throws Exception {
+        final var mclient = initialised();
+        when(mclient.getDatabase("bad.name")).thenThrow(new IllegalArgumentException("invalid database name"));
+
+        assertNull(this.authenticator.verify(requestFor("bad.name"), new ApiKeyCredential(KEY)));
+    }
+
+    @Test
     void withoutTheOverrideTheConfiguredDatabaseIsUsed() throws Exception {
         final var mclient = initialised();
         keysIn(mclient, "restheart", key());
