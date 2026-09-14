@@ -92,6 +92,15 @@ Scenario: a key from the configured keys-db does not work on another tenant
     When method GET
     Then status 401
 
+Scenario: an override naming a database MongoDB rejects is a refusal, not a server error
+    # Fail closed, end to end: 401 as for an unknown key — not a 500, and not a
+    # fall back to keys-db, where rhak_valid would have been accepted.
+    * header Authorization = 'Bearer rhak_valid'
+    Given path '/secho'
+    And param _keys-db-override = 'bad.name'
+    When method GET
+    Then status 401
+
 Scenario: a Bearer value with no prefix is left to the JWT mechanism
     # Not ours, so we decline; the JWT mechanism owns the answer and the answer
     # is 401. What must not happen is this reaching the key lookup.
