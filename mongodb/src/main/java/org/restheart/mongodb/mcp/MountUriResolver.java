@@ -124,16 +124,16 @@ final class MountUriResolver {
             }
 
             if ("*".equals(what)) {
-                return Optional.of(join(mount.where(), dbName));
+                return Optional.of(join(wherePrefix(mount), dbName));
             }
 
             var resource = stripLeadingSlash(what);
             if (resource.endsWith("/{*}")) {
                 if (resource.substring(0, resource.length() - 4).equals(dbName)) {
-                    return Optional.of(normalizeRoot(mount.where()));
+                    return Optional.of(wherePrefix(mount));
                 }
             } else if (!resource.contains("/") && resource.equals(dbName)) {
-                return Optional.of(normalizeRoot(mount.where()));
+                return Optional.of(wherePrefix(mount));
             }
             // fixed-collection mounts ("db/coll") expose no distinct database-level URL
         }
@@ -156,7 +156,7 @@ final class MountUriResolver {
             }
 
             if ("*".equals(what)) {
-                templates.add(join(mount.where(), "{db}"));
+                templates.add(join(wherePrefix(mount), "{db}"));
             }
         }
         return templates;
@@ -177,13 +177,13 @@ final class MountUriResolver {
             }
 
             if ("*".equals(what)) {
-                templates.add(join(mount.where(), "{db}", "{collection}"));
+                templates.add(join(wherePrefix(mount), "{db}", "{collection}"));
                 continue;
             }
 
             var resource = stripLeadingSlash(what);
             if (resource.endsWith("/{*}") || !resource.contains("/")) {
-                templates.add(join(mount.where(), "{collection}"));
+                templates.add(join(wherePrefix(mount), "{collection}"));
             }
             // fixed-collection mounts ("db/coll") contribute no template
         }
@@ -199,21 +199,21 @@ final class MountUriResolver {
             }
 
             if ("*".equals(what)) {
-                return Optional.of(join(mount.where(), dbName, collName));
+                return Optional.of(join(wherePrefix(mount), dbName, collName));
             }
 
             var resource = stripLeadingSlash(what);
             if (resource.endsWith("/{*}")) {
                 if (resource.substring(0, resource.length() - 4).equals(dbName)) {
-                    return Optional.of(join(mount.where(), collName));
+                    return Optional.of(join(wherePrefix(mount), collName));
                 }
             } else if (resource.contains("/")) {
                 var parts = resource.split("/", 2);
                 if (parts[0].equals(dbName) && parts.length > 1 && parts[1].equals(collName)) {
-                    return Optional.of(normalizeRoot(mount.where()));
+                    return Optional.of(wherePrefix(mount));
                 }
             } else if (resource.equals(dbName)) {
-                return Optional.of(join(mount.where(), collName));
+                return Optional.of(join(wherePrefix(mount), collName));
             }
         }
         return Optional.empty();
@@ -223,7 +223,29 @@ final class MountUriResolver {
         return s.startsWith("/") ? s.substring(1) : s;
     }
 
-    private static String normalizeRoot(String where) {
+    /**
+     * The URL prefix a mount is served at.
+     *
+     * <p>{@code where} is a path template, and its trailing {@code {*}} is not part of the prefix:
+     * it stands for whatever follows, which is the database and collection names this class is
+     * about to append. Left in, every URI came out as {@code /{*}/inventory} — a resource an agent
+     * cannot call and, since the SDK will not register a URI with braces in it, one that never
+     * reached the catalogue at all. {@code where: /{*}} is what a host-parametric deployment
+     * writes, so this was the whole catalogue on such a node.
+     */
+    private static String wherePrefix(Mount mount) {
+        var where = mount.where();
+
+        if (where == null || where.isEmpty()) {
+            return "/";
+        }
+
+        if (where.endsWith("/{*}")) {
+            where = where.substring(0, where.length() - 4);
+        } else if (where.equals("{*}")) {
+            where = "";
+        }
+
         return where.isEmpty() ? "/" : where;
     }
 

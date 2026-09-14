@@ -150,6 +150,25 @@ public class MountUriResolverTest {
     }
 
     @Test
+    public void parametricMount_asRestheartCloudActuallyWritesIt() {
+        // Verbatim from the cloud's node configuration — a leading slash on `what`, and a `where`
+        // that is itself a template. Every other test here writes the shape without them.
+        var resolver = new MountUriResolver(List.of(new Mount("/{host[0]}/{*}", "/{*}")));
+
+        assertEquals("/", resolver.databasePath("ea820b", "ea820b").orElseThrow());
+        assertEquals("/catalog", resolver.collectionPath("ea820b", "catalog", "ea820b").orElseThrow());
+        assertEquals(List.of("/{collection}"), resolver.collectionPathTemplates("ea820b"));
+    }
+
+    @Test
+    public void whereKeepsItsOwnPrefixWhileLosingItsWildcard() {
+        var resolver = new MountUriResolver(List.of(new Mount("/{host[0]}/{*}", "/api/{*}")));
+
+        assertEquals("/api", resolver.databasePath("ea820b", "ea820b").orElseThrow());
+        assertEquals("/api/catalog", resolver.collectionPath("ea820b", "catalog", "ea820b").orElseThrow());
+    }
+
+    @Test
     public void parametricMount_exposesNothingOfAnotherScopesDatabase() {
         // The mount binds to the caller's own scope, so another database does not resolve through
         // it even when it exists and holds a collection of the same name.
