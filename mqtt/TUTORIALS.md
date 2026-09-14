@@ -1,5 +1,10 @@
 # restheart-mqtt, four steps at a time
 
+> [!WARNING]
+> **Experimental — not generally available yet.** The module is not part of any RESTHeart release,
+> and everything below runs on snapshot builds of `master`. Details may still change before it is
+> released. See [README.md](./README.md) for its status and how to report what you find.
+
 This is one walkthrough in four parts, not four independent recipes. Each part starts from the
 environment the previous one left running and adds exactly one capability, so nothing is set up
 twice:
