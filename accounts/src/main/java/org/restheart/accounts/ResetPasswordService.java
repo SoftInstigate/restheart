@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
+import org.restheart.plugins.security.PasswordPolicy;
 
 /**
  * PATCH /auth/reset-password
@@ -59,6 +60,9 @@ public class ResetPasswordService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResetPasswordService.class);
     private static final int PASSWORD_MIN_LENGTH = 8;
+
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -164,8 +168,14 @@ public class ResetPasswordService implements JsonService {
             return;
         }
 
+        var weakPassword = passwordPolicy.rejection(password);
+        if (weakPassword != null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, weakPassword);
+            return;
+        }
+
         // 6a. Persist the new hashed password
-        var hashed = TokenUtils.hashPassword(password);
+        var hashed = TokenUtils.hashPassword(password, passwordPolicy.bcryptComplexity());
         var updates = new BsonDocument("password", new BsonString(hashed));
         try {
             db(req).updateUser(storedEmail, updates);

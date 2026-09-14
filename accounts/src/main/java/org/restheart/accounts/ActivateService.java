@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import org.restheart.plugins.security.PasswordPolicy;
 
 /**
  * PATCH /auth/activate
@@ -58,6 +59,9 @@ import java.util.HashSet;
 public class ActivateService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActivateService.class);
+
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -147,8 +151,14 @@ public class ActivateService implements JsonService {
         }
         var user = userOpt.get();
 
+        var weakPassword = passwordPolicy.rejection(password);
+        if (weakPassword != null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, weakPassword);
+            return;
+        }
+
         var setDoc = new BsonDocument();
-        setDoc.put("password", new BsonString(TokenUtils.hashPassword(password)));
+        setDoc.put("password", new BsonString(TokenUtils.hashPassword(password, passwordPolicy.bcryptComplexity())));
 
         // Assign system ACL role (user is now activated)
         var effectiveRole = RequestOverrides.defaultRole(req, conf);

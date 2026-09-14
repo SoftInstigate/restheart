@@ -141,9 +141,15 @@ mongoRealmAuthenticator:
   prop-password: password
   json-path-roles: $.roles
   bcrypt-hashed-password: true
+  # Also the cost restheart-accounts hashes with, so a password set there is never
+  # weaker than one set here. Raising it does not invalidate existing passwords:
+  # BCrypt records the cost inside the hash.
   bcrypt-complexity: 12
-  # When true, API requests to create or update accounts will return HTTP 400
-  # (Bad Request) if the provided password fails strength validation
+  # When true, a password that fails strength validation is refused with HTTP 400
+  # (Bad Request). This covers both ways a password is set: writing a user document
+  # directly to the users collection, and the restheart-accounts endpoints
+  # (registration, activation, password change and reset), which read this same
+  # setting so the two cannot disagree.
   enforce-minimum-password-strength: false
   # Password strength levels: 0=Weak, 1=Fair, 2=Good, 3=Strong, 4=Very Strong
   minimum-password-strength: 3

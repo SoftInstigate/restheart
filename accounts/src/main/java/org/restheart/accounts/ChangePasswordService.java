@@ -21,6 +21,7 @@ import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.plugins.security.PasswordPolicy;
 
 /**
  * PATCH /auth/change-password
@@ -55,6 +56,9 @@ public class ChangePasswordService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChangePasswordService.class);
     private static final int PASSWORD_MIN_LENGTH = 8;
+
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -137,7 +141,13 @@ public class ChangePasswordService implements JsonService {
             return;
         }
 
-        var hashed = TokenUtils.hashPassword(newPassword);
+        var weakPassword = passwordPolicy.rejection(newPassword);
+        if (weakPassword != null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, weakPassword);
+            return;
+        }
+
+        var hashed = TokenUtils.hashPassword(newPassword, passwordPolicy.bcryptComplexity());
         try {
             db(req).updateUser(email, new BsonDocument("password", new BsonString(hashed)));
         } catch (BadRequestException e) {

@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import org.restheart.plugins.security.PasswordPolicy;
 
 /**
  * POST /auth/invite
@@ -57,6 +58,9 @@ public class InviteService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InviteService.class);
     private static final long INVITE_TTL_MS = 7L * 24 * 60 * 60 * 1000;
+
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -164,7 +168,7 @@ public class InviteService implements JsonService {
 
         if (isNewUser) {
             // New user: create with $unauthenticated role (no inviteToken on user doc)
-            var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken());
+            var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken(), passwordPolicy.bcryptComplexity());
             var rolesArr = new BsonArray();
             rolesArr.add(new BsonString("$unauthenticated"));
 

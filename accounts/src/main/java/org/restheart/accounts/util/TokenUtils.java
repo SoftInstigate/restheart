@@ -14,7 +14,6 @@ public final class TokenUtils {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int TOKEN_BYTES = 32;
-    private static final int BCRYPT_LOG_ROUNDS = 12;
 
     private TokenUtils() {
         // utility class — no instances
@@ -32,13 +31,21 @@ public final class TokenUtils {
     }
 
     /**
-     * Hashes a plain-text password with BCrypt (log rounds = 12).
+     * Hashes a plain-text password with BCrypt.
+     *
+     * <p>The cost is passed in rather than fixed here so that it follows
+     * {@code mongoRealmAuthenticator/bcrypt-complexity} — see
+     * {@code org.restheart.accounts.config.PasswordPolicy}. Raising it in configuration used to
+     * change only how the authenticator hashed, while every password set through accounts stayed
+     * at this file's constant. Existing hashes keep working either way: BCrypt records its cost
+     * inside the hash, so verification does not need to know what the current setting is.
      *
      * @param plainPassword the password to hash
+     * @param logRounds BCrypt cost, as log2 of the iteration count
      * @return the BCrypt hash string
      */
-    public static String hashPassword(String plainPassword) {
-        return BCrypt.hashpw(plainPassword, BCrypt.gensalt(BCRYPT_LOG_ROUNDS));
+    public static String hashPassword(String plainPassword, int logRounds) {
+        return BCrypt.hashpw(plainPassword, BCrypt.gensalt(logRounds));
     }
 
     /**
