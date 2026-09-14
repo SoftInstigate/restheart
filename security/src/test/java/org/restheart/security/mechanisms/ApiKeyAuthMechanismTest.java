@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -179,8 +180,12 @@ public class ApiKeyAuthMechanismTest {
         when(mauth.verify(ArgumentMatchers.<Request<?>>any(), ArgumentMatchers.any(Credential.class))).thenReturn(account);
         set(this.mechanism, "authenticator", mauth);
 
-        final var exchange = new HttpServerExchange();
-        exchange.getRequestHeaders().put(Headers.AUTHORIZATION, "Bearer " + GOOD_KEY);
+        // A spy of this module's test stub of HttpServerExchange: its attachments are real, which
+        // Request.of() and the attached params need, but it has no request headers of its own.
+        final var exchange = spy(new HttpServerExchange());
+        final var headers = new HeaderMap();
+        headers.put(Headers.AUTHORIZATION, "Bearer " + GOOD_KEY);
+        when(exchange.getRequestHeaders()).thenReturn(headers);
         // PROXY so Request.of() can build the request here; a SERVICE one must already have
         // been initialised by the pipeline. The end-to-end path is api-key-auth.feature's.
         Request.setPipelineInfo(exchange, new PipelineInfo(PipelineInfo.PIPELINE_TYPE.PROXY, "/anything", "anything"));
