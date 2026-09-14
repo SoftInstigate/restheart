@@ -140,4 +140,22 @@ public class CachedResourceLookupTest {
         assertEquals("https://host/a", lookup.find(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a").orElseThrow().uri());
         assertTrue(lookup.find(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/missing").isEmpty());
     }
+
+    @Test
+    public void invalidatingAScopeRebuildsItAndTellsItsClients() {
+        // What a timeout does, an invalidation must do too: drop the entry, and hand the key on so
+        // the registry is re-synced and connected clients told. Only EXPIRED did before.
+        var expired = new java.util.ArrayList<CachedResourceLookup.CatalogKey>();
+        var registry = countingRegistry(new AtomicInteger(), McpResource.builder().uri("https://host/a").build());
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), expired::add);
+
+        lookup.all(null, "https://a.example.com", "tenant-a");
+        lookup.all(null, "https://b.example.com", "tenant-a");
+        lookup.all(null, "https://a.example.com", "tenant-b");
+
+        lookup.invalidate("tenant-a");
+
+        assertEquals(2, expired.size(), "both of tenant-a's catalogues, one per hostname");
+        assertTrue(expired.stream().allMatch(k -> "tenant-a".equals(k.scope())), "and no one else's");
+    }
 }

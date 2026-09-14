@@ -108,11 +108,30 @@ public final class CachedResourceLookup {
                 // The key is handed on, not dropped: it names the scope whose catalogue expired,
                 // and only that scope's clients have anything to be told about.
                 .removalListener((CatalogKey key, ResourceLookup.Catalog value, RemovalCause cause) -> {
-                    if (cause == RemovalCause.EXPIRED) {
+                    // EXPLICIT alongside EXPIRED: a catalogue dropped because something changed
+                    // needs exactly what one dropped by time needs — the registry re-synced and
+                    // connected clients told. Handling only EXPIRED would make an invalidation
+                    // quietly weaker than a timeout.
+                    if (cause == RemovalCause.EXPIRED || cause == RemovalCause.EXPLICIT) {
                         onExpireExecutor.execute(() -> onExpire.accept(key));
                     }
                 })
                 .build();
+    }
+
+    /**
+     * Forgets every catalogue held for this scope, whatever base URL it was built for.
+     *
+     * <p>One scope can have more than one entry: the key is the pair, and a tenant reachable at two
+     * hostnames has one catalogue per hostname. Dropping only the caller's would leave the others
+     * answering with what was true before.
+     */
+    public void invalidate(String scope) {
+        if (scope == null) {
+            return;
+        }
+
+        cache.asMap().keySet().stream().filter(k -> scope.equals(k.scope())).toList().forEach(cache::invalidate);
     }
 
     /** Public: also called by {@code McpService} (a different package) to sync the MCP SDK's resource registry — see #617. */

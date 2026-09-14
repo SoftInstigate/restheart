@@ -59,6 +59,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.mcp.McpCatalogInvalidator;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpReadResult;
@@ -210,6 +211,36 @@ public class McpService implements ByteArrayService {
      * are singletons.
      */
     private static volatile McpService instance;
+
+    /** The running service, or {@code null} when MCP is not enabled on this instance. */
+    public static McpService instance() {
+        return instance;
+    }
+
+    /**
+     * Forgets the catalogue of the partition this request belongs to — see
+     * {@link McpCatalogInvalidator}.
+     *
+     * <p>The scope is resolved here and not by the caller: which partition a request belongs to is
+     * one question with one answer, and that answer is the scope provider's. A request whose scope
+     * cannot be resolved invalidates nothing; there is no partition to name, and dropping every
+     * catalogue because one request was unattributable would let any caller empty the cache for
+     * everyone.
+     */
+    public void invalidateCatalog(Request<?> request) {
+        if (resourceLookup == null || request == null) {
+            return;
+        }
+
+        var scope = resolveScope(request);
+
+        if (McpScopeProvider.UNRESOLVED.equals(scope)) {
+            return;
+        }
+
+        LOGGER.debug("Dropping the MCP catalogue of scope '{}': something it describes changed", scope);
+        resourceLookup.invalidate(scope);
+    }
 
     @OnInit
     public void init() {
