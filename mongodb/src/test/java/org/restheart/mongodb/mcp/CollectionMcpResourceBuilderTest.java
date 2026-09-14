@@ -175,4 +175,33 @@ public class CollectionMcpResourceBuilderTest {
 
         assertTrue(resource.extra().isEmpty());
     }
+
+    @Test
+    public void constraintsDeclared_writeActionsExplainTheThree409s() {
+        var mcp = BsonDocument.parse("{\"description\": \"A ledger.\"}");
+        var constraints = BsonArray.parse("[{\"name\": \"noNegativeHoldings\", \"stages\": []}, {\"name\": \"noSelfDealing\", \"stages\": []}, {\"stages\": []}]");
+
+        var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, null, null, constraints).orElseThrow();
+
+        for (var action : List.of("create", "update", "delete")) {
+            var guidance = resource.actions().get(action).description();
+            assertTrue(guidance.contains("\"retryable\": true"), action + " must say what retryable means");
+            assertTrue(guidance.contains("\"constraint\""), action + " must say what a violated rule looks like");
+            assertTrue(guidance.contains("noNegativeHoldings, noSelfDealing"), action + " must name the rules, and skip the nameless one");
+            assertTrue(guidance.contains("do not retry"), action + " must say a violation is not to be retried");
+        }
+    }
+
+    @Test
+    public void noConstraints_createSaysOnlyThatTheIdIsTaken() {
+        var mcp = BsonDocument.parse("{\"description\": \"Orders.\"}");
+
+        var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, null, null, null).orElseThrow();
+
+        var create = resource.actions().get("create").description();
+        assertTrue(create.contains("_id already exists"));
+        assertFalse(create.contains("retryable"), "no transaction, so no write conflict to retry");
+        assertNull(resource.actions().get("update").description());
+        assertNull(resource.actions().get("delete").description());
+    }
 }

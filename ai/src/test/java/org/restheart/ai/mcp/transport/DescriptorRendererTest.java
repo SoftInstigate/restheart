@@ -205,4 +205,21 @@ public class DescriptorRendererTest {
         var headers = (Map<String, Object>) descriptor.get("headers");
         assertFalse(headers.containsKey("Content-Type"));
     }
+
+    @Test
+    public void httpDescriptor_carriesTheActionDescriptionAsNotes() {
+        // The one place an agent is guaranteed to look right before it sends: what the action
+        // says about itself must travel with the request, not only sit in the catalogue.
+        var resource = McpResource.builder()
+                .uri("https://host/market_events")
+                .action("create", a -> a.method("POST").description("409 Conflict means one of three things"))
+                .action("query", a -> a.method("GET"))
+                .build();
+
+        var create = DescriptorRenderer.render(resource, "create", Map.of("body", Map.of("type", "offer")), null);
+        assertEquals("409 Conflict means one of three things", create.get("notes"));
+
+        var query = DescriptorRenderer.render(resource, "query", Map.of(), null);
+        assertFalse(query.containsKey("notes"), "an action with nothing to say adds no key");
+    }
 }

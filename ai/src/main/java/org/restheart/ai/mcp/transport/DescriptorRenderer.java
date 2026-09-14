@@ -123,6 +123,14 @@ public final class DescriptorRenderer {
             descriptor.put("body", body);
         }
 
+        // What the action says about itself travels with the request it describes. For a write to
+        // a collection with constraints that is how to read a 409 — retry it, or never retry it —
+        // which an agent needs at the moment it is about to send, not in the catalogue it read
+        // some minutes earlier.
+        if (action.description() != null) {
+            descriptor.put("notes", action.description());
+        }
+
         return descriptor;
     }
 

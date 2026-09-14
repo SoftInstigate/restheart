@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.plugins.mcp.McpResource;
 
@@ -57,6 +58,16 @@ public final class CollectionMcpResourceBuilder {
      *         {@code mcp.enabled == false}, or a missing required {@code description}
      */
     public static Optional<McpResource> build(String collectionUri, BsonDocument mcp, BsonValue jsonSchema, BsonArray aggrs, BsonArray streams) {
+        return build(collectionUri, mcp, jsonSchema, aggrs, streams, null);
+    }
+
+    /**
+     * @param constraints the collection's {@code constraints} array, or {@code null} if absent. With
+     *                    rules declared, every write to the collection runs in a transaction and can
+     *                    fail in two more ways than a plain one, both as {@code 409}; the write actions
+     *                    say so, since an agent cannot tell the two apart from the status alone.
+     */
+    public static Optional<McpResource> build(String collectionUri, BsonDocument mcp, BsonValue jsonSchema, BsonArray aggrs, BsonArray streams, BsonArray constraints) {
         if (mcp == null || isExplicitlyDisabled(mcp) || description(mcp) == null) {
             return Optional.empty();
         }
@@ -103,8 +114,11 @@ public final class CollectionMcpResourceBuilder {
                     false, List.of("estimated"), null));
         });
 
+        var rules = ruleNames(constraints);
+
         builder.action("create", a -> {
             a.method("POST");
+            a.description(rules.isEmpty() ? DUPLICATE_ID : writeGuidance(rules));
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
             }
@@ -113,6 +127,9 @@ public final class CollectionMcpResourceBuilder {
         builder.action("update", a -> {
             a.method("PATCH").pathTemplate("/{id}");
             a.param("id", "string", true);
+            if (!rules.isEmpty()) {
+                a.description(writeGuidance(rules));
+            }
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
             }
@@ -121,6 +138,9 @@ public final class CollectionMcpResourceBuilder {
         builder.action("delete", a -> {
             a.method("DELETE").pathTemplate("/{id}");
             a.param("id", "string", true);
+            if (!rules.isEmpty()) {
+                a.description(writeGuidance(rules));
+            }
         });
 
         examples(mcp).forEach(ex -> {
@@ -142,6 +162,35 @@ public final class CollectionMcpResourceBuilder {
         }
 
         return Optional.of(builder.build());
+    }
+
+    private static final String DUPLICATE_ID = "409 Conflict means a document with this _id already exists.";
+
+    /**
+     * What a write's {@code 409} means here — the one thing an agent cannot work out from the
+     * status, and the thing it most needs to get right: one of the three answers must be retried
+     * as it is, one must never be, and the third is somebody else's document.
+     *
+     * <p>Told from the write action itself, so that {@code how_to_call} hands it over in the same
+     * descriptor as the request, at the moment the agent is about to send it.
+     */
+    static String writeGuidance(List<String> rules) {
+        return "409 Conflict means one of three things, and the body says which. "
+                + "\"retryable\": true — two writes collided and this one was NOT applied: send exactly the same request again. "
+                + "\"constraint\": \"<name>\" — the write broke one of this collection's rules (" + String.join(", ", rules) + "): "
+                + "\"message\" says why and \"violations\" lists the documents; do not retry, the answer will not change. "
+                + "Neither — a document with this _id already exists.";
+    }
+
+    /** The names of the declared rules, for the guidance; an entry without one is skipped. */
+    private static List<String> ruleNames(BsonArray constraints) {
+        if (constraints == null) {
+            return List.of();
+        }
+        return constraints.stream()
+                .filter(c -> c.isDocument() && c.asDocument().get("name") instanceof BsonString)
+                .map(c -> c.asDocument().getString("name").getValue())
+                .toList();
     }
 
     private static List<String> enabledLinkedUris(String collectionUri, String pathPrefix, BsonArray entries) {

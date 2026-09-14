@@ -663,8 +663,9 @@ public final class MongoMcpAwareImpl {
         var jsonSchema = metadata.resolveJsonSchema(dbName, collProps.get("jsonSchema"));
         var aggrs = collProps.get("aggrs") instanceof BsonArray a ? a : null;
         var streams = collProps.get("streams") instanceof BsonArray s ? s : null;
+        var constraints = collProps.get("constraints") instanceof BsonArray c ? c : null;
 
-        CollectionMcpResourceBuilder.build(collUri, mcp, jsonSchema, aggrs, streams).ifPresent(resource -> {
+        CollectionMcpResourceBuilder.build(collUri, mcp, jsonSchema, aggrs, streams, constraints).ifPresent(resource -> {
             resources.add(resource);
             enabledCollectionUris.add(collUri);
         });
