@@ -46,7 +46,7 @@ public class FullAuthorizerTest {
     @Test
     public void allowsAnyDescriptor() {
         var authorizer = new FullAuthorizer(false);
-        var descriptor = new RequestDescriptor(null, "GET", "/warehouse/inventory", Map.of(), Map.of(), Map.of(), null, null);
+        var descriptor = new RequestDescriptor(null, "GET", "/warehouse/inventory", Map.of(), Map.of(), Map.of(), null, null, Map.of());
 
         var decision = authorizer.decide(descriptor);
 

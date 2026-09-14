@@ -96,7 +96,14 @@ final class SyntheticRequestFactory {
 
         exchange.setSecurityContext(new PrincipalOnlySecurityContext(descriptor.principal()));
 
-        return new SyntheticRequest(exchange);
+        // Put the real request's attached parameters back. Every override-aware authorizer reads
+        // them — mongoAclAuthorizer takes its database from override-acl-db — so a synthetic
+        // request without them is evaluated against the node's configured database rather than the
+        // caller's, and on a multi-tenant instance that database holds nobody's permissions.
+        var request = new SyntheticRequest(exchange);
+        descriptor.attachedParams().forEach(request::attachParam);
+
+        return request;
     }
 
     private static final class SyntheticRequest extends Request<Void> {

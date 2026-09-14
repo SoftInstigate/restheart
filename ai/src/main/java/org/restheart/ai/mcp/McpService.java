@@ -529,7 +529,8 @@ public class McpService implements ByteArrayService {
         var endpoint = PluginUtils.actualUri(config, McpService.class);
 
         return authorization.isAllowed(new RequestDescriptor(caller.principal(), "GET", endpoint,
-                Map.of(), caller.headers(), caller.cookies(), caller.remoteAddress(), caller.scheme()));
+                Map.of(), caller.headers(), caller.cookies(), caller.remoteAddress(), caller.scheme(),
+                caller.attachedParams()));
     }
 
     /** @see #canReceiveNotifications */
@@ -1466,7 +1467,8 @@ public class McpService implements ByteArrayService {
 
     private static RequestDescriptor withMethodPathAndQuery(RequestDescriptor identity, String path, Map<String, Deque<String>> queryParameters) {
         return new RequestDescriptor(identity.principal(), "GET", path, queryParameters,
-                identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme());
+                identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme(),
+                identity.attachedParams());
     }
 
     private static String pathOf(String absoluteUri) {

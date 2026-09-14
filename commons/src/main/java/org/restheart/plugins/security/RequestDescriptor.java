@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.restheart.exchange.Request;
 import org.restheart.security.BaseAccount;
 
 import io.undertow.server.HttpServerExchange;
@@ -59,7 +60,24 @@ public record RequestDescriptor(
         Map<String, Deque<String>> headers,
         Map<String, String> cookies,
         String remoteAddress,
-        String scheme) {
+        String scheme,
+        Map<String, Object> attachedParams) {
+
+    /**
+     * The attached parameters of the real request, so a descriptor can be authorized the way that
+     * request would be.
+     *
+     * <p>An authorizer that scopes itself per request reads them — {@code mongoAclAuthorizer} takes
+     * its database from {@code override-acl-db}, and so do the realm authenticator, accounts,
+     * graphql and the rest. Without them a descriptor is evaluated against the node's configured
+     * database instead of the caller's, which on a multi-tenant instance is a database holding
+     * nobody's permissions: everything is denied, for everyone, including a user who may do
+     * anything. Carried here rather than re-derived, because deriving them again would be a second
+     * answer to a question the deployment has already answered once.
+     */
+    public Map<String, Object> attachedParams() {
+        return attachedParams == null ? Map.of() : attachedParams;
+    }
 
     /** Identity: describes the real incoming exchange as-is — the default case for every ordinary REST service. */
     public static RequestDescriptor of(HttpServerExchange exchange) {
@@ -82,6 +100,12 @@ public record RequestDescriptor(
                 headers,
                 cookies,
                 peerAddress == null ? null : peerAddress.getAddress() == null ? null : peerAddress.getAddress().getHostAddress(),
-                exchange.getRequestScheme());
+                exchange.getRequestScheme(),
+                attachedParamsOf(exchange));
+    }
+
+    private static Map<String, Object> attachedParamsOf(HttpServerExchange exchange) {
+        var params = exchange.getAttachment(Request.ATTACHED_PARAMS_KEY);
+        return params == null ? Map.of() : Map.copyOf(params);
     }
 }

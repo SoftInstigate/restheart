@@ -94,7 +94,7 @@ public class AuthorizersHandlerTest {
         exchange.setRequestMethod(HttpString.tryFromString("POST"));
         exchange.setRequestPath("/mcp");
 
-        var descriptors = List.of(new RequestDescriptor(null, "POST", "/mcp", Map.of(), Map.of(), Map.of(), null, null));
+        var descriptors = List.of(new RequestDescriptor(null, "POST", "/mcp", Map.of(), Map.of(), Map.of(), null, null, Map.of()));
 
         assertTrue(AuthorizersHandler.isIdentity(descriptors, exchange));
     }
@@ -105,7 +105,7 @@ public class AuthorizersHandlerTest {
         exchange.setRequestMethod(HttpString.tryFromString("POST"));
         exchange.setRequestPath("/mcp");
 
-        var descriptors = List.of(new RequestDescriptor(null, "GET", "/warehouse/inventory", Map.of(), Map.of(), Map.of(), null, null));
+        var descriptors = List.of(new RequestDescriptor(null, "GET", "/warehouse/inventory", Map.of(), Map.of(), Map.of(), null, null, Map.of()));
 
         assertFalse(AuthorizersHandler.isIdentity(descriptors, exchange));
     }
@@ -116,7 +116,7 @@ public class AuthorizersHandlerTest {
         exchange.setRequestMethod(HttpString.tryFromString("POST"));
         exchange.setRequestPath("/mcp");
 
-        var identity = new RequestDescriptor(null, "POST", "/mcp", Map.of(), Map.of(), Map.of(), null, null);
+        var identity = new RequestDescriptor(null, "POST", "/mcp", Map.of(), Map.of(), Map.of(), null, null, Map.of());
 
         assertFalse(AuthorizersHandler.isIdentity(List.of(identity, identity), exchange));
     }

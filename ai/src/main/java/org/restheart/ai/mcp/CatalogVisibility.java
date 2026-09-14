@@ -81,7 +81,8 @@ final class CatalogVisibility {
                               String path,
                               String method) {
         var probe = new RequestDescriptor(identity.principal(), method, path,
-                Map.of(), identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme());
+                Map.of(), identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme(),
+                identity.attachedParams());
 
         return authorization.isAllowed(probe);
     }
