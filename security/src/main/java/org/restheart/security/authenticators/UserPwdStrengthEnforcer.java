@@ -37,6 +37,7 @@ import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.BsonUtils;
 import static org.restheart.utils.BsonUtils.array;
 import static org.restheart.utils.BsonUtils.document;
+import org.restheart.plugins.security.PasswordPolicy;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +46,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
-import com.nulabinc.zxcvbn.Feedback;
-import com.nulabinc.zxcvbn.Zxcvbn;
 
 /**
  * helper interceptor to add token headers to Access-Control-Expose-Headers to
@@ -62,17 +61,17 @@ import com.nulabinc.zxcvbn.Zxcvbn;
 public class UserPwdStrengthEnforcer implements MongoInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserPwdStrengthEnforcer.class);
 
-    private static final Zxcvbn zxcvbn = new Zxcvbn();
-
     private MongoRealmAuthenticator mra;
     private String usersCollection;
     private String propNamePassword;
-    private Integer minimumPasswordStrength;
 
     private boolean enabled = false;
 
     @Inject("registry")
     private PluginsRegistry registry;
+
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
 
     @OnInit
     public void init() {
@@ -90,24 +89,20 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
         } else {
             this.mra = (MongoRealmAuthenticator) pr.getInstance();
 
-            if (!mra.isEnforceMinimumPasswordStrength()) {
+            if (!passwordPolicy.enforced()) {
                 this.enabled = false;
                 return;
             }
 
             this.usersCollection = this.mra.getUsersCollection();
             this.propNamePassword = this.mra.getPropPassword();
-            this.minimumPasswordStrength = this.mra.getMinimumPasswordStrength();
 
-            if (usersCollection == null
-                    || propNamePassword == null
-                    || minimumPasswordStrength == null) {
+            if (usersCollection == null || propNamePassword == null) {
                 LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
                         + "Password field of users documents "
                         + "is not automatically checked for password strength: "
-                        + "usersCollection: {}, "
-                        + "propNamePassword: {}, minimumPasswordStrength: {}})",
-                        usersCollection, propNamePassword, minimumPasswordStrength);
+                        + "usersCollection: {}, propNamePassword: {}})",
+                        usersCollection, propNamePassword);
                 enabled = false;
             } else {
                 enabled = true;
@@ -132,10 +127,10 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
                     .forEach(plain -> {
                         if (plain != null && plain.isJsonPrimitive() && plain.getAsJsonPrimitive().isString()) {
                             var password = plain.getAsJsonPrimitive().getAsString();
-                            var measure = zxcvbn.measure(password);
+                            var weakness = passwordPolicy.weaknessOf(password);
 
-                            if (measure.getScore() < this.minimumPasswordStrength) {
-                                reject(response, measure.getFeedback(), iarr[0]);
+                            if (weakness != null) {
+                                reject(response, weakness, iarr[0]);
                             }
                         }
 
@@ -149,10 +144,10 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
                 if (plain != null && plain.isJsonPrimitive() && plain.getAsJsonPrimitive().isString()) {
                     var password = plain.getAsJsonPrimitive().getAsString();
 
-                    var measure = zxcvbn.measure(password);
+                    var weakness = passwordPolicy.weaknessOf(password);
 
-                    if (measure.getScore() < this.minimumPasswordStrength) {
-                        reject(response, measure.getFeedback());
+                    if (weakness != null) {
+                        reject(response, weakness);
                     }
                 }
             } catch (PathNotFoundException pnfe) {
@@ -161,23 +156,23 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
         }
     }
 
-    private void reject(MongoResponse response, Feedback feedback) {
-        reject(response, feedback, null);
+    private void reject(MongoResponse response, PasswordPolicy.Weakness weakness) {
+        reject(response, weakness, null);
     }
 
-    private void reject(MongoResponse response, Feedback feedback, Integer idx) {
+    private void reject(MongoResponse response, PasswordPolicy.Weakness weakness, Integer idx) {
         var error = document()
                 .put("message", idx == null ? "Password is too weak" : "Password is too weak in user document at index " + idx)
                 .put("http status code", HttpStatus.SC_BAD_REQUEST)
                 .put("http status description", HttpStatus.getStatusText(HttpStatus.SC_BAD_REQUEST));
 
-        var warning = feedback.getWarning();
+        var warning = weakness.warning();
 
         if (warning != null && !warning.isEmpty()) {
             error.put("warning", warning);
         }
 
-        var suggestions = feedback.getSuggestions();
+        var suggestions = weakness.suggestions();
 
         if (suggestions != null && !suggestions.isEmpty()) {
             var _suggestions = array();
