@@ -147,7 +147,11 @@ public class CachedResourceLookupTest {
         // the registry is re-synced and connected clients told. Only EXPIRED did before.
         var expired = new java.util.ArrayList<CachedResourceLookup.CatalogKey>();
         var registry = countingRegistry(new AtomicInteger(), McpResource.builder().uri("https://host/a").build());
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), expired::add);
+        // The test seam, so onExpire runs inline: the public constructor dispatches it to a virtual
+        // thread, and asserting straight after would be a race — one this test lost in CI and won
+        // locally, which is the worst way to find out.
+        var lookup = new CachedResourceLookup(
+                registry, Duration.ofMinutes(5), expired::add, Ticker.systemTicker(), Scheduler.disabledScheduler());
 
         lookup.all(null, "https://a.example.com", "tenant-a");
         lookup.all(null, "https://b.example.com", "tenant-a");
