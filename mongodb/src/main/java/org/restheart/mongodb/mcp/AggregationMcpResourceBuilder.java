@@ -117,6 +117,17 @@ public final class AggregationMcpResourceBuilder {
             a.readable(isPipelineSafeToRead(stages, dbName, securityChecker));
             a.param("jsonMode", "string", false);
 
+            // A pipeline that pages itself with @skip/@limit answers to ?page and ?pagesize —
+            // RESTHeart computes those variables from them. Declared here because they are the
+            // caller's half of that: without them an agent reads page one and has no way to learn
+            // there is a second, and @skip itself is not something it can set.
+            if (PipelineParamScanner.paginates(scanResult)) {
+                a.param("page", new McpResource.Param("integer",
+                        "Which page of results to return, starting at 1.", false, null, 1));
+                a.param("pagesize", new McpResource.Param("integer",
+                        "How many results per page.", false, null, null));
+            }
+
             // RESTHeart binds $var references from a single JSON query param named "avars"
             // (e.g. ?avars={"status":"A"}), not one query param per variable name — declaring
             // them individually here would make how_to_call render "?status=A", which RESTHeart

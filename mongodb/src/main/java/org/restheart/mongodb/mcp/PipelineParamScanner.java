@@ -48,8 +48,16 @@ public final class PipelineParamScanner {
     private PipelineParamScanner() {
     }
 
-    /** The distinct variable names referenced anywhere in a pipeline, and which of those are required. */
-    public record ScanResult(Set<String> names, Set<String> required) {
+    /**
+     * The distinct variable names referenced anywhere in a pipeline, which of those are required,
+     * and which of RESTHeart's own it uses.
+     *
+     * <p>{@code names} holds only what a caller supplies. {@code predefined} holds the rest — the
+     * {@code @}-prefixed ones RESTHeart binds itself — kept rather than dropped because a pipeline
+     * paginating with {@code @skip}/{@code @limit} is a pipeline that answers to {@code ?page} and
+     * {@code ?pagesize}, and an agent has to be told so.
+     */
+    public record ScanResult(Set<String> names, Set<String> required, Set<String> predefined) {
         public boolean isRequired(String name) {
             return required.contains(name);
         }
@@ -58,12 +66,42 @@ public final class PipelineParamScanner {
     /** @return the variables referenced anywhere in {@code stages}, in first-seen order, with their required/optional status */
     public static ScanResult scan(BsonValue stages) {
         var names = new LinkedHashSet<String>();
+        var predefined = new LinkedHashSet<String>();
         var required = new LinkedHashSet<String>();
-        scan(stages, names, required, false);
-        return new ScanResult(names, required);
+        scan(stages, names, required, predefined, false);
+        return new ScanResult(names, required, predefined);
     }
 
-    private static void scan(BsonValue value, Set<String> names, Set<String> required, boolean insideConditionalStage) {
+    /**
+     * Whether RESTHeart binds this variable itself, so no caller ever supplies it.
+     *
+     * <p>{@code StagesInterpolator.injectAvars} puts {@code @page}, {@code @pagesize},
+     * {@code @limit}, {@code @skip}, {@code @user} and {@code @mongoPermissions} into the avars of
+     * every request before a pipeline is interpolated. They are never unbound and never the
+     * caller's to set.
+     *
+     * <p>Counting them made a paginated aggregation — {@code {"$skip": {"$var": "@skip"}}}, which
+     * is what the console's own "add pagination" writes — advertise {@code @skip} and
+     * {@code @limit} to agents as required string parameters, and warn that they were undeclared.
+     * An agent would then pass them, and an operator could only silence the warning by declaring
+     * something no agent should send.
+     *
+     * <p>The {@code @} prefix is the whole rule: the tenant-id syntax for a variable name has no
+     * use for it, so nothing a caller can name collides with one of these.
+     */
+    private static boolean isPredefined(String name) {
+        return name.startsWith("@");
+    }
+
+    /** The predefined variables that follow {@code ?page} and {@code ?pagesize}. */
+    private static final Set<String> PAGINATION = Set.of("@page", "@pagesize", "@limit", "@skip");
+
+    /** Whether this pipeline pages itself, and so answers to {@code ?page} and {@code ?pagesize}. */
+    public static boolean paginates(ScanResult scan) {
+        return scan.predefined().stream().anyMatch(PAGINATION::contains);
+    }
+
+    private static void scan(BsonValue value, Set<String> names, Set<String> required, Set<String> predefined, boolean insideConditionalStage) {
         if (value == null) {
             return;
         }
@@ -74,6 +112,11 @@ public final class PipelineParamScanner {
             if (doc.size() == 1 && doc.containsKey("$var")) {
                 var varValue = doc.get("$var");
                 varName(varValue).ifPresent(name -> {
+                    if (isPredefined(name)) {
+                        predefined.add(name);
+                        return;
+                    }
+
                     names.add(name);
                     var hasDefault = varValue.isArray();
                     if (!hasDefault && !insideConditionalStage) {
@@ -87,19 +130,20 @@ public final class PipelineParamScanner {
                 var elements = doc.values().iterator().next().asArray();
                 // element 0: the condition variable name(s) — inherently optional, that's the
                 // whole point of $ifvar/$ifarg (the stage runs only when it's present)
-                conditionNames(elements.isEmpty() ? null : elements.get(0)).forEach(names::add);
+                conditionNames(elements.isEmpty() ? null : elements.get(0))
+                        .forEach(name -> (isPredefined(name) ? predefined : names).add(name));
                 // elements 1+ (then/else stage bodies): descend as conditional — nothing in here
                 // can throw QueryVariableNotBoundException, since the whole stage is skipped
                 // when the condition variable is missing
                 for (var i = 1;i < elements.size();i++) {
-                    scan(elements.get(i), names, required, true);
+                    scan(elements.get(i), names, required, predefined, true);
                 }
                 return;
             }
 
-            doc.forEach((key, v) -> scan(v, names, required, insideConditionalStage));
+            doc.forEach((key, v) -> scan(v, names, required, predefined, insideConditionalStage));
         } else if (value.isArray()) {
-            value.asArray().forEach(v -> scan(v, names, required, insideConditionalStage));
+            value.asArray().forEach(v -> scan(v, names, required, predefined, insideConditionalStage));
         }
         // scalars carry no $var references
     }
