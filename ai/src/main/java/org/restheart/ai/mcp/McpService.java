@@ -196,12 +196,15 @@ public class McpService implements ByteArrayService {
 
     /**
      * Absolute base URL used for the MCP {@code resources} primitive (#617) — {@code null}
-     * disables it entirely. Unlike {@code list_apis}/{@code how_to_call}, which resolve
-     * {@code baseUrl} fresh per request (see {@link #resolveBaseUrl}), the official MCP SDK's
-     * resources API (verified against its bytecode: {@code McpSyncServer.addResource}/
-     * {@code removeResource}) is a single mutable registry for the whole server, not a
-     * per-request computation — so it needs one canonical, operator-configured URL rather than
-     * whatever a given request's {@code Host}/{@code X-Forwarded-*} headers happen to say.
+     * disables it entirely. The official MCP SDK's resources API (verified against its bytecode:
+     * {@code McpSyncServer.addResource}/{@code removeResource}) is a single mutable registry per
+     * server, not a per-request computation — so it needs one canonical, operator-configured URL
+     * rather than whatever a given request's {@code Host}/{@code X-Forwarded-*} headers happen
+     * to say.
+     *
+     * <p>A deployment serving many hosts attaches {@link RequestOverrides#MCP_PUBLIC_BASE_URL}
+     * per request instead, and then every channel — the registry, {@code list_apis},
+     * {@code how_to_call}, authorization — reads that one value: see {@link #requestBaseUrl}.
      */
     private String publicBaseUrl;
 
@@ -1597,7 +1600,7 @@ public class McpService implements ByteArrayService {
 
     private McpTransportContext buildContext(ByteArrayRequest req, String scope) {
         var ctx = new HashMap<String, Object>();
-        ctx.put(CTX_BASE_URL, resolveBaseUrl(req));
+        ctx.put(CTX_BASE_URL, requestBaseUrl(req));
         ctx.put(CTX_REQUEST, req);
         // Carried, not recomputed: the scope decided which server serves this request, and a
         // second resolution could disagree with the first.
@@ -1608,9 +1611,29 @@ public class McpService implements ByteArrayService {
         return McpTransportContext.create(ctx);
     }
 
+    /**
+     * The base URL this request's resources are named by, on every channel.
+     *
+     * <p>The per-request override first, when a deployment attached one; the configured
+     * {@code public-base-url} next; the request's own headers last (see {@link #resolveBaseUrl}).
+     * The same order as {@link #effectiveBaseUrl}, which the registry and authorization use, so
+     * that no channel names a resource differently from another.
+     *
+     * <p>It used to be two answers. The transport context carried {@link #resolveBaseUrl} — the
+     * configured value, never the override — and {@code list_apis} and {@code how_to_call} read it
+     * from there, while the registry and authorization honoured the override. On a node serving
+     * many hosts, whose configured value is by necessity a placeholder, {@code list_apis} then
+     * advertised the placeholder, and a URI taken from {@code resources/list} and handed to a tool
+     * named a resource that lookup, under the other base, could not find.
+     */
+    private String requestBaseUrl(ByteArrayRequest req) {
+        return RequestOverrides.str(req, RequestOverrides.MCP_PUBLIC_BASE_URL, resolveBaseUrl(req));
+    }
+
     /** Mirrors {@code OAuthProtectedResourceMetadataService.resolveServerUrl} (restheart-security). */
     /**
-     * The base URL every resource URI this request produces is built from.
+     * The base URL every resource URI this request produces is built from, when no override is
+     * attached — the fallback of {@link #requestBaseUrl}.
      *
      * <p>{@code public-base-url} wins whenever it is configured. The alternative — deriving it from
      * the request — is a guess that a proxy can make wrong: a TLS-terminating one hands RESTHeart

@@ -99,6 +99,42 @@ public class McpScopeIT extends AbstactIT {
     // ------------------------------------------------------------------ listing
 
     @Test
+    public void listApisNamesResourcesByTheCallersOwnHost_likeResourcesListDoes() throws Exception {
+        // Two channels name the same resources, and an agent moves URIs between them. They used
+        // to disagree: list_apis read the configured public-base-url — on a node serving many
+        // hosts, by necessity a placeholder — while resources/list carried the caller's own host.
+        var mcp = new McpTestClient(BASE, ADMIN_BASIC, query(HOST_A, DB_A));
+        mcp.initialize();
+
+        var uris = mcp.callTool("list_apis", "{}").getArray("resources").stream()
+                .map(r -> r.asDocument().getString("uri").getValue())
+                .toList();
+
+        assertFalse(uris.isEmpty(), "empty catalogue — nothing to assert on");
+        assertTrue(uris.stream().allMatch(u -> u.startsWith(HOST_A)),
+                "list_apis names resources on a host other than the caller's; got " + uris);
+    }
+
+    @Test
+    public void aUriTakenFromResourcesList_isKnownToListApis() throws Exception {
+        // The round trip an agent actually makes: a URI read off resources/list, handed back to
+        // a tool. When the two channels resolved the base URL differently, the tool looked the
+        // URI up under the other base and found nothing.
+        var mcp = new McpTestClient(BASE, ADMIN_BASIC, query(HOST_A, DB_A));
+        mcp.initialize();
+
+        var uri = urisOf(mcp).stream()
+                .filter(u -> u.endsWith("/" + DB_A + "/" + COLL))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("scope A advertises no inventory URI"));
+
+        var context = mcp.callTool("list_apis", "{\"resource\": \"" + uri + "\"}");
+
+        assertEquals("collection", context.getString("kind").getValue(),
+                "the tool did not recognise a URI the catalogue itself advertised; got " + context.toJson());
+    }
+
+    @Test
     public void theCatalogueCarriesTheCallersOwnBaseUrl() throws Exception {
         // Every URI the catalogue advertises has to carry the caller's own host, or an agent
         // composes a request against someone else's. Today they all carry the node's static
