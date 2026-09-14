@@ -77,6 +77,9 @@ Scenario: A write that would break the rule is refused, and leaves nothing behin
     # the rows are the useful half: which document breaks the rule
     And match response.violations[0]._id == 'alice'
     And match response.violations[0].balance == -30
+    # a violation is not retryable: sending it again repeats this answer. Only a write conflict is
+    # marked, and that is the whole difference a client has to check between two 409s
+    And match response.retryable == '#notpresent'
 
     # etag included: nothing was written, so there is nothing to have changed
     * header Authorization = authHeader

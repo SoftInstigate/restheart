@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
@@ -289,6 +290,34 @@ public class MongoResponse extends BsonResponse {
         setStatusCode(code);
         setInError(true);
         setContent(getErrorContent(code, HttpStatus.getStatusText(code), message, t, false));
+    }
+
+    /**
+     * Name of the error property marking a failure the same request can recover from by being sent
+     * again, unchanged.
+     */
+    public static final String RETRYABLE_ELEMENT_NAME = "retryable";
+
+    /**
+     * Sets the response in an error state that the client can clear by simply retrying.
+     * <p>
+     * {@code 409 Conflict} is the honest status for a write that lost a race with a concurrent one,
+     * and it is also the status for a write that broke a rule — an ETag mismatch, a duplicate key,
+     * a violated data constraint. Those must not be retried: the answer would be the same. Since
+     * the status code cannot tell the two apart, the error carries
+     * {@code "retryable": true} and nothing else does, so a client's whole decision is
+     * {@code if (error.retryable) send it again}.
+     * </p>
+     *
+     * @param code the HTTP status code to set
+     * @param message the error message to include in the response, or null
+     */
+    public void setInRetryableError(int code, String message) {
+        setInError(code, message);
+
+        if (getContent() != null && getContent().isDocument()) {
+            getContent().asDocument().put(RETRYABLE_ELEMENT_NAME, BsonBoolean.TRUE);
+        }
     }
 
     /**

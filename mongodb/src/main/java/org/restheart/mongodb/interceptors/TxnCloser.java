@@ -100,7 +100,7 @@ public class TxnCloser implements MongoInterceptor {
             LOGGER.warn("Could not commit the transaction, the write was discarded", me);
 
             if (me.hasErrorLabel(MongoException.TRANSIENT_TRANSACTION_ERROR_LABEL)) {
-                response.setInError(HttpStatus.SC_CONFLICT,
+                response.setInRetryableError(HttpStatus.SC_CONFLICT,
                         "the write conflicted with a concurrent one and was not applied, retry the request");
             } else {
                 response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,

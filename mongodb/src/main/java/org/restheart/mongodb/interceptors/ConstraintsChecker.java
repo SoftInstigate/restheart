@@ -87,7 +87,9 @@ public class ConstraintsChecker implements MongoInterceptor {
         } catch (final com.mongodb.MongoException me) {
             LOGGER.debug("Could not take the constraints guard for {}", request.getCollectionName(), me);
 
-            response.setInError(HttpStatus.SC_CONFLICT,
+            // retryable, unlike the 409 a violated constraint returns just below: the write broke
+            // no rule, it only lost a race, and sending it again is the whole fix
+            response.setInRetryableError(HttpStatus.SC_CONFLICT,
                     "the write conflicted with a concurrent one and was not applied, retry the request");
             response.rollback(RHMongoClients.mclient());
             return;
