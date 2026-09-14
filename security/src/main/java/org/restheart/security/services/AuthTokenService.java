@@ -217,17 +217,21 @@ public class AuthTokenService implements ByteArrayService {
     private void handlePost(ByteArrayRequest request, ByteArrayResponse response, boolean isCookieEndpoint) throws Exception {
         // --- unauthenticated request ---
         if (!request.isAuthenticated()) {
-            // authorization_code grant is the only unauthenticated POST to /token (not /token/cookie)
-            if (!isCookieEndpoint) {
-                var bodyParams = parseFormBody(request);
-                if ("authorization_code".equals(bodyParams.get("grant_type"))) {
-                    handleAuthorizationCodeGrant(request, bodyParams, response);
-                    return;
-                }
-                if ("refresh_token".equals(bodyParams.get("grant_type"))) {
-                    handleRefreshTokenGrant(request, bodyParams, response);
-                    return;
-                }
+            var bodyParams = parseFormBody(request);
+
+            // authorization_code is the only unauthenticated POST to /token, and never to
+            // /token/cookie: it ends a browser redirect flow that has its own way back.
+            if (!isCookieEndpoint && "authorization_code".equals(bodyParams.get("grant_type"))) {
+                handleAuthorizationCodeGrant(request, bodyParams, response);
+                return;
+            }
+
+            // refresh_token is accepted on both. On /token/cookie the renewed token goes back as a
+            // fresh cookie and never in the body — a browser app uses that endpoint precisely so
+            // its JavaScript never sees the token.
+            if ("refresh_token".equals(bodyParams.get("grant_type"))) {
+                handleRefreshTokenGrant(request, bodyParams, response, isCookieEndpoint);
+                return;
             }
             if (!request.getExchange().getRequestHeaders().contains("No-Auth-Challenge")
                     && !request.getExchange().getQueryParameters().containsKey("noauthchallenge")) {
@@ -380,6 +384,25 @@ public class AuthTokenService implements ByteArrayService {
     }
 
     /**
+     * The bearer token the request presents, or {@code null}.
+     *
+     * <p>Read straight off the {@code Authorization} header rather than from the cookie: by the
+     * time a service runs, {@code authCookieHandler} has copied the cookie there (it intercepts at
+     * {@code REQUEST_BEFORE_AUTH}), so one place covers both a client sending the header itself and
+     * a browser sending a cookie.
+     */
+    private static String bearerToken(ByteArrayRequest request) {
+        var header = request.getHeader("Authorization");
+
+        if (header == null || !header.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return null;
+        }
+
+        var token = header.substring(7).trim();
+        return token.isEmpty() ? null : token;
+    }
+
+    /**
      * Handles {@code grant_type=refresh_token}.
      *
      * <p>RESTHeart has one token, not an access/refresh pair: a token is renewed by presenting
@@ -395,11 +418,21 @@ public class AuthTokenService implements ByteArrayService {
      * opens nothing and reaches no data. Beyond the window the caller authenticates again, which by
      * then is the right answer anyway.
      */
-    private void handleRefreshTokenGrant(ByteArrayRequest request, Map<String, String> bodyParams, ByteArrayResponse response) {
+    private void handleRefreshTokenGrant(ByteArrayRequest request, Map<String, String> bodyParams, ByteArrayResponse response, boolean isCookieEndpoint) {
         var presented = bodyParams.get("refresh_token");
 
         if (presented == null || presented.isBlank()) {
-            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_request", "refresh_token is required");
+            // A browser app cannot put its token in a form field: the cookie holding it is
+            // HttpOnly, which is the point of using one. Without this fallback the grace window —
+            // the whole reason this grant exists — is unreachable by exactly the clients that meet
+            // an expired token most often. authCookieHandler has already turned the cookie into an
+            // Authorization header by the time this runs, so there is nothing to parse here.
+            presented = bearerToken(request);
+        }
+
+        if (presented == null || presented.isBlank()) {
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_request",
+                    "refresh_token is required, as a form parameter or as the presented bearer token");
             return;
         }
 
@@ -462,16 +495,25 @@ public class AuthTokenService implements ByteArrayService {
         var expiresIn = expiresInFromJwt(tokenString);
 
         var resp = new JsonObject();
-        resp.add("access_token", new JsonPrimitive(tokenString));
-        resp.add("token_type", new JsonPrimitive("Bearer"));
+
+        if (isCookieEndpoint) {
+            // authCookieSetter reads this header and writes the cookie. The token stays out of the
+            // body: handing it to JavaScript would undo the HttpOnly cookie this endpoint is for.
+            response.getHeaders().put(AUTH_TOKEN_HEADER, tokenString);
+            resp.add("authenticated", new JsonPrimitive(true));
+            resp.add("username", new JsonPrimitive(username));
+        } else {
+            resp.add("access_token", new JsonPrimitive(tokenString));
+            resp.add("token_type", new JsonPrimitive("Bearer"));
+
+            // The same token renews itself, so it is handed back under both names: a client that
+            // stores refresh_token separately, as most do, keeps something that works.
+            resp.add("refresh_token", new JsonPrimitive(tokenString));
+        }
 
         if (expiresIn != null) {
             resp.add("expires_in", new JsonPrimitive(expiresIn));
         }
-
-        // The same token renews itself, so it is handed back under both names: a client that stores
-        // refresh_token separately, as most do, keeps something that works.
-        resp.add("refresh_token", new JsonPrimitive(tokenString));
 
         response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
         response.getHeaders().put(HttpString.tryFromString("Pragma"), "no-cache");
@@ -479,7 +521,8 @@ public class AuthTokenService implements ByteArrayService {
         response.setContent(resp.toString());
         response.setStatusCode(HttpStatus.SC_OK);
 
-        LOGGER.debug("Token renewed via refresh_token grant for user '{}'", username);
+        LOGGER.debug("Token renewed via refresh_token grant for user '{}' ({})", username,
+                isCookieEndpoint ? "cookie" : "body");
     }
 
     /**
