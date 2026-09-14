@@ -595,6 +595,11 @@
 # resolves the database per-request. Does not affect other tests.
 /dbOverrideInterceptor/enabled: true
 
+# Test interceptor: attaches override-keys-db when ?_keys-db-override=<db> is present.
+# Used by api-key-auth.feature to show a key works only on its own tenant (#738).
+# Does not affect other tests.
+/keysDbOverrideInterceptor/enabled: true
+
 # Test provider: stands in for a deployment that partitions the MCP catalogue.
 # Resolves the scope from ?mcpScope=<scope>, and UNPARTITIONED for every request without
 # it — so the whole suite keeps today's behaviour and only McpScopeIT opts in. See

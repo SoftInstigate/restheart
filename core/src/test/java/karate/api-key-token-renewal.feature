@@ -66,6 +66,8 @@ Scenario: The token the key gets carries the key's roles, and says where it came
     # the marker is what makes the rule deliberate instead of accidental: without it nothing
     # distinguishes this token from one admin got with a password
     And match claims.apiKey == true
+    # the database the key was found in, so the token names its tenant as a password login's does (#738)
+    And match claims.authDb == 'test-apikeys'
     And match claims.renewable == true
 
 Scenario: Renewing it does not hand back the user's own roles
@@ -86,6 +88,7 @@ Scenario: Renewing it does not hand back the user's own roles
     # the whole point: still the key's role after a renewal that re-reads accounts for everyone else
     And match renewed.roles == ['keynarrow']
     And match renewed.apiKey == true
+    And match renewed.authDb == 'test-apikeys'
     # and it is still renewable, so the chain does not quietly end
     And match renewed.renewable == true
 
@@ -94,7 +97,7 @@ Scenario: The same user with a password gets a different token, with their own r
     # The control, and the one that caught a real defect: the token cache was keyed on the
     # principal, the claim list and authDb — not on the roles. Two accounts exist for one name
     # here, the key's and the password's, and they were told apart only by authDb, which
-    # mongoRealmAuthenticator sets and the key authenticator does not. This suite authenticates
+    # mongoRealmAuthenticator sets and the key authenticator did not (before #738). This suite authenticates
     # with a file realm, which sets no authDb either — so the two shared one entry and whichever
     # token was minted first was served to both. In this direction that is merely wrong; in the
     # other the narrow key receives the full-privilege token its owner just got.

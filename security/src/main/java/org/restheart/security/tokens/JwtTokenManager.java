@@ -925,7 +925,8 @@ record ComparableAccount(Account wrapped, List<String> claims) {
         // user's, deliberately narrower than its owner.
         //
         // What used to keep those apart was authDb: mongoRealmAuthenticator always sets it and the
-        // API key authenticator does not, so the two keys differed there. That is a coincidence of
+        // API key authenticator did not, so the two keys differed there. (It now sets the database
+        // the key was found in, #738, which often is the users db.) That is a coincidence of
         // where the accounts come from, not a statement about what makes a token different, and it
         // does not hold for a realm that sets no authDb — a file realm, or an external issuer. There
         // the two shared an entry, and a key could be served the full-privilege token its owner had

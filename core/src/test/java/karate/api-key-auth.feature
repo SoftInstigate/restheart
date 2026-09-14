@@ -70,6 +70,28 @@ Scenario: an unknown key with the prefix is refused rather than passed on
     When method GET
     Then status 401
 
+Scenario: override-keys-db looks the key up in the tenant's database
+    * header Authorization = 'Bearer rhak_tenant'
+    Given path '/secho'
+    And param _keys-db-override = 'test-apikeys-tenant'
+    When method GET
+    Then status 200
+
+Scenario: a tenant's key does not work where the request resolves to another database
+    # Same key, same roles, same ACL — only the database the request resolves to
+    # differs, so this 401 can come from nothing but the key lookup.
+    * header Authorization = 'Bearer rhak_tenant'
+    Given path '/secho'
+    When method GET
+    Then status 401
+
+Scenario: a key from the configured keys-db does not work on another tenant
+    * header Authorization = 'Bearer rhak_valid'
+    Given path '/secho'
+    And param _keys-db-override = 'test-apikeys-tenant'
+    When method GET
+    Then status 401
+
 Scenario: a Bearer value with no prefix is left to the JWT mechanism
     # Not ours, so we decline; the JWT mechanism owns the answer and the answer
     # is 401. What must not happen is this reaching the key lookup.

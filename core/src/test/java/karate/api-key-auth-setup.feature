@@ -130,3 +130,35 @@ Scenario: Create the test-apikeys db and seed the keys
   """
   When method PUT
   Then assert responseStatus == 201 || responseStatus == 200
+
+Scenario: Create a second tenant's keys db and seed its key
+
+  # A tenant of its own, reached with ?_keys-db-override=test-apikeys-tenant
+  # (keysDbOverrideInterceptor). Its key is found only there, so it works only
+  # on requests resolving to this tenant — and rhak_valid, which lives in
+  # test-apikeys, works only on requests that don't (#738).
+  #
+  #   printf 'rhak_tenant' | shasum -a 256
+  * header Authorization = admin
+  Given path 'test-apikeys-tenant'
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
+
+  * header Authorization = admin
+  Given path 'test-apikeys-tenant/keys'
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
+
+  * header Authorization = admin
+  Given path 'test-apikeys-tenant/keys/tenant'
+  And param wm = 'upsert'
+  And request
+  """
+  {
+    "hash": "574a55275d8106e6b21471c52601c004de68813cfccf5f3d2c6d668a66800c7b",
+    "user": "admin",
+    "roles": ["admin"]
+  }
+  """
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
