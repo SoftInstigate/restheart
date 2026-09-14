@@ -354,6 +354,10 @@ oauthAuthorizationService:
   # what keeps it correct behind a TLS-terminating proxy, where an absolute URL built from the
   # Host header would come out as http:// and break the flow.
   # Point it at your own page to replace it, e.g. https://myapp.example.com/login
+  # An instance serving many tenants can set it per request instead, by attaching
+  # `override-oauth-login-url` from an interceptor — one page per node is the wrong shape when each
+  # tenant has its own sign-in page. `override-oauth-allowed-redirect-uris` does the same for the
+  # list below, for the same reason.
   login-url: /oauth/login
   # Allowed redirect_uri values (supports * wildcard).
   # Example:

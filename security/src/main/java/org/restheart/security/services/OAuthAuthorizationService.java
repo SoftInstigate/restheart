@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.restheart.exchange.ByteArrayRequest;
+import org.restheart.exchange.Request;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
@@ -123,6 +124,22 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     private String loginUrl;
     private List<String> allowedRedirectUris;
+
+    /**
+     * Per-request override of {@code login-url}, for an instance serving more than one tenant.
+     *
+     * <p>The configured value is one page for the whole node — the right shape for a single
+     * deployment, the wrong one where each tenant has its own sign-in page with its own brand on
+     * it. An interceptor that knows which tenant a request belongs to attaches this; the configured
+     * value stays the fallback.
+     */
+    public static final String OVERRIDE_LOGIN_URL = "override-oauth-login-url";
+
+    /**
+     * Per-request override of {@code allowed-redirect-uris}, same reasoning: one tenant's clients
+     * are not another's. Attached as a {@code List<String>}.
+     */
+    public static final String OVERRIDE_ALLOWED_REDIRECT_URIS = "override-oauth-allowed-redirect-uris";
     private volatile DefaultJwtIssuer jwtIssuer;
 
     @OnInit
@@ -180,6 +197,8 @@ public class OAuthAuthorizationService implements ByteArrayService {
      * {@code code_challenge_method}).
      */
     private void handleGet(ByteArrayRequest request, ByteArrayResponse response) {
+        var loginUrl = loginUrl(request);
+
         if (loginUrl == null || loginUrl.isBlank()) {
             sendError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "server_error", "login-url is not configured");
@@ -200,7 +219,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
                     "invalid_request", "redirect_uri is required");
             return;
         }
-        if (!isAllowedRedirectUri(redirectUri)) {
+        if (!isAllowedRedirectUri(redirectUri, request)) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
                     "invalid_request", "redirect_uri is not in the allowed list");
             return;
@@ -245,6 +264,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
             // If credentials came from form body (browser login UI), redirect back to login with error
             var fromForm = request.getExchange()
                     .getAttachment(FormDataToBasicAuthInterceptor.FORM_CREDENTIALS_FOR_AUTHORIZE);
+            var loginUrl = loginUrl(request);
             if (Boolean.TRUE.equals(fromForm) && loginUrl != null && !loginUrl.isBlank()) {
                 var queryString = request.getExchange().getQueryString();
                 var separator = loginUrl.contains("?") ? "&" : "?";
@@ -280,7 +300,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
                     "invalid_request", "redirect_uri is required");
             return;
         }
-        if (!isAllowedRedirectUri(redirectUri)) {
+        if (!isAllowedRedirectUri(redirectUri, request)) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
                     "invalid_request", "redirect_uri is not in the allowed list");
             return;
@@ -337,11 +357,25 @@ public class OAuthAuthorizationService implements ByteArrayService {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private boolean isAllowedRedirectUri(String uri) {
-        for (var pattern : allowedRedirectUris) {
+    private boolean isAllowedRedirectUri(String uri, Request<?> request) {
+        for (var pattern : allowedRedirectUris(request)) {
             if (matchesPattern(pattern, uri)) return true;
         }
         return false;
+    }
+
+    /** The tenant's sign-in page when one was attached, the configured one otherwise. */
+    private String loginUrl(Request<?> request) {
+        return request != null && request.attachedParam(OVERRIDE_LOGIN_URL) instanceof String s && !s.isBlank()
+                ? s
+                : loginUrl;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> allowedRedirectUris(Request<?> request) {
+        return request != null && request.attachedParam(OVERRIDE_ALLOWED_REDIRECT_URIS) instanceof List<?> l && !l.isEmpty()
+                ? (List<String>) l
+                : allowedRedirectUris;
     }
 
     /**
