@@ -341,7 +341,6 @@ public class MongoAclAuthorizer implements DescriptorAwareAuthorizer {
         }
     }
 
-    private static final BsonDocument PROJECTION = BsonDocument.parse("{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1,\"mongo\":1}");
     private static final BsonDocument SORT = BsonDocument.parse("{\"priority\":-1,\"_id\":-1}");
 
     private LinkedHashSet<MongoAclPermission> findRolePermissions(final CacheKey key) {
@@ -349,12 +348,15 @@ public class MongoAclAuthorizer implements DescriptorAwareAuthorizer {
             LOGGER.error("Cannot find acl: mongo service is not enabled.");
             return null;
         } else {
+            // The whole document, not a projection of the fields this authorizer reads: it becomes
+            // the permission's raw data, which plugins reach through BaseAclPermission.of(request)
+            // .getRaw() to carry their own settings on a permission ("tenant-isolated", a service's
+            // allowed roles, ...). A projection here silently dropped every such field.
             var permissions = new LinkedHashSet<BsonDocument>();
             this.mclient.getDatabase(key.db)
                     .getCollection(this.aclCollection)
                     .withDocumentClass(BsonDocument.class)
                     .find(eq("roles", key.role))
-                    .projection(PROJECTION)
                     .sort(SORT)
                     .into(permissions);
 
