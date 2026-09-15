@@ -114,8 +114,10 @@ const seeded = (name: string, docs: Doc[]) =>
       return true;
     },
     async apply({ service }) {
-      for (const { _id, ...doc } of docs) {
-        await put(service, `/${name}/${_id}`, doc);
+      // Whole documents, `_id` included, the same as the ledger: a collection may carry a
+      // schema that wants it in the body.
+      for (const doc of docs) {
+        await put(service, `/${name}/${doc._id}`, doc);
       }
     },
   });
@@ -158,15 +160,19 @@ export default defineSetup('Market game', [
     async apply({ service }) {
       for (const id of TRADERS) {
         if (await service.userExists(id)) continue;
-        // `_id` in the body as well as in the path: the users collection may carry a schema
-        // that requires it, and a PUT arrives without it otherwise.
+        // The users collection of a cloud service carries the accounts schema, which requires
+        // `_id`, `password`, `roles` and a `profile` with a name and a surname — `_id` in the
+        // body as well as in the path, since a PUT arrives without it otherwise. The profile is
+        // the player's display name split in two, so a trader reads the same everywhere.
         //
         // The service checks password strength on this write, with the same rule it applies
         // to sign-up. A weak one is refused with 400 and the reason; pick something long.
+        const [name, ...surname] = (PLAYERS_SEED.find(p => p._id === id)?.name ?? id).split(' ');
         await service.createUser(id, {
           _id: id,
           password: fromEnv(`${id.toUpperCase()}_PASSWORD`),
           roles: [TRADER_ROLE],
+          profile: { name, surname: surname.join(' ') || name },
         });
       }
     },
@@ -211,8 +217,10 @@ export default defineSetup('Market game', [
         // Nothing there to wipe is not a failure.
         if (!isApiError(err) || err.status !== 404) throw err;
       }
-      for (const { _id, ...doc } of GENESIS) {
-        await put(service, `/${LEDGER}/${_id}`, doc);
+      // The whole document, `_id` included: the marketEvent schema requires it in the body, and
+      // a PUT arrives with it only in the path otherwise.
+      for (const doc of GENESIS) {
+        await put(service, `/${LEDGER}/${doc._id}`, doc);
       }
     },
   }),

@@ -11,7 +11,7 @@ domain, and the application is there.**
 
 ## Play it
 
-You need a RESTHeart Cloud service (a free one is fine), Node 22.18 or later, and Claude.
+You need a RESTHeart Cloud service, Node 22.18 or later, and Claude. A free service is fine, but make it a **fresh** one: a service set up for another app carries that app's Guards rules and user schema — a consents gate, for one — and they apply to the traders too.
 
 ### 1. Set up the service
 
@@ -32,6 +32,17 @@ Run it again any time: it changes only what differs. To wipe the ledger and star
 ```bash
 npm run reset
 ```
+
+Then check that the rules refuse what they must, as the three traders:
+
+```bash
+export MCP_BASE=https://<your service URL>
+./agents/smoke.sh
+```
+
+It plays the moves that must go through, then an offer over the cap, an over-commitment, a
+self-deal, a trade on a missing offer, a false claim of victory and a second acceptance, and
+checks each answer. It appends to the ledger, so `npm run reset` afterwards for a clean board.
 
 ### 2. Watch from Claude
 
@@ -152,6 +163,7 @@ something always has to be sold.
 | `game/graphql.ts` | the GraphQL app |
 | `agents/trader.md` | the agent's prompt |
 | `agents/mcp.sh` | a per-user MCP client |
+| `agents/smoke.sh` | every rule exercised as the traders, each answer checked |
 
 Everything is in the console afterwards: the rules on the **Constraints** page, where **Run**
 tries each against the data; the resources on the **MCP Server** page, under **What an agent
