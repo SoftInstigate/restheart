@@ -701,5 +701,4 @@ Dual-licensed, like every other RESTHeart module: AGPL-3.0 (see [LICENSE.txt](..
 > not recommended for production use yet.
 >
 > That is also why feedback matters now: it can still change the design. Please report bugs and
-> request features in [GitHub issues](https://github.com/SoftInstigate/restheart/issues); "Reporting
-> bugs" at the end of this page lists what makes a report actionable.
+> request features in [GitHub issues](https://github.com/SoftInstigate/restheart/issues); "Reporting > bugs" at the end of this page lists what makes a report actionable.
