@@ -21,6 +21,7 @@
 
 package org.restheart.mqtt;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -139,6 +140,7 @@ public class MqttMessageRouter {
 
     // Configuration
     private final boolean cacheEnabled;
+    private final int maxCacheSize;
 
     /**
      * Creates the router bound to the given MQTT client and configuration.
@@ -166,6 +168,7 @@ public class MqttMessageRouter {
         this.maxMessagePerSecond = maxMessagesPerSecond;
         this.availableTokens = maxMessagesPerSecond > 0 ? maxMessagesPerSecond : 0;
         this.cacheEnabled = cacheEnabled;
+        this.maxCacheSize = maxCacheSize;
         this.lastMessageCache = Collections.synchronizedMap(new LinkedHashMap<>(16, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<String, MqttMessage> eldest) {
@@ -759,7 +762,20 @@ public class MqttMessageRouter {
         // reason to drop; a message bound for storage never is. Note the durable path below runs
         // regardless of what this returns.
         if (checkRateLimit()) {
-            dispatchToListeners(message);
+            for (Map.Entry<String, List<Consumer<MqttMessage>>> entry : listeners.entrySet()) {
+                String topicFilter = entry.getKey();
+
+                if (MqttTopicMatcher.matches(message.getTopic(), topicFilter)) {
+                    for (Consumer<MqttMessage> listener : entry.getValue()) {
+                        try {
+                            listener.accept(message);
+                        } catch (Exception e) {
+                            LOGGER.error("Error dispatching message to listener for topic {}",
+                                message.getTopic(), e);
+                        }
+                    }
+                }
+            }
         } else {
             recordDropped();
         }
@@ -771,7 +787,7 @@ public class MqttMessageRouter {
         // One acknowledgement when the last durable listener reports in. The guard is per
         // listener, not per message, so a listener that calls back twice cannot release the
         // acknowledgement on another's behalf.
-        final var outstanding = new AtomicInteger(durable.size());
+        var outstanding = new AtomicInteger(durable.size());
         for (DurableListener listener : durable) {
             var alreadyReported = new AtomicBoolean(false);
             Runnable taken = () -> {
@@ -787,23 +803,6 @@ public class MqttMessageRouter {
                 // redelivers it on the next session - at the cost of an in-flight slot until then.
                 LOGGER.error("Durable listener threw for topic {}; the message stays unacknowledged "
                     + "and will be redelivered", message.getTopic(), e);
-            }
-        }
-    }
-
-    private void dispatchToListeners(MqttMessage message) {
-        for (Map.Entry<String, List<Consumer<MqttMessage>>> entry : listeners.entrySet()) {
-            String topicFilter = entry.getKey();
-
-            if (MqttTopicMatcher.matches(message.getTopic(), topicFilter)) {
-                for (Consumer<MqttMessage> listener : entry.getValue()) {
-                    try {
-                        listener.accept(message);
-                    } catch (Exception e) {
-                        LOGGER.error("Error dispatching message to listener for topic {}",
-                            message.getTopic(), e);
-                    }
-                }
             }
         }
     }
