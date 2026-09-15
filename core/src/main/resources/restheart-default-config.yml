@@ -130,6 +130,12 @@ mongoApiKeyAuthenticator:
   cache-size: 1000
   cache-ttl: 60000
   cache-expire-policy: AFTER_WRITE
+  # Request parameters to copy onto the account, as mongoRealmAuthenticator's attached-props.
+  # A deployment that attaches per-request facts before authentication wants them on every
+  # account whatever the credential: they are what its guards compare, and what a token minted
+  # from the account carries.
+  # attached-props:
+  #   - srvNode
 
 # mongoRealmAuthenticator authenticates users defined in a MongoDB collection.
 # See https://restheart.org/docs/security/authentication#mongo-realm-authenticator

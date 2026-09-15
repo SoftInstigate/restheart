@@ -29,6 +29,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -99,6 +100,17 @@ import io.undertow.security.idm.Credential;
  * {@code mongoRealmAuthenticator} has none for {@code users-collection}: the
  * collection is part of the schema, the database is the tenant.
  *
+ * <h2>Attached properties, as for a password login</h2>
+ * <p>{@code attached-props} names request parameters to copy onto the account,
+ * exactly as {@code mongoRealmAuthenticator} does. A deployment that attaches
+ * per-request facts before authentication — a multi-tenant one attaches the
+ * node the request arrived on — needs them on every account it authenticates,
+ * whatever the credential: they are what its guards compare, and what a token
+ * minted from the account has to carry. Left off, an account from a key would
+ * be the one kind that lacks them.
+ * <p>They are copied onto a copy. The account built from the key document is
+ * what the cache holds, and a property that came from one request must not be
+ * found on the account by the next.
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongoApiKeyAuthenticator",
@@ -134,6 +146,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
     private String propRoles;
     private String propExpires;
     private boolean trackLastUsed;
+    private List<String> attachedProps = null;
 
     private LoadingCache<KeyRef, MongoRealmAccount> keysCache = null;
 
@@ -146,6 +159,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
         this.propRoles = argOrDefault(config, "prop-roles", "roles");
         this.propExpires = argOrDefault(config, "prop-expires", "expiresAt");
         this.trackLastUsed = argOrDefault(config, "track-last-used", true);
+        this.attachedProps = argOrDefault(config, "attached-props", null);
 
         final boolean cacheEnabled = argOrDefault(config, "cache-enabled", true);
 
@@ -185,7 +199,43 @@ public class MongoApiKeyAuthenticator implements Authenticator {
      * configured {@code keys-db} otherwise.
      */
     public Account verify(final Request<?> req, final Credential credential) {
-        return verifyIn(getKeysDb(req), credential);
+        final var account = verifyIn(getKeysDb(req), credential);
+
+        return account instanceof MongoRealmAccount mra ? withAttachedParams(req, mra) : account;
+    }
+
+    /**
+     * The account with the configured {@code attached-props} copied from the
+     * request, or the account itself when there is nothing to copy.
+     *
+     * <p>A new account, not the given one: the given one may be the cache's,
+     * shared by every request that presents the same key.
+     */
+    // package-private so the rule can be pinned by a test
+    MongoRealmAccount withAttachedParams(final Request<?> req, final MongoRealmAccount account) {
+        if (this.attachedProps == null || this.attachedProps.isEmpty() || req == null || account.properties() == null) {
+            return account;
+        }
+
+        final var attached = req.attachedParams();
+
+        if (attached == null) {
+            return account;
+        }
+
+        final var props = account.properties().clone();
+
+        for (final var name : this.attachedProps) {
+            final var value = attached.get(name);
+
+            if (value == null) {
+                continue;
+            }
+
+            props.put(name, value instanceof BsonValue bv ? bv : new BsonString(value.toString()));
+        }
+
+        return new MongoRealmAccount(account.db(), account.getPrincipal().getName(), new char[0], account.getRoles(), props);
     }
 
     /**

@@ -109,6 +109,34 @@ public class MongoApiKeyAuthenticatorTest {
 
     // ── roles ────────────────────────────────────────────────────────────────
 
+    // ── attached props ───────────────────────────────────────────────────────
+
+    @Test
+    void attachedPropsAreCopiedOntoACopyOfTheAccount() throws Exception {
+        set("attachedProps", java.util.List.of("srvNode", "missing"));
+
+        final var cached = this.authenticator.accountOf("tenant", key());
+        final var req = mock(Request.class);
+        when(req.attachedParams()).thenReturn(Map.of("srvNode", "a1b2c3.eu-central-1-free-1.restheart.com", "ignored", "x"));
+
+        final var account = this.authenticator.withAttachedParams(req, cached);
+
+        assertEquals("a1b2c3.eu-central-1-free-1.restheart.com", account.properties().getString("srvNode").getValue());
+        assertFalse(account.properties().containsKey("ignored"), "only the configured names are copied");
+        assertFalse(account.properties().containsKey("missing"), "a parameter that is not there is skipped");
+        assertEquals("robot", account.getPrincipal().getName());
+        assertEquals("tenant", account.db());
+        assertFalse(cached.properties().containsKey("srvNode"), "the cached account is left as it was");
+    }
+
+    @Test
+    void withNoAttachedPropsTheAccountIsHandedBackAsIs() throws Exception {
+        final var cached = this.authenticator.accountOf("tenant", key());
+        final var req = mock(Request.class);
+
+        assertTrue(cached == this.authenticator.withAttachedParams(req, cached));
+    }
+
     @Test
     void rolesComeFromTheKey() {
         final var doc = key().append("roles", new BsonArray(java.util.List.<org.bson.BsonValue>of(
