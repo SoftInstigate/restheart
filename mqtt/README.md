@@ -1,15 +1,5 @@
 # restheart-mqtt
 
-> [!WARNING]
-> **Experimental — not generally available yet.** `restheart-mqtt` is not part of any RESTHeart
-> release: every build is a snapshot of `master`. Configuration keys, the SSE envelope, the REST
-> response and the shape of stored documents may still change before it is released, and it is
-> not recommended for production use yet.
->
-> That is also why feedback matters now: it can still change the design. Please report bugs and
-> request features in [GitHub issues](https://github.com/SoftInstigate/restheart/issues); "Reporting
-> bugs" at the end of this page lists what makes a report actionable.
-
 Bridges an external MQTT broker into RESTHeart: incoming topic messages become Server-Sent Events, REST responses, MongoDB documents, or input to your own plugins.
 
 The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.0, and exposes what it receives through ordinary RESTHeart plugins. Brokers that require mutual TLS with a client certificate — AWS IoT Core among them — are not supported: the module exposes only trust-store settings (`tls`, `tls-trust-store`, `tls-trust-store-password`), never a key store or client certificate.
@@ -703,3 +693,13 @@ If you were following [TUTORIALS.md](./TUTORIALS.md), say which part. And if the
 ## License
 
 Dual-licensed, like every other RESTHeart module: AGPL-3.0 (see [LICENSE.txt](../LICENSE.txt)), or the RESTHeart COMMERCIAL LICENSE (see [COMM-LICENSE.txt](../COMM-LICENSE.txt)) for those who need it.
+
+> [!WARNING]
+> **Experimental — not generally available yet.** `restheart-mqtt` is not part of any RESTHeart
+> release: every build is a snapshot of `master`. Configuration keys, the SSE envelope, the REST
+> response and the shape of stored documents may still change before it is released, and it is
+> not recommended for production use yet.
+>
+> That is also why feedback matters now: it can still change the design. Please report bugs and
+> request features in [GitHub issues](https://github.com/SoftInstigate/restheart/issues); "Reporting
+> bugs" at the end of this page lists what makes a report actionable.
