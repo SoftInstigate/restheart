@@ -30,7 +30,7 @@ strength. Wait about 20 seconds after the first run for the permissions to take 
 Run it again any time: it changes only what differs. To wipe the ledger and start a new game:
 
 ```bash
-npm run reset
+npx rhc setup --srv <srvId> --force game
 ```
 
 Then check that the rules refuse what they must, as the three traders:
@@ -42,7 +42,7 @@ export MCP_BASE=https://<your service URL>
 
 It plays the moves that must go through, then an offer over the cap, an over-commitment, a
 self-deal, a trade on a missing offer, a false claim of victory and a second acceptance, and
-checks each answer. It appends to the ledger, so `npm run reset` afterwards for a clean board.
+checks each answer. It appends to the ledger, so `--force game` afterwards for a clean board.
 
 ### 2. Watch from Claude
 

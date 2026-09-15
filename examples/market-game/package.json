@@ -3,11 +3,6 @@
   "private": true,
   "type": "module",
   "description": "A trading game three agents play through a RESTHeart Cloud service's MCP server",
-  "scripts": {
-    "setup": "rhc setup",
-    "check": "rhc setup --dry-run",
-    "reset": "rhc setup --force game"
-  },
   "devDependencies": {
     "@restheart-cloud/cli": "^0.10.0"
   }
