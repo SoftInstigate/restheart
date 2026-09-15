@@ -40,6 +40,10 @@ The module still lives in the RESTHeart monorepo, and its integration tests run 
 | `mqtt-stats` | `JsonService` | `/mqtt/stats` | No (Tier 2) |
 | `mqtt-status` | `Initializer` (`AFTER_STARTUP`) | — | Yes (diagnostic sentinel) |
 
+![RESTHeart MQTT architecture](./MQTT_arch.png)
+
+*RESTHeart MQTT architecture and message flow.*
+
 How the pieces fit together:
 
 ```mermaid
