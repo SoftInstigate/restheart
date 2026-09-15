@@ -147,7 +147,6 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
      * @throws IllegalArgumentException if an entry's {@code qos} is present but does not resolve
      *                                   to 0, 1 or 2
      */
-    @SuppressWarnings("unchecked")
     private void subscribeConfiguredTopics() {
         final List<Map<String, Object>> subscriptions = argOrDefault(config, "subscriptions", List.of());
 
