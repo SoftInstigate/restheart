@@ -1,5 +1,15 @@
 # restheart-mqtt
 
+> [!WARNING]
+> **Experimental — not generally available yet.** `restheart-mqtt` is not part of any RESTHeart
+> release: every build is a snapshot of `master`. Configuration keys, the SSE envelope, the REST
+> response and the shape of stored documents may still change before it is released, and it is
+> not recommended for production use yet.
+>
+> That is also why feedback matters now: it can still change the design. Please report bugs and
+> request features in [GitHub issues](https://github.com/SoftInstigate/restheart/issues); "Reporting
+> bugs" at the end of this page lists what makes a report actionable.
+
 Bridges an external MQTT broker into RESTHeart: incoming topic messages become Server-Sent Events, REST responses, MongoDB documents, or input to your own plugins.
 
 The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.0, and exposes what it receives through ordinary RESTHeart plugins. Brokers that require mutual TLS with a client certificate — AWS IoT Core among them — are not supported: the module exposes only trust-store settings (`tls`, `tls-trust-store`, `tls-trust-store-password`), never a key store or client certificate.
@@ -40,14 +50,17 @@ flowchart LR
 
     subgraph rh["RESTHeart"]
         direction TB
+        connector["<b>mqtt-connector</b><br><i>connects last, once every consumer exists</i>"]
         client["<b>mqtt-client</b><br><i>the broker connection</i>"]
-        router["<b>mqtt-router</b><br><i>fan-out + last-value cache</i>"]
+        router["<b>mqtt-router</b><br><i>covering subscriptions, fan-out,<br>last-value cache</i>"]
+        authz["<b>mqtt-topic-authorizer</b><br><i>per-topic ACL, fails closed</i>"]
         sse["<b>mqtt-sse</b><br><code>/mqtt-sse</code>"]
         rest["<b>mqtt-rest</b><br><code>/mqtt</code>"]
-        writer["<b>mqtt-mongo-writer</b>"]
+        writer["<b>mqtt-mongo-writer</b><br><i>durable listener</i>"]
         own["<i>your own plugin</i>"]
     end
 
+    connector -.-> client
     broker ==> client
     client ==> router
     router --> sse
@@ -55,11 +68,13 @@ flowchart LR
     router --> writer
     router --> own
     writer --> mongo
-    sse -.-> callers
-    rest -.-> callers
+    writer -.->|"acknowledged once stored"| broker
+    callers --> authz
+    authz --> sse
+    authz --> rest
 ```
 
-`mqtt-sse` and `mqtt-rest` are both registered with `secure = true`: they require authentication. See "Enablement" below for what the "Enabled by default" column means in practice.
+`mqtt-sse` and `mqtt-rest` are both registered with `secure = true`: they require authentication, and `mqtt-topic-authorizer` then checks the requested topic filter against the ACL before either service sees the request. Messages reach `mqtt-mongo-writer` through a *durable* listener, so the broker is acknowledged only once each one is stored — see "Durability". See "Enablement" below for what the "Enabled by default" column means in practice.
 
 ## Enablement
 
@@ -126,7 +141,7 @@ sequenceDiagram
     else filter granted
         A->>S: request continues
         S->>R: subscribe(filter, qos, listener)
-        R->>B: SUBSCRIBE (once per filter)
+        R->>B: SUBSCRIBE, unless an existing subscription already covers the filter
         S-->>C: 200, text/event-stream held open
         B->>R: message on the topic
         R->>S: listener invoked
@@ -189,9 +204,11 @@ mqtt-topic-authorizer:
 ```mermaid
 flowchart LR
     broker[("MQTT broker")] ==> client["<b>mqtt-client</b>"] ==> router["<b>mqtt-router</b>"]
-    router --> writer["<b>mqtt-mongo-writer</b>"]
-    writer --> buffer["buffer<br><i>bounded, drop policy</i>"]
+    router -->|"durable listener"| writer["<b>mqtt-mongo-writer</b>"]
+    writer --> buffer["buffer<br><i>bounded; by default waits up to<br>buffer.max-wait-ms for room</i>"]
     buffer -->|"drain loop, batched"| mongo[("MongoDB<br><i>db.collection per sink</i>")]
+    buffer -.->|"after drain.max-retries"| dlq[("dead-letter file")]
+    writer -.->|"acknowledges each message<br>once stored or dead-lettered"| broker
 ```
 
 ```yaml
@@ -245,7 +262,7 @@ The version directory is deliberate, not an accident of packaging. `PluginsScann
 
 Then copy the settings you need from `restheart-mqtt-default-config.yml` into your instance's configuration, and enable at least `mqtt-client` and `mqtt-router`. See "Enablement" above for what each plugin's switch does.
 
-**The RESTHeart you install into must be recent enough** to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`). Without that, `mqtt-topic-authorizer` resolves but is never invoked on the `/mqtt-sse` path, leaving the endpoint authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
+**Install it into a RESTHeart built from `master`, not into a release.** The archive is a `10.0.0-SNAPSHOT` build and has only been tested against the core built alongside it; `softinstigate/restheart-snapshot:latest` is that core as a Docker image. There is also a specific security reason. Per-topic authorization on `/mqtt-sse` needs RESTHeart to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`), and **no release includes that yet: 9.8.1 and every earlier version lack it.** It is on the unreleased `master` and `9.x` branches. On a RESTHeart without it, `mqtt-topic-authorizer` resolves but is never invoked on `/mqtt-sse`, so the endpoint is authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
 
 ## Durability
 
@@ -280,7 +297,15 @@ Most of these are silent: nothing refuses to start, and nothing complains unless
 - **A request with no `?topic=` is not unauthenticated territory.** `mqtt-sse` subscribes such a request to its `default-topic` (`sensors/#` by default), so the ACL must grant that filter or the request is refused with `403`. Granting only specific topics while leaving `default-topic` at its default is the common mistake.
 - **MQTT 5 settings under `protocol-version: 3` are dropped.** `session-expiry-seconds`, `will.delay-seconds` and `will.message-expiry-seconds` exist only in MQTT 5.0, and the 3.1.1 connection path has nowhere to put them — the values are read and validated, then discarded. A will message configured with a delay fires immediately instead.
 
-`mqtt-status` reports five of these at startup, by comparing the configuration against what the plugin registry actually instantiated: the missing `enabled` key, MQTT 5 keys under `protocol-version: 3`, `mqtt-rest` with an unprimed cache, an empty `mongo-sink`, and an empty `acl`. The `plugins-args` wrapper is reported by core instead. The `default-topic` one is reported by neither — it is a working ACL doing exactly what it was told, so there is nothing for a sentinel to find. Check the log before assuming a misconfiguration is a bug.
+`mqtt-status` reports five of these at startup, by comparing the configuration against what the plugin registry actually instantiated: the missing `enabled` key, MQTT 5 keys under `protocol-version: 3`, `mqtt-rest` with an unprimed cache, an empty `mongo-sink`, and an empty `acl`. The `plugins-args` wrapper is reported by core instead. The `default-topic` one is reported by neither — it is a working ACL doing exactly what it was told, so there is nothing for a sentinel to find. `mqtt-status` also warns when `mqtt-client` is enabled but `mqtt-connector` is not, and logs a line at INFO when the module is installed but `mqtt-client` is off.
+
+When it finds nothing wrong, it logs a single line instead, for example:
+
+```
+mqtt module active: mqtt-client, mqtt-router, mqtt-sse, mqtt-topic-authorizer, mqtt-connector; inactive: mqtt-rest, mqtt-mongo-writer
+```
+
+Check the log before assuming a misconfiguration is a bug, and include that line — or the warnings in its place — in any bug report.
 
 ## Quick start
 
@@ -318,10 +343,10 @@ curl -u admin:secret 'http://localhost:8080/mqtt?topic=sensors/temp'
 
 ## Try it in two minutes
 
-[`mqtt/docker-compose.yml`](./docker-compose.yml) runs a self-contained two-container demo (RESTHeart plus a Mosquitto broker, no MongoDB) with the module already armed and a working ACL, so there is no broker or config to set up by hand. It bind-mounts `mqtt/target` into the RESTHeart container's plugins directory, so build the module first. From the `mqtt` directory:
+[`mqtt/docker-compose.yml`](./docker-compose.yml) runs a self-contained two-container demo (RESTHeart plus a Mosquitto broker, no MongoDB) with the module already armed and a working ACL, so there is no broker or config to set up by hand. It mounts the built plugin — `mqtt/target/restheart-mqtt.jar` and `mqtt/target/lib` — into the RESTHeart container's plugins directory, so build the module first. From the `mqtt` directory:
 
 ```
-../mvnw -f ../pom.xml -pl mqtt package
+../mvnw -f ../pom.xml -pl commons,mqtt install -DskipTests
 docker compose up
 ```
 
@@ -337,9 +362,9 @@ And in a third shell, publish a message:
 docker compose exec mosquitto mosquitto_pub -t sensors/temp -m '{"value": 21.5}'
 ```
 
-It runs `softinstigate/restheart-snapshot:latest` rather than a released image, because per-topic ACL enforcement on `/mqtt-sse` needs a fix that is currently only on unreleased `master`; against a released image the same demo would silently accept a topic outside the ACL instead of rejecting it with `403`.
+It runs `softinstigate/restheart-snapshot:latest` rather than a released image, because per-topic ACL enforcement on `/mqtt-sse` needs a fix that no release includes yet (see "Installing"); against a released image the same demo would silently accept a topic outside the ACL instead of rejecting it with `403`.
 
-This demo is for trying the module out, not for testing it. To exercise a locally modified module properly, run its integration tests: `./mvnw -pl mqtt -am verify -Pmqtt-it` — those launch the core you just built, rather than a published image. See "Building".
+This demo is for trying the module out, not for testing it. To exercise a locally modified module properly, run its integration tests, which launch the core you just built rather than a published image — "Building" gives the two commands. For a guided tour of this demo, and of the MongoDB-backed one in [`docker-compose-mongodb.yml`](./docker-compose-mongodb.yml), follow [TUTORIALS.md](./TUTORIALS.md).
 
 ## Configuration
 
@@ -376,7 +401,7 @@ The port follows the scheme when you do not give one: 1883 for `tcp`, 8883 for `
 
 | key | default | notes |
 |---|---|---|
-| `max-inflight-messages-per-second` | `5000` | global token bucket; excess messages are dropped, not queued. `0` or any value `<= 0` disables the rate limit entirely. |
+| `max-inflight-messages-per-second` | `5000` | global token bucket for **live** listeners — SSE connections and plugins' `subscribe` listeners. Excess messages are dropped for them, not queued. The last-value cache behind `mqtt-rest` and durable listeners such as `mqtt-mongo-writer` still see every message. `0` or any value `<= 0` disables it. |
 | `last-message-cache` | `true` | backs `mqtt-rest` and the SSE replay-on-connect |
 | `last-message-cache-size` | `1000` | LRU |
 | `subscriptions` | `[]` | list of `{topic, qos}` subscribed at startup |
@@ -466,8 +491,10 @@ Pipeline selection for a connection is: exact topic-filter match, then MQTT wild
 `GET /mqtt?topic=<topic>` returns the last message cached for that topic:
 
 ```json
-{"topic": "sensors/temp", "payload": "{\"temp\":25}", "receivedAt": "...", "qos": 1}
+{"topic": "sensors/temp", "payload": "{\"temp\":25}", "payloadEncoding": "text", "receivedAt": "2026-09-13T22:57:12.951701590Z", "qos": 1, "retain": false}
 ```
+
+`payloadEncoding` is `"base64"` when the payload is not valid UTF-8, and on MQTT 5 an `mqtt5` object carries the publish properties when the publisher set any — both exactly as in `mqtt-sse`'s envelope, described above. There is no `replay` flag: every answer comes from the cache.
 
 `400` when the `topic` parameter is missing, `404` when nothing is cached for that topic — both with an `{"error": "..."}` body naming the reason. `OPTIONS` is handled for CORS; any other method returns `405`.
 
@@ -569,7 +596,7 @@ Every document also records `retain`, the flag the broker delivered the message 
 
 Everything else a replay needs is there: topic, payload byte for byte, QoS, ordering to the nanosecond, and the MQTT 5 properties. Note also that a **message published with MQTT 5 properties and delivered to an MQTT 3.1.1 subscriber arrives with every property silently stripped** — measured; no error, no warning. If you intend to persist them, `mqtt-client` must be configured with `protocol-version: 5`.
 
-The two deduplicating strategies write with upserts, so redelivery converges on one document instead of raising duplicate-key errors. Duplicate-key (11000) is counted as a success. `id-field` (default `messageId`) must be set and non-blank when `id-strategy` is `payload-field`; both keys are validated at startup, because a typo would otherwise disable deduplication silently.
+`id-field` (default `messageId`) must be set and non-blank when `id-strategy` is `payload-field`. Both keys are validated at startup, because a typo would otherwise disable deduplication silently.
 
 With `payload-field`, if the payload is not valid JSON or the field is absent, the failure is swallowed: no `_id` is computed, and that one document falls back to a plain insert instead of an upsert — deduplication is lost silently, per message, rather than failing the write.
 
@@ -577,7 +604,7 @@ With `payload-field`, if the payload is not valid JSON or the field is absent, t
 
 Every `mongo-sink` entry must carry all three of `topic`, `database` and `collection`, each a string; a missing or mistyped key fails at startup naming the entry. An absent or empty `mongo-sink` list is legal and simply means nothing is persisted.
 
-Batches that still fail after `max-retries` are appended to `dead-letter-file`, one JSON document per line. Failing to write that file is logged, never propagated.
+Batches that still fail after `max-retries` are appended to `dead-letter-file`, one document per line as MongoDB Extended JSON — so a binary payload and the dates survive as `$binary` and `$date`, and each line parses back into exactly the document that failed. Failing to write that file is logged, never propagated.
 
 A relative `dead-letter-file` is resolved to an absolute path at startup, against the server process's working directory, and the resolved path is logged — for a forked or containerised RESTHeart that directory is rarely where the operator is standing, and a dead-letter file nobody can find is the same as no dead-letter file. The file is rotated to `<file>.1` once it passes `dead-letter-max-bytes` (100 MB by default), replacing any previous rotation, so its footprint is bounded at twice that. Nothing reads it back yet: re-ingestion is [#607](https://github.com/SoftInstigate/restheart/issues/607).
 
@@ -605,17 +632,21 @@ A worked example is in [`examples/mqtt-logger`](../examples/mqtt-logger).
 
 The router's API is expressed entirely in this module's own types (`Qos`, `MqttMessage`), so a plugin that only uses the router does not compile against HiveMQ at all. Inject `mqtt-client` instead, as above, when you deliberately want the raw HiveMQ client.
 
+`subscribe` registers a **live** listener: it never holds up an acknowledgement to the broker, and it is subject to `max-inflight-messages-per-second`. If your plugin stores messages and must not lose them, use `subscribeDurable` instead. Its listener receives the message and a `taken` callback to run once the message is safely stored; the router acknowledges the broker only after every durable listener has done so, and a message none of them took is redelivered after a crash. Call `taken` exactly once, and do call it: an unacknowledged message occupies a slot in the broker's in-flight window, so a listener that never calls back eventually stalls delivery to this client altogether.
+
+Call `unsubscribe` or `unsubscribeDurable` when you are done. A listener that is never removed keeps being called, and keeps its filter subscribed on the broker.
+
 ## Operational notes
 
 **Shutdown.** RESTHeart has no plugin shutdown callback, so the client and the writer's drain loop are stopped from JVM shutdown hooks. On a clean shutdown the writer drains its buffer into MongoDB for up to `drain.shutdown-timeout-ms` (5 s by default, deliberately inside Docker's 10 s SIGTERM grace), and anything still buffered when that elapses is written to the dead-letter file rather than dropped. A `kill -9` runs no hook at all, but what was buffered was never acknowledged, so the broker redelivers it to the next instance that resumes the session — see "Durability" above.
 
-**Message loss is by design on the live-data paths**, each counted so it is visible rather than silent: the router's global rate limit and the SSE per-connection queue. For a dashboard that is the right answer — you want the latest reading, not a backlog.
+**Message loss is by design on the live-data paths**, each counted so it is visible rather than silent: the router's global rate limit, the SSE per-connection queue, and a pipeline's `throttle` stage. For a dashboard that is the right answer — you want the latest reading, not a backlog.
 
 **The persistence path does not lose by default.** `mqtt-mongo-writer`'s buffer defaults to `blocking-queue`, which applies backpressure instead; `ring-buffer` and `drop-incoming` are there for anyone who would rather drop than slow down, and must be chosen explicitly. Backpressure is cheap here because the router dispatches each message on its own virtual thread, so a full buffer parks a virtual thread rather than a platform one.
 
 **Broker subscriptions are a minimal covering set, not one per topic filter.** MQTT 3.1.1 lets a broker deliver one copy of a message per matching subscription, and Mosquitto does exactly that. Since the router matches every incoming message against every registered filter locally, it subscribes on the broker only to filters no other registered filter already covers — so `sensors/#` in `mqtt-router.subscriptions` plus an SSE client on `sensors/temp` is one broker subscription, not two, and one delivery, not two. A covering filter is subscribed at the highest QoS of anything it covers, so standing in for a durable QoS 1 subscription never quietly downgrades it to QoS 0. Without this, the configuration this README recommends duplicated every message: two SSE events, two callbacks into a custom plugin, two MongoDB documents under `id-strategy: auto`, and a doubled `mqtt_router_messages_received`.
 
-**`max-inflight-messages-per-second` governs live delivery only.** It used to cut before the fan-out, so a number chosen to protect a dashboard silently governed what reached storage as well. It now applies to SSE and REST delivery; a message refused there is still handed to `mqtt-mongo-writer` and still persisted. `mqtt_router_messages_dropped` therefore counts live drops, and `mqtt_router_messages_received` counts everything the broker delivered — the two overlap deliberately, so their ratio is the live loss rate.
+**`max-inflight-messages-per-second` governs live delivery only.** It used to cut before the fan-out, so a number chosen to protect a dashboard silently governed what reached storage as well. It now applies to live listeners only — SSE connections and plugins' `subscribe` listeners. The last-value cache behind `mqtt-rest` is updated before the limit is checked, and a message refused for live delivery is still handed to `mqtt-mongo-writer` and still persisted. `mqtt_router_messages_dropped` therefore counts live drops, and `mqtt_router_messages_received` counts everything the broker delivered — the two overlap deliberately, so their ratio is the live loss rate.
 
 **Clustering.** On MQTT 3.1.1 there are no shared subscriptions, so every RESTHeart node receives every message. For MongoDB persistence that means `payload-field` is the only strategy that converges: it is the one keyed on something the message itself carries, so all the nodes compute the same `_id` (see "`mqtt-mongo-writer`" above). On MQTT 5.0, shared subscriptions are the cleaner answer — tracked in [#602](https://github.com/SoftInstigate/restheart/issues/602).
 
@@ -649,7 +680,21 @@ To run these together with core's own integration tests, see "Building and Testi
 
 ## Roadmap
 
-Post-v1 work is tracked under [#601](https://github.com/SoftInstigate/restheart/issues/601): MQTT 5 shared subscriptions and user properties (#602), an HTTP → MQTT publish endpoint (#603), a WebSocket bridge (#604), polyglot pipeline stages (#605), replay from MongoDB via `Last-Event-ID` (#606), a dead-letter REST API (#607), schema validation and pluggable deserializers (#609), and a distributed single-writer mode (#610).
+Post-v1 work is tracked under [#601](https://github.com/SoftInstigate/restheart/issues/601): MQTT 5 shared subscriptions and message-expiry enforcement (#602 — the publish properties, user properties included, are already captured), an HTTP → MQTT publish endpoint (#603), a WebSocket bridge (#604), polyglot pipeline stages (#605), replay from MongoDB via `Last-Event-ID` (#606), a dead-letter REST API (#607), the remaining metrics — broker connection state, reconnects, batch latency, dead-letter count and a health check (#608) — schema validation and pluggable deserializers (#609), and a distributed single-writer mode (#610).
+
+Missing something that is not on this list? That is exactly the feedback we are looking for — open an issue.
+
+## Reporting bugs
+
+Open an issue at [SoftInstigate/restheart/issues](https://github.com/SoftInstigate/restheart/issues). Almost every surprise in this module turns out to be a configuration one, so these make a report actionable:
+
+- **the configuration** of the `mqtt-*` blocks, or the `RHO` you ran with, with passwords removed;
+- **the `mqtt-status` output** from the startup log: the `mqtt module active: … inactive: …` line, or the warnings printed in its place;
+- **the RESTHeart build** you installed into — a snapshot image tag, a commit, or a release version — and the module's build, which the `mqtt-snapshot` release notes record;
+- **the protocol details**: `protocol-version`, the QoS the publisher used (`mosquitto_pub` defaults to `0`), and the broker and its version;
+- **the server log** from startup to the failure, not only the error.
+
+If you were following [TUTORIALS.md](./TUTORIALS.md), say which part. And if the documentation let you configure something wrongly without complaining, report that too: it is a bug in the docs.
 
 ## License
 
