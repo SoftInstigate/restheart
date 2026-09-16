@@ -56,6 +56,7 @@ import org.restheart.mongodb.utils.MongoMountResolverImpl;
 import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.mongodb.utils.StagesInterpolator.STAGE_OPERATOR;
 import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
@@ -108,20 +109,23 @@ public final class MongoMcpAwareImpl {
     private final MountUriResolver mountResolver;
     private final Databases databases;
     private final AggregationPipelineSecurityChecker securityChecker;
+    private final UsersPasswordHider passwordHider;
 
     MongoMcpAwareImpl(MetadataSource metadata, MountUriResolver mountResolver) {
-        this(metadata, mountResolver, null, null);
+        this(metadata, mountResolver, null, null, UsersPasswordHider.disabled());
     }
 
     /** {@code databases}/{@code securityChecker} are {@code null} only via the test-only 2-arg constructor above, which never exercises {@link #readResource} or aggregation description. */
-    MongoMcpAwareImpl(MetadataSource metadata, MountUriResolver mountResolver, Databases databases, AggregationPipelineSecurityChecker securityChecker) {
+    MongoMcpAwareImpl(MetadataSource metadata, MountUriResolver mountResolver, Databases databases, AggregationPipelineSecurityChecker securityChecker, UsersPasswordHider passwordHider) {
         this.metadata = metadata;
         this.mountResolver = mountResolver;
         this.databases = databases;
         this.securityChecker = securityChecker;
+        this.passwordHider = passwordHider;
     }
 
-    public static MongoMcpAwareImpl create() {
+    /** @param registry to find {@code mongoRealmAuthenticator}'s users collection, whose password field a read must never return */
+    public static MongoMcpAwareImpl create(PluginsRegistry registry) {
         var databases = Databases.get();
         var securityChecker = new AggregationPipelineSecurityChecker(MongoServiceConfiguration.get().getAggregationSecurityConfiguration());
         MetadataSource source = new MetadataSource() {
@@ -173,7 +177,7 @@ public final class MongoMcpAwareImpl {
                 return props == null ? null : BsonUtils.unescapeKeys(props).asDocument();
             }
         };
-        return new MongoMcpAwareImpl(source, MountUriResolver.fromConfig(), databases, securityChecker);
+        return new MongoMcpAwareImpl(source, MountUriResolver.fromConfig(), databases, securityChecker, UsersPasswordHider.fromRegistry(registry));
     }
 
     public List<McpResource> describeMcp(McpContext ctx) {
@@ -417,7 +421,7 @@ public final class MongoMcpAwareImpl {
         // enforces it); readFilter does not — no aggregation handler consults request.getFilter(),
         // so applying it here would make MCP stricter than the REST endpoint it mirrors
         return Optional.of(new McpReadResult(new McpReadResult.RawJson(
-                "{\"content\":" + BsonUtils.toJson(project(ctx, data), jsonModeOf(args)) + "}")));
+                "{\"content\":" + BsonUtils.toJson(project(ctx, resolved, data), jsonModeOf(args)) + "}")));
     }
 
     /**
@@ -571,7 +575,7 @@ public final class MongoMcpAwareImpl {
         // means there may be more, a short one means there is not. That is all a caller needs to
         // keep paging, and it costs nothing.
         var text = new StringBuilder("{\"content\":")
-                .append(BsonUtils.toJson(project(ctx, docs), jsonMode))
+                .append(BsonUtils.toJson(project(ctx, resolved, docs), jsonMode))
                 .append(",\"meta\":{\"page\":").append(page)
                 .append(",\"returned\":").append(docs.size());
         if (docs.size() == pagesize) {
@@ -593,7 +597,7 @@ public final class MongoMcpAwareImpl {
 
         // A document the read filter excludes must be indistinguishable from one that does not
         // exist — anything else turns the filter into an existence oracle.
-        var json = docs.isEmpty() ? "null" : BsonUtils.toJson(project(ctx, docs.get(0)), jsonMode);
+        var json = docs.isEmpty() ? "null" : BsonUtils.toJson(project(ctx, resolved, docs.get(0)), jsonMode);
         return new McpReadResult(new McpReadResult.RawJson(json));
     }
 
@@ -606,6 +610,9 @@ public final class MongoMcpAwareImpl {
     // permission that authorized this very operation is carried on the McpContext instead, and
     // applied here, against the same request it was matched against so its @user/%ROLES variables
     // resolve to the same values a real GET would resolve them to.
+    //
+    // For the same reason userPwdRemover never runs either: the password field of the users
+    // collection is removed here, by UsersPasswordHider, under the interceptor's own rule.
     // ---------------------------------------------------------------------------------------
 
     /** The ACL read filter for this operation, interpolated, or {@code null} if the permission declares none. */
@@ -617,10 +624,14 @@ public final class MongoMcpAwareImpl {
         return AclVarsInterpolator.interpolateBson(ctx.authorization().request(), permissions.getReadFilter()).asDocument();
     }
 
-    /** Hides whatever {@code mongo.projectResponse} hides, using the interceptor's own implementation. */
-    private static BsonValue project(McpContext ctx, BsonValue content) {
+    /**
+     * Hides whatever {@code mongo.projectResponse} hides, using the interceptor's own
+     * implementation, then the users collection's password field, as {@code userPwdRemover} would.
+     */
+    private BsonValue project(McpContext ctx, MongoMountResolver.ResolvedContext resolved, BsonValue content) {
         var permissions = mongoPermissions(ctx);
-        return permissions == null ? content : ProjectResponse.project(content, permissions.getProjectResponse());
+        var projected = permissions == null ? content : ProjectResponse.project(content, permissions.getProjectResponse());
+        return passwordHider.hide(ctx, resolved.database(), resolved.collection(), projected);
     }
 
     private static MongoPermissions mongoPermissions(McpContext ctx) {

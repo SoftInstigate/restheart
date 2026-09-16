@@ -52,6 +52,7 @@ import org.restheart.mongodb.utils.MongoMountResolverImpl;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.mcp.McpAware;
@@ -95,6 +96,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     @Inject("mclient")
     private MongoClient mclient;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     /**
      * PathMatcher is used by the root PathHandler to route the call. Here we
      * use the same logic to identify the correct MongoMount in order to
@@ -126,7 +130,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
             getMongoMounts().stream().forEachOrdered(mm -> templateMongoMounts.add(mm.uri, mm));
         }
 
-        this.mcpAware = MongoMcpAwareImpl.create();
+        this.mcpAware = MongoMcpAwareImpl.create(registry);
     }
 
     @Override
