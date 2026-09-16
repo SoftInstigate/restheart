@@ -234,24 +234,6 @@ const pricesFor = {
   },
 };
 
-/**
- * Listed on purpose, and refused on purpose: `$merge` is on the aggregation stage blacklist.
- * Being described in the catalogue and being callable are two different things, and an agent
- * has to be able to tell them apart.
- */
-const archive = {
-  uri: 'archive',
-  type: 'pipeline',
-  stages: [{ $match: { type: 'trade' } }, { $merge: { into: 'market_archive' } }],
-  mcp: {
-    enabled: true,
-    description:
-      'Would copy settled trades into a market_archive collection. It is listed here on ' +
-      'purpose but it will NOT run: $merge is on the aggregation stage blacklist, so RESTHeart ' +
-      'refuses it. Being described in the catalogue and being callable are two different things.',
-  },
-};
-
 // ── The change stream ─────────────────────────────────────────────────────────
 
 const newOffers = {
@@ -273,7 +255,7 @@ export const LEDGER = 'market_events';
 
 export const LEDGER_META = {
   jsonSchema: { schemaId: 'marketEvent' },
-  aggrs: [board, holdings, pricesFor, archive],
+  aggrs: [board, holdings, pricesFor],
   streams: [newOffers],
   mcp: {
     enabled: true,

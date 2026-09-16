@@ -4,7 +4,7 @@ An application with no code. Three AI agents trade goods with each other through
 Cloud service's MCP server. Each has a secret objective and the wrong pile of goods. You watch
 the board from Claude.
 
-Nothing here is a program. It is a data model: one collection, a schema, six rules, four
+Nothing here is a program. It is a data model: one collection, a schema, six rules, three
 aggregations, three users and five permissions. RESTHeart Cloud enforces it and publishes it
 over MCP, and the agents are the user interface. That is the point of the example: **model the
 domain, and the application is there.**
@@ -23,7 +23,7 @@ export TRADER1_PASSWORD='…' TRADER2_PASSWORD='…' TRADER3_PASSWORD='…'
 npx rhc setup --srv <srvId>         # the six characters at the start of your service URL
 ```
 
-This creates the ledger collection, its rules, four aggregations, a change stream, a GraphQL app,
+This creates the ledger collection, its rules, three aggregations, a change stream, a GraphQL app,
 three trader accounts and their permissions. Pick long passwords: the service checks their
 strength. Wait about 20 seconds after the first run for the permissions to take effect.
 
@@ -137,7 +137,6 @@ Each agent is a real user of the service: `trader1`, `trader2`, `trader3`, role 
 | `market_events/_aggrs/board` | holdings, open offers, trades and the winner in one read |
 | `market_events/_aggrs/holdings` | who owns what, optionally for one `player` |
 | `market_events/_aggrs/pricesFor` | trade history for one `item` |
-| `market_events/_aggrs/archive` | listed but refused: it uses `$merge`, which is blacklisted |
 | `market_events/_streams/newOffers` | a websocket pushing each new offer |
 | `market_items`, `market_players` | the four goods and the three players |
 | `market_objectives` | your objective, and only yours |
@@ -166,8 +165,8 @@ something always has to be sold.
 | `agents/smoke.sh` | every rule exercised as the traders, each answer checked |
 
 Everything is in the console afterwards: the rules on the **Constraints** page, where **Run**
-tries each against the data; the resources on the **MCP Server** page, under **What an agent
-sees**.
+tries each against the data; the resources on the **MCP Server** page, under **Test
+credentials**.
 
 More in the RESTHeart Cloud manual: [MCP Server](https://restheart.org/docs/cloud/mcp), [Data
 Constraints](https://restheart.org/docs/cloud/constraints), [the `rhc`
