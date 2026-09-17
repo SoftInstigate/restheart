@@ -3,27 +3,37 @@ package org.restheart.test.plugins.providers;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.restheart.exchange.Request;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.OAuthTokenIssuer;
+import org.restheart.security.BaseAccount;
 
 import io.undertow.security.idm.Account;
 
 /**
  * Stands in for a deployment that issues its own token through the Authorization Code flow
- * (restheart#740): offers a role and a number of days, seals them in the code, and mints an
- * opaque string from them at {@code /token}.
+ * (restheart#740): offers a role and a number of days, seals them in the code, and mints a token
+ * from them at {@code /token}.
  *
  * <p>Acts only on requests carrying {@code ?ti=…}, and stays out of every other one, so the
  * OAuth scenarios that predate it keep today's behaviour in the same suite. {@code ti=refuse}
  * refuses the account outright, which is how the page's third answer is exercised.
  *
- * <p>The token is {@code test-token:<role>:<days>}, deliberately not a credential anything on
- * the instance accepts: what is under test is that the choice sealed at {@code /authorize} is
- * what {@code /token} mints, not what the token opens.
+ * <p>By default the token is {@code test-token:<role>:<days>}, deliberately not a credential
+ * anything on the instance accepts: what is under test is that the choice sealed at
+ * {@code /authorize} is what {@code /token} mints, not what the token opens.
+ *
+ * <p>Two options exist for trying the flow by hand against a real client, and are off in the
+ * suite: {@code always: true} makes the issuer act on every request, as a client that sends no
+ * extra query parameter needs; {@code mint: jwt} mints the instance's own JWT for an account
+ * carrying the chosen role alone, without a refresh token, so the client can go on and use it.
  */
 @RegisterPlugin(
         name = "testOAuthTokenIssuer",
@@ -36,12 +46,27 @@ public class TestOAuthTokenIssuer implements Provider<OAuthTokenIssuer> {
     static final int MAX_DAYS = 365;
     static final int DEFAULT_DAYS = 30;
 
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    private boolean always;
+    private boolean mintJwt;
+
+    @OnInit
+    public void init() {
+        this.always = argOrDefault(config, "always", false);
+        this.mintJwt = "jwt".equals(argOrDefault(config, "mint", "opaque"));
+    }
+
     @Override
     public OAuthTokenIssuer get(PluginRecord<?> caller) {
         return new Issuer();
     }
 
-    private static final class Issuer implements OAuthTokenIssuer {
+    private final class Issuer implements OAuthTokenIssuer {
 
         @Override
         public Optional<Offer> offer(Account account, Request<?> request) throws Refusal {
@@ -94,16 +119,35 @@ public class TestOAuthTokenIssuer implements Provider<OAuthTokenIssuer> {
             var role = String.valueOf(claims.get("role"));
             var days = claims.get("days") instanceof Number n ? n.intValue() : DEFAULT_DAYS;
 
+            if (mintJwt) {
+                // the instance's own JWT, for an account that holds the chosen role and nothing
+                // else: usable by a real client, narrower than the user, and not refreshable
+                var tokenManager = registry.getTokenManager();
+
+                if (tokenManager == null) {
+                    throw new Refusal("server_error", "no token manager to mint a JWT with");
+                }
+
+                var narrowed = new BaseAccount(account.getPrincipal().getName(), Set.of(role));
+                var credential = tokenManager.getInstance().get(narrowed, request);
+
+                return new IssuedToken(new String(credential.getPassword()), "Bearer", null, null);
+            }
+
             return IssuedToken.bearer("test-token:" + role + ":" + days, days * 86_400L);
         }
 
-        private static String mode(Request<?> request) {
+        private String mode(Request<?> request) {
             var params = request.getExchange().getQueryParameters();
 
-            return params.containsKey(QPARAM) ? params.get(QPARAM).peekFirst() : null;
+            if (params.containsKey(QPARAM)) {
+                return params.get(QPARAM).peekFirst();
+            }
+
+            return always ? "1" : null;
         }
 
-        private static void refuseIfAsked(String mode) throws Refusal {
+        private void refuseIfAsked(String mode) throws Refusal {
             if ("refuse".equals(mode)) {
                 throw new Refusal("access_denied", "this account may not obtain a token here");
             }
