@@ -257,10 +257,13 @@
       var password = document.getElementById('password').value;
 
       // No-Auth-Challenge keeps a 401 from carrying WWW-Authenticate, which would make the
-      // browser open its own credentials dialog on top of this form.
+      // browser open its own credentials dialog on top of this form. Cookies go along as on
+      // any same-origin request: a tunnel or a proxy in front may rely on one to let the
+      // request through, and RESTHeart's own auth cookie never overrides an Authorization
+      // header that is already there.
       fetch('/authorize/offer?' + forwarded.toString(), {
         method: 'GET',
-        credentials: 'omit',
+        credentials: 'same-origin',
         headers: {
           'Authorization': 'Basic ' + btoa(unescape(encodeURIComponent(username + ':' + password))),
           'No-Auth-Challenge': 'true',
