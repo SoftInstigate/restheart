@@ -285,6 +285,16 @@ oauthAuthorizationService:
   allowed-redirect-uris:
     - http://localhost:*
 
+  # Which token the flow issues is decided by an OAuthTokenIssuer, when a deployment registers one
+  # (a Provider<OAuthTokenIssuer>, found by type: there is no key to set here, registering it is
+  # the switch). Without one, /token answers the authorization code with the account's own JWT,
+  # renewable without end. With one, the sign-in page gains a step: it asks GET /authorize/offer
+  # what this account may choose (204 nothing, 200 an offer, 403 a refusal), the person chooses,
+  # and the choices travel to POST /authorize as choice.<name> query parameters — preselected by
+  # the client's scope, one <name>:<value> entry per choice. What the issuer seals in the code is
+  # what it mints at /token, and that code is never answered with the JWT instead.
+  # See: https://restheart.org/docs/security/oauth#deciding-which-token-the-flow-issues
+
 # OAuth 2.0 Protected Resource Metadata (RFC 9728)
 # Endpoint: GET /.well-known/oauth-protected-resource[/{resource-path}]
 # Returns resource metadata required by MCP clients (e.g. Claude.ai) before OAuth token refresh.

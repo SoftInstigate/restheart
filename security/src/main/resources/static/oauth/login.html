@@ -79,7 +79,7 @@
 
   label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; }
 
-  input {
+  input, select {
     width: 100%;
     padding: 9px 11px;
     margin-bottom: 16px;
@@ -90,7 +90,7 @@
     border-radius: 6px;
   }
 
-  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
   button {
     width: 100%;
@@ -105,6 +105,14 @@
   }
 
   button:hover { filter: brightness(0.94); }
+  button[disabled] { opacity: 0.6; cursor: default; }
+
+  a.back {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
 
   .error {
     margin: 0 0 18px;
@@ -122,26 +130,37 @@
 <body>
 <main>
   <p class="brand">RESTHeart</p>
-  <h1>Sign in</h1>
+  <h1 id="title">Sign in</h1>
   <p class="sub" id="sub">to continue to <strong id="client">the application</strong></p>
 
   <p class="error" id="error" hidden>Wrong username or password.</p>
 
   <!--
-    Posts straight to /authorize as a normal form submission, with the OAuth parameters
-    kept in the query string exactly as they arrived. No fetch, no JSON: RESTHeart answers
-    302 to the client's redirect_uri and the browser follows it, which is what completes
-    the authorization code flow.
+    Two steps, one form. The first asks for the credentials; before submitting them it asks
+    /authorize/offer, with those credentials, whether there is anything to choose. Nothing to
+    choose: the form is submitted at once. Something to choose: the credentials are kept in
+    the form, hidden, and the choices are rendered in their place.
+
+    The submission is a normal form POST to /authorize, with the OAuth parameters kept in the
+    query string exactly as they arrived and the choices appended to it as choice.<name>. No
+    fetch, no JSON at that point: RESTHeart answers 302 to the client's redirect_uri and the
+    browser follows it, which is what completes the authorization code flow.
   -->
   <form id="form" method="POST" autocomplete="on">
-    <label for="username">Username</label>
-    <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+    <div id="credentials">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus>
 
-    <label for="password">Password</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+    </div>
 
-    <button type="submit">Sign in</button>
+    <div id="choices" hidden></div>
+
+    <button type="submit" id="submit">Sign in</button>
   </form>
+
+  <a class="back" id="back" href="#" hidden>Sign in as somebody else</a>
 </main>
 
 <script>
@@ -150,21 +169,46 @@
 
     // Everything the authorization endpoint sent us goes back untouched. Dropping or
     // reordering a parameter here breaks PKCE or the state check, so nothing is rebuilt:
-    // the query string is forwarded as-is, minus the error flag we render ourselves.
+    // the query string is forwarded as-is, minus the error we render ourselves.
     var forwarded = new URLSearchParams(window.location.search);
     forwarded.delete('error');
+    forwarded.delete('error_description');
 
-    document.getElementById('form').action = '/authorize?' + forwarded.toString();
+    var form = document.getElementById('form');
+    var errorBox = document.getElementById('error');
+    var credentials = document.getElementById('credentials');
+    var choicesBox = document.getElementById('choices');
+    var submit = document.getElementById('submit');
+    var back = document.getElementById('back');
+    var title = document.getElementById('title');
+    var sub = document.getElementById('sub');
+
+    // Where the form goes. The choices are appended here when there are any.
+    var extra = new URLSearchParams();
+
+    function action() {
+      var query = forwarded.toString();
+      var more = extra.toString();
+      return '/authorize?' + query + (more ? '&' + more : '');
+    }
+
+    form.action = action();
+
+    function showError(text) {
+      errorBox.textContent = text || 'Wrong username or password.';
+      errorBox.hidden = false;
+    }
 
     if (params.get('error')) {
-      document.getElementById('error').hidden = false;
+      // From /authorize: wrong credentials, or the issuer refusing a choice. Its own words
+      // when it gave any; textContent, never innerHTML.
+      showError(params.get('error') === 'invalid_credentials' ? null : params.get('error_description'));
     }
 
     // Name the destination by the host of redirect_uri — "claude.ai" — rather than by client_id,
     // which with dynamic client registration is a freshly generated UUID that means nothing to the
     // person being asked for their password. /authorize validates redirect_uri against the
     // configured allow-list before redirecting here, so this host is one the operator permitted.
-    // textContent, never innerHTML.
     var redirectUri = params.get('redirect_uri');
     if (redirectUri) {
       try {
@@ -177,10 +221,150 @@
     // Landing here without OAuth parameters means the page was opened directly rather than
     // reached through /authorize. Signing in would go nowhere, so say so instead.
     if (!params.get('redirect_uri')) {
-      document.getElementById('sub').textContent =
-        'Open this page from an application’s sign-in link — it cannot be used on its own.';
-      document.getElementById('form').hidden = true;
+      sub.textContent = 'Open this page from an application’s sign-in link — it cannot be used on its own.';
+      form.hidden = true;
+      return;
     }
+
+    // What the client asked for with scope, as <choice>:<value> entries: it preselects. The
+    // person can still change it, and /authorize validates whatever is sent.
+    var preselected = {};
+    (params.get('scope') || '').split(/\s+/).forEach(function (entry) {
+      var colon = entry.indexOf(':');
+      if (colon > 0 && colon < entry.length - 1) {
+        preselected[entry.substring(0, colon)] = entry.substring(colon + 1);
+      }
+    });
+
+    var offered = false;
+
+    form.addEventListener('submit', function (event) {
+      if (offered) {
+        // second step: the choices go in the query string, the credentials in the body
+        extra = new URLSearchParams();
+        choicesBox.querySelectorAll('[data-choice]').forEach(function (field) {
+          extra.set('choice.' + field.getAttribute('data-choice'), field.value);
+        });
+        form.action = action();
+        return;
+      }
+
+      event.preventDefault();
+      errorBox.hidden = true;
+      submit.disabled = true;
+
+      var username = document.getElementById('username').value;
+      var password = document.getElementById('password').value;
+
+      // No-Auth-Challenge keeps a 401 from carrying WWW-Authenticate, which would make the
+      // browser open its own credentials dialog on top of this form.
+      fetch('/authorize/offer?' + forwarded.toString(), {
+        method: 'GET',
+        credentials: 'omit',
+        headers: {
+          'Authorization': 'Basic ' + btoa(unescape(encodeURIComponent(username + ':' + password))),
+          'No-Auth-Challenge': 'true',
+          'Accept': 'application/json'
+        }
+      }).then(function (response) {
+        if (response.status === 401) {
+          showError();
+          submit.disabled = false;
+          return;
+        }
+
+        if (response.status === 403) {
+          return response.json().catch(function () { return {}; }).then(function (body) {
+            showError(body.error_description || 'You cannot obtain a token here.');
+            submit.disabled = false;
+          });
+        }
+
+        if (response.status === 200) {
+          return response.json().then(render).catch(function () { form.submit(); });
+        }
+
+        // 204, or anything unexpected: nothing to choose here. /authorize is the authority
+        // either way, and applies the issuer to whatever this form sends.
+        form.submit();
+      }).catch(function () {
+        form.submit();
+      });
+    });
+
+    function render(offer) {
+      offered = true;
+
+      title.textContent = offer.title || 'One more thing';
+      sub.textContent = offer.message || '';
+      sub.hidden = !offer.message;
+
+      // the credentials stay in the form, hidden: the second step submits them with the choice
+      credentials.hidden = true;
+
+      choicesBox.textContent = '';
+
+      (offer.choices || []).forEach(function (choice) {
+        var id = 'choice-' + choice.name;
+        var label = document.createElement('label');
+        label.setAttribute('for', id);
+        label.textContent = choice.label || choice.name;
+        choicesBox.appendChild(label);
+
+        var value = preselected[choice.name] !== undefined ? preselected[choice.name] : choice.value;
+        var field;
+
+        if (choice.type === 'select') {
+          field = document.createElement('select');
+          (choice.options || []).forEach(function (option) {
+            var o = document.createElement('option');
+            o.value = option.value;
+            o.textContent = option.label || option.value;
+            if (option.value === value) o.selected = true;
+            field.appendChild(o);
+          });
+        } else {
+          field = document.createElement('input');
+          field.type = choice.type === 'number' ? 'number' : 'text';
+          if (choice.min !== undefined) field.min = choice.min;
+          if (choice.max !== undefined) field.max = choice.max;
+          if (value !== undefined && value !== null) field.value = value;
+        }
+
+        field.id = id;
+        field.setAttribute('data-choice', choice.name);
+        field.required = true;
+        choicesBox.appendChild(field);
+      });
+
+      choicesBox.hidden = false;
+      submit.textContent = 'Continue';
+      submit.disabled = false;
+      back.hidden = false;
+
+      var first = choicesBox.querySelector('[data-choice]');
+      if (first) first.focus();
+    }
+
+    back.addEventListener('click', function (event) {
+      event.preventDefault();
+      offered = false;
+      extra = new URLSearchParams();
+      form.action = action();
+      choicesBox.hidden = true;
+      credentials.hidden = false;
+      document.getElementById('password').value = '';
+      title.textContent = 'Sign in';
+      sub.hidden = false;
+      sub.textContent = 'to continue to ';
+      var client = document.createElement('strong');
+      client.id = 'client';
+      try { client.textContent = new URL(redirectUri).host; } catch (e) { client.textContent = params.get('client_id') || 'the application'; }
+      sub.appendChild(client);
+      submit.textContent = 'Sign in';
+      back.hidden = true;
+      document.getElementById('username').focus();
+    });
   })();
 </script>
 </body>

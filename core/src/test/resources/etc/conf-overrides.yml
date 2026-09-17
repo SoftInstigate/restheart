@@ -606,6 +606,12 @@
 # TestMcpScopeProvider.
 /testMcpScopeProvider/enabled: true
 
+# Test provider: stands in for a deployment that issues its own token through the Authorization
+# Code flow (#740). Offers a role and a number of days when ?ti=1 is present, refuses with
+# ?ti=refuse, and stays out of every request without ti — so the OAuth scenarios that predate it
+# keep today's behaviour and only oauth-token-issuer.feature opts in. See TestOAuthTokenIssuer.
+/testOAuthTokenIssuer/enabled: true
+
 # Test interceptor: attaches override-ai-mcp-public-base-url when
 # ?_mcp-baseurl-override=<url> is present, standing in for the Cloud deployment layer
 # that derives a service's base URL from its hostname. Used by McpScopeIT to give two

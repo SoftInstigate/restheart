@@ -32,6 +32,7 @@ import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.*;
+import org.restheart.plugins.security.OAuthTokenIssuer;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.BaseAccount;
 import org.restheart.security.JwtAccount;
@@ -342,6 +343,16 @@ public class AuthTokenService implements ByteArrayService {
                 java.util.Base64.getUrlDecoder().decode(decoded.getPayload()), StandardCharsets.UTF_8);
         var account = new JwtAccount(username, roles, authCodePayload);
 
+        // A code sealed by an OAuthTokenIssuer is the issuer's to answer, and nobody else's. No
+        // fallback to the JWT below when the issuer is gone: that would hand out the wide
+        // credential the issuer was registered to replace, to whoever presents the code.
+        var sealedClaim = decoded.getClaim(OAuthTokenIssuers.CODE_CLAIM);
+
+        if (!sealedClaim.isMissing() && !sealedClaim.isNull()) {
+            handleIssuerGrant(request, response, sealedClaim.asMap(), account);
+            return;
+        }
+
         // issue access token via the configured token manager
         var tokenManagerRecord = this.registry.getTokenManager();
         if (tokenManagerRecord == null) {
@@ -381,6 +392,79 @@ public class AuthTokenService implements ByteArrayService {
         response.setStatusCode(HttpStatus.SC_OK);
 
         LOGGER.debug("Token issued via authorization_code grant for user '{}'", username);
+    }
+
+    /**
+     * Answers a code sealed by the registered {@link OAuthTokenIssuer} with the token it mints.
+     *
+     * <p>The response is the issuer's: {@code refresh_token} only when it gives one, and no
+     * {@code username} or {@code roles}, which are the JWT's business. If no issuer is registered
+     * the grant fails — a sealed code means "not the JWT", and that holds whatever happened to
+     * the issuer between {@code /authorize} and here.
+     */
+    private void handleIssuerGrant(ByteArrayRequest request, ByteArrayResponse response,
+                                   Map<String, Object> sealed, Account account) {
+        var issuer = tokenIssuer();
+
+        if (issuer.isEmpty()) {
+            LOGGER.error("The authorization code was sealed by an OAuthTokenIssuer but none is registered; not falling back to the JWT");
+            sendTokenError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR, "server_error", "no token issuer is registered for this authorization code");
+            return;
+        }
+
+        OAuthTokenIssuer.IssuedToken issued;
+
+        try {
+            issued = issuer.get().issue(sealed == null ? Map.of() : sealed, account, request);
+        } catch (OAuthTokenIssuer.Refusal r) {
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, r.error(), r.description());
+            return;
+        }
+
+        if (issued == null || issued.accessToken() == null || issued.accessToken().isBlank()) {
+            LOGGER.error("The token issuer returned no token for user '{}'", account.getPrincipal().getName());
+            sendTokenError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR, "server_error", "failed to issue token");
+            return;
+        }
+
+        var resp = new JsonObject();
+        resp.add("access_token", new JsonPrimitive(issued.accessToken()));
+        resp.add("token_type", new JsonPrimitive(issued.tokenType() != null ? issued.tokenType() : "Bearer"));
+
+        if (issued.expiresIn() != null) {
+            resp.add("expires_in", new JsonPrimitive(issued.expiresIn()));
+        }
+
+        if (issued.refreshToken() != null && !issued.refreshToken().isBlank()) {
+            resp.add("refresh_token", new JsonPrimitive(issued.refreshToken()));
+        }
+
+        response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
+        response.getHeaders().put(HttpString.tryFromString("Pragma"), "no-cache");
+        response.setContentTypeAsJson();
+        response.setContent(resp.toString());
+        response.setStatusCode(HttpStatus.SC_OK);
+
+        LOGGER.debug("Token issued via authorization_code grant by the token issuer for user '{}'", account.getPrincipal().getName());
+    }
+
+    /** The registered {@link OAuthTokenIssuer}, resolved on first use; {@code null} until then. */
+    private volatile Optional<OAuthTokenIssuer> tokenIssuer;
+
+    private Optional<OAuthTokenIssuer> tokenIssuer() {
+        var local = this.tokenIssuer;
+
+        if (local == null) {
+            synchronized (this) {
+                local = this.tokenIssuer;
+                if (local == null) {
+                    local = OAuthTokenIssuers.discover(registry, this);
+                    this.tokenIssuer = local;
+                }
+            }
+        }
+
+        return local;
     }
 
     /**
