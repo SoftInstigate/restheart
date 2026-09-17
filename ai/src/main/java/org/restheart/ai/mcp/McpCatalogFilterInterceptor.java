@@ -83,6 +83,18 @@ public class McpCatalogFilterInterceptor implements ByteArrayInterceptor {
             return false;
         }
 
+        // Only a successful listing is ours to filter. The MCP transport ends several requests with
+        // an error status and a plain-text body — "Accept must include both …", "mcp-session-id
+        // header required", a failed initialize — set through setStatusCode without the isInError
+        // flag, so the checks above let them through. A listing is always 200; a status that is set
+        // and is not 2xx is one of those error bodies, never JSON we should parse. (-1 means unset,
+        // which the buffered JSON path leaves before its own setStatusCode(200): treat it as ok.)
+        var status = response.getStatusCode();
+
+        if (status != -1 && (status < 200 || status > 299)) {
+            return false;
+        }
+
         // ByteArrayInterceptors are offered every ByteArrayService's response; only /mcp's is ours.
         var pipeline = Request.getPipelineInfo(request.getExchange());
 
@@ -91,7 +103,17 @@ public class McpCatalogFilterInterceptor implements ByteArrayInterceptor {
 
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
-        var body = JsonParser.parseString(new String(response.getContent(), StandardCharsets.UTF_8));
+        com.google.gson.JsonElement body;
+
+        try {
+            body = JsonParser.parseString(new String(response.getContent(), StandardCharsets.UTF_8));
+        } catch (com.google.gson.JsonParseException e) {
+            // A response filter must never turn a response into a 500. A body that is not JSON is
+            // not a listing — it carries no resource names to leak — so there is nothing to filter
+            // and nothing to fail closed over: leave it exactly as the service sent it.
+            LOGGER.debug("mcpCatalogFilterInterceptor: response body is not JSON, leaving it untouched: {}", e.getMessage());
+            return;
+        }
 
         if (!body.isJsonObject() || !body.getAsJsonObject().has("result")) {
             return;
