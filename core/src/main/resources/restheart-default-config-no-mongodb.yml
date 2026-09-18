@@ -32,6 +32,13 @@ ajp-listener:
 tokenBasicAuthMechanism:
   enabled: true
 
+# In-process Authentication
+# Signs in a request RESTHeart dispatched to itself in-process (the MCP call_api tool runs an
+# action of a resource this way, as the MCP session's own account). Inert for every request
+# that arrives on a listener: it only acts on an exchange the in-process dispatcher marked.
+inProcessAuthMechanism:
+  enabled: true
+
 # Basic Authentication
 # See https://restheart.org/docs/security/authentication#basic-authentication
 basicAuthMechanism:

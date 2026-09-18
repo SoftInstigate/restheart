@@ -158,17 +158,27 @@ public class McpAuthorizationIT extends AbstactIT {
     }
 
     @Test
-    public void tokenIssuedForANarrowCaller_carriesOnlyThatCallersRoles() throws Exception {
-        // get_token must never widen privilege: the token is usable exactly where the session is
-        var accessToken = asMcpUser.callTool("get_token", "{}").getString("access_token").getValue();
+    public void callApiForANarrowCaller_runsWithExactlyThatCallersGrants() throws Exception {
+        // call_api must never widen privilege: the in-process request is authorized as the
+        // session's own identity, so it can do exactly what the session can do over REST
+        var size = asMcpUser.callTool("call_api", """
+                {"resource":"%s","action":"size","args":{}}
+                """.formatted(ALLOWED_COLL));
+        assertEquals(200, size.getInt32("status").getValue(), "the caller's own read grant was lost in-process: " + size.toJson());
+        assertTrue(size.getDocument("body").containsKey("_size"), "the API's own body comes back: " + size.toJson());
 
-        var allowed = Unirest.get(ALLOWED_COLL).header("Authorization", "Bearer " + accessToken)
-                .queryString("page", "1").asString();
-        var denied = Unirest.get(DENIED_COLL).header("Authorization", "Bearer " + accessToken)
-                .queryString("page", "1").asString();
+        // mcpuser may GET the allowed collection and nothing else: the write is refused by the
+        // ACL, and the refusal is a result the agent reads, not a tool error
+        var create = asMcpUser.callTool("call_api", """
+                {"resource":"%s","action":"create","args":{"body":{"marker":"smuggled"}}}
+                """.formatted(ALLOWED_COLL));
+        assertEquals(403, create.getInt32("status").getValue(), "call_api granted more than the caller had: " + create.toJson());
 
-        assertEquals(200, allowed.getStatus(), "the issued token lost the caller's own grants");
-        assertEquals(403, denied.getStatus(), "the issued token granted more than the caller had");
+        // the denied collection is not even in this caller's catalog, so it cannot be named
+        var error = asMcpUser.callToolExpectingError("call_api", """
+                {"resource":"%s","action":"size","args":{}}
+                """.formatted(DENIED_COLL));
+        assertTrue(error.contains("unknown"), "a resource the caller may not read must stay unknown to call_api: " + error);
     }
 
     // ----------------------------------------------------------------- helpers

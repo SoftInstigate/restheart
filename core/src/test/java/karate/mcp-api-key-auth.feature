@@ -6,8 +6,8 @@ Feature: an API key (PAT) authenticates against the MCP endpoint
 # own session, and its own tools, and the MCP session is established by an
 # `initialize` call rather than by the first data request. So "a PAT works on
 # /secho" does not, on its own, say that a PAT can open an MCP session, that the
-# roles carried on the key drive what that session may reach, or that a token
-# minted by get_token inherits the key's identity rather than something wider.
+# roles carried on the key drive what that session may reach, or that an action
+# call_api executes runs as the key's identity rather than something wider.
 #
 # Those three are what this file pins, end to end, against a running instance.
 
@@ -114,40 +114,21 @@ Scenario: a session opened with a PAT can list resources
     Then status 200
     And match response.result.resources == '#present'
 
-Scenario: get_token on a PAT-authenticated session issues a token for that identity
-    # The end of the chain: a PAT opens the session, and the session mints a
-    # short-lived token of its own. If the key's identity were not carried
-    # through, this is where it would show.
-    * header Authorization = 'Bearer rhak_valid'
-    * header Accept = mcpAccept
-    Given path '/mcp'
-    And request initialize
-    When method POST
-    Then status 200
-    * def session = responseHeaders['Mcp-Session-Id'][0]
+Scenario: call_api on a PAT-authenticated session runs as the key's identity and roles
+    # The end of the chain: a PAT opens the session, and call_api executes an action
+    # in-process as that session. If the key's identity were not carried through,
+    # this is where it would show. rhak_mcpreader belongs to `admin` but names only
+    # `aclreader`, whose ACL grants GET under /test-mcp-acl and nothing else: a read
+    # must succeed and a write must be refused by the ACL, not by the tool.
+    * header Authorization = 'Basic YWRtaW46c2VjcmV0'
+    Given path 'test-mcp-acl/patcheck'
+    And request { "mcp": { "enabled": true, "description": "PAT identity check." } }
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
 
-    * header Authorization = 'Bearer rhak_valid'
-    * header Accept = mcpAccept
-    * header Mcp-Session-Id = session
-    Given path '/mcp'
-    And request { "jsonrpc": "2.0", "method": "notifications/initialized" }
-    When method POST
-    Then assert responseStatus == 200 || responseStatus == 202
+    # past the catalogue cache TTL (1s in conf-overrides), so the collection is listed
+    * eval java.lang.Thread.sleep(1500)
 
-    # a tool call is answered as an event stream, so this reads the raw body
-    * header Authorization = 'Bearer rhak_valid'
-    * header Accept = mcpAccept
-    * header Mcp-Session-Id = session
-    Given path '/mcp'
-    And request { "jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": { "name": "get_token", "arguments": {} } }
-    When method POST
-    Then status 200
-    And match response contains 'access_token'
-
-Scenario: the token minted from a PAT session carries the key's roles, not the user's
-    # rhak_mcpreader belongs to `admin` but names only `aclreader`. If the session
-    # took its roles from the user behind the key rather than from the key, `admin`
-    # would appear here — and the key would silently confer far more than it says.
     * header Authorization = 'Bearer rhak_mcpreader'
     * header Accept = mcpAccept
     Given path '/mcp'
@@ -164,20 +145,29 @@ Scenario: the token minted from a PAT session carries the key's roles, not the u
     When method POST
     Then assert responseStatus == 200 || responseStatus == 202
 
+    # a tool call is answered as an event stream, so this reads the raw body: the tool's
+    # JSON result is a string inside the JSON-RPC envelope, hence the escaped quotes
     * header Authorization = 'Bearer rhak_mcpreader'
     * header Accept = mcpAccept
     * header Mcp-Session-Id = session
     Given path '/mcp'
-    And request { "jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": { "name": "get_token", "arguments": {} } }
+    And request { "jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": { "name": "call_api", "arguments": { "resource": "http://localhost:8080/test-mcp-acl/patcheck", "action": "size", "args": {} } } }
     When method POST
     Then status 200
-    And match response contains 'aclreader'
+    And match response contains '\\"status\\":200'
 
-    # The decisive half, and behavioural rather than textual: the response also carries
-    # `username`, which for this key is `admin`, so looking for the absence of that string
-    # would fail for the wrong reason. What settles it is what the session can reach. The
-    # test ACL grants /secho to admin and not to aclreader — so admin's own roles are
-    # demonstrably not in play here.
+    * header Authorization = 'Bearer rhak_mcpreader'
+    * header Accept = mcpAccept
+    * header Mcp-Session-Id = session
+    Given path '/mcp'
+    And request { "jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": { "name": "call_api", "arguments": { "resource": "http://localhost:8080/test-mcp-acl/patcheck", "action": "create", "args": { "body": { "owner": "admin" } } } } }
+    When method POST
+    Then status 200
+    And match response contains '\\"status\\":403'
+
+    # The decisive half, and behavioural rather than textual: what the session can reach.
+    # The test ACL grants /secho to admin and not to aclreader — so admin's own roles are
+    # demonstrably not in play for this key.
     * header Authorization = 'Bearer rhak_mcpreader'
     Given path '/secho'
     When method GET

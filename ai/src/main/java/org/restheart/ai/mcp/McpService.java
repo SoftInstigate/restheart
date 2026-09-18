@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.ai.mcp.tools.CachedResourceLookup;
+import org.restheart.ai.mcp.tools.CallApiTool;
 import org.restheart.ai.mcp.tools.HowToCallTool;
 import org.restheart.ai.mcp.tools.ListApisTool;
 import org.restheart.ai.mcp.tools.UnknownActionException;
@@ -50,7 +51,6 @@ import org.restheart.ai.mcp.tools.UnknownResourceException;
 import org.restheart.ai.mcp.tools.ValidationFailedException;
 import org.restheart.ai.mcp.transport.DescriptorRenderer;
 import org.restheart.ai.mcp.validation.ParamValidator;
-import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.exchange.Request;
@@ -65,13 +65,14 @@ import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
+import org.restheart.plugins.mcp.McpResult;
 import org.restheart.plugins.security.DescriptorAuthorization;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
-import org.restheart.plugins.security.JwtIssuer;
 import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.InProcessDispatcher;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,14 +92,20 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import io.modelcontextprotocol.spec.McpSchema.ToolAnnotations;
 import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 import io.undertow.server.HttpServerExchange;
 
 /**
  * RESTHeart's MCP server: exposes exactly three tools — {@code list_apis} (what exists),
- * {@code how_to_call} (how to invoke it) and {@code get_token} (a short-lived credential to
- * invoke it with) — over the MCP Streamable HTTP transport (restheart#615 design principles —
- * "one tool, one model", no per-resource tools: three concerns, not three per resource).
+ * {@code call_api} (execute an action of it, server-side, as the session) and
+ * {@code how_to_call} (a credential-free descriptor, for code the agent writes for the user) —
+ * over the MCP Streamable HTTP transport (restheart#615 design principles — "one tool, one
+ * model", no per-resource tools: three concerns, not three per resource).
+ *
+ * <p>There is one executable road, {@code call_api} (restheart#741): the request runs through
+ * RESTHeart's whole handler chain in-process, with the session's own identity, so no credential
+ * is ever handed to an agent and no agent needs a network path to the API.
  *
  * <p>Transport is {@link UndertowStreamableServerTransportProvider}, ported from
  * Sophia (already running there in production) — session lifecycle, SSE for
@@ -128,15 +135,6 @@ public class McpService implements ByteArrayService {
 
     private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
 
-    /**
-     * Lifetime of a token issued by {@code get_token} — see {@link #callGetToken}. Deliberately
-     * short and not operator-configurable: the whole point is bounding the blast radius of a
-     * leaked token by expiry, not by trusting the agent (or whatever it hands the token to next)
-     * to handle it carefully. It is short enough that it must be fetched right before use, which
-     * is why it is a tool of its own rather than something baked into a descriptor.
-     */
-    private static final Duration EPHEMERAL_TOKEN_TTL = Duration.ofSeconds(60);
-
     @Inject("registry")
     private PluginsRegistry pluginsRegistry;
 
@@ -147,8 +145,13 @@ public class McpService implements ByteArrayService {
     @Inject("config")
     private Map<String, Object> config;
 
+    /** Runs a {@code call_api} request through this server's own handler chain — see {@link CallApiTool}. */
+    @Inject("in-process-dispatcher")
+    private InProcessDispatcher inProcessDispatcher;
+
     private ListApisTool listApisTool;
     private HowToCallTool howToCallTool;
+    private CallApiTool callApiTool;
     private McpJsonMapper jsonMapper;
     private CachedResourceLookup resourceLookup;
     private JsonSchemaValidator schemaValidator;
@@ -191,8 +194,6 @@ public class McpService implements ByteArrayService {
                                 AtomicInteger inFlight) {
     }
 
-    /** Resolved lazily via {@link PluginModelResolver}, not in {@code @OnInit} — see its own javadoc on plugin init ordering. */
-    private final Map<String, JwtIssuer> resolvedJwtIssuers = new ConcurrentHashMap<>();
 
     /**
      * Absolute base URL used for the MCP {@code resources} primitive (#617) — {@code null}
@@ -268,6 +269,7 @@ public class McpService implements ByteArrayService {
         resourceLookup = new CachedResourceLookup(mcpAwareRegistry, Duration.ofSeconds(catalogTtlSeconds), this::onCatalogExpired);
         listApisTool = new ListApisTool(resourceLookup);
         howToCallTool = new HowToCallTool(resourceLookup);
+        callApiTool = new CallApiTool(resourceLookup, howToCallTool, inProcessDispatcher, jsonMapper);
 
         // Without this, a client's open GET/SSE stream (or an in-flight tool-call's SSE
         // response) blocks its worker thread forever inside
@@ -437,8 +439,8 @@ public class McpService implements ByteArrayService {
                 .jsonSchemaValidator(schemaValidator)
                 .capabilities(capabilities())
                 .toolCall(listApisToolDefinition(), this::callListApis)
+                .toolCall(callApiToolDefinition(), this::callCallApi)
                 .toolCall(howToCallToolDefinition(), this::callHowToCall)
-                .toolCall(getTokenToolDefinition(), this::callGetToken)
                 .build();
 
         LOGGER.debug("MCP server created for scope '{}'", scope);
@@ -1675,13 +1677,6 @@ public class McpService implements ByteArrayService {
     }
 
     /**
-     * The {@code /mcp} request being served, for the one thing that needs it: resolving the
-     * per-request {@code account-properties-claims} override (attached by an interceptor, which
-     * runs on {@code /mcp} like on any other request) when {@code get_token} mints a token. A
-     * multi-tenant deployment selects a different claim set per tenant that way, and a token
-     * missing those claims would fail ACL rules written against them.
-     */
-    /**
      * The base URL this request's resource URIs are built from: the tenant's own when an
      * interceptor attached one, the configured value otherwise.
      *
@@ -1846,10 +1841,42 @@ public class McpService implements ByteArrayService {
                         transports, actions with parameter types, auth requirements, examples. On a deployment \
                         with many resources, prefer a filtered call over an unfiltered one.
 
-                        To READ a resource, use resources/read — it returns the data directly. Call this \
-                        before how_to_call only when you need to write, or to invoke something \
-                        resources/read does not cover.\
+                        To READ a resource, use resources/read — it returns the data directly. To do anything \
+                        else (create, update, delete, invoke), read the resource's actions here and then call \
+                        call_api: it executes the action for you, with your session's permissions, and returns \
+                        the result.\
                         """)
+                .build();
+    }
+
+    static McpSchema.Tool callApiToolDefinition() {
+        var properties = new LinkedHashMap<String, Object>();
+        properties.put("resource", schemaProp("string", "Resource URI, as listed by list_apis."));
+        properties.put("action", schemaProp("string", "Action name as declared in the resource's actions map."));
+        properties.put("args", schemaProp("object", "Action arguments — values for params and body declared by the resource."));
+
+        return McpSchema.Tool.builder("call_api", inputSchema(properties, List.of("resource", "action")))
+                .description("""
+                        Executes an action of a known MCP resource — create, update, delete, invoke — and returns \
+                        what the API answered: `status` (the HTTP status code), `headers` and `body` (parsed JSON \
+                        when the API returned JSON). The call runs on the server with your session's own identity \
+                        and permissions: there is no request for you to send and no token to fetch.
+
+                        Dispatch by action — the set of valid actions for a given resource, with their params and \
+                        body_schema, is in the resource's list_apis output. Validate args against them before \
+                        calling.
+
+                        A non-2xx status is a normal result, not a tool error: read `body` for the reason (a 403 \
+                        means your session's role may not do this; a 409 means a constraint of the resource \
+                        rejected the write, see the action's notes in list_apis before retrying).
+
+                        For READS prefer resources/read, which returns the data directly. Streams (change \
+                        streams, SSE, WebSocket) cannot be executed here: subscribe with resources/subscribe, or \
+                        ask how_to_call for a descriptor to use from your own code.\
+                        """)
+                // one tool for every action, so the annotations state the worst case: a host that asks the
+                // user before a destructive tool call asks before every call_api, which is the point
+                .annotations(new ToolAnnotations("Call an API", false, true, false, false, null))
                 .build();
     }
 
@@ -1863,52 +1890,21 @@ public class McpService implements ByteArrayService {
 
         return McpSchema.Tool.builder("how_to_call", inputSchema(properties, List.of("resource", "action")))
                 .description("""
-                        NOT FOR READS. If the resource appears in resources/list, read it with \
-                        resources/read: the data comes back inside the MCP response, with no request \
-                        for you to send and no token to fetch. Use this tool for writes, and for \
-                        anything resources/read does not cover.
+                        NOT FOR EXECUTING. To act on a resource yourself, use call_api: it runs the action on the \
+                        server with your session's permissions and returns the result. To read, use resources/read.
 
-                        Returns a request descriptor (transport, URL, headers, body) for invoking a known MCP \
-                        resource. The tool COMPOSES the request — it does NOT execute it. After receiving the \
-                        response, choose any client appropriate to the descriptor's transport and your host \
-                        environment (HTTP libraries, WebSocket libraries, OS shells with curl/httpie/wscat, \
-                        generated code in any language). The MCP server does not prescribe the tool.
+                        This tool DESCRIBES the HTTP request behind an action — transport, method, URL, headers, \
+                        body — for code you are writing for the user: a frontend, a script, an integration in any \
+                        language. It composes the request and does NOT execute it.
+
+                        The descriptor carries no credential: its Authorization header holds the placeholder `%s`, \
+                        to be replaced in the user's code by the user's own credential (an API key, or a token \
+                        their application obtains). It is stable and safe to keep: the descriptor for, say, \
+                        creating a document in a collection is the same every time apart from the body.
 
                         Dispatch by action — the set of valid actions for a given resource is declared in the \
-                        resource's list_apis output. Validate args against the declared params and body_schema \
-                        before calling.
-
-                        The descriptor is stable and safe to reuse: it carries no credential. Its Authorization \
-                        header holds the placeholder `%s` — call get_token to obtain a token and substitute it just \
-                        before sending the request, not when you receive this descriptor.
-
-                        Call this ONCE PER ACTION SHAPE, not once per request. The descriptor for, say, creating a \
-                        document in a collection is the same every time apart from the body: keep it and reuse it, \
-                        changing only what varies. A repeated write is then two steps, not three — get_token, then \
-                        send — and the second is unavoidable for any short-lived credential. Calling how_to_call \
-                        before every write costs a round trip that buys nothing, and in a contended situation that \
-                        delay can lose you the operation.\
-                        """.formatted(DescriptorRenderer.TOKEN_PLACEHOLDER))
-                .build();
-    }
-
-    static McpSchema.Tool getTokenToolDefinition() {
-        return McpSchema.Tool.builder("get_token", inputSchema(new LinkedHashMap<>(), null))
-                .description("""
-                        Issues a short-lived access token for the current session, to fill in the `%s` placeholder \
-                        of a descriptor returned by how_to_call.
-
-                        The token expires within seconds (see `expires_in` in the response), so call this \
-                        immediately before sending the request — not in advance, and do not store it. Getting a \
-                        fresh one costs nothing; reusing a stale one fails with 401. One token can serve several \
-                        requests made within its window.
-
-                        It carries the identity and roles of the current session and no more, so it can do exactly \
-                        what this session can do. Requires an authenticated session.
-
-                        The response is a JSON object: read `access_token` from it and put it in the descriptor's \
-                        Authorization header in place of the placeholder, as `Bearer <token>`.\
-                        """.formatted(DescriptorRenderer.TOKEN_PLACEHOLDER))
+                        resource's list_apis output.\
+                        """.formatted(DescriptorRenderer.CREDENTIAL_PLACEHOLDER))
                 .build();
     }
 
@@ -1969,62 +1965,62 @@ public class McpService implements ByteArrayService {
     }
 
     /**
-     * Issues the short-lived credential that fills in {@code how_to_call}'s
-     * {@link DescriptorRenderer#TOKEN_PLACEHOLDER}.
+     * Executes an action through {@link CallApiTool} and answers with status, headers and body.
      *
-     * <p>A tool of its own rather than something embedded in the descriptor, because the two are
-     * needed at different moments: a descriptor answers "how do I call this", is stable, and is
-     * worth reusing; a token is worth seconds. Minting it with the descriptor started the clock at
-     * the wrong time — an agent that reasoned, or asked its user, between receiving the descriptor
-     * and sending the request could find the token already dead. Here the window opens when the
-     * caller is about to use it.
-     *
-     * <p>Deliberately never falls back to a token from another source (the configured {@code
-     * TokenManager}'s own, say): those are session-length by design, and quietly handing one over
-     * would reintroduce exactly the long-lived-secret risk this exists to avoid. No issuer or no
-     * authenticated session is an error the caller is told about, not a weaker credential.
+     * <p>A non-2xx status is a result, not an {@code isError} tool failure: the agent has to see
+     * the status and the body the API answered with, exactly as a REST client would. Only a
+     * failure to execute at all (unknown resource or action, invalid arguments, a dispatch
+     * error) is a tool error.
      */
-    private CallToolResult callGetToken(McpSyncServerExchange exchange, CallToolRequest request) {
+    @SuppressWarnings("unchecked")
+    private CallToolResult callCallApi(McpSyncServerExchange exchange, CallToolRequest request) {
         var ctx = exchange.transportContext();
+        var args = request.arguments();
         var principal = principal(ctx);
 
         if (principal == null) {
-            return errorResult("""
-                    no authenticated session: get_token issues a token for the caller's own identity, so the MCP \
-                    session must itself be authenticated\
-                    """);
-        }
-
-        var issuer = PluginModelResolver.resolve(pluginsRegistry, resolvedJwtIssuers, "jwtIssuer", JwtIssuer.class);
-
-        if (issuer.isEmpty()) {
-            return errorResult("""
-                    token issuance is not available on this deployment: the 'jwtIssuer' provider is disabled, or \
-                    the 'jwtConfigProvider' it builds on is not configured\
-                    """);
+            return errorResult("no authenticated session: call_api runs the action as the caller's own identity, so the MCP session must itself be authenticated");
         }
 
         try {
-            // request(ctx), not the bare overload: it carries the per-request claim-set override a
-            // multi-tenant deployment attaches, without which the token would miss the very claims
-            // that deployment's ACL rules match on
-            var token = issuer.get().issue(principal, EPHEMERAL_TOKEN_TTL, request(ctx));
-
-            var result = new LinkedHashMap<String, Object>();
-            // same field names as RESTHeart's own /token endpoint (and OAuth): an agent that has
-            // seen either recognizes this without being told, and expires_in is what tells it
-            // whether the token it holds is still worth sending
-            result.put("access_token", token);
-            result.put("token_type", "Bearer");
-            result.put("expires_in", EPHEMERAL_TOKEN_TTL.toSeconds());
-            result.put("username", principal.getPrincipal().getName());
-            result.put("roles", principal.getRoles());
-
-            return textResult(jsonMapper.writeValueAsString(result));
+            var actionArgs = args.get("args") instanceof Map<?, ?> m ? (Map<String, Object>) m : null;
+            var result = callApiTool.call(
+                    principal, baseUrl(ctx), effectiveScope(ctx),
+                    stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
+                    visibleTo(ctx));
+            return textResult(jsonMapper.writeValueAsString(callApiResult(result)));
+        } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
+            return errorResult(e.getMessage());
+        } catch (java.util.concurrent.TimeoutException e) {
+            return errorResult("the action did not complete in time");
         } catch (Exception e) {
-            LOGGER.error("get_token failed", e);
+            LOGGER.error("call_api failed", e);
             return errorResult("internal error: " + e.getMessage());
         }
+    }
+
+    /** the tool's answer: status, headers as name → first value, body parsed when JSON, truncated past the cap */
+    private Map<String, Object> callApiResult(McpResult result) {
+        var out = new LinkedHashMap<String, Object>();
+        out.put("status", result.status());
+
+        var headers = new LinkedHashMap<String, String>();
+        result.headers().forEach((name, values) -> {
+            if (!values.isEmpty()) {
+                headers.put(name, values.get(0));
+            }
+        });
+        out.put("headers", headers);
+
+        if (result.body().length > CallApiTool.MAX_BODY_BYTES) {
+            out.put("body", new String(result.body(), 0, CallApiTool.MAX_BODY_BYTES, StandardCharsets.UTF_8));
+            out.put("truncated", true);
+            out.put("body_bytes", result.body().length);
+        } else {
+            callApiTool.bodyOf(result).ifPresent(body -> out.put("body", body));
+        }
+
+        return out;
     }
 
     private static CallToolResult textResult(String text) {

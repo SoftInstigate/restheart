@@ -96,6 +96,33 @@ public class McpScopeIT extends AbstactIT {
                 .asEmpty();
     }
 
+    // ------------------------------------------------------------------ call_api
+
+    @Test
+    public void callApiLandsInTheCallersScope_andCannotNameAnotherScopesResource() throws Exception {
+        var mcp = new McpTestClient(BASE, ADMIN_BASIC, query(HOST_A, DB_A));
+        mcp.initialize();
+
+        var created = mcp.callTool("call_api", """
+                {"resource":"%s","action":"create","args":{"body":{"item":"wrench","qty":1}}}
+                """.formatted(HOST_A + "/" + DB_A + "/" + COLL));
+        assertEquals(201, created.getInt32("status").getValue(), "create failed: " + created.toJson());
+
+        var inA = Unirest.get(BASE + "/" + DB_A + "/" + COLL).basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("filter", "{\"item\":\"wrench\"}").asString().getBody();
+        var inB = Unirest.get(BASE + "/" + DB_B + "/" + COLL).basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("filter", "{\"item\":\"wrench\"}").asString().getBody();
+
+        assertTrue(inA.contains("wrench"), "the write did not land in the caller's scope: " + inA);
+        assertFalse(inB.contains("wrench"), "the write leaked into another scope: " + inB);
+
+        // the other scope's resource is not in this session's catalogue, so it cannot be called
+        var error = mcp.callToolExpectingError("call_api", """
+                {"resource":"%s","action":"size","args":{}}
+                """.formatted(HOST_B + "/" + DB_B + "/" + COLL));
+        assertTrue(error.contains("unknown"), "a resource of another scope must be unknown to call_api: " + error);
+    }
+
     // ------------------------------------------------------------------ listing
 
     @Test

@@ -53,6 +53,26 @@ public final class HowToCallTool {
     public Map<String, Object> call(BaseAccount principal, String baseUrl, String scope, String resourceUri, String actionName,
                                     Map<String, Object> args, String transportPreference,
                                     Predicate<McpResource> visible) {
+        var resolved = resolve(principal, baseUrl, scope, resourceUri, actionName, args, visible);
+        return DescriptorRenderer.render(resolved.resource(), actionName, args, transportPreference);
+    }
+
+    /** a resource and one of its actions, found and validated for a call */
+    public record Resolved(McpResource resource, McpResource.Action action) {
+    }
+
+    /**
+     * Finds the resource and the action a call names, and validates the arguments against the
+     * action's params and body schema. Shared by {@code how_to_call}, which then renders a
+     * descriptor, and {@code call_api}, which then executes: the two can never disagree on what a
+     * call is.
+     *
+     * @throws UnknownResourceException if {@code resourceUri} matches no known (visible) resource
+     * @throws UnknownActionException   if {@code actionName} is not declared by the resource
+     * @throws ValidationFailedException if {@code args} fails param or body-schema validation
+     */
+    public Resolved resolve(BaseAccount principal, String baseUrl, String scope, String resourceUri, String actionName,
+                            Map<String, Object> args, Predicate<McpResource> visible) {
         // Same filter as the catalog: composing a request for a resource the caller cannot invoke
         // would hand back, action by action and parameter by parameter, exactly what leaving it out
         // of list_apis was meant to withhold.
@@ -71,6 +91,6 @@ public final class HowToCallTool {
             throw new ValidationFailedException(errors);
         }
 
-        return DescriptorRenderer.render(resource, actionName, args, transportPreference);
+        return new Resolved(resource, action);
     }
 }

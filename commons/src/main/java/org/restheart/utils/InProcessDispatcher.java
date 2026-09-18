@@ -29,11 +29,13 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.xnio.IoUtils;
@@ -43,7 +45,10 @@ import org.xnio.XnioWorker;
 import org.xnio.conduits.ConduitStreamSourceChannel;
 
 import io.undertow.connector.ByteBufferPool;
+import io.undertow.security.idm.Account;
+import io.undertow.server.AbstractServerConnection;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.protocol.http.HttpOpenListener;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
@@ -94,6 +99,15 @@ import io.undertow.util.Methods;
  * client address find one. The exchange also carries the {@link #IN_PROCESS} marker,
  * so that handlers whose work only makes sense for an external client can step aside.
  * </p>
+ *
+ * <p>
+ * The request carries no credential. {@link #dispatchAs} attaches the caller's
+ * {@link Account} to the exchange under {@link #PRINCIPAL}, and an authentication
+ * mechanism that accepts it only on an {@link #IN_PROCESS} exchange signs the request
+ * in: the marker and the account are set by this class's own root handler, so they
+ * cannot arrive from the wire. Nothing is minted, nothing can leak, nothing needs
+ * revoking.
+ * </p>
  */
 public class InProcessDispatcher {
     /** what came back: status code, response headers and the whole body */
@@ -112,6 +126,13 @@ public class InProcessDispatcher {
      */
     public static final AttachmentKey<Boolean> IN_PROCESS = AttachmentKey.create(Boolean.class);
 
+    /**
+     * The identity an in-process request runs with, attached by {@link #dispatchAs} before the
+     * chain runs. Meaningful only together with {@link #IN_PROCESS}: an authentication mechanism
+     * must accept it on a marked exchange and ignore it everywhere else.
+     */
+    public static final AttachmentKey<Account> PRINCIPAL = AttachmentKey.create(Account.class);
+
     private static final InetSocketAddress LOOPBACK = new InetSocketAddress(InetAddress.getLoopbackAddress(), 0);
     private static final int READ_BUFFER_SIZE = 16 * 1024;
 
@@ -125,6 +146,9 @@ public class InProcessDispatcher {
 
     private final ConcurrentLinkedQueue<Lane> idleLanes = new ConcurrentLinkedQueue<>();
     private final AtomicInteger openLanes = new AtomicInteger();
+
+    /** every open lane by the server side of its pipe: how the root handler finds the request in flight on an exchange */
+    private final ConcurrentHashMap<StreamConnection, Lane> lanesByServerSide = new ConcurrentHashMap<>();
 
     /**
      * Lazily resolved variant, for a dispatcher created before the server it dispatches to
@@ -154,13 +178,33 @@ public class InProcessDispatcher {
      * @throws TimeoutException if the response does not complete within the timeout; the lane is dropped
      */
     public Response dispatch(HttpString method, String target, HeaderMap headers, byte[] body) throws IOException, TimeoutException {
+        return dispatch(method, target, headers, body, null);
+    }
+
+    /**
+     * Dispatches one request as {@code principal}: the account is attached to the exchange under
+     * {@link #PRINCIPAL} for the in-process authentication mechanism to sign the request in.
+     *
+     * @see #dispatch(HttpString, String, HeaderMap, byte[])
+     */
+    public Response dispatchAs(Account principal, HttpString method, String target, HeaderMap headers, byte[] body) throws IOException, TimeoutException {
+        return dispatch(method, target, headers, body, principal == null ? null : exchange -> exchange.putAttachment(PRINCIPAL, principal));
+    }
+
+    /**
+     * Dispatches one request, letting {@code onExchange} customize the exchange right before the
+     * handler chain runs (after the loopback address and the {@link #IN_PROCESS} marker are set).
+     *
+     * @see #dispatch(HttpString, String, HeaderMap, byte[])
+     */
+    public Response dispatch(HttpString method, String target, HeaderMap headers, byte[] body, Consumer<HttpServerExchange> onExchange) throws IOException, TimeoutException {
         var lane = idleLanes.poll();
 
         if (lane == null) {
             lane = new Lane();
         }
 
-        var pending = new Pending(method);
+        var pending = new Pending(method, onExchange);
         var keepLane = false;
 
         try {
@@ -220,6 +264,13 @@ public class InProcessDispatcher {
                         exchange.setSourceAddress(LOOPBACK);
                         exchange.setDestinationAddress(LOOPBACK);
                         exchange.putAttachment(IN_PROCESS, Boolean.TRUE);
+
+                        // the request in flight on this lane may have something to attach (its principal)
+                        var onExchange = pendingOf(exchange);
+                        if (onExchange != null) {
+                            onExchange.accept(exchange);
+                        }
+
                         handler.handleRequest(exchange);
                     });
                     openListener = ol;
@@ -230,6 +281,16 @@ public class InProcessDispatcher {
         return ol;
     }
 
+    /** the customizer of the request in flight on the lane this exchange arrived on, or {@code null} */
+    private Consumer<HttpServerExchange> pendingOf(HttpServerExchange exchange) {
+        if (exchange.getConnection() instanceof AbstractServerConnection connection) {
+            var lane = lanesByServerSide.get(connection.getChannel());
+            var pending = lane == null ? null : lane.pending;
+            return pending == null ? null : pending.onExchange;
+        }
+        return null;
+    }
+
     // -------------------------------------------------------------------------
     // a lane: one persistent pipe, one keep-alive server connection, one request at a time
     // -------------------------------------------------------------------------
@@ -237,10 +298,12 @@ public class InProcessDispatcher {
     /** the request in flight on a lane, if any */
     private static final class Pending {
         final ResponseParser parser;
+        final Consumer<HttpServerExchange> onExchange;
         final CompletableFuture<Response> future = new CompletableFuture<>();
 
-        Pending(HttpString method) {
+        Pending(HttpString method, Consumer<HttpServerExchange> onExchange) {
             this.parser = new ResponseParser(method.equals(Methods.HEAD));
+            this.onExchange = onExchange;
         }
     }
 
@@ -260,6 +323,7 @@ public class InProcessDispatcher {
             this.clientSide = pipe.getRightSide();
 
             openLanes.incrementAndGet();
+            lanesByServerSide.put(serverSide, this);
 
             // the server accepts its end of the pipe exactly as it accepts a socket
             openListener().handleEvent(serverSide);
@@ -361,6 +425,7 @@ public class InProcessDispatcher {
                 closed = true;
                 openLanes.decrementAndGet();
                 idleLanes.remove(this);
+                lanesByServerSide.remove(serverSide);
                 IoUtils.safeClose(clientSide);
                 IoUtils.safeClose(serverSide);
             }

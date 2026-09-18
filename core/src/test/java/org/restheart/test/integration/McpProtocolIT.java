@@ -60,8 +60,9 @@ public class McpProtocolIT extends AbstactIT {
                 .collect(java.util.stream.Collectors.toSet());
 
         // "one tool, one model" (#615): three concerns, never one tool per resource. A deployment
-        // exposing hundreds of collections still shows exactly these three.
-        assertEquals(Set.of("list_apis", "how_to_call", "get_token"), tools,
+        // exposing hundreds of collections still shows exactly these three. And one executable
+        // road (#741): call_api runs an action; how_to_call only describes it; nothing mints a token.
+        assertEquals(Set.of("list_apis", "call_api", "how_to_call"), tools,
                 "the MCP tool set is a contract an agent reasons over; got: " + tools);
     }
 
@@ -72,29 +73,39 @@ public class McpProtocolIT extends AbstactIT {
         // the descriptor is credential-free by design, which is what makes it stable and reusable:
         // a token would expire inside an answer an agent is meant to keep
         assertFalse(properties.containsKey("token"),
-                "how_to_call must not take a token; get_token issues one separately");
+                "how_to_call must not take a token: the descriptor is documentation, never a call");
         assertTrue(properties.containsKey("resource") && properties.containsKey("action"));
+
+        // and it must say so: an agent that reads it as the way to execute goes looking for a
+        // credential the server no longer hands out
+        var description = toolNamed("how_to_call").getString("description").getValue();
+        assertTrue(description.contains("call_api"), "how_to_call must point at call_api for execution");
+        assertTrue(description.contains("<your-credential>"), "must quote the placeholder the user's code fills in");
     }
 
     @Test
-    public void getToken_declaresNoArgumentsAndAnnouncesItsShortLife() throws Exception {
-        var tool = toolNamed("get_token");
+    public void callApi_takesResourceActionAndArgs_andWarnsTheHostItWrites() throws Exception {
+        var tool = toolNamed("call_api");
+        var properties = tool.getDocument("inputSchema").getDocument("properties");
 
-        assertTrue(tool.getDocument("inputSchema").getDocument("properties").isEmpty(),
-                "the token is for the current session — there is nothing to parameterize");
+        assertTrue(properties.containsKey("resource") && properties.containsKey("action") && properties.containsKey("args"),
+                "call_api takes exactly what how_to_call takes, so a call is the same thing described or executed");
+        assertFalse(properties.containsKey("token"), "no credential ever crosses into an agent's hands");
 
-        // the description is the only thing telling a model *when* to call this; if it stops
-        // saying the token is short-lived, agents will fetch it once and cache it
+        // the annotations are what a host reads to decide whether to ask the user first
+        var annotations = tool.getDocument("annotations");
+        assertFalse(annotations.getBoolean("readOnlyHint").getValue(), "call_api writes");
+        assertTrue(annotations.getBoolean("destructiveHint").getValue(), "one tool for every action states the worst case");
+
         var description = tool.getString("description").getValue();
-        assertTrue(description.contains("expires_in"), "must point at the field carrying the lifetime");
-        assertTrue(description.contains("<token_from_get_token>"), "must quote the placeholder it fills in");
+        assertTrue(description.contains("status"), "must tell the agent a non-2xx status is a result to read, not a tool error");
     }
 
     @Test
     public void listApis_describesWhenToPreferAFilteredCall() throws Exception {
         var description = toolNamed("list_apis").getString("description").getValue();
 
-        assertTrue(description.contains("how_to_call"),
+        assertTrue(description.contains("call_api"),
                 "list_apis must point at the next step, or an agent stops at the catalog");
     }
 

@@ -21,6 +21,7 @@
 package org.restheart.ai.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -94,40 +95,44 @@ public class McpServiceTest {
 
         @SuppressWarnings("unchecked")
         var properties = (Map<String, Object>) tool.inputSchema().get("properties");
-        // no "token": the descriptor never carries a credential, so it stays stable and reusable —
-        // get_token issues one separately, when the caller is about to send the request
+        // no "token": the descriptor never carries a credential — it is documentation for code
+        // the agent writes for the user, and the user's own credential goes in the placeholder
         assertEquals(Set.of("resource", "action", "args", "transport"), properties.keySet());
     }
 
     @Test
-    public void howToCallToolDefinition_descriptionPointsAtGetToken() {
+    public void howToCallToolDefinition_describesAndPointsAtCallApiForExecution() {
         var description = McpService.howToCallToolDefinition().description();
 
-        assertTrue(description.contains(DescriptorRenderer.TOKEN_PLACEHOLDER),
+        assertTrue(description.contains(DescriptorRenderer.CREDENTIAL_PLACEHOLDER),
                 "must quote the placeholder it actually emits, so the agent can match the two");
-        assertTrue(description.contains("get_token"), "must name the tool that fills the placeholder in");
+        assertTrue(description.contains("call_api"), "must name the tool that executes, or an agent reads this as the way to act");
     }
 
     @Test
-    public void getTokenToolDefinition_takesNoArguments() {
-        var tool = McpService.getTokenToolDefinition();
+    public void callApiToolDefinition_takesWhatHowToCallTakes_andStatesTheWorstCase() {
+        var tool = McpService.callApiToolDefinition();
 
-        assertEquals("get_token", tool.name());
+        assertEquals("call_api", tool.name());
 
         @SuppressWarnings("unchecked")
         var properties = (Map<String, Object>) tool.inputSchema().get("properties");
-        assertTrue(properties.isEmpty(), "the token is for the current session — there is nothing to parameterize");
-        assertNull(tool.inputSchema().get("required"));
+        // the same call, executed rather than described: resource, action, args — and never a token
+        assertEquals(Set.of("resource", "action", "args"), properties.keySet());
+        assertEquals(List.of("resource", "action"), tool.inputSchema().get("required"));
+
+        // one tool for every action: a host that asks before a destructive tool asks before every call
+        assertFalse(tool.annotations().readOnlyHint(), "call_api writes");
+        assertTrue(tool.annotations().destructiveHint(), "must state the worst case, since the action is not known per tool");
     }
 
     @Test
-    public void getTokenToolDefinition_statesTheTokenIsShortLived() {
-        var description = McpService.getTokenToolDefinition().description();
+    public void callApiToolDefinition_tellsTheAgentANon2xxIsAResult() {
+        var description = McpService.callApiToolDefinition().description();
 
-        assertTrue(description.contains(DescriptorRenderer.TOKEN_PLACEHOLDER),
-                "must quote the placeholder it fills in");
-        assertTrue(description.contains("expires_in"),
-                "must point at the field telling the agent how long the token lasts");
+        assertTrue(description.contains("status"), "must name the field carrying the HTTP status");
+        assertTrue(description.contains("403"), "must say a refusal comes back as a status to read, not a tool error");
+        assertTrue(description.contains("resources/read"), "must still point reads at the direct channel");
     }
 
     @Test

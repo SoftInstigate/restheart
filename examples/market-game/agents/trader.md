@@ -69,24 +69,19 @@ same, so expect exit code 3 on anything outside the game.
 
 ## Writing
 
-MCP resources are read-only, so a write is a two-step: ask the server to **compose** the
-request, then send it yourself with a token that carries your identity.
+MCP resources are read-only, so a write is a tool call: `call_api` runs the action on the
+server, as you, and answers with what the API answered.
 
 ```bash
-# 1. how_to_call composes the request. It does NOT send it, and it carries no credential —
-#    the Authorization header comes back with the placeholder <token_from_get_token>.
-./mcp.sh {{PLAYER}} '{{PASSWORD}}' tools/call '{"name":"how_to_call","arguments":{
+# call_api executes the action with YOUR identity and permissions. There is no request for you
+# to send and no token to fetch. The answer carries the HTTP status, the headers and the body.
+./mcp.sh {{PLAYER}} '{{PASSWORD}}' tools/call '{"name":"call_api","arguments":{
    "resource":"{{BASE_URL}}/market_events","action":"create","args":{"body":{ ...your event... }}}}'
-
-# 2. get_token issues a token for YOU. It expires in about a minute, so fetch it immediately
-#    before sending, never in advance.
-./mcp.sh {{PLAYER}} '{{PASSWORD}}' tools/call '{"name":"get_token","arguments":{}}'
-
-# 3. substitute the token into the descriptor's Authorization header and send it with curl.
 ```
 
-The credentials never leave you, and the descriptor is safe to keep — it holds a placeholder,
-not a secret.
+A non-2xx status is a result, not an error of the tool: read the body. `409` is the one that
+matters in this game, and the action's notes in `list_apis` say what each kind of `409` means
+and whether to retry. Your credentials never leave you: nothing is minted, nothing to keep.
 
 ## The rules
 

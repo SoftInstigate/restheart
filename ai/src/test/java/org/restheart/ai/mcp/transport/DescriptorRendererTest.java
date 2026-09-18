@@ -83,7 +83,7 @@ public class DescriptorRendererTest {
 
         @SuppressWarnings("unchecked")
         var headers = (Map<String, Object>) descriptor.get("headers");
-        assertEquals("Bearer " + DescriptorRenderer.TOKEN_PLACEHOLDER, headers.get("Authorization"));
+        assertEquals("Bearer " + DescriptorRenderer.CREDENTIAL_PLACEHOLDER, headers.get("Authorization"));
     }
 
     @Test
@@ -97,14 +97,15 @@ public class DescriptorRendererTest {
 
         @SuppressWarnings("unchecked")
         var headers = (Map<String, Object>) descriptor.get("headers");
-        assertEquals("Bearer " + DescriptorRenderer.TOKEN_PLACEHOLDER, headers.get("Authorization"));
+        assertEquals("Bearer " + DescriptorRenderer.CREDENTIAL_PLACEHOLDER, headers.get("Authorization"));
     }
 
     @Test
-    public void placeholder_namesTheToolThatFillsItIn() {
-        // the descriptor and the token are fetched by different reasoning steps, minutes apart —
-        // a bare "<token>" left the agent to guess where the value comes from
-        assertTrue(DescriptorRenderer.TOKEN_PLACEHOLDER.contains("get_token"));
+    public void placeholder_saysWhoseCredentialGoesThere() {
+        // the descriptor is documentation for code the agent writes for the user: the placeholder
+        // must read as "the user's own", never as something the MCP server would hand out
+        assertTrue(DescriptorRenderer.CREDENTIAL_PLACEHOLDER.contains("your"));
+        assertFalse(DescriptorRenderer.CREDENTIAL_PLACEHOLDER.contains("token"));
     }
 
     @Test

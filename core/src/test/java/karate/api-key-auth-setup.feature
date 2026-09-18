@@ -95,9 +95,9 @@ Scenario: Create the test-apikeys db and seed the keys
 
   # Belongs to `admin`, but names a role admin does not otherwise need. The test
   # ACL grants aclreader path-prefix /mcp, so this key can open an MCP session —
-  # and what get_token then mints must carry `aclreader`, not admin's own roles.
-  # That is what mcp-api-key-auth.feature uses to show the key's roles travel all
-  # the way through the session into the issued token.
+  # and what call_api then executes must run as `aclreader`, not with admin's own
+  # roles. That is what mcp-api-key-auth.feature uses to show the key's roles
+  # travel all the way through the session into the in-process request.
   #
   #   printf 'rhak_mcpreader' | shasum -a 256
   * header Authorization = admin

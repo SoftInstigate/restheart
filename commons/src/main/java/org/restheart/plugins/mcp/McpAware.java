@@ -154,6 +154,38 @@ public interface McpAware {
         return Optional.empty();
     }
 
+    /**
+     * Executes one action of one resource this plugin contributes, with the caller's identity,
+     * and returns the outcome in HTTP terms. This is what the {@code call_api} tool runs.
+     *
+     * <p><b>The default is the right implementation for nearly every plugin, and it is not in
+     * this method.</b> {@link Optional#empty()} means "not mine, use the default": the MCP server
+     * then composes the HTTP request from the resource's own description (method, URL template,
+     * where each argument goes) and runs it through RESTHeart's <em>whole</em> handler chain,
+     * in-process: authentication with the session's identity, authorizers, every request and
+     * response interceptor, the service. Nothing is bypassed, so the action is authorized and
+     * transformed exactly as the same call over REST would be.
+     *
+     * <p>Override this <b>only</b> when the plugin <em>is</em> the whole semantics of the
+     * operation: no interceptor and no data-level ACL would apply to it on the REST path. A
+     * direct implementation is never a cheap optimization: it has to redo by hand whatever the
+     * chain would have done, and keep doing so as the chain evolves. A plugin that owns some
+     * actions and not others answers for its own and returns empty for the rest.
+     *
+     * @param ctx      the calling context: principal, base URL, scope, this plugin's name, URI
+     *                 and configuration
+     * @param resource the resource URI, as {@link #describeMcp(McpContext)} produced it
+     * @param action   an action declared by the resource, already validated by the framework
+     *                 together with {@code args} against the action's params and body schema
+     * @param args     the action arguments: values for declared params, plus an optional
+     *                 {@code body} entry
+     * @return the outcome, or {@link Optional#empty()} to have the framework execute it
+     *         through the handler chain
+     */
+    default Optional<McpResult> execute(McpContext ctx, String resource, String action, Map<String, Object> args) {
+        return Optional.empty();
+    }
+
     private static Map<String, Object> castKeys(Map<?, ?> m) {
         var result = new LinkedHashMap<String, Object>();
         m.forEach((k, v) -> result.put(String.valueOf(k), v));
