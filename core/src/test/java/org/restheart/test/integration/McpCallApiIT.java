@@ -144,6 +144,23 @@ public class McpCallApiIT extends AbstactIT {
     }
 
     @Test
+    public void theInProcessResponse_carriesNoCorsHeaders() throws Exception {
+        // they exist for a browser, and no browser will ever see this response: it is read by the
+        // MCP server itself, one method call away. The REST request keeps them.
+        var result = mcp.callTool("call_api", """
+                {"resource":"%s","action":"size","args":{}}
+                """.formatted(TEST_COLL));
+
+        var headers = result.getDocument("headers");
+        assertFalse(headers.containsKey("Access-Control-Allow-Origin"), "no browser reads this: " + headers.toJson());
+        assertFalse(headers.containsKey("Access-Control-Allow-Credentials"), "no browser reads this: " + headers.toJson());
+
+        var viaRest = Unirest.get(TEST_COLL + "/_size").basicAuth("admin", "secret").asString();
+        assertEquals("*", viaRest.getHeaders().getFirst("Access-Control-Allow-Origin"),
+                "the REST request must still get them");
+    }
+
+    @Test
     public void aStream_isRefusedWithAPointerToTheRightChannel() throws Exception {
         var error = mcp.callToolExpectingError("call_api", """
                 {"resource":"%s","action":"subscribe","args":{}}

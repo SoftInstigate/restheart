@@ -25,6 +25,7 @@ import static org.restheart.exchange.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL
 import static org.restheart.exchange.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static org.restheart.exchange.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
 
+import org.restheart.exchange.Exchange;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.PluginUtils;
@@ -38,6 +39,13 @@ import org.restheart.utils.PluginUtils;
  */
 public class CORSHandler extends PipelinedHandler {
     public static void injectAccessControlAllowHeaders(HttpServerExchange exchange) {
+        // A request RESTHeart dispatched to itself has no browser and no Origin: these headers
+        // exist for a user agent that will never see them. Same condition RequestLogger and
+        // requestsMetricsCollector use to tell an in-process request from a real one.
+        if (Exchange.isInProcess(exchange)) {
+            return;
+        }
+
         var handlingService = PluginUtils.handlingService(PluginsRegistryImpl.getInstance(), exchange);
 
         if (handlingService == null) {
