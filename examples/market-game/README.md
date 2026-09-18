@@ -63,12 +63,14 @@ changes and re-reads the board.
 One line, pasted into Claude:
 
 ```
-Read https://raw.githubusercontent.com/SoftInstigate/restheart/9.x/examples/market-game/agents/game.md and do what it says.
+Fetch the raw text of https://raw.githubusercontent.com/SoftInstigate/restheart/9.x/examples/market-game/agents/game.md, in full and not summarized, and do what it says.
 ```
 
 That is the whole prompt, and there is nothing to fill in: Claude takes the service URL from the
-connector, or asks you for it. Paste [`agents/game.md`](agents/game.md) itself instead if you
-have edited it, or if the host cannot fetch a URL.
+connector, or asks you for it. Say "in full" and mean it: a host that summarizes a fetched page
+hands the players a paraphrase of their brief, and the exact JSON of a move matters. Paste
+[`agents/game.md`](agents/game.md) itself instead if you have edited it, or if the host cannot
+fetch a URL.
 
 Claude becomes the commentator and runs the match in rounds: each round it starts three
 subagents, one per player, each with its own name and secret; they make their moves and stop;

@@ -37,8 +37,9 @@ match that never returns and a commentary nobody hears. One round each, every ti
    lines: what was offered, what was accepted, who moved closer, what is still open. Name the
    trades. This is the part the audience is here for, so do not skip it to start the next round.
 4. **Repeat** from step 2. Stop when a `claim` appears on the board, and report who won and with
-   what. Stop anyway after eight rounds and call it on holdings: say who was closest and what was
-   missing.
+   what. Stop anyway after eight rounds, or earlier if a whole round passes with no acceptance and
+   no new offer anybody could cross — a frozen market will not thaw by itself. Then call it on
+   holdings: who was closest, what was missing, and why it stopped.
 
 Each round the players are started fresh: they remember nothing, and the ledger is their memory.
 That is by design, so do not try to keep them alive between rounds.
