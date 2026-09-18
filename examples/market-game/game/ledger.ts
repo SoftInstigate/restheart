@@ -242,9 +242,10 @@ const newOffers = {
   mcp: {
     enabled: true,
     description:
-      'Live feed of offers as they are published. A different kind of live than ' +
-      'resources/subscribe: this one is a websocket you connect to and it pushes the whole ' +
-      'document, rather than a hint to re-read.',
+      'Live feed of offers as they are published, for a client outside MCP: an agent cannot ' +
+      'open it — ask how_to_call for the descriptor and hand it to a websocket client (websocat, ' +
+      'a browser script). Inside MCP, subscribe to the ledger collection instead: it pushes a ' +
+      'hint to re-read rather than the document itself.',
     event_type: 'Insert events whose document is an offer',
   },
 };
