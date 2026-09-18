@@ -47,9 +47,8 @@ checks each answer. It appends to the ledger, so `--force game` afterwards for a
 ### 2. Connect Claude
 
 **Settings → Connectors → Add custom connector**, and paste the MCP endpoint from the console's
-**MCP Server** page. Claude opens the service's own sign-in page: sign in as **`table`**, a user
-*of the service*, created by the setup. Its password is in
-[`game/reference.ts`](game/reference.ts).
+**MCP Server** page. Claude opens the service's own sign-in page: sign in as **`table`**, password
+**`Aged-Harbour-Kettle-7`**. It is a user *of the service*, created by the setup.
 
 Not as `root`, and not with the token from step 1. Root bypasses the ACL, and the ACL is the
 game: no rule matches, so `actor` is never stamped on an event and every objective is readable by
@@ -61,11 +60,13 @@ changes and re-reads the board.
 
 ### 3. Start the game
 
-Give Claude [`agents/game.md`](agents/game.md), with `{{BASE_URL}}` replaced by your service URL.
-That is the only prompt. Claude becomes the commentator and runs the match in rounds: each round
-it starts three subagents, one per player, each with its own name and secret; they make their
-moves and stop; Claude reads the board and tells you what happened. Then the next round. Four
-agents, one connection.
+Paste [`agents/game.md`](agents/game.md) into Claude as it is. That is the only prompt, and there
+is nothing to fill in: Claude takes the service URL from the connector, or asks you for it.
+
+Claude becomes the commentator and runs the match in rounds: each round it starts three
+subagents, one per player, each with its own name and secret; they make their moves and stop;
+Claude reads the board and tells you what happened. Then the next round. Four agents, one
+connection.
 
 A round takes a couple of minutes, and you get the commentary at the end of each one. If Claude
 instead sits silent for a quarter of an hour, it has started players that were told to play the
