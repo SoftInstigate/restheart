@@ -94,6 +94,26 @@ expect "trader1 claims victory with 3 ore of 10"          409 claimIsEarned     
 echo "== the unique _id"
 expect "trader3 accepts an offer already accepted"        409 - trader3 "$(accept "offer:trader1:$RUN-1")"
 
+echo "== the objectives, which the filter keeps private"
+objective() {
+  curl -s -u "$TABLE_USER:$TABLE_PASSWORD" "$BASE/market_objectives?trader=$1&secret=$2" | python3 -c '
+import json, sys
+try: docs = json.loads(sys.stdin.read())
+except Exception: print("unreadable"); raise SystemExit
+if not isinstance(docs, list): print("unreadable"); raise SystemExit
+if not docs: print("none"); raise SystemExit
+print(",".join(sorted(d.get("player", "?") + ("+secret" if "secret" in d else "") for d in docs)))'
+}
+check() {
+  local label="$1" want="$2" got="$3"
+  if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ok   %-58s %s\n' "$label" "$got"
+  else FAIL=$((FAIL+1)); printf '  FAIL %-58s wanted %s, got %s\n' "$label" "$want" "$got"; fi
+}
+check "trader1 with its own secret reads its own objective" trader1 "$(objective trader1 "$(secret_of trader1)")"
+check "trader1 with trader2's secret reads nothing"         none    "$(objective trader1 "$(secret_of trader2)")"
+check "no secret at all reads nothing"                      none    "$(objective trader1 '')"
+check "trader2 with its own secret reads its own objective" trader2 "$(objective trader2 "$(secret_of trader2)")"
+
 echo "== the board, as trader2"
 board_out="$(curl -s -u "$TABLE_USER:$TABLE_PASSWORD" -w '\n%{http_code}' "$BASE/market_events/_aggrs/board")"
 board_status="${board_out##*$'\n'}"; board_body="${board_out%$'\n'*}"

@@ -44,49 +44,6 @@ export const PLAYERS_SEED = [
   { _id: 'trader3', name: 'Trader Three', motto: 'Cash is a position.' },
 ];
 
-export const OBJECTIVES_META = {
-  mcp: {
-    enabled: true,
-    description:
-      'Your private objective — what you must own to win. The ACL puts a readFilter on this ' +
-      'collection, so this same read returns a different single document to every player and ' +
-      "there is no way to see anyone else's. The filter is applied by the server, identically " +
-      'whether you read over REST or through MCP.',
-    examples: [{ description: 'Read your own objective (you will only ever get yours)', action: 'query', args: {} }],
-  },
-};
-
-/**
- * Cyclic on purpose. Every good is held by two players — one with 12, one with 4 — and each
- * objective asks for the good the other two hold, so nobody is a monopolist and nobody can sit
- * still. Coin is a target, not a token: every objective asks for 70 and everyone starts with 60,
- * so no one can buy their way to their goods and still meet the threshold. There are 180 coin
- * in the game and three thresholds of 70, so at most two players can hold enough at once.
- */
-export const OBJECTIVES_SEED = [
-  {
-    _id: 'objective:trader1',
-    player: 'trader1',
-    goal: 'Own at least 10 ore and at least 70 coin.',
-    requires: [{ item: 'ore', qty: 10 }, { item: 'coin', qty: 70 }],
-    hint: 'trader2 holds most of the ore and wants silk, of which you have only 4 — trader3 has the rest. You start 10 coin short, so you cannot simply buy your way there: sell grain first.',
-  },
-  {
-    _id: 'objective:trader2',
-    player: 'trader2',
-    goal: 'Own at least 10 silk and at least 70 coin.',
-    requires: [{ item: 'silk', qty: 10 }, { item: 'coin', qty: 70 }],
-    hint: 'trader3 holds most of the silk and wants grain, of which you have only 4 — trader1 has the rest. You start 10 coin short, so you cannot simply buy your way there: sell ore first.',
-  },
-  {
-    _id: 'objective:trader3',
-    player: 'trader3',
-    goal: 'Own at least 10 grain and at least 70 coin.',
-    requires: [{ item: 'grain', qty: 10 }, { item: 'coin', qty: 70 }],
-    hint: 'trader1 holds most of the grain and wants ore, of which you have only 4 — trader2 has the rest. You start 10 coin short, so you cannot simply buy your way there: sell silk first.',
-  },
-];
-
 /** The three players. They are not accounts: see {@link TABLE_USER}. */
 export const TRADERS = ['trader1', 'trader2', 'trader3'] as const;
 
@@ -117,3 +74,53 @@ export const SECRETS: Record<string, string> = {
   trader2: 'copper-lantern-drift',
   trader3: 'velvet-anchor-moss',
 };
+
+export const OBJECTIVES_META = {
+  mcp: {
+    enabled: true,
+    description:
+      'Your private objective — what you must own to win. Send your `trader` and `secret` ' +
+      'arguments: the ACL turns them into a readFilter, so this same read returns your one ' +
+      'document and never anybody else\'s, and returns nothing at all if the pair is wrong or ' +
+      'missing. The filter is applied by the server, identically over REST and through MCP.',
+    examples: [{
+      description: 'Read your own objective (you will only ever get yours)',
+      action: 'query',
+      args: { trader: 'trader1', secret: '<your secret>' },
+    }],
+  },
+};
+
+/**
+ * Cyclic on purpose. Every good is held by two players — one with 12, one with 4 — and each
+ * objective asks for the good the other two hold, so nobody is a monopolist and nobody can sit
+ * still. Coin is a target, not a token: every objective asks for 70 and everyone starts with 60,
+ * so no one can buy their way to their goods and still meet the threshold. There are 180 coin
+ * in the game and three thresholds of 70, so at most two players can hold enough at once.
+ */
+export const OBJECTIVES_SEED = [
+  {
+    _id: 'objective:trader1',
+    player: 'trader1',
+    secret: SECRETS.trader1,
+    goal: 'Own at least 10 ore and at least 70 coin.',
+    requires: [{ item: 'ore', qty: 10 }, { item: 'coin', qty: 70 }],
+    hint: 'trader2 holds most of the ore and wants silk, of which you have only 4 — trader3 has the rest. You start 10 coin short, so you cannot simply buy your way there: sell grain first.',
+  },
+  {
+    _id: 'objective:trader2',
+    player: 'trader2',
+    secret: SECRETS.trader2,
+    goal: 'Own at least 10 silk and at least 70 coin.',
+    requires: [{ item: 'silk', qty: 10 }, { item: 'coin', qty: 70 }],
+    hint: 'trader3 holds most of the silk and wants grain, of which you have only 4 — trader1 has the rest. You start 10 coin short, so you cannot simply buy your way there: sell ore first.',
+  },
+  {
+    _id: 'objective:trader3',
+    player: 'trader3',
+    secret: SECRETS.trader3,
+    goal: 'Own at least 10 grain and at least 70 coin.',
+    requires: [{ item: 'grain', qty: 10 }, { item: 'coin', qty: 70 }],
+    hint: 'trader1 holds most of the grain and wants ore, of which you have only 4 — trader2 has the rest. You start 10 coin short, so you cannot simply buy your way there: sell silk first.',
+  },
+];

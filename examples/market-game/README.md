@@ -103,9 +103,12 @@ Do not give the commentator a wider credential instead. It would be the connecti
 therefore the players' too, and a root account bypasses the ACL: no rule would match, `actor`
 would never be stamped, and every move would be refused by the schema that requires it.
 
-The two private things — appending to the ledger, reading your own objective — are not in the
-catalogue, because a catalogue is built by asking the ACL what a caller may read and that question
-carries no arguments. The public game is discovered as usual; the prompt supplies the rest.
+The two private things are written differently on purpose. Appending to the ledger is a
+**predicate**: no pair, no write, and the rule that matched is what stamps `actor`. Reading your
+objective is a **filter**: the rule lets any player ask, and `@qparams['trader']` and
+`@qparams['secret']` are substituted into the query, so a wrong pair returns nothing instead of a
+refusal. A predicate there would hide the collection, since a catalogue is built by asking the ACL
+what a caller may read and that question carries no arguments.
 
 The secrets are in the open, in `game/reference.ts`, to be copied into prompts. Do not read it as
 a pattern: a secret in a query string is read by every request log and by whoever holds the

@@ -3,7 +3,7 @@
  *
  * One account plays for everybody (see TABLE_USER in reference.ts). On its own it reads the
  * public game. Two things are private — appending to the ledger as a player, and reading that
- * player's objective — and each has one rule per player, holding that player's name and secret.
+ * player's objective — and both are decided by the `trader` and `secret` arguments on the call.
  * A call is that player only when both match.
  */
 import { LEDGER } from './ledger.ts';
@@ -30,9 +30,7 @@ export const PERMISSIONS: Record<string, Record<string, unknown>> = {
 
   /**
    * The public game: items, players, the ledger and its aggregations. No secret is asked for
-   * here on purpose. A catalogue is built by asking the ACL what a caller may read, and that
-   * question is asked without arguments, so anything behind a secret would simply not appear in
-   * it. The public half stays discoverable; the two private things are in the prompt.
+   * here on purpose.
    *
    * path-prefix, not path: one collection is reachable at /x, /x/_size, /x/{id} and
    * /x/_aggrs/{name}, and an exact path() would cover only the first. And the prefixes are
@@ -52,8 +50,36 @@ export const PERMISSIONS: Record<string, Record<string, unknown>> = {
     priority: 100,
   },
 
+  /**
+   * Every player issues the same read and gets their own objective, and only that one. The pair
+   * is not in the predicate here but in the filter: `@qparams['trader']` and `@qparams['secret']`
+   * are substituted as *values*, where there is no predicate to parse, and a parameter that was
+   * not sent reads as null and matches no document. So a wrong pair, or none, returns an empty
+   * result rather than a refusal.
+   *
+   * It has to be the filter and not the predicate, because a predicate that needs an argument
+   * makes the collection disappear: a catalogue is built by asking the ACL what the caller may
+   * read, and that question carries no arguments, so the resource would be missing from
+   * `list_apis` and unreachable through `call_api`. Asked without arguments this rule says yes,
+   * so the collection is listed; the filter is what keeps each objective private.
+   *
+   * The stored objective carries the secret it is unlocked with, and `projectResponse` takes it
+   * back out of the answer, so a player never reads their own secret back from the server.
+   */
+  readsOwnObjective: {
+    predicate: `path-prefix('/${OBJECTIVES_COLL}') and method(GET)`,
+    roles,
+    priority: 1000,
+    mongo: {
+      readFilter: { player: "@qparams['trader']", secret: "@qparams['secret']" },
+      projectResponse: { secret: 0 },
+    },
+  },
+
   ...Object.fromEntries(TRADERS.flatMap(player => {
-    // Both values are written here, in one predicate: there is no table of secrets to look up,
+    // The write is a predicate, because it has to refuse rather than return nothing, and because
+    // the rule that matches is what stamps `actor`. Both values are written here, in one
+    // predicate: there is no table of secrets to look up,
     // and nothing is compared at runtime except these two equalities. An argument that is not
     // sent reads as empty and matches neither, so leaving one out is a refusal and not a way past.
     //
@@ -65,18 +91,6 @@ export const PERMISSIONS: Record<string, Record<string, unknown>> = {
     const proves = `equals(%{q,trader}, '${player}') and equals(%{q,secret}, '${SECRETS[player]}')`;
 
     return [
-      /**
-       * Every player issues the same read and gets their own objective. The filter names the
-       * player the secret proved, and a ?filter of the caller's own is intersected with it,
-       * never replaces it.
-       */
-      [`readsObjectiveOf_${player}`, {
-        predicate: `path-prefix('/${OBJECTIVES_COLL}') and method(GET) and ${proves}`,
-        roles,
-        priority: 1000,
-        mongo: { readFilter: { player } },
-      }],
-
       /**
        * Writing is POST to the ledger and nothing else. No PATCH, no DELETE, no other
        * collection: the game has no mutable state to corrupt. Publishing an offer, accepting one

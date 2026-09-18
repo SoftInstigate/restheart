@@ -34,6 +34,9 @@ import { GRAPHQL_APP, graphqlApp } from './game/graphql.ts';
 
 const SCHEMA_ID = 'marketEvent';
 
+/** Ids the ACL no longer defines, deleted on every run. The objectives are filtered now. */
+const RETIRED_PERMISSIONS = ['readsObjectiveOf_trader1', 'readsObjectiveOf_trader2', 'readsObjectiveOf_trader3'];
+
 type Doc = Record<string, unknown>;
 
 // ── Comparing what is there with what is meant ────────────────────────────────
@@ -180,6 +183,25 @@ export default defineSetup('Market game', [
     step(`permission ${id}`, {
       check: ({ service }) => holds(service, `/acl/${id}`, doc),
       apply: ({ service }) => service.putPermission(id, doc),
+    })
+  ),
+
+  /**
+   * Permissions this game used to have. A step only writes what it means to write, so a rule
+   * dropped from acl.ts would otherwise stay on a service that was set up before, matching the
+   * same requests as the rule that replaced it. Removing them here is what makes re-running the
+   * setup enough to bring an old service up to date.
+   */
+  ...RETIRED_PERMISSIONS.map(id =>
+    step(`permission ${id} is gone`, {
+      check: async ({ service }) => (await stored(service, `/acl/${id}`)) === null,
+      async apply({ service }) {
+        try {
+          await service.fetch(`/acl/${id}`, { method: 'DELETE' });
+        } catch (err) {
+          if (!isApiError(err) || err.status !== 404) throw err;
+        }
+      },
     })
   ),
 

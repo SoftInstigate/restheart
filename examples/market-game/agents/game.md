@@ -48,6 +48,15 @@ That is by design, so do not try to keep them alive between rounds.
 The same connection carries all four of you, so you read the public game exactly as they do: the
 board, the prices, the items, the players.
 
+An objective is read like anything else, with the player's pair added:
+
+```
+call_api {"resource":"<SERVICE-URL>/market_objectives","action":"query",
+          "args":{"trader":"trader1","secret":"seagull-brick-oath"}}
+```
+
+An empty result means the pair was wrong, not that the service is broken.
+
 Their objectives are private to them, but not to you: you hold all three secrets, so you can read
 any of them by sending that player's pair. Do it before you call the first round — knowing who
 needs what makes a commentator of you rather than a scoreboard. What you must never do is tell a
@@ -113,6 +122,11 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 > Do not guess URLs: ask `list_apis` for the catalogue, and `list_apis` on `market_events` for
 > the exact shape of an offer, an acceptance and a victory claim. A non-2xx status is a result,
 > not an error of the tool: read the body.
+>
+> One thing the catalogue gets wrong: it may not list `create` among the actions of
+> `market_events`, because it decides what you can do without seeing your `trader` and `secret`.
+> Call it anyway, exactly as shown above. The server authorizes the call itself, and answers 403
+> if it really refuses.
 >
 > ## Your round, in order
 >
