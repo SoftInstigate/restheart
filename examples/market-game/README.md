@@ -5,35 +5,35 @@ Cloud service's MCP server. Each has a secret objective and the wrong pile of go
 the board from Claude.
 
 Nothing here is a program. It is a data model: one collection, a schema, six rules, three
-aggregations, three users and five permissions. RESTHeart Cloud enforces it and publishes it
+aggregations, one account and nine permissions. RESTHeart Cloud enforces it and publishes it
 over MCP, and the agents are the user interface. That is the point of the example: **model the
 domain, and the application is there.**
 
 ## Play it
 
-You need a RESTHeart Cloud service, Node 22.18 or later, and Claude. A free service is fine, but make it a **fresh** one: a service set up for another app carries that app's Guards rules and user schema — a consents gate, for one — and they apply to the traders too.
+You need a RESTHeart Cloud service, Node 22.18 or later, and Claude. A free service is fine, but
+make it a **fresh** one: a service set up for another app carries that app's Guards rules and
+user schema, and they apply to the players too.
 
 ### 1. Set up the service
 
 ```bash
 npm install
 npx rhc login                       # paste a personal access token from your console profile
-
-export TRADER1_PASSWORD='…' TRADER2_PASSWORD='…' TRADER3_PASSWORD='…'
 npx rhc setup --srv <srvId>         # the six characters at the start of your service URL
 ```
 
-This creates the ledger collection, its rules, three aggregations, a change stream, a GraphQL app,
-three trader accounts and their permissions. Pick long passwords: the service checks their
-strength. Wait about 20 seconds after the first run for the permissions to take effect.
+Any token from https://cloud.restheart.com/me/tokens works: there is no role to choose and no
+permission to add. Every token is issued with the `cli` role, and `rhc` uses it to mint an admin
+token for a service you own. It is your **cloud** credential, for the setup only — the agents
+never see it, and sign in with something else entirely.
 
-Run it again any time: it changes only what differs. To wipe the ledger and start a new game:
+That is the whole setup: the ledger and its rules, three aggregations, a change stream, a GraphQL
+app, one account and the permissions. Wait about 20 seconds after the first run for the
+permissions to take effect. Run it again any time, it changes only what differs. To wipe the
+ledger and start a new game: `npx rhc setup --srv <srvId> --force game`.
 
-```bash
-npx rhc setup --srv <srvId> --force game
-```
-
-Then check that the rules refuse what they must, as the three traders:
+Check that the rules refuse what they must:
 
 ```bash
 export MCP_BASE=https://<your service URL>
@@ -44,110 +44,95 @@ It plays the moves that must go through, then an offer over the cap, an over-com
 self-deal, a trade on a missing offer, a false claim of victory and a second acceptance, and
 checks each answer. It appends to the ledger, so `--force game` afterwards for a clean board.
 
-### 2. Watch from Claude
+### 2. Connect Claude
 
-1. **Settings → Connectors → Add custom connector**. Paste the MCP endpoint from the console's
-   **MCP Server** page.
-2. Sign in as `trader1` when Claude asks.
-3. Attach the resource ending in `/market_events/_aggrs/board`. That one read is the whole game.
-4. Subscribe to the resource ending in `/market_events`. Claude is told when the ledger
-   changes, and re-reads the board.
+**Settings → Connectors → Add custom connector**, and paste the MCP endpoint from the console's
+**MCP Server** page. Claude opens the service's own sign-in page: sign in as **`table`**, a user
+*of the service*, created by the setup. Its password is in
+[`game/reference.ts`](game/reference.ts).
 
-### 3. Start the agents
+Not as `root`, and not with the token from step 1. Root bypasses the ACL, and the ACL is the
+game: no rule matches, so `actor` is never stamped on an event and every objective is readable by
+everyone. The players would have no identity and no secrets.
 
-Give each agent [`agents/trader.md`](agents/trader.md) with `{{PLAYER}}`, `{{PASSWORD}}` and
-`{{BASE_URL}}` filled in. The base URL is your service URL, from the console's **Connect** page.
+Then attach the resource ending in `/market_events/_aggrs/board` — that one read is the whole
+game — and subscribe to the one ending in `/market_events`, so Claude is told when the ledger
+changes and re-reads the board.
 
-Each agent needs its own MCP session, because each is a different user of the service.
-[`agents/mcp.sh`](agents/mcp.sh) opens one per user:
+### 3. Start the game
 
-```bash
-export MCP_BASE=https://<your service URL>
-./agents/mcp.sh trader1 "$TRADER1_PASSWORD" tools/call '{"name":"list_apis","arguments":{}}'
+Give Claude [`agents/game.md`](agents/game.md), with `{{BASE_URL}}` replaced by your service URL.
+That is the only prompt. Claude becomes the commentator and runs the match in rounds: each round
+it starts three subagents, one per player, each with its own name and secret; they make their
+moves and stop; Claude reads the board and tells you what happened. Then the next round. Four
+agents, one connection.
+
+A round takes a couple of minutes, and you get the commentary at the end of each one. If Claude
+instead sits silent for a quarter of an hour, it has started players that were told to play the
+whole match rather than one round: stop it and give it the prompt again.
+
+They discover the API, make offers, accept each other's, and one of them eventually claims
+victory. Nobody told them how the game works: they read it from the catalogue, the rules and the
+errors they get back.
+
+## Three players, one connection
+
+A connector carries one identity for the whole application, and this game is built on knowing who
+wrote what: holdings, offers and victory are all computed from the `actor` of each event. Three
+subagents behind one connector would be one player with three voices.
+
+So the account is nobody in particular. On its own it reads the public game and nothing else.
+Two arguments on the call say who is speaking:
+
+```json
+"args": { "trader": "trader1", "secret": "seagull-brick-oath", "body": { ...the event... } }
 ```
 
-The agents discover the API, make offers, accept each other's, and one of them eventually claims
-victory. The board in Claude changes as they go. Nobody told them how the game works: they read
-it from the catalogue, the rules and the errors they get back.
+The permissions hold one rule per player, with that player's name and secret written into the
+same rule, so a call is `trader1` only when both match. The server then stamps `actor: trader1`
+from the rule itself: what a player signs is decided by the secret they proved, not by anything
+they put in the body. Wrong secret, or none, and the call is refused.
+
+**Each subagent is told its own secret and no other.** That is the whole of the separation, and
+it is the part a prompt can carry that a shared connection cannot. The commentator holds all
+three, so it can read any objective and call the match properly; the players cannot read each
+other's.
+
+Do not give the commentator a wider credential instead. It would be the connection's identity,
+therefore the players' too, and a root account bypasses the ACL: no rule would match, `actor`
+would never be stamped, and every move would be refused by the schema that requires it.
+
+The two private things — appending to the ledger, reading your own objective — are not in the
+catalogue, because a catalogue is built by asking the ACL what a caller may read and that question
+carries no arguments. The public game is discovered as usual; the prompt supplies the rest.
+
+The secrets are in the open, in `game/reference.ts`, to be copied into prompts. Do not read it as
+a pattern: a secret in a query string is read by every request log and by whoever holds the
+transcript. When a client can hold a credential of its own, give it an account of its own.
 
 ## How it works
 
-Everything below is configuration in `rhc.setup.ts` and the `game/` folder. There is no server,
-no game loop and no client: the agents read the catalogue, understand the rules from the
-descriptions and the error messages, and play.
+One collection, `market_events`, append-only, the only thing anybody writes to. Four kinds of
+event: `genesis` what a player starts with, `offer` "I give X for Y", `trade` somebody accepted
+one, `claim` "I won". Everything else — who owns what, which offers are open, who is winning — is
+computed from it by aggregations. Nothing is ever updated or deleted.
 
-### One collection, no state
+**Collisions settle themselves.** A trade's `_id` is derived from the offer's, so the second
+player to accept the same offer gets a `409`. A victory claim has the fixed `_id` `win`, so only
+one can exist.
 
-`market_events` is an append-only ledger. It is the only thing anybody writes to.
+**Six rules guard the rest**, each an aggregation that runs inside the write's transaction:
+no negative holdings, no offering more than you hold, no trade without a real offer, no accepting
+your own, no claiming a victory the board does not show, and nothing at all after somebody has
+won. A JSON Schema caps an offer at 3 units or 30 coin, so winning takes several trades.
 
-| Event | Means |
-|---|---|
-| `genesis` | what a player starts with |
-| `offer` | "I give X for Y" |
-| `trade` | somebody accepted an offer |
-| `claim` | "I won" |
+**A `409` says which of three things happened**: `"retryable": true` means two writes collided
+and yours was not applied, send it again; a `"constraint"` means a rule refused it, re-read the
+board; neither means that `_id` exists already, somebody was faster.
 
-Who owns what, which offers are open, who is winning: all of it is computed from the ledger by
-aggregations. Nothing is ever updated or deleted.
-
-**First acceptance wins.** A trade's `_id` is derived from the offer's id. MongoDB refuses a
-duplicate `_id`, so the second player to accept the same offer gets `409`. Same for victory: a
-claim has the fixed `_id` `win`, so only one can exist.
-
-### The rules
-
-Six constraints on the collection, each an aggregation that looks for trouble. They run inside
-the write's transaction, for every writer. A write that breaks one is refused and rolled back.
-
-| Rule | Refuses a write that would leave… |
-|---|---|
-| `noNegativeHoldings` | someone owning less than nothing |
-| `noOverCommitment` | someone with open offers for more than they hold |
-| `tradeSettlesAnOffer` | a trade that accepts no real offer |
-| `noSelfDealing` | a player accepting their own offer |
-| `claimIsEarned` | a victory claim the claimant's goods do not justify |
-| `gameEndsAtTheClaim` | any offer or trade after somebody has won |
-
-A JSON Schema does the per-document checks, and caps an offer at 3 units of a good or 30 coin,
-so winning takes several trades.
-
-### Who sees what
-
-Each agent is a real user of the service: `trader1`, `trader2`, `trader3`, role `trader`.
-
-- `market_objectives` has a read filter on the signed-in user. Everyone reads the same URL and
-  gets only their own objective.
-- On every ledger write the server sets `actor` to the signed-in user and `ts` to now. A player
-  cannot post in someone else's name or backdate an event.
-- Traders can `POST /market_events` and read. Nothing else.
-
-### The three 409s
-
-| Body contains | Meaning | Do |
-|---|---|---|
-| `"retryable": true` | two writes collided, yours was not applied | send it again |
-| `"constraint": "…"`, `"violations": […]` | a rule refused it | read the board, rethink |
-| neither | that `_id` exists: someone accepted first | move on |
-
-### What is exposed over MCP
-
-| Resource | What it is |
-|---|---|
-| `market_events` | the ledger. Subscribe to this |
-| `market_events/_aggrs/board` | holdings, open offers, trades and the winner in one read |
-| `market_events/_aggrs/holdings` | who owns what, optionally for one `player` |
-| `market_events/_aggrs/pricesFor` | trade history for one `item` |
-| `market_events/_streams/newOffers` | a websocket pushing each new offer |
-| `market_items`, `market_players` | the four goods and the three players |
-| `market_objectives` | your objective, and only yours |
-| `graphql/market` | players and their offers in one round trip |
-
-### Why the game does not stall
-
-Every good is held by two players, one with 12 and one with 4, and each objective asks for the
-good the other two hold. Nobody can sit still. Everyone starts with 60 coin and needs 70, and
-there are 180 coin for three thresholds of 70, so at most two players can hold enough at once:
-something always has to be sold.
+**The game cannot stall.** Every good is held by two players, one with 12 and one with 4, and each
+objective asks for what the other two hold. Everyone starts 10 coin short of their own target and
+there is not enough coin for all three, so something always has to be sold.
 
 ## Files
 
@@ -157,12 +142,12 @@ something always has to be sold.
 | `game/schema.ts` | the JSON Schema for ledger events |
 | `game/ledger.ts` | the holdings derivation, the aggregations, the change stream, the endowments |
 | `game/rules.ts` | the six constraints |
-| `game/reference.ts` | items, players, objectives |
-| `game/acl.ts` | the five permissions |
+| `game/reference.ts` | items, players, objectives, the account and the secrets |
+| `game/acl.ts` | the permissions, and the trader/secret pairs |
 | `game/graphql.ts` | the GraphQL app |
-| `agents/trader.md` | the agent's prompt |
-| `agents/mcp.sh` | a per-user MCP client |
-| `agents/smoke.sh` | every rule exercised as the traders, each answer checked |
+| `agents/game.md` | the prompt: a commentator that runs rounds of three subagents |
+| `agents/mcp.sh` | a minimal MCP client, for checking from a terminal |
+| `agents/smoke.sh` | every rule exercised as the three players, each answer checked |
 
 Everything is in the console afterwards: the rules on the **Constraints** page, where **Run**
 tries each against the data; the resources on the **MCP Server** page, under **Test

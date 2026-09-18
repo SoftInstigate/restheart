@@ -13,10 +13,11 @@
  * than as satisfied. The one exception is the ledger itself, which is a game in progress and
  * is never touched unless you ask — see the last step.
  *
- * The trader passwords are the only secrets, named as TRADER1_PASSWORD, TRADER2_PASSWORD and
- * TRADER3_PASSWORD, and only read the first time: an account that exists is left alone.
+ * Nothing has to be exported: there is one account, and its password is in reference.ts with the
+ * players' secrets, in the open, because this is a game. It is read the first time only, since an
+ * account that exists is left alone.
  */
-import { defineSetup, step, fromEnv, isApiError } from '@restheart-cloud/cli';
+import { defineSetup, step, isApiError } from '@restheart-cloud/cli';
 import type { ServiceClient } from '@restheart-cloud/cli';
 
 import { MARKET_EVENT_SCHEMA } from './game/schema.ts';
@@ -26,7 +27,7 @@ import {
   ITEMS_COLL, ITEMS_META, ITEMS_SEED,
   PLAYERS_COLL, PLAYERS_META, PLAYERS_SEED,
   OBJECTIVES_COLL, OBJECTIVES_META, OBJECTIVES_SEED,
-  TRADERS, TRADER_ROLE,
+  TABLE_USER, TABLE_ROLE, TABLE_PASSWORD,
 } from './game/reference.ts';
 import { PERMISSIONS } from './game/acl.ts';
 import { GRAPHQL_APP, graphqlApp } from './game/graphql.ts';
@@ -147,34 +148,27 @@ export default defineSetup('Market game', [
   seeded(PLAYERS_COLL, PLAYERS_SEED),
   seeded(OBJECTIVES_COLL, OBJECTIVES_SEED),
 
-  step('the three trader accounts', {
-    // Presence only, on purpose: a password is set once and never compared, because the
-    // service does not hand it back. To rotate one, force this step with the new value in
-    // the environment.
+  step('the account everybody plays through', {
+    // One account for the three players. Who is speaking is decided per call by the two
+    // arguments the agent sends, not by this account — see TABLE_USER in reference.ts.
+    //
+    // Presence only, on purpose: a password is set once and never compared, because the service
+    // does not hand it back. To rotate it, change it in reference.ts and delete the user.
     async check({ service }) {
-      for (const id of TRADERS) {
-        if (!(await service.userExists(id))) return false;
-      }
-      return true;
+      return await service.userExists(TABLE_USER);
     },
     async apply({ service }) {
-      for (const id of TRADERS) {
-        if (await service.userExists(id)) continue;
-        // The users collection of a cloud service carries the accounts schema, which requires
-        // `_id`, `password`, `roles` and a `profile` with a name and a surname — `_id` in the
-        // body as well as in the path, since a PUT arrives without it otherwise. The profile is
-        // the player's display name split in two, so a trader reads the same everywhere.
-        //
-        // The service checks password strength on this write, with the same rule it applies
-        // to sign-up. A weak one is refused with 400 and the reason; pick something long.
-        const [name, ...surname] = (PLAYERS_SEED.find(p => p._id === id)?.name ?? id).split(' ');
-        await service.createUser(id, {
-          _id: id,
-          password: fromEnv(`${id.toUpperCase()}_PASSWORD`),
-          roles: [TRADER_ROLE],
-          profile: { name, surname: surname.join(' ') || name },
-        });
-      }
+      if (await service.userExists(TABLE_USER)) return;
+
+      // The users collection of a cloud service carries the accounts schema, which requires
+      // `_id`, `password`, `roles` and a `profile` with a name and a surname — `_id` in the body
+      // as well as in the path, since a PUT arrives without it otherwise.
+      await service.createUser(TABLE_USER, {
+        _id: TABLE_USER,
+        password: TABLE_PASSWORD,
+        roles: [TABLE_ROLE],
+        profile: { name: 'The', surname: 'Table' },
+      });
     },
   }),
 

@@ -2,15 +2,23 @@
 # Plays the moves that must work and the moves that must be refused, as the three traders, and
 # checks every answer. Run it after `rhc setup`, and again after every change to the rules.
 #
-#   MCP_BASE=https://<srvId>.<region>.restheart.com \
-#   TRADER1_PASSWORD=… TRADER2_PASSWORD=… TRADER3_PASSWORD=… ./agents/smoke.sh
+#   MCP_BASE=https://<srvId>.<region>.restheart.com ./agents/smoke.sh
 #
 # It appends to the ledger. Start from a fresh game (`rhc setup --srv <id> --force game`) to
 # see the same result twice.
 set -uo pipefail
 
 BASE="${MCP_BASE:?set MCP_BASE to the service URL}"
-: "${TRADER1_PASSWORD:?}" "${TRADER2_PASSWORD:?}" "${TRADER3_PASSWORD:?}"
+# one account plays for everybody; who is speaking is the trader/secret pair on each call
+TABLE_USER=table
+TABLE_PASSWORD='Aged-Harbour-Kettle-7'
+secret_of() {
+  case "$1" in
+    trader1) echo 'seagull-brick-oath' ;;
+    trader2) echo 'copper-lantern-drift' ;;
+    trader3) echo 'velvet-anchor-moss' ;;
+  esac
+}
 RUN="$(date +%s)"          # unique ids per run, so a rerun does not trip over its own offers
 PASS=0; FAIL=0
 BASE="${BASE%/}"
@@ -25,10 +33,11 @@ fi
 
 # Then the one read that tells the systemic failures apart, before ten writes repeat the same
 # answer ten times. Everything below assumes a trader can reach the game at all.
-probe="$(curl -s -o /dev/null -w '%{http_code}' -u "trader1:$TRADER1_PASSWORD" "$BASE/market_objectives")"
+probe="$(curl -s -o /dev/null -w '%{http_code}' -u "$TABLE_USER:$TABLE_PASSWORD" \
+  "$BASE/market_objectives?trader=trader1&secret=$(secret_of trader1)")"
 case "$probe" in
   200) ;;
-  401) echo "trader1 cannot sign in (401): wrong TRADER1_PASSWORD, or the accounts were never created — run rhc setup." >&2; exit 1 ;;
+  401) echo "the table account cannot sign in (401): it was never created — run rhc setup." >&2; exit 1 ;;
   403) echo "trader1 is refused (403): the permissions are not in effect yet. They take up to 20 seconds after rhc setup; try again." >&2; exit 1 ;;
   451) echo "trader1 is blocked (451): this service has a Guards rule — the consents gate of another app's setup — that stops every user who has not accepted its terms, the traders included." >&2
        echo "Use a fresh service for the game, or exempt role 'trader' in that rule (console → Guards)." >&2; exit 1 ;;
@@ -37,9 +46,9 @@ esac
 
 # post <trader> <json> → prints "<status> <body>"
 post() {
-  local who="$1" pw; pw="TRADER${who#trader}_PASSWORD"
-  curl -s -u "$who:${!pw}" -H 'Content-Type: application/json' -w '\n%{http_code}' \
-    -X POST "$BASE/market_events" -d "$2" | python3 -c '
+  local who="$1"
+  curl -s -u "$TABLE_USER:$TABLE_PASSWORD" -H 'Content-Type: application/json' -w '\n%{http_code}' \
+    -X POST "$BASE/market_events?trader=$who&secret=$(secret_of "$who")" -d "$2" | python3 -c '
 import sys; lines = sys.stdin.read().rstrip("\n").split("\n"); print(lines[-1], "".join(lines[:-1]))'
 }
 
@@ -86,7 +95,7 @@ echo "== the unique _id"
 expect "trader3 accepts an offer already accepted"        409 - trader3 "$(accept "offer:trader1:$RUN-1")"
 
 echo "== the board, as trader2"
-board_out="$(curl -s -u "trader2:$TRADER2_PASSWORD" -w '\n%{http_code}' "$BASE/market_events/_aggrs/board")"
+board_out="$(curl -s -u "$TABLE_USER:$TABLE_PASSWORD" -w '\n%{http_code}' "$BASE/market_events/_aggrs/board")"
 board_status="${board_out##*$'\n'}"; board_body="${board_out%$'\n'*}"
 if [ "$board_status" != 200 ]; then
   echo "  cannot read the board: $board_status ${board_body:0:200}"

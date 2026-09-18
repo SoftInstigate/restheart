@@ -87,6 +87,33 @@ export const OBJECTIVES_SEED = [
   },
 ];
 
-/** The three players are the three accounts. Role `trader` is what the ACL grants to. */
+/** The three players. They are not accounts: see {@link TABLE_USER}. */
 export const TRADERS = ['trader1', 'trader2', 'trader3'] as const;
-export const TRADER_ROLE = 'trader';
+
+/**
+ * One account for everybody, because that is what a host gives you: an MCP connector carries a
+ * single identity for the whole application, so three agents behind it are one player with three
+ * voices — and this game is built on knowing who wrote what.
+ *
+ * So the account is nobody in particular. On its own it may read the public game and nothing
+ * else. Which player is speaking comes from two arguments on the call, `trader` and `secret`: the
+ * ACL holds one rule per pair, and a call is that player only when both match. The server then
+ * stamps `actor` from the rule, so what a player signs is decided by the secret they proved and
+ * not by anything they sent.
+ *
+ * Each agent is told its own secret and no other. That is the whole of the separation.
+ *
+ * Everything here is in the open on purpose: it is a game, and these are meant to be copied into
+ * prompts. Read none of it as a pattern. A secret in a query string is read by every request log
+ * and by whoever holds the transcript; when a client can hold a credential of its own, give it an
+ * account of its own.
+ */
+export const TABLE_USER = 'table';
+export const TABLE_ROLE = 'table';
+export const TABLE_PASSWORD = 'Aged-Harbour-Kettle-7';
+
+export const SECRETS: Record<string, string> = {
+  trader1: 'seagull-brick-oath',
+  trader2: 'copper-lantern-drift',
+  trader3: 'velvet-anchor-moss',
+};

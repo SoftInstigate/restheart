@@ -1,20 +1,27 @@
 #!/usr/bin/env bash
-# A minimal MCP client, so an agent can talk to the service's MCP server AS ITSELF.
+# A minimal MCP client, for checking the game from a terminal. The agents use the connector.
 #
-#   MCP_BASE=https://<srvId>.<region>.restheart.com ./mcp.sh <user> <password> <method> [params-json]
+#   MCP_BASE=https://<srvId>.<region>.restheart.com ./mcp.sh <method> [params-json]
 #
-#   ./mcp.sh trader1 '…' tools/list
-#   ./mcp.sh trader1 '…' tools/call     '{"name":"list_apis","arguments":{}}'
-#   ./mcp.sh trader1 '…' resources/read '{"uri":"'"$MCP_BASE"'/market_events/_aggrs/board"}'
+#   ./mcp.sh tools/list
+#   ./mcp.sh tools/call     '{"name":"list_apis","arguments":{}}'
+#   ./mcp.sh resources/read '{"uri":"'"$MCP_BASE"'/market_events/_aggrs/board"}'
 #
-# The point of this script is that the connection is per-identity. A shared MCP connector carries
-# one identity for everybody; three players with three sets of credentials each need their own
-# session, which is what this opens. The session id is cached per user and re-established if the
-# server has forgotten it.
+# One account plays for everybody, so this opens one session. Which player is speaking is decided
+# per call by the `trader` and `secret` arguments — see game/reference.ts:
+#
+#   ./mcp.sh tools/call '{"name":"call_api","arguments":{
+#      "resource":"'"$MCP_BASE"'/market_objectives","action":"query",
+#      "args":{"trader":"trader1","secret":"seagull-brick-oath"}}}'
+#
+# The session id is cached and re-established if the server has forgotten it.
 set -euo pipefail
 
-BASE="${MCP_BASE:?set MCP_BASE to your service URL, the one on the console's Connect page, e.g. https://abc123.eu-central-1-free-1.restheart.com}"
-USER_ID="$1"; PASSWORD="$2"; METHOD="$3"; PARAMS="${4:-{\}}"
+BASE="${MCP_BASE:?set MCP_BASE to your service URL, the one shown on the Connect page in the console, e.g. https://abc123.eu-central-1-free-1.restheart.com}"
+# the account and its password are in game/reference.ts, in the open: it is a game
+USER_ID="table"; PASSWORD="Aged-Harbour-Kettle-7"; METHOD="$1"; PARAMS="${2-}"
+[ -n "$PARAMS" ] || PARAMS='{}'
+
 SESSION_FILE="${TMPDIR:-/tmp}/mcp-session-$USER_ID"
 ACCEPT='Accept: application/json, text/event-stream'
 
