@@ -63,6 +63,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -109,11 +110,13 @@ import org.restheart.utils.RESTHeartDaemon;
 import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.utils.InProcessDispatcher;
 import org.xnio.OptionMap;
 import org.xnio.Xnio;
 
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
+import io.undertow.connector.ByteBufferPool;
 import io.undertow.protocols.ssl.UndertowXnioSsl;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
@@ -147,6 +150,17 @@ public final class Bootstrapper {
     private static GracefulShutdownHandler HANDLERS = null;
     private static Configuration configuration;
     private static Undertow undertowServer;
+    private static ByteBufferPool BYTE_BUFFER_POOL;
+    private static OptionMap UNDERTOW_OPTIONS = OptionMap.EMPTY;
+
+    // PROOF OF CONCEPT: dispatches requests to the handler chain over an XNIO pipe, without a socket.
+    // Resolved lazily on the first dispatch, so it can be injected into plugins before the server is up.
+    private static final InProcessDispatcher IN_PROCESS_DISPATCHER = new InProcessDispatcher(
+            () -> undertowServer.getWorker(),
+            () -> BYTE_BUFFER_POOL,
+            () -> UNDERTOW_OPTIONS,
+            () -> HANDLERS,
+            Duration.ofSeconds(30));
 
     private static final String EXITING = ", exiting...";
     private static final String RESTHEART = "RESTHeart";
@@ -157,6 +171,15 @@ public final class Bootstrapper {
      */
     public static Configuration getConfiguration() {
         return configuration;
+    }
+
+    /**
+     * PROOF OF CONCEPT
+     *
+     * @return the dispatcher that runs a request through this server's handler chain in-process
+     */
+    public static InProcessDispatcher inProcessDispatcher() {
+        return IN_PROCESS_DISPATCHER;
     }
 
     private static void parseCommandLineParameters(final String[] args) {
@@ -646,10 +669,11 @@ public final class Bootstrapper {
 
         // set the byte buffer pool
         // since the undertow default byte buffer is not good for virtual threads
-        builder.setByteBufferPool(new ThreadAwareByteBufferPool(
+        BYTE_BUFFER_POOL = new ThreadAwareByteBufferPool(
                 configuration.coreModule().directBuffers(),
                 configuration.coreModule().bufferSize(),
-                configuration.coreModule().buffersPooling()));
+                configuration.coreModule().buffersPooling());
+        builder.setByteBufferPool(BYTE_BUFFER_POOL);
 
         final var httpsListener = configuration.httpsListener();
         if (httpsListener.enabled()) {
@@ -739,6 +763,9 @@ public final class Bootstrapper {
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
         // allow unescaped chars in URL (otherwise not allowed by default)
         builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
+                configuration.coreModule().allowUnescapedCharsInUrl());
+        // the in-process dispatcher opens its own server connections and needs the same options
+        UNDERTOW_OPTIONS = OptionMap.create(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
                 configuration.coreModule().allowUnescapedCharsInUrl());
 
         Utils.setConnectionOptions(builder, configuration);

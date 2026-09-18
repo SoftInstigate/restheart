@@ -333,6 +333,29 @@ public abstract class Exchange<T> {
     }
 
     /**
+     * Whether this exchange entered the handler chain in-process, through
+     * {@link org.restheart.utils.InProcessDispatcher}, rather than from a listener.
+     * <p>
+     * Only handlers whose work makes sense for an external client alone (request
+     * logging, CORS, metering) should consult this; security, interceptors and
+     * services treat an in-process request exactly like any other.
+     * </p>
+     *
+     * @return true if the request was dispatched in-process
+     */
+    public boolean isInProcess() {
+        return isInProcess(wrapped);
+    }
+
+    /**
+     * @param exchange the HttpServerExchange to check
+     * @return true if the request was dispatched in-process, see {@link #isInProcess()}
+     */
+    public static boolean isInProcess(HttpServerExchange exchange) {
+        return Boolean.TRUE.equals(exchange.getAttachment(org.restheart.utils.InProcessDispatcher.IN_PROCESS));
+    }
+
+    /**
      * Checks if the request content type is form-encoded or multipart for the specified exchange.
      * <p>
      * This static utility method examines the Content-Type header to determine
