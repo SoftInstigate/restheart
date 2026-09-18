@@ -145,8 +145,11 @@ board; neither means that `_id` exists already, somebody was faster.
 
 **The game cannot stall.** Every good is held by two players, one with 12 and one with 4, and each
 objective asks for what the other two hold, so no one is a monopolist and no one can sit still.
-The coin thresholds are deliberately uneven: two players must reach 70 holding 60 and so have to
-sell, while the third only has to stay above 40 and is the one player who can pay cash. Make them
+The thresholds are deliberately uneven, and uneven in both directions. Two players must reach 70
+coin holding 60, so they have to sell. The third only has to stay above 40 and is the one player
+who can pay cash, which is why the market has a buyer at all — and it pays for that privilege with
+the hardest goods target of the three, 14 ore of the 16 in the game, which it cannot reach without
+buying out both holders. Make them
 all short of coin and the market freezes the moment the goods are distributed, because then no
 purchase helps the buyer and gaining coin needs somebody willing to spend it.
 

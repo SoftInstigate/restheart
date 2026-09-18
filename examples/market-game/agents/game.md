@@ -137,7 +137,10 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 >    offers and settles nothing.
 > 3. Publish **one or two** offers, no more: what you can spare for what you still need, priced
 >    against `pricesFor` rather than against your hopes.
-> 4. If the board already shows you hold what your objective asks for, claim victory instead.
+> 4. **Re-read the board after your own moves**, every time. Holdings are derived from the ledger,
+>    so what you now own is not what you remember offering: a trade you accepted may have finished
+>    you. If the board shows you hold what your objective asks for, claim victory at once, in this
+>    round. Waiting to notice next round is how a won game is lost.
 > 5. Report in two or three lines — what you accepted, what you published, what you are still
 >    short of — and stop. You are not finished with the game, you are finished with this round.
 >

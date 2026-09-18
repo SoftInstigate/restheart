@@ -96,7 +96,9 @@ export const OBJECTIVES_META = {
  * objective asks for the good the other two hold, so nobody is a monopolist and nobody can sit
  * still. Coin is a target, not a token, and the three thresholds are not the same: trader2 and
  * trader3 must reach 70 holding 60, so they have to sell; trader1 must only stay above 40, so it
- * is the one player who can pay cash and still win.
+ * is the one player who can pay cash and still win — and pays for that with the hardest goods
+ * target of the three, 14 ore of the 16 that exist, which no amount of bartering reaches without
+ * buying out both holders.
  *
  * That asymmetry is what keeps the endgame alive. With everyone needing more coin than they hold,
  * no purchase ever helps the buyer: the goods change hands in the first few rounds and then the
@@ -111,9 +113,9 @@ export const OBJECTIVES_SEED = [
     _id: 'objective:trader1',
     player: 'trader1',
     secret: SECRETS.trader1,
-    goal: 'Own at least 10 ore and at least 40 coin.',
-    requires: [{ item: 'ore', qty: 10 }, { item: 'coin', qty: 40 }],
-    hint: 'trader2 holds most of the ore and wants silk, of which you have only 4 — trader3 has the rest. You are the rich one: you hold 60 and need only 40, so you can pay cash for the ore and still win, and you are probably the only player at this table who can. Spend the twenty you can spare before somebody sells you the same ore for grain you would rather keep.',
+    goal: 'Own at least 14 ore and at least 40 coin.',
+    requires: [{ item: 'ore', qty: 14 }, { item: 'coin', qty: 40 }],
+    hint: 'There are 16 ore in the game and you need 14 of them: 12 are trader2\'s, who wants silk, and 4 are trader3\'s. You must buy out almost the whole supply, and an offer moves at most 3 at a time, so this takes five deals and you cannot afford a single seller who refuses you. What pays for them is the one advantage you have: you hold 60 coin and need only 40, so you can pay cash where the others cannot. Spend it — the twenty you can spare are exactly what makes the difference, and hoarding them leaves you short of ore instead.',
   },
   {
     _id: 'objective:trader2',
