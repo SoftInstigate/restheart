@@ -120,6 +120,13 @@ Scenario: call_api on a PAT-authenticated session runs as the key's identity and
     # this is where it would show. rhak_mcpreader belongs to `admin` but names only
     # `aclreader`, whose ACL grants GET under /test-mcp-acl and nothing else: a read
     # must succeed and a write must be refused by the ACL, not by the tool.
+    # the database first: on a fresh MongoDB (CI) nothing else has created it
+    * header Authorization = 'Basic YWRtaW46c2VjcmV0'
+    Given path 'test-mcp-acl'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
     * header Authorization = 'Basic YWRtaW46c2VjcmV0'
     Given path 'test-mcp-acl/patcheck'
     And request { "mcp": { "enabled": true, "description": "PAT identity check." } }
