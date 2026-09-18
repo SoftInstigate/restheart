@@ -20,14 +20,11 @@
  */
 package org.restheart.ai.mcp;
 
-import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -62,13 +59,10 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mcp.McpCatalogInvalidator;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpScopeProvider;
-import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.plugins.mcp.McpResult;
 import org.restheart.plugins.security.DescriptorAuthorization;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
@@ -787,7 +781,11 @@ public class McpService implements ByteArrayService {
      * collection registers as a template only, and every real call necessarily satisfies the
      * matcher.
      */
-    private void syncResourceRegistry(ScopedServer scoped, String baseUrl) {
+    // synchronized: two syncs of one registry, each started by its own invalidation, used to
+    // interleave — and the one built from the older catalogue could finish last and remove what
+    // the other had just added. Serialized, each reads the catalogue when it runs, and the last
+    // to run reflects the last invalidation.
+    private synchronized void syncResourceRegistry(ScopedServer scoped, String baseUrl) {
         // The desired state is computed first, before anything is touched. Rebuilding it is the
         // slow part — this runs on catalog expiry, so resourceLookup is always a miss here and
         // goes out to every McpAware plugin (a MongoDB round trip for Mongo's). Clearing the
@@ -1144,7 +1142,7 @@ public class McpService implements ByteArrayService {
                 // security checker), but nothing document-shaped to read — resources/read must
                 // always mean "here is data", never a description; use how_to_call for this one
                 throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS,
-                        "resource has no readable data; use how_to_call to invoke its actions");
+                        "resource has no readable data; use call_api to invoke its actions");
             }
             return readOperation(ctx, principal, base, actionName, queryArgs).orElseThrow(() -> unknownResource(uri));
         }
@@ -1208,15 +1206,16 @@ public class McpService implements ByteArrayService {
      * Documents-mode dispatch for one candidate base resource URI (#617 Phase 2/2b) — {@code
      * Optional.empty()} only when {@code resourceUri} itself matches no catalog resource at all
      * (so the caller can try a different URI-shape interpretation, or finally report "unknown
-     * resource"). Every other outcome — no such {@code readable} action, failed validation, the
-     * plugin declining, or the plugin actually returning content — is a definite result: real
-     * data, or a hard error (never a description of the resource — that's never what {@code
-     * resources/read} returns; use {@code list_apis}/{@code how_to_call} for that).
+     * resource"). Every other outcome — no such {@code readable} action, failed validation, or
+     * what the read answered — is a definite result: real data, or a hard error (never a
+     * description of the resource — that's never what {@code resources/read} returns; use {@code
+     * list_apis} for that).
      *
-     * <p>The decision that authorized this very operation travels into {@link McpContext}, so the
-     * executing plugin applies the same ACL {@code readFilter}/{@code projectResponse} the REST
-     * path would (restheart#722): this read never touches the HTTP interceptor chain, so nothing
-     * else would apply them.
+     * <p>The read runs through {@link CallApiTool#execute}, that is through RESTHeart's whole
+     * handler chain in-process as the session's own account (restheart#741): the ACL, its
+     * {@code readFilter}/{@code projectResponse}, and every interceptor apply exactly as they do
+     * to the same {@code GET} over REST, because it <em>is</em> that request. Nothing is
+     * replicated here.
      */
     private Optional<McpSchema.ReadResourceResult> readOperation(McpTransportContext ctx, BaseAccount principal, String resourceUri, String actionName, Map<String, Object> rawArgs) {
         var resourceOpt = resourceLookup.find(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), resourceUri);
@@ -1228,7 +1227,7 @@ public class McpService implements ByteArrayService {
         var action = resource.actions().get(actionName);
         if (action == null || !action.readable()) {
             throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS,
-                    "resource has no readable data; use how_to_call to invoke its actions");
+                    "resource has no readable data; use call_api to invoke its actions");
         }
 
         var args = coerceArgs(rawArgs, action);
@@ -1242,46 +1241,55 @@ public class McpService implements ByteArrayService {
             throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "resource owner not found");
         }
 
-        var readCtx = new McpContext(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), owner.get().pluginName(), owner.get().pluginUri(),
-                owner.get().pluginConfiguration(), authorization(ctx));
-
         try {
-            return Optional.of(owner.get().instance().readResource(readCtx, resourceUri, actionName, args)
-                    .map(result -> toReadResourceResult(resourceUri, result))
-                    .orElseThrow(() -> readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "failed to read resource")));
+            var result = callApiTool.execute(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), resource, owner.get(), actionName, args, attachedParamsOf(ctx));
+            return Optional.of(toReadResourceResult(resourceUri, result));
         } catch (McpError e) {
             // Already the answer the client gets — rethrown so the catch below does not turn a
             // precise error into a generic one.
             throw e;
+        } catch (ValidationFailedException e) {
+            throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS, e.getMessage());
+        } catch (java.util.concurrent.TimeoutException e) {
+            throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "the read did not complete in time");
         } catch (Exception e) {
-            LOGGER.error("readResource failed for {} action {}", resourceUri, actionName, e);
+            LOGGER.error("resources/read failed for {} action {}", resourceUri, actionName, e);
             throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, e.getMessage());
         }
     }
 
     /**
-     * {@link McpReadResult.RawJson} content is embedded verbatim — it's already correctly
-     * rendered JSON from the plugin's own native format (e.g. {@code MongoMcpAwareImpl} uses
-     * MongoDB Extended JSON, which a generic Jackson mapper can't reproduce for types like {@code
-     * ObjectId}). Anything else is a plain Java object graph the framework's own mapper serializes.
+     * A JSON-RPC error code for a read the ACL refused: not in the MCP list, which has no
+     * "forbidden", and in the range JSON-RPC reserves for a server's own codes. An agent that
+     * sees it knows the resource exists and its session may not read it — the same thing a
+     * {@code 403} tells a REST client — rather than mistaking it for a missing resource or a
+     * malformed request.
      */
-    private McpSchema.ReadResourceResult toReadResourceResult(String uri, McpReadResult result) {
-        try {
-            String text;
-            if (result.content() instanceof McpReadResult.RawJson raw) {
-                text = raw.json();
-            } else {
-                Object payload = result.meta() == null ? result.content() : Map.of("content", result.content(), "meta", result.meta());
-                text = jsonMapper.writeValueAsString(payload);
-            }
-            return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, "application/json", text))).build();
-        } catch (Exception e) {
-            LOGGER.error("Failed to serialize documents-mode read result for {}", uri, e);
-            throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, e.getMessage());
+    static final int FORBIDDEN = -32003;
+
+    /**
+     * What the in-process read answered, as the resource's content — or as the JSON-RPC error
+     * its status stands for. A read is a {@code GET}: its body is the resource, its status says
+     * whether there was one to give, and the two never mix.
+     */
+    private McpSchema.ReadResourceResult toReadResourceResult(String uri, McpResult result) {
+        var status = result.status();
+
+        if (status >= 200 && status < 300) {
+            var mimeType = result.header("Content-Type");
+            mimeType = mimeType == null ? "application/json" : mimeType.split(";", 2)[0].trim();
+            return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, mimeType, result.bodyAsString()))).build();
         }
+
+        var reason = result.body().length == 0 ? "HTTP " + status : result.bodyAsString();
+
+        throw switch (status) {
+            case 404 -> readFailed(McpSchema.ErrorCodes.RESOURCE_NOT_FOUND, "unknown or not MCP-enabled resource: " + uri);
+            case 400, 422 -> readFailed(McpSchema.ErrorCodes.INVALID_PARAMS, reason);
+            case 401, 403 -> readFailed(FORBIDDEN, "forbidden: this session may not read " + uri);
+            default -> readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, reason);
+        };
     }
-
-
 
     /** Parses a raw {@code key=value&...} query string into string-valued args — types are coerced afterward, once the target action's declared param types are known. */
     private static Map<String, Object> parseQueryArgs(String queryString) {
@@ -1367,142 +1375,6 @@ public class McpService implements ByteArrayService {
             // leave the raw string in place; ParamValidator reports the resulting type mismatch
             return raw;
         }
-    }
-
-    // -------------------------------------------------------------------------
-    // Authorization for documents-mode reads (restheart#722)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Overrides the default (identity) — see {@code Service#operationsToAuthorize} — for exactly
-     * one case: a {@code resources/read} JSON-RPC call whose URI resolves to a documents-mode
-     * read (a {@code readable} action on a known resource — which, since only such resources are
-     * ever registered with the resources primitive, is every successful {@code resources/read}).
-     * Every other request handled by {@code /mcp} (tools, {@code initialize}, ...) returns the
-     * identity descriptor unchanged, since none of them execute a real, in-process data operation
-     * server-side that a REST-shaped ACL rule could meaningfully apply to.
-     *
-     * <p>Reads the request body via {@link ByteArrayRequest#getContent()} — safe to do this early
-     * (before {@code handle()} itself parses the same body): {@code ServiceRequest} caches the
-     * parsed content on the exchange after the first read, so this doesn't consume the channel a
-     * second time or interfere with the real dispatch that follows once authorization passes.
-     */
-    @Override
-    public List<RequestDescriptor> operationsToAuthorize(HttpServerExchange exchange) {
-        if (publicBaseUrl != null) {
-            try {
-                var descriptor = documentsModeDescriptor(exchange);
-                if (descriptor != null) {
-                    return List.of(descriptor);
-                }
-            } catch (Exception e) {
-                LOGGER.warn("operationsToAuthorize: failed to inspect /mcp request body, treating as non-documents-mode", e);
-            }
-        }
-        return List.of(RequestDescriptor.of(exchange));
-    }
-
-    /** @return a descriptor for the underlying REST-equivalent operation, or {@code null} if this request isn't a documents-mode-eligible {@code resources/read}. */
-    private RequestDescriptor documentsModeDescriptor(HttpServerExchange exchange) throws Exception {
-        final var baseUrl = effectiveBaseUrl(exchange);
-        // Resolved from the request, exactly as handle() does: this path runs outside the MCP
-        // transport context, and answering with a different scope than the one serving the
-        // session would authorize against a catalogue the caller is not being served.
-        final var scope = resolveScope(Request.of(exchange));
-        var body = ByteArrayRequest.of(exchange).getContent();
-        if (body == null || body.length == 0) {
-            return null;
-        }
-
-        if (!(McpSchema.deserializeJsonRpcMessage(jsonMapper, new String(body, StandardCharsets.UTF_8))
-                instanceof McpSchema.JSONRPCRequest rpcReq) || !"resources/read".equals(rpcReq.method())) {
-            return null;
-        }
-
-        var params = rpcReq.params() instanceof Map<?, ?> m ? m : Map.of();
-        if (!(params.get("uri") instanceof String uri)) {
-            return null;
-        }
-
-        var identity = RequestDescriptor.of(exchange);
-        var principal = identity.principal();
-
-        // Mirrors readTemplateMatch's own resolution exactly (see its javadoc): split the query
-        // string off first, then try an exact resource match before a single-document fallback,
-        // so a combined shape (.../inventory/<id>?jsonMode=...) is still recognized as one
-        // documents-mode operation to authorize, not silently skipped.
-        var queryIdx = uri.indexOf('?');
-        var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
-        var queryParameters = queryIdx >= 0 ? parseQueryParameters(uri.substring(queryIdx + 1)) : Map.<String, Deque<String>>of();
-
-        var resource = resourceLookup.find(principal, baseUrl, scope, base);
-        if (resource.isPresent()) {
-            // A bare or filtered resource read defaults to documents-mode whenever the resource
-            // has a readable action (McpService.readBareResource/readTemplateMatch, #617) — a
-            // real backend read that must be authorized exactly like its REST-equivalent GET.
-            // defaultReadableAction, not a hardcoded "query": an aggregation's readable action is
-            // "execute", not "query" — hardcoding it here previously meant an aggregation's
-            // documents-mode read skipped this check entirely, always falling back to identity.
-            var actionName = defaultReadableAction(resource.get());
-            return actionName == null ? null : withMethodPathAndQuery(identity, pathOf(base), queryParameters);
-        }
-
-        // Same two fallbacks readTemplateMatch uses, in the same order — this descriptor must
-        // describe the operation that will actually run, so what counts as reachable here and
-        // what counts as reachable there cannot drift apart.
-        var lastSlash = base.lastIndexOf('/');
-        if (lastSlash > 0) {
-            var parent = base.substring(0, lastSlash);
-            if (readableActionAtPath(principal, baseUrl, scope, parent, base.substring(lastSlash)) != null
-                    || isReadableAction(principal, baseUrl, scope, parent, "get")) {
-                return withMethodPathAndQuery(identity, pathOf(base), queryParameters);
-            }
-        }
-
-        return null;
-    }
-
-    private boolean isReadableAction(BaseAccount principal, String baseUrl, String scope, String resourceUri, String actionName) {
-        return resourceLookup.find(principal, baseUrl, scope, resourceUri)
-                .map(McpResource::actions)
-                .map(actions -> actions.get(actionName))
-                .map(McpResource.Action::readable)
-                .orElse(false);
-    }
-
-    private static RequestDescriptor withMethodPathAndQuery(RequestDescriptor identity, String path, Map<String, Deque<String>> queryParameters) {
-        return new RequestDescriptor(identity.principal(), "GET", path, queryParameters,
-                identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme(),
-                identity.attachedParams());
-    }
-
-    private static String pathOf(String absoluteUri) {
-        try {
-            return new URI(absoluteUri).getPath();
-        } catch (Exception e) {
-            return absoluteUri;
-        }
-    }
-
-    private static Map<String, Deque<String>> parseQueryParameters(String queryString) {
-        var result = new LinkedHashMap<String, Deque<String>>();
-        for (var pair : queryString.split("&")) {
-            if (pair.isEmpty()) {
-                continue;
-            }
-            var eq = pair.indexOf('=');
-            var key = URLDecoder.decode(eq >= 0 ? pair.substring(0, eq) : pair, StandardCharsets.UTF_8);
-            var value = URLDecoder.decode(eq >= 0 ? pair.substring(eq + 1) : "", StandardCharsets.UTF_8);
-
-            // Dropped for the same reason as in parseQueryArgs, and it has to be the same reason:
-            // this builds the descriptor an ACL is evaluated against, so it must describe the
-            // operation that will actually run. A parameter ignored at execution but present here
-            // would let a predicate match on something the request does not really carry.
-            if (!value.isEmpty()) {
-                result.computeIfAbsent(key, k -> new ArrayDeque<>()).add(value);
-            }
-        }
-        return result;
     }
 
     // -------------------------------------------------------------------------
@@ -1694,9 +1566,9 @@ public class McpService implements ByteArrayService {
     }
 
     /**
-     * The same, for {@code operationsToAuthorize}: it runs before the service, with the exchange
-     * and no transport context. Resolving with the wrong base would fail to identify the resource
-     * the URI names, and an authorization decision would then be taken about the wrong thing.
+     * The same, from the exchange: for {@link #catalogVisibility}, which runs outside the MCP
+     * transport context. Resolving with the wrong base would fail to identify the resource the URI
+     * names.
      */
     private String effectiveBaseUrl(HttpServerExchange exchange) {
         try {
@@ -1711,22 +1583,10 @@ public class McpService implements ByteArrayService {
         return ctx.get(CTX_REQUEST) instanceof Request<?> r ? r : null;
     }
 
-    /**
-     * The decision {@code AuthorizersHandler} took for this request's documents-mode operation.
-     *
-     * <p>{@code null} whenever the request wasn't authorized through a descriptor — a {@code
-     * secured: false} deployment, or an authorizer that resolves no permissions. That is not a
-     * gap: there is no ACL entry behind such a request, so there is no filter to apply either.
-     */
-    private static Decision authorization(McpTransportContext ctx) {
+    /** the parameters interceptors attached to the {@code /mcp} request, to travel with an in-process one — see {@link CallApiTool} */
+    private static Map<String, Object> attachedParamsOf(McpTransportContext ctx) {
         var request = request(ctx);
-        if (request == null) {
-            return null;
-        }
-        var decisions = request.getExchange().getAttachment(DescriptorAwareAuthorizer.AUTHORIZED_OPERATIONS);
-        // exactly one, since operationsToAuthorize() returns a single descriptor for the single
-        // documents-mode read this request performs
-        return decisions != null && decisions.size() == 1 ? decisions.get(0) : null;
+        return request == null ? null : request.attachedParams();
     }
 
     /**
@@ -1870,9 +1730,11 @@ public class McpService implements ByteArrayService {
                         means your session's role may not do this; a 409 means a constraint of the resource \
                         rejected the write, see the action's notes in list_apis before retrying).
 
-                        For READS prefer resources/read, which returns the data directly. Streams (change \
-                        streams, SSE, WebSocket) cannot be executed here: subscribe with resources/subscribe, or \
-                        ask how_to_call for a descriptor to use from your own code.\
+                        For READS prefer resources/read, which returns the data directly. A change stream (SSE, \
+                        WebSocket) is neither executable here nor subscribable: you cannot open it yourself. To \
+                        follow changes, subscribe to the collection it watches (or an aggregation over it) with \
+                        resources/subscribe and re-read on notifications/resources/updated. how_to_call describes \
+                        the stream for an external client the user runs (websocat, curl -N, a browser script).\
                         """)
                 // one tool for every action, so the annotations state the worst case: a host that asks the
                 // user before a destructive tool call asks before every call_api, which is the point
@@ -1893,9 +1755,12 @@ public class McpService implements ByteArrayService {
                         NOT FOR EXECUTING. To act on a resource yourself, use call_api: it runs the action on the \
                         server with your session's permissions and returns the result. To read, use resources/read.
 
-                        This tool DESCRIBES the HTTP request behind an action — transport, method, URL, headers, \
+                        This tool DESCRIBES the request behind an action — transport, method, URL, headers, \
                         body — for code you are writing for the user: a frontend, a script, an integration in any \
-                        language. It composes the request and does NOT execute it.
+                        language. It composes the request and does NOT execute it. For a change stream it is the \
+                        only thing MCP offers: the stream is neither executable nor subscribable, and the \
+                        descriptor is what the user opens with an external client (websocat, curl -N, a browser \
+                        script).
 
                         The descriptor carries no credential: its Authorization header holds the placeholder `%s`, \
                         to be replaced in the user's code by the user's own credential (an API key, or a token \
@@ -1987,7 +1852,7 @@ public class McpService implements ByteArrayService {
             var result = callApiTool.call(
                     principal, baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
-                    visibleTo(ctx));
+                    visibleTo(ctx), attachedParamsOf(ctx));
             return textResult(jsonMapper.writeValueAsString(callApiResult(result)));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());

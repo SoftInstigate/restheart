@@ -71,11 +71,9 @@ public class McpAuthorizationIT extends AbstactIT {
         seedCollection(ALLOWED_DB, ALLOWED_COLL, "visible");
         seedCollection(DENIED_DB, DENIED_COLL, "classified");
 
-        // past CachedResourceLookup's TTL, so both collections are in the catalog
-        Thread.sleep(1_500);
-
         asMcpUser = new McpTestClient(BASE, MCPUSER_BASIC);
         asMcpUser.initialize();
+        asMcpUser.awaitResource(ALLOWED_COLL);
     }
 
     @Test
@@ -94,17 +92,19 @@ public class McpAuthorizationIT extends AbstactIT {
         var restStatus = restGetStatus(DENIED_COLL + "?page=1");
         assertEquals(403, restStatus, "precondition: mcpuser should be refused the denied collection over REST");
 
-        var response = asMcpUser.rawRpc("resources/read", """
+        var envelope = asMcpUser.rpc("resources/read", """
                 {"uri":"%s?page=1"}
                 """.formatted(DENIED_COLL));
 
-        // the denial lands at the HTTP layer, before JSON-RPC: authorization runs on the
-        // descriptor McpService derives, so the whole call is refused rather than answered with
-        // an error payload
-        assertEquals(403, response.statusCode(),
-                "REST denied this read but MCP did not — the ACL bridge is not holding: " + response.body());
-        assertFalse(response.body().contains("classified"),
-                "denied data leaked through resources/read: " + response.body());
+        // the read runs through the handler chain in-process (#741), so the ACL refuses it there
+        // exactly as it refuses the GET, and the refusal comes back as a JSON-RPC error: no
+        // descriptor is derived, nothing is replicated, and nothing at the HTTP layer knows
+        assertTrue(envelope.containsKey("error"),
+                "REST denied this read but MCP did not — the in-process ACL is not holding: " + envelope.toJson());
+        assertEquals(-32003, envelope.getDocument("error").getInt32("code").getValue(),
+                "a refused read must say it was refused, not that the resource is missing: " + envelope.toJson());
+        assertFalse(envelope.toJson().contains("classified"),
+                "denied data leaked through resources/read: " + envelope.toJson());
     }
 
     @Test
@@ -139,10 +139,10 @@ public class McpAuthorizationIT extends AbstactIT {
         assertTrue(uris.contains(ALLOWED_COLL),
                 "the catalog hid a resource this caller may read, so it is denying rather than filtering; got " + uris);
 
-        var response = asMcpUser.rawRpc("resources/read", """
+        var envelope = asMcpUser.rpc("resources/read", """
                 {"uri":"%s?page=1"}
                 """.formatted(DENIED_COLL));
-        assertEquals(403, response.statusCode(), "hidden from the catalog, and reading it must still be refused");
+        assertTrue(envelope.containsKey("error"), "hidden from the catalog, and reading it must still be refused: " + envelope.toJson());
     }
 
     @Test

@@ -239,8 +239,8 @@ public final class McpResource {
         }
 
         /**
-         * Marks this action servable by {@code resources/read} (#617) — the framework calls
-         * {@code McpAware.readResource(...)} for it. Only a resource with at least one such
+         * Marks this action servable by {@code resources/read} (#617) — the framework runs
+         * it through {@code McpAware.execute(...)} for it, in-process, as the caller. Only a resource with at least one such
          * action is ever registered with the MCP resources primitive at all (a resource with
          * none stays reachable through {@code list_apis}/{@code how_to_call} only), since {@code
          * resources/read} must always return real data. Only ever set on a safe/idempotent,

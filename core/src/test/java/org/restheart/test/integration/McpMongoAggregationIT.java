@@ -84,12 +84,9 @@ public class McpMongoAggregationIT extends AbstactIT {
             Unirest.post(TEST_COLL).basicAuth("admin", "secret").contentType("application/json").body(doc).asEmpty();
         }
 
-        // see McpGraphqlAppIT: wait past CachedResourceLookup's TTL so this class's own
-        // just-created resource isn't served from a stale cache entry
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
+        mcp.awaitResource(AGGR_URI);
     }
 
     @Test

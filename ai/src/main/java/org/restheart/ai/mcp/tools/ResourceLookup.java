@@ -57,7 +57,7 @@ final class ResourceLookup {
     /**
      * Same computation as {@link #all}, additionally tracking which {@link RegisteredMcpAware}
      * produced each {@link McpResource} — needed to dispatch a documents-mode {@code
-     * resources/read} to the right plugin's {@code readResource(...)} (see #617).
+     * resources/read} to the right plugin, whose {@code execute(...)} runs it (see #617, #741).
      */
     static Catalog catalog(McpAwareRegistry registry, BaseAccount principal, String baseUrl, String scope) {
         var resources = new ArrayList<McpResource>();

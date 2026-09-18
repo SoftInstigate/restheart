@@ -91,12 +91,9 @@ public class McpMongoCollectionIT extends AbstactIT {
                 .asEmpty();
         assertTrue(resp.getStatus() == 200 || resp.getStatus() == 201, "collection setup failed with status " + resp.getStatus());
 
-        // see McpGraphqlAppIT: wait past CachedResourceLookup's TTL so this class's own
-        // just-created resource isn't served from a stale cache entry
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
+        mcp.awaitResource(TEST_COLL);
     }
 
     @Test

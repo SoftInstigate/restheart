@@ -126,9 +126,6 @@ Scenario: call_api on a PAT-authenticated session runs as the key's identity and
     When method PUT
     Then assert responseStatus == 201 || responseStatus == 200
 
-    # past the catalogue cache TTL (1s in conf-overrides), so the collection is listed
-    * eval java.lang.Thread.sleep(1500)
-
     * header Authorization = 'Bearer rhak_mcpreader'
     * header Accept = mcpAccept
     Given path '/mcp'

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.function.Predicate;
 
 import org.restheart.ai.mcp.RegisteredMcpAware;
 import org.restheart.ai.mcp.transport.DescriptorRenderer;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResult;
@@ -45,19 +47,26 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 
 /**
- * The {@code call_api} tool: executes one action of one resource, server-side, with the identity
- * of the MCP session, and returns the outcome in HTTP terms.
+ * Executes one action of one resource, server-side, with the identity of the MCP session, and
+ * returns the outcome in HTTP terms. The {@code call_api} tool and {@code resources/read} both
+ * end here: one executable road (restheart#741).
  *
- * <p>Resolution and validation are {@link HowToCallTool#resolve}'s, so a call is the same thing
- * whether it is described or executed. Execution is the owning plugin's
+ * <p>Resolution and validation for the tool are {@link HowToCallTool#resolve}'s, so a call is the
+ * same thing whether it is described or executed. Execution is the owning plugin's
  * {@link org.restheart.plugins.mcp.McpAware#execute} if it claims the action, else the default
  * that {@code execute}'s javadoc describes: the request {@link DescriptorRenderer} would have
  * handed the agent is composed here and run through RESTHeart's whole handler chain by
  * {@link InProcessDispatcher}, as the session's account. Authentication, authorizers,
  * interceptors and the service see an ordinary request.
  *
+ * <p>The outer {@code /mcp} request's attached parameters travel with the in-process one: the
+ * per-request overrides a deployment attaches (a tenant's users database, an ACL database, a
+ * claim set) describe the caller, not the transport, and the in-process request is the same
+ * caller's. An interceptor that attaches them from the request itself still runs and still wins.
+ *
  * <p>Only HTTP actions are executable: a stream (SSE, WebSocket) has no single response to
- * return, and {@code resources/subscribe} already covers change streams inside MCP.
+ * return. Following changes inside MCP is {@code resources/subscribe} on the collection the
+ * stream watches, which is subscribable; the stream itself is not.
  */
 public final class CallApiTool {
     /** the tool refuses bodies larger than this inside the MCP response; the rest is truncated and flagged */
@@ -76,6 +85,8 @@ public final class CallApiTool {
     }
 
     /**
+     * The {@code call_api} tool: resolves and validates the call, then executes it.
+     *
      * @throws UnknownResourceException  if {@code resourceUri} matches no known (visible) resource
      * @throws UnknownActionException    if {@code actionName} is not declared by the resource
      * @throws ValidationFailedException if {@code args} fails validation, or the action is not executable
@@ -83,30 +94,49 @@ public final class CallApiTool {
      * @throws TimeoutException          if the in-process dispatch does not complete in time
      */
     public McpResult call(BaseAccount principal, String baseUrl, String scope, String resourceUri, String actionName,
-                          Map<String, Object> args, Predicate<McpResource> visible) throws IOException, TimeoutException {
+                          Map<String, Object> args, Predicate<McpResource> visible, Map<String, Object> attachedParams)
+            throws IOException, TimeoutException {
         var resolved = resolver.resolve(principal, baseUrl, scope, resourceUri, actionName, args, visible);
 
         var owner = lookup.findOwner(principal, baseUrl, scope, resourceUri)
                 .orElseThrow(() -> new UnknownResourceException(resourceUri));
 
-        // the plugin's own implementation first, for the rare plugin that is the whole semantics
-        // of the operation; empty means "use the default", which is nearly always the answer
-        var own = owner.instance().execute(context(principal, baseUrl, scope, owner), resourceUri, actionName, args);
+        return execute(principal, baseUrl, scope, resolved.resource(), owner, actionName, args, attachedParams);
+    }
+
+    /**
+     * Executes an already resolved and validated action: the plugin's own implementation first,
+     * for the rare plugin that is the whole semantics of the operation, else the default
+     * in-process dispatch through the handler chain.
+     *
+     * @throws ValidationFailedException if the action is a stream, which cannot be carried
+     * @throws IOException               if the in-process dispatch fails
+     * @throws TimeoutException          if the in-process dispatch does not complete in time
+     */
+    public McpResult execute(BaseAccount principal, String baseUrl, String scope, McpResource resource, RegisteredMcpAware owner,
+                             String actionName, Map<String, Object> args, Map<String, Object> attachedParams)
+            throws IOException, TimeoutException {
+        var ctx = new McpContext(principal, baseUrl, scope, owner.pluginName(), owner.pluginUri(), owner.pluginConfiguration());
+
+        var own = owner.instance().execute(ctx, resource.uri(), actionName, args);
 
         if (own.isPresent()) {
             return own.get();
         }
 
-        var descriptor = DescriptorRenderer.render(resolved.resource(), actionName, args, null);
+        var descriptor = DescriptorRenderer.render(resource, actionName, args, null);
         var request = InProcessRequest.of(descriptor, jsonMapper);
 
-        var response = dispatcher.dispatchAs(principal, request.method(), request.target(), request.headers(), request.body());
+        var response = dispatcher.dispatch(request.method(), request.target(), request.headers(), request.body(), exchange -> {
+            if (principal != null) {
+                exchange.putAttachment(InProcessDispatcher.PRINCIPAL, principal);
+            }
+            if (attachedParams != null && !attachedParams.isEmpty()) {
+                exchange.putAttachment(Request.ATTACHED_PARAMS_KEY, new HashMap<>(attachedParams));
+            }
+        });
 
         return new McpResult(response.status(), headersOf(response.headers()), response.body());
-    }
-
-    private static McpContext context(BaseAccount principal, String baseUrl, String scope, RegisteredMcpAware owner) {
-        return new McpContext(principal, baseUrl, scope, owner.pluginName(), owner.pluginUri(), owner.pluginConfiguration());
     }
 
     private static Map<String, List<String>> headersOf(HeaderMap headers) {
@@ -132,8 +162,9 @@ public final class CallApiTool {
 
             if (!"http".equalsIgnoreCase(transport)) {
                 throw new ValidationFailedException(List.of(
-                        "action is a " + transport + " stream, which call_api cannot carry: subscribe to the resource with "
-                                + "resources/subscribe, or ask how_to_call for a descriptor to use from your own code"));
+                        "action is a " + transport + " stream, which is neither executable nor subscribable through MCP: to follow "
+                                + "changes, subscribe to the collection it watches with resources/subscribe and re-read on "
+                                + "notifications/resources/updated; how_to_call describes the stream for an external client the user runs"));
             }
 
             var method = descriptor.get("method") == null ? "GET" : String.valueOf(descriptor.get("method"));

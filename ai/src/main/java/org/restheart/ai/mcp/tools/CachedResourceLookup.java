@@ -22,6 +22,8 @@ package org.restheart.ai.mcp.tools;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -62,6 +64,15 @@ public final class CachedResourceLookup {
 
     private final McpAwareRegistry registry;
     private final Cache<CatalogKey, ResourceLookup.Catalog> cache;
+
+    /**
+     * One counter per scope, bumped by every {@link #invalidate}. A rebuild reads it before
+     * describing and again after: a bump in between means something changed while the catalogue
+     * was being built from the old state, and the result is thrown away and built again. Without
+     * this, an invalidation arriving during a rebuild was lost — the rebuild, started before the
+     * write, finished after it and cached a catalogue without it, stale until the TTL.
+     */
+    private final ConcurrentHashMap<String, AtomicLong> generations = new ConcurrentHashMap<>();
 
     /**
      * What one cached catalogue belongs to.
@@ -131,7 +142,14 @@ public final class CachedResourceLookup {
             return;
         }
 
+        // bumped before the entries are dropped: a rebuild in flight sees the bump when it
+        // finishes and builds again, instead of caching the state it read before this write
+        generation(scope).incrementAndGet();
         cache.asMap().keySet().stream().filter(k -> scope.equals(k.scope())).toList().forEach(cache::invalidate);
+    }
+
+    private AtomicLong generation(String scope) {
+        return generations.computeIfAbsent(scope, s -> new AtomicLong());
     }
 
     /** Public: also called by {@code McpService} (a different package) to sync the MCP SDK's resource registry — see #617. */
@@ -146,14 +164,23 @@ public final class CachedResourceLookup {
 
     /**
      * Public: also called by {@code McpService} to resolve which plugin owns a resource, for
-     * documents-mode {@code resources/read} dispatch (its {@code readResource(...)}) — see #617.
+     * documents-mode {@code resources/read} dispatch (its {@code execute(...)}) — see #617, #741.
      */
     public Optional<RegisteredMcpAware> findOwner(BaseAccount principal, String baseUrl, String scope, String resourceUri) {
         return Optional.ofNullable(catalog(principal, baseUrl, scope).owners().get(resourceUri));
     }
 
     private ResourceLookup.Catalog catalog(BaseAccount principal, String baseUrl, String scope) {
-        return cache.get(new CatalogKey(baseUrl, scope), k -> ResourceLookup.catalog(registry, principal, k.baseUrl(), k.scope()));
+        return cache.get(new CatalogKey(baseUrl, scope), k -> {
+            var generation = generation(k.scope());
+            ResourceLookup.Catalog built;
+            long seen;
+            do {
+                seen = generation.get();
+                built = ResourceLookup.catalog(registry, principal, k.baseUrl(), k.scope());
+            } while (seen != generation.get());
+            return built;
+        });
     }
 
     /**

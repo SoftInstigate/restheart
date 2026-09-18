@@ -90,12 +90,9 @@ public class McpResourcesIT extends AbstactIT {
         Unirest.post(TEST_COLL).basicAuth("admin", "secret").contentType("application/json")
                 .body("{\"item\":\"journal\",\"qty\":10,\"status\":\"D\"}").asEmpty();
 
-        // past CachedResourceLookup's TTL (conf-overrides sets it to 1s) so this class's own
-        // just-created resources aren't served from a stale catalog entry
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
+        mcp.awaitResource(TEST_COLL);
     }
 
     // ---------------------------------------------------------------- listing
@@ -162,7 +159,7 @@ public class McpResourcesIT extends AbstactIT {
     public void readingTheCount_returnsTheNumberOfDocuments() throws Exception {
         var text = mcp.readResource(TEST_COLL + "/_size");
 
-        assertEquals(2, BsonDocument.parse(text).getNumber("size").intValue(),
+        assertEquals(2, BsonDocument.parse(text).getNumber("_size").intValue(),
                 "expected the fixture's two documents: " + text);
     }
 
@@ -172,7 +169,7 @@ public class McpResourcesIT extends AbstactIT {
         // the filter would answer it with a plausible, wrong number.
         var text = mcp.readResource(TEST_COLL + "/_size?filter=" + urlEncode("{\"status\":\"A\"}"));
 
-        assertEquals(1, BsonDocument.parse(text).getNumber("size").intValue(),
+        assertEquals(1, BsonDocument.parse(text).getNumber("_size").intValue(),
                 "only the notebook is in status A: " + text);
     }
 
@@ -182,7 +179,7 @@ public class McpResourcesIT extends AbstactIT {
         // exact count rather than silently answering for the whole collection — same as REST.
         var text = mcp.readResource(TEST_COLL + "/_size?count=estimated&filter=" + urlEncode("{\"status\":\"A\"}"));
 
-        assertEquals(1, BsonDocument.parse(text).getNumber("size").intValue(),
+        assertEquals(1, BsonDocument.parse(text).getNumber("_size").intValue(),
                 "the estimate opt-in swallowed the filter: " + text);
     }
 
@@ -370,7 +367,6 @@ public class McpResourcesIT extends AbstactIT {
         // even though the URI is otherwise perfectly valid
         Unirest.put(TEST_DB + "/private").basicAuth("admin", "secret")
                 .contentType("application/json").body("{}").asEmpty();
-        Thread.sleep(1_500);
 
         var envelope = mcp.rpc("resources/read", """
                 {"uri":"%s/private?page=1"}

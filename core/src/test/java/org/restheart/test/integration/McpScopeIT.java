@@ -69,15 +69,25 @@ public class McpScopeIT extends AbstactIT {
         seed(DB_A, "notebook");
         seed(DB_B, "hammer");
 
-        // past CachedResourceLookup's TTL (1s in conf-overrides), so the catalogue these tests
-        // read is one built after the fixture existed
-        Thread.sleep(1_500);
+        awaitScope(HOST_A, DB_A);
+        awaitScope(HOST_B, DB_B);
+
+    }
+
+    /** A session in the scope waits for its registry to list the seeded collection: see {@link McpTestClient#awaitResource}. */
+    private static void awaitScope(String host, String db) throws Exception {
+        var probe = new McpTestClient(BASE, ADMIN_BASIC, query(host, db));
+        probe.initialize();
+        probe.awaitResource(host + "/" + db + "/" + COLL);
     }
 
     private static void seed(String db, String item) throws Exception {
-        Unirest.put(BASE + "/" + db).basicAuth(ADMIN_ID, ADMIN_PWD).contentType("application/json").body("{}").asEmpty();
+        // the writes name the scope they belong to, so mcpCatalogInvalidatorOnMetadataWrite drops
+        // that scope's catalogue and not the unpartitioned one
+        Unirest.put(BASE + "/" + db).basicAuth(ADMIN_ID, ADMIN_PWD).queryString("mcpScope", db).contentType("application/json").body("{}").asEmpty();
 
         var coll = Unirest.put(BASE + "/" + db + "/" + COLL)
+                .queryString("mcpScope", db)
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .contentType("application/json")
                 .body("""

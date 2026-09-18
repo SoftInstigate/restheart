@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -101,20 +102,19 @@ public class McpUsersPasswordIT extends AbstactIT {
                 .body("{\"roles\":[\"user\"],\"password\":\"%s\"}".formatted(PASSWORD)).asEmpty();
         assertTrue(tenantUser.getStatus() == 200 || tenantUser.getStatus() == 201, "tenant user setup failed: " + tenantUser.getStatus());
 
-        // past the catalog TTL (1s in conf-overrides) so the just-written mcp metadata is seen
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
+        mcp.awaitResource(USERS_COLL);
+        mcp.awaitResource(OVERRIDE_COLL);
     }
 
     // ------------------------------------------------------------ the users db
 
     @Test
     public void query_neverReturnsThePassword() throws Exception {
-        var text = mcp.readResource(USERS_COLL + "?filter=" + urlEncode("{\"_id\":\"" + USER_ID + "\"}"));
+        var text = mcp.readResource(USERS_COLL + "?rep=s&filter=" + urlEncode("{\"_id\":\"" + USER_ID + "\"}"));
 
-        var docs = BsonDocument.parse(text).getArray("content");
+        var docs = BsonArray.parse(text);
         assertEquals(1, docs.size(), "the user must be readable: " + text);
         assertNoPassword(docs.get(0).asDocument(), text);
     }
@@ -132,7 +132,7 @@ public class McpUsersPasswordIT extends AbstactIT {
     public void aggregation_neverReturnsThePassword() throws Exception {
         var text = mcp.readResource(USERS_COLL + "/_aggrs/all");
 
-        var docs = BsonDocument.parse(text).getArray("content");
+        var docs = McpTestClient.documentsIn(text);
         assertTrue(docs.stream().map(d -> d.asDocument().get("_id")).anyMatch(id -> id != null && id.isString() && USER_ID.equals(id.asString().getValue())),
                 "the user must be in the aggregation output: " + text);
         docs.forEach(d -> assertNoPassword(d.asDocument(), text));
@@ -169,8 +169,8 @@ public class McpUsersPasswordIT extends AbstactIT {
         var tenant = new McpTestClient(BASE, ADMIN_BASIC, OVERRIDE_QUERY);
         tenant.initialize();
 
-        var text = tenant.readResource(OVERRIDE_COLL);
-        var docs = BsonDocument.parse(text).getArray("content");
+        var text = tenant.readResource(OVERRIDE_COLL + "?rep=s");
+        var docs = BsonArray.parse(text);
         assertEquals(1, docs.size(), "the user must be readable: " + text);
         assertNoPassword(docs.get(0).asDocument(), text);
     }
@@ -181,7 +181,7 @@ public class McpUsersPasswordIT extends AbstactIT {
         tenant.initialize();
 
         var text = tenant.readResource(OVERRIDE_COLL + "/_aggrs/all");
-        var docs = BsonDocument.parse(text).getArray("content");
+        var docs = McpTestClient.documentsIn(text);
         assertEquals(1, docs.size(), "the user must be in the aggregation output: " + text);
         assertNoPassword(docs.get(0).asDocument(), text);
     }

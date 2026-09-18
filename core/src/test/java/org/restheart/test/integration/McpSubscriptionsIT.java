@@ -62,11 +62,9 @@ public class McpSubscriptionsIT extends AbstactIT {
                 .asEmpty();
         assertTrue(coll.getStatus() == 200 || coll.getStatus() == 201, "collection setup failed: " + coll.getStatus());
 
-        // past CachedResourceLookup's TTL (conf-overrides sets it to 1s) so the resource exists
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
+        mcp.awaitResource(TEST_COLL);
         notifications = mcp.openNotificationStream();
     }
 

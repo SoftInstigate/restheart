@@ -25,8 +25,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 
 /**
@@ -141,6 +143,60 @@ final class McpTestClient {
      * Reads one MCP resource and returns the text of its single content entry — for
      * documents-mode reads (#617), where that text is the JSON the resource actually produced.
      */
+    /**
+     * The documents in what a collection or aggregation read returned, in whichever representation
+     * the deployment answered: a plain array ({@code rep=s}), or HAL's {@code _embedded} with its
+     * {@code rh:doc} or {@code rh:result} list. A read runs in-process through the same pipeline as
+     * a GET, so it honours the configured representation — the ITs run with HAL — and a bare
+     * resource (a parameterless aggregation) takes no query string to ask for another.
+     */
+    static BsonArray documentsIn(String payload) {
+        var trimmed = payload.trim();
+        if (trimmed.startsWith("[")) {
+            return BsonArray.parse(trimmed);
+        }
+        var embedded = BsonDocument.parse(trimmed).get("_embedded");
+        if (embedded == null) {
+            return new BsonArray();
+        }
+        if (embedded.isArray()) {
+            return embedded.asArray();
+        }
+        for (var key : List.of("rh:doc", "rh:result")) {
+            if (embedded.asDocument().containsKey(key)) {
+                return embedded.asDocument().getArray(key);
+            }
+        }
+        return new BsonArray();
+    }
+
+    /**
+     * Waits until the resources registry of this session's scope lists {@code uri} (as a concrete
+     * resource or as the base of a template), polling briefly. A fixture's metadata write drops
+     * the catalogue at once (mcpCatalogInvalidatorOnMetadataWrite) and the registry is re-synced
+     * on a virtual thread right after: this is the few milliseconds a test has to give that, in
+     * place of sleeping past the cache TTL.
+     *
+     * @throws AssertionError if the resource is still not listed after five seconds
+     */
+    void awaitResource(String uri) throws Exception {
+        var deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
+        var seen = "";
+        while (System.nanoTime() < deadline) {
+            var resources = rpc("resources/list", null).getDocument("result").getArray("resources").stream()
+                    .map(r -> r.asDocument().getString("uri").getValue()).toList();
+            var templates = rpc("resources/templates/list", null).getDocument("result").getArray("resourceTemplates").stream()
+                    .map(t -> t.asDocument().getString("uriTemplate").getValue()).toList();
+            if (resources.stream().anyMatch(u -> u.equals(uri) || u.startsWith(uri + "/"))
+                    || templates.stream().anyMatch(t -> t.startsWith(uri))) {
+                return;
+            }
+            seen = resources + " " + templates;
+            Thread.sleep(25);
+        }
+        throw new AssertionError("the resources registry never listed " + uri + "; it lists " + seen);
+    }
+
     String readResource(String uri) throws Exception {
         var contents = rpc("resources/read", """
                 {"uri":"%s"}

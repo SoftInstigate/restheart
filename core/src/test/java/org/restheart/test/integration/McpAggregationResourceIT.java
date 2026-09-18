@@ -113,10 +113,9 @@ public class McpAggregationResourceIT extends AbstactIT {
         Unirest.post(TEST_COLL).basicAuth("admin", "secret").contentType("application/json")
                 .body("{\"item\":\"gadget\",\"qty\":3,\"status\":\"D\"}").asEmpty();
 
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
+        mcp.awaitResource(TEST_COLL);
     }
 
     @Test

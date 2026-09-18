@@ -71,14 +71,12 @@ public class McpCatalogVisibilityIT extends AbstactIT {
         createCollection(BASE + "/test-mcp-acl", VISIBLE_COLL, "Inventory the reader may read.");
         createCollection(HIDDEN_DB, HIDDEN_COLL, HIDDEN_DESCRIPTION);
 
-        // past CachedResourceLookup's TTL (conf-overrides sets it to 1s)
-        Thread.sleep(1_500);
-
         reader = new McpTestClient(BASE, READER_BASIC);
         reader.initialize();
 
         admin = new McpTestClient(BASE, ADMIN_BASIC);
         admin.initialize();
+        admin.awaitResource(HIDDEN_COLL);
     }
 
     private static void createCollection(String db, String collection, String description) {

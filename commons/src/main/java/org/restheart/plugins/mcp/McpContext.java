@@ -22,13 +22,15 @@ package org.restheart.plugins.mcp;
 
 import java.util.Map;
 
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.security.BaseAccount;
 
 /**
- * Passed to {@link McpAware#describeMcp(McpContext)}. Carries everything a
- * plugin needs to build its {@link McpResource}s without depending on
- * {@code HttpServerExchange} or any other transport-level type.
+ * Passed to {@link McpAware#describeMcp(McpContext)} and {@link McpAware#execute}. Carries
+ * everything a plugin needs to build its {@link McpResource}s, or to know who is calling one,
+ * without depending on {@code HttpServerExchange} or any other transport-level type.
+ *
+ * <p>It carries no authorization decision: an action runs through RESTHeart's handler chain
+ * in-process, where the ACL judges it exactly as it judges the same call over REST.
  *
  * @param principal the authenticated account of the MCP session — {@link BaseAccount}
  *                  rather than the bare JDK {@code Principal}, since ACL-aware filtering
@@ -59,8 +61,7 @@ public record McpContext(
         String scope,
         String pluginName,
         String pluginUri,
-        Map<String, Object> pluginConfiguration,
-        Decision authorization) {
+        Map<String, Object> pluginConfiguration) {
 
     public McpContext {
         if (pluginConfiguration == null) {
@@ -75,26 +76,14 @@ public record McpContext(
         }
     }
 
-    /** Unpartitioned, with an authorization decision. */
-    public McpContext(BaseAccount principal, String baseUrl, String pluginName, String pluginUri,
-                      Map<String, Object> pluginConfiguration, Decision authorization) {
-        this(principal, baseUrl, McpScopeProvider.UNPARTITIONED, pluginName, pluginUri, pluginConfiguration, authorization);
-    }
-
     /** Whether this context describes the whole catalogue rather than one partition of it. */
     public boolean unpartitioned() {
         return McpScopeProvider.UNPARTITIONED.equals(scope);
     }
 
-    /** Without an authorization decision — for describing a resource, which reads no data. */
+    /** Unpartitioned. */
     public McpContext(BaseAccount principal, String baseUrl, String pluginName, String pluginUri,
                       Map<String, Object> pluginConfiguration) {
-        this(principal, baseUrl, McpScopeProvider.UNPARTITIONED, pluginName, pluginUri, pluginConfiguration, null);
-    }
-
-    /** For describing one partition, without an authorization decision. */
-    public McpContext(BaseAccount principal, String baseUrl, String scope, String pluginName, String pluginUri,
-                      Map<String, Object> pluginConfiguration) {
-        this(principal, baseUrl, scope, pluginName, pluginUri, pluginConfiguration, null);
+        this(principal, baseUrl, McpScopeProvider.UNPARTITIONED, pluginName, pluginUri, pluginConfiguration);
     }
 }

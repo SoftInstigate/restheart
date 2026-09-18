@@ -29,7 +29,6 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WH
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -57,7 +56,6 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
-import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.HttpStatus;
@@ -142,11 +140,6 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     // resource-specific template directly from each readable action's own declared params, so
     // there's no mount-wide shape left to contribute here — falls through to McpAware's own
     // default (no templates). See MongoMcpAwareImpl's comment for the full reasoning.
-
-    @Override
-    public Optional<McpReadResult> readResource(McpContext ctx, String resource, String action, Map<String, Object> args) {
-        return mcpAware.readResource(ctx, resource, action, args);
-    }
 
     @Override
     public Optional<AutoCloseable> watch(McpContext ctx, String resourceUri, Runnable onChange) {

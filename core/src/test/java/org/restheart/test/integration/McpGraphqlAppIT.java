@@ -94,11 +94,6 @@ public class McpGraphqlAppIT extends AbstactIT {
                 .asEmpty();
         assertTrue(resp.getStatus() == 200 || resp.getStatus() == 201, "gql-app setup failed with status " + resp.getStatus());
 
-        // CachedResourceLookup (#616) caches the catalog for catalog-ttl-seconds (1s in
-        // conf-overrides.yml); this waits past that so this test's own just-created resource is
-        // never served from a stale entry populated by an earlier test class
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
     }
