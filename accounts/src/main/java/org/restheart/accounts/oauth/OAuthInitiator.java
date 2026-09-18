@@ -91,6 +91,9 @@ public class OAuthInitiator implements StringService {
         }
 
         try {
+            // returnTo, when the caller sent one, is checked inside getAuthorizationUrl and stored
+            // with the state: a value that is not a path on this host stops the flow here rather
+            // than becoming a redirect at the end of it
             var result = oauthService.getAuthorizationUrl(provider, req);
             LOGGER.info("OAuth authorize → redirecting to {} consent screen", provider);
             res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);

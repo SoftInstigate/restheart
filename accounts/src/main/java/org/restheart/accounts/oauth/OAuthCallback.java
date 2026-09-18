@@ -225,7 +225,7 @@ public class OAuthCallback implements StringService {
                                     TeamClaim.of(membership.get().teamId(), membership.get().role())),
                             null,
                             RequestOverrides.accountPropertiesClaims(req, conf));
-                    setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
+                    setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin", callbackResult.returnTo());
                     return;
                 }
                 LOGGER.info("OAuth login denied for invited user <{}>: activateViaOAuth returned empty", email);
@@ -262,7 +262,7 @@ public class OAuthCallback implements StringService {
                         java.util.Map.<String, Object>of(conf.teamClaimName(), teamClaim),
                         null,
                         RequestOverrides.accountPropertiesClaims(req, conf));
-                setAuthCookieAndRedirect(res, req, jwtToken, "signin");
+                setAuthCookieAndRedirect(res, req, jwtToken, "signin", callbackResult.returnTo());
                 return;
             }
 
@@ -278,7 +278,7 @@ public class OAuthCallback implements StringService {
                     extraClaims,
                     null,
                     RequestOverrides.accountPropertiesClaims(req, conf));
-            setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
+            setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin", callbackResult.returnTo());
 
         } catch (OAuthService.OAuthException e) {
             LOGGER.warn("OAuth callback error ({}): {}", provider, e.getMessage());
@@ -291,7 +291,14 @@ public class OAuthCallback implements StringService {
 
     // ── Cookie + redirect helper ──────────────────────────────────────────────
 
-    private void setAuthCookieAndRedirect(StringResponse res, StringRequest req, String jwtToken, String flow) {
+    /**
+     * @param returnTo where to land instead of {@code frontendSuccessUrl}: a path on this host,
+     *                 checked when the flow started (see {@code OAuthService.validReturnTo}), for
+     *                 a sign-in that began somewhere other than the tenant's own app. The token is
+     *                 delivered there the same way, so whatever waits at that path reads it from
+     *                 the fragment or from the cookie exactly as the app would.
+     */
+    private void setAuthCookieAndRedirect(StringResponse res, StringRequest req, String jwtToken, String flow, String returnTo) {
         if (flow != null) {
             res.getHeaders().add(HttpString.tryFromString("X-OAuth-Flow"), flow);
         }
@@ -309,8 +316,9 @@ public class OAuthCallback implements StringService {
 
         // `flow=signup` doubles as the one-shot "welcome banner" marker also used by
         // EmailVerificationService, so both signup paths signal the frontend the same way.
-        var query = flow != null ? "?flow=" + flow : "";
-        var baseUrl = RequestOverrides.oauthFrontendSuccessUrl(req, oauthConfig) + query;
+        var target = returnTo != null ? returnTo : RequestOverrides.oauthFrontendSuccessUrl(req, oauthConfig);
+        var separator = target.contains("?") ? "&" : "?";
+        var baseUrl = flow != null ? target + separator + "flow=" + flow : target;
         var location = delivery == TokenDelivery.Mode.COOKIE
                 ? baseUrl
                 : TokenDelivery.fragmentUrl(baseUrl, conf, jwtToken);

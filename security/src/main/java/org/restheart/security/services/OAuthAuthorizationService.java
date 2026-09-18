@@ -39,6 +39,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.accounts.OAuthProviderRegistry;
 import org.restheart.plugins.security.OAuthTokenIssuer;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.WithProperties;
@@ -160,6 +161,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     static final String AUTHORIZE_URI = "/authorize";
     static final String OFFER_URI = "/authorize/offer";
+    static final String PROVIDERS_URI = "/authorize/providers";
 
     /** The registered {@link OAuthTokenIssuer}, resolved on first use; {@code null} until then. */
     private volatile Optional<OAuthTokenIssuer> tokenIssuer;
@@ -171,7 +173,8 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
         // allow unauthenticated GET (redirect to login) and authenticated POST (issue code);
         // /authorize/offer answers 401 itself when no credentials come with it
-        aclRegistry.registerAllow(req -> AUTHORIZE_URI.equals(req.getPath()) || OFFER_URI.equals(req.getPath()));
+        aclRegistry.registerAllow(req -> AUTHORIZE_URI.equals(req.getPath()) || OFFER_URI.equals(req.getPath())
+                || PROVIDERS_URI.equals(req.getPath()));
     }
 
     /**
@@ -222,6 +225,15 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
+        if (PROVIDERS_URI.equals(request.getPath())) {
+            switch (request.getMethod()) {
+                case GET -> handleProviders(request, response);
+                case OPTIONS -> handleOptions(request);
+                default -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+            return;
+        }
+
         if (OFFER_URI.equals(request.getPath())) {
             switch (request.getMethod()) {
                 case GET -> handleOffer(request, response);
@@ -237,6 +249,51 @@ public class OAuthAuthorizationService implements ByteArrayService {
             case OPTIONS -> handleOptions(request);
             default -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /authorize/providers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Which social providers this deployment can sign the person in with, for the sign-in page to
+     * offer as buttons: {@code {"providers":["google"]}}, and {@code []} when there are none or
+     * when nothing implements {@link OAuthProviderRegistry} on this instance.
+     *
+     * <p>Unauthenticated, like {@code GET /authorize}: it is asked before anyone has signed in, and
+     * it says nothing a person could not learn by looking at the page they were sent to. The
+     * answer is per request because a deployment configures providers per tenant.
+     */
+    private void handleProviders(ByteArrayRequest request, ByteArrayResponse response) {
+        var providers = providerRegistry()
+                .map(registry -> registry.availableProviders(request))
+                .orElseGet(List::of);
+
+        var array = new StringBuilder();
+        providers.forEach(name -> array.append(array.isEmpty() ? "" : ",").append('"').append(name.replace("\"", "")).append('"'));
+
+        response.setContent(("{\"providers\":[" + array + "]}").getBytes(StandardCharsets.UTF_8));
+        response.setContentTypeAsJson();
+        response.setStatusCode(HttpStatus.SC_OK);
+    }
+
+    /**
+     * The registry of social providers, found by type among the registered providers exactly as
+     * the token issuer is: nothing has to agree on a name, and an instance without the accounts
+     * module simply has none. Resolved on every call rather than cached, because it is asked once
+     * per page load and a cached empty answer would outlive a module initialising after this one.
+     */
+    private Optional<OAuthProviderRegistry> providerRegistry() {
+        for (var record : registry.getProviders()) {
+            var instance = record.getInstance();
+
+            if (OAuthProviderRegistry.class.isAssignableFrom(instance.rawType())
+                    && instance.get(null) instanceof OAuthProviderRegistry found) {
+                return Optional.of(found);
+            }
+        }
+
+        return Optional.empty();
     }
 
     // -------------------------------------------------------------------------

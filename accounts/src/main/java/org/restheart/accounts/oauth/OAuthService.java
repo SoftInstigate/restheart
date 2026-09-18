@@ -129,6 +129,10 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      * <ul>
      *   <li>{@code pendingInviteToken} — invite token from the activation email</li>
      *   <li>{@code consentsAccepted=true} — user accepted T&amp;C before the redirect</li>
+     *   <li>{@code returnTo} — where the callback should land instead of {@code frontendSuccessUrl},
+     *       for a sign-in that starts somewhere other than the tenant's own app (the OAuth
+     *       authorization page RESTHeart serves, for one). A path on this same host, nothing
+     *       else: see {@link #validReturnTo}</li>
      * </ul>
      *
      * @param providerName the OAuth provider name (e.g. {@code "google"})
@@ -145,7 +149,9 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
         var pendingInviteToken = queryParam(req, "pendingInviteToken");
         var consentsAccepted = "true".equalsIgnoreCase(queryParam(req, "consentsAccepted"));
 
-        storeStateToken(state, providerName, teamDb, pendingInviteToken, consentsAccepted);
+        var returnTo = validReturnTo(queryParam(req, "returnTo"));
+
+        storeStateToken(state, providerName, teamDb, pendingInviteToken, consentsAccepted, returnTo);
 
         var url = provider.getAuthorizationUrl(cfg.clientId(), cfg.clientSecret(),
                 config.callbackUrl(providerName, apiBaseUrl), cfg.scope(), state);
@@ -198,7 +204,7 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
         try {
             var profile = provider.fetchUserProfile(cfg.clientId(), cfg.clientSecret(),
                     config.callbackUrl(providerName, apiBaseUrl), cfg.scope(), code);
-            return new CallbackResult(profile, token.pendingInviteToken(), token.consentsAccepted());
+            return new CallbackResult(profile, token.pendingInviteToken(), token.consentsAccepted(), token.returnTo());
         } catch (OAuthException e) {
             throw e;
         } catch (Exception e) {
@@ -208,8 +214,31 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
 
     // ── State token persistence ───────────────────────────────────────────────
 
+    /**
+     * Where the callback may send the browser when the flow did not start from the tenant's own
+     * app. A path on this host and nothing else: no scheme, no authority, and not
+     * {@code //elsewhere}, which a browser reads as another host. Anything else is refused rather
+     * than sanitised, because this value decides where a freshly issued token is delivered, and a
+     * redirect this service can be talked into is the whole of an open redirect.
+     *
+     * @param returnTo the raw query parameter, or {@code null} when absent
+     * @return the value to store, or {@code null} when there was none
+     * @throws OAuthException if a value was given and it is not a path on this host
+     */
+    static String validReturnTo(String returnTo) throws OAuthException {
+        if (returnTo == null || returnTo.isBlank()) {
+            return null;
+        }
+
+        if (!returnTo.startsWith("/") || returnTo.startsWith("//") || returnTo.contains("\\")) {
+            throw new OAuthException("returnTo must be a path on this host");
+        }
+
+        return returnTo;
+    }
+
     private void storeStateToken(String state, String providerName, String teamDb,
-                                 String pendingInviteToken, boolean consentsAccepted) {
+                                 String pendingInviteToken, boolean consentsAccepted, String returnTo) {
         var doc = new BsonDocument()
                 .append("code", new BsonString(state))
                 .append("providerName", new BsonString(providerName))
@@ -217,6 +246,10 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
                 .append("consentsAccepted", new BsonBoolean(consentsAccepted));
         if (pendingInviteToken != null) {
             doc.append("pendingInviteToken", new BsonString(pendingInviteToken));
+        }
+
+        if (returnTo != null) {
+            doc.append("returnTo", new BsonString(returnTo));
         }
         try {
             oauthCodes(teamDb).insertOne(doc);
@@ -278,7 +311,10 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
                 && doc.get("consentsAccepted").isBoolean()
                 && doc.getBoolean("consentsAccepted").getValue();
 
-        return new StateToken(storedProvider, pendingInviteToken, consentsAccepted);
+        var returnTo = doc.containsKey("returnTo") && doc.get("returnTo").isString()
+                ? doc.getString("returnTo").getValue() : null;
+
+        return new StateToken(storedProvider, pendingInviteToken, consentsAccepted, returnTo);
     }
 
     // ── Config helpers ────────────────────────────────────────────────────────
@@ -326,6 +362,11 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
         } catch (OAuthException e) {
             return false;
         }
+    }
+
+    @Override
+    public java.util.List<String> availableProviders(ServiceRequest<?> req) {
+        return providers.keySet().stream().filter(name -> isProviderAvailable(name, req)).sorted().toList();
     }
 
     private OAuthProvider resolveProvider(String name) throws OAuthException {
@@ -390,12 +431,14 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      */
     public record CallbackResult(org.bson.BsonDocument profile,
                                  String pendingInviteToken,
-                                 boolean consentsAccepted) {
+                                 boolean consentsAccepted,
+                                 String returnTo) {
     }
 
     private record StateToken(String providerName,
                               String pendingInviteToken,
-                              boolean consentsAccepted) {
+                              boolean consentsAccepted,
+                              String returnTo) {
     }
 
     public static class OAuthException extends Exception {

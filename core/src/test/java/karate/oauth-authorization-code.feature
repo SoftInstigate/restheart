@@ -222,3 +222,15 @@ Scenario: An authorization code cannot be redeemed as a refresh token
     When method POST
     Then status 200
     And match response.access_token == '#present'
+
+Scenario: /authorize/providers says which social providers can sign somebody in
+    # The sign-in page asks this before rendering anything, to know which buttons to show.
+    # Unauthenticated on purpose — it is asked before anyone has signed in. Here the answer is
+    # the provider this suite configures: registered by testOAuthProvider, and given a client id
+    # and secret by conf-overrides. A provider that is registered but not configured is not
+    # offered, which is why the list and the registry are two different things.
+    Given path '/authorize/providers'
+    When method GET
+    Then status 200
+    And match response.providers == ['test']
+

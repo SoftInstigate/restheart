@@ -124,6 +124,24 @@
     border-radius: 6px;
   }
 
+  #providers { margin-bottom: 20px; }
+
+  button.provider {
+    margin-bottom: 8px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+
+  p.or {
+    margin: 0 0 16px;
+    font-size: 12px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  p.note { margin: 0 0 20px; font-size: 12px; color: var(--muted); }
+
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -146,6 +164,20 @@
     fetch, no JSON at that point: RESTHeart answers 302 to the client's redirect_uri and the
     browser follows it, which is what completes the authorization code flow.
   -->
+  <!--
+    Social sign-in, when the deployment has a provider configured. The button leaves this page for
+    the provider and comes back to it: /auth/oauth/authorize/<name> is told, in returnTo, to land
+    here again with the OAuth parameters untouched, and the callback delivers the token in the
+    fragment. From there the two steps below are the same ones a password takes, with the token in
+    place of the credentials.
+  -->
+  <div id="providers" hidden></div>
+  <p class="note" id="providersNote" hidden>
+    Signing in with one of these creates your account here the first time, and signs you in
+    afterwards.
+  </p>
+  <p class="or" id="or" hidden>or sign in with your username</p>
+
   <form id="form" method="POST" autocomplete="on">
     <div id="credentials">
       <label for="username">Username</label>
@@ -180,11 +212,18 @@
     var choicesBox = document.getElementById('choices');
     var submit = document.getElementById('signin');
     var back = document.getElementById('back');
+    var providersBox = document.getElementById('providers');
+    var providersNote = document.getElementById('providersNote');
+    var orLine = document.getElementById('or');
     var title = document.getElementById('title');
     var sub = document.getElementById('sub');
 
     // Where the form goes. The choices are appended here when there are any.
     var extra = new URLSearchParams();
+
+    // Set when the person came back from a provider: from here on it stands in for the
+    // credentials, in the offer call as a Bearer header and in the submission as a form field.
+    var accessToken = null;
 
     function action() {
       var query = forwarded.toString();
@@ -198,6 +237,17 @@
       errorBox.textContent = text || 'Wrong username or password.';
       errorBox.hidden = false;
     }
+
+    // The token the callback left in the fragment, read and erased at once: it must not stay in
+    // the address bar, in the history, or in a Referer to whatever the form posts to next.
+    (function () {
+      if (!window.location.hash) return;
+      var fragment = new URLSearchParams(window.location.hash.substring(1));
+      var token = fragment.get('access_token');
+      if (!token) return;
+      accessToken = token;
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    })();
 
     if (params.get('error')) {
       // From /authorize: wrong credentials, or the issuer refusing a choice. Its own words
@@ -236,25 +286,75 @@
       }
     });
 
+    // Which providers this deployment can sign somebody in with. Nothing configured, or no
+    // accounts module at all, and the answer is an empty list: the page stays exactly as it was.
+    fetch('/authorize/providers', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+      .then(function (response) { return response.ok ? response.json() : { providers: [] }; })
+      .then(function (body) { renderProviders(body.providers || []); })
+      .catch(function () { /* a page without buttons still signs people in */ });
+
+    function renderProviders(names) {
+      if (!names.length) return;
+
+      names.forEach(function (name) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'provider';
+        button.textContent = 'Continue with ' + name.charAt(0).toUpperCase() + name.substring(1);
+        button.addEventListener('click', function () {
+          // come back to this page, with the OAuth parameters exactly as they arrived: the
+          // authorization request has to survive the trip, and PKCE breaks if anything is rebuilt
+          var returnTo = window.location.pathname + '?' + forwarded.toString();
+          window.location = '/auth/oauth/authorize/' + encodeURIComponent(name)
+            + '?returnTo=' + encodeURIComponent(returnTo) + '&delivery=fragment';
+        });
+        providersBox.appendChild(button);
+      });
+
+      providersBox.hidden = false;
+      providersNote.hidden = false;
+      orLine.hidden = false;
+    }
+
     var offered = false;
 
+    // Back from a provider: the token is the identity, so the credentials are not asked for at
+    // all. The rest is the ordinary path — ask what there is to choose, then submit.
+    if (accessToken) {
+      credentials.hidden = true;
+      providersBox.hidden = true;
+      providersNote.hidden = true;
+      orLine.hidden = true;
+      sub.textContent = 'Signed in. Completing the request…';
+      submit.disabled = true;
+      askOffer();
+    }
+
     form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
       if (offered) {
-        // second step: the choices go in the query string, the credentials in the body
+        // second step: the choices go in the query string, the identity in the body
         extra = new URLSearchParams();
         choicesBox.querySelectorAll('[data-choice]').forEach(function (field) {
           extra.set('choice.' + field.getAttribute('data-choice'), field.value);
         });
         form.action = action();
+        submitForm();
         return;
       }
 
-      event.preventDefault();
+      askOffer();
+    });
+
+    /**
+     * What the identity in hand may choose, before anything is submitted. The identity is a
+     * password typed here, or a token a provider issued a moment ago: the call is the same, only
+     * the Authorization header differs.
+     */
+    function askOffer() {
       errorBox.hidden = true;
       submit.disabled = true;
-
-      var username = document.getElementById('username').value;
-      var password = document.getElementById('password').value;
 
       // No-Auth-Challenge keeps a 401 from carrying WWW-Authenticate, which would make the
       // browser open its own credentials dialog on top of this form. Cookies go along as on
@@ -265,35 +365,81 @@
         method: 'GET',
         credentials: 'same-origin',
         headers: {
-          'Authorization': 'Basic ' + btoa(unescape(encodeURIComponent(username + ':' + password))),
+          'Authorization': authorization(),
           'No-Auth-Challenge': 'true',
           'Accept': 'application/json'
         }
       }).then(function (response) {
         if (response.status === 401) {
-          showError();
-          submit.disabled = false;
+          // a token that expired between the provider and here is not a wrong password, and
+          // telling somebody to check a password they never typed sends them looking in the
+          // wrong place
+          showError(accessToken ? 'That sign-in has expired. Start again.' : null);
+          reset();
           return;
         }
 
         if (response.status === 403) {
           return response.json().catch(function () { return {}; }).then(function (body) {
             showError(body.error_description || 'You cannot obtain a token here.');
-            submit.disabled = false;
+            reset();
           });
         }
 
         if (response.status === 200) {
-          return response.json().then(render).catch(function () { form.submit(); });
+          return response.json().then(render).catch(function () { submitForm(); });
         }
 
         // 204, or anything unexpected: nothing to choose here. /authorize is the authority
         // either way, and applies the issuer to whatever this form sends.
-        form.submit();
+        submitForm();
       }).catch(function () {
-        form.submit();
+        submitForm();
       });
-    });
+    }
+
+    /** Basic from the fields, or Bearer when a provider signed this person in. */
+    function authorization() {
+      if (accessToken) {
+        return 'Bearer ' + accessToken;
+      }
+
+      var username = document.getElementById('username').value;
+      var password = document.getElementById('password').value;
+      return 'Basic ' + btoa(unescape(encodeURIComponent(username + ':' + password)));
+    }
+
+    /**
+     * The submission is a browser navigation, because RESTHeart answers it with a 302 to the
+     * client's redirect_uri and only the browser can follow that. A navigation carries no headers,
+     * so a provider token travels as a form field and an interceptor turns it back into one.
+     */
+    function submitForm() {
+      if (accessToken && !document.getElementById('accessToken')) {
+        var field = document.createElement('input');
+        field.type = 'hidden';
+        field.id = 'accessToken';
+        field.name = 'access_token';
+        field.value = accessToken;
+        form.appendChild(field);
+      }
+
+      form.submit();
+    }
+
+    /** After a refusal: let the person try again with whatever they have. */
+    function reset() {
+      submit.disabled = false;
+
+      if (accessToken) {
+        accessToken = null;
+        credentials.hidden = false;
+        providersBox.hidden = providersBox.children.length === 0;
+        providersNote.hidden = providersBox.hidden;
+        orLine.hidden = providersBox.hidden;
+        submit.textContent = 'Sign in';
+      }
+    }
 
     function render(offer) {
       offered = true;
@@ -355,6 +501,16 @@
       extra = new URLSearchParams();
       form.action = action();
       choicesBox.hidden = true;
+
+      // somebody else means somebody else: a provider token stops standing in for the
+      // credentials, and the buttons come back with the form
+      accessToken = null;
+      var carried = document.getElementById('accessToken');
+      if (carried) carried.remove();
+      providersBox.hidden = providersBox.children.length === 0;
+      providersNote.hidden = providersBox.hidden;
+      orLine.hidden = providersBox.hidden;
+
       credentials.hidden = false;
       document.getElementById('password').value = '';
       title.textContent = 'Sign in';
