@@ -201,9 +201,10 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 >   rotate the same way: the player holding most of what you need wants something *you* are short
 >   of, which the third player has. No single deal finishes anyone, and no one can hold out — a
 >   trade that helps an opponent can still be the trade that wins you the game.
-> - **You start 10 coin short of your own target**, so you cannot buy your way to your goods and
->   still meet it. Something you own has to be sold, not only swapped. There is not enough coin in
->   the game for all three of you to reach the threshold.
+> - **Read your coin threshold against what you hold**, before you plan anything. You may be short
+>   of it, and then something you own has to be sold for cash rather than swapped. You may be above
+>   it, and then you are one of the few who can pay cash for what you need, which is worth more than
+>   the coin it costs you. The three thresholds are not the same, and nobody is told whose is which.
 > - An offer nobody wanted last round may be exactly what somebody needs now that their holdings
 >   have changed. Re-read the open offers every round before you write a new one.
 >

@@ -144,8 +144,11 @@ and yours was not applied, send it again; a `"constraint"` means a rule refused 
 board; neither means that `_id` exists already, somebody was faster.
 
 **The game cannot stall.** Every good is held by two players, one with 12 and one with 4, and each
-objective asks for what the other two hold. Everyone starts 10 coin short of their own target and
-there is not enough coin for all three, so something always has to be sold.
+objective asks for what the other two hold, so no one is a monopolist and no one can sit still.
+The coin thresholds are deliberately uneven: two players must reach 70 holding 60 and so have to
+sell, while the third only has to stay above 40 and is the one player who can pay cash. Make them
+all short of coin and the market freezes the moment the goods are distributed, because then no
+purchase helps the buyer and gaining coin needs somebody willing to spend it.
 
 ## Files
 
