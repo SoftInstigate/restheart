@@ -103,7 +103,11 @@ public class HowToCallToolTest {
     }
 
     @Test
-    public void bodySchemaViolation_throwsValidationFailed() {
+    public void aBodyTheSchemaWouldRefuse_isStillComposed() {
+        // The schema describes the document the resource stores, and a caller does not send that
+        // document: a deployment fills fields in on the way (mongo.mergeRequest stamps the author
+        // and the time). Refusing here would refuse writes the REST endpoint accepts, whose own
+        // checker runs after those fields are set. The service judges the body; this does not.
         var resource = McpResource.builder()
                 .uri("https://host/echo")
                 .action("echo", a -> a.method("POST").bodySchema(Map.of(
@@ -112,9 +116,10 @@ public class HowToCallToolTest {
                 .build();
         var tool = toolFor(resource);
 
-        var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/echo", "echo", Map.of("body", Map.of("other", "x")), null, VISIBLE));
-        assertTrue(!ex.errors().isEmpty());
+        var descriptor = tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/echo", "echo",
+                Map.of("body", Map.of("other", "x")), null, VISIBLE);
+
+        assertEquals(Map.of("other", "x"), descriptor.get("body"));
     }
 
     @Test

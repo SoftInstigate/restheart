@@ -23,7 +23,10 @@ package org.restheart.ai.mcp.tools;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.restheart.plugins.mcp.McpResource;
@@ -52,11 +55,11 @@ public final class ListApisTool {
      */
     public Map<String, Object> list(BaseAccount principal, String baseUrl, String scope, String resourceUri,
                                     String query, String kind, Integer limit, String cursor,
-                                    Predicate<McpResource> visible) {
+                                    Predicate<McpResource> visible, Function<McpResource, Set<String>> invokableActions) {
         if (resourceUri != null) {
             return lookup.find(principal, baseUrl, scope, resourceUri)
                     .filter(visible)
-                    .map(McpResource::toMap)
+                    .map(resource -> describe(resource, invokableActions.apply(resource)))
                     .orElseThrow(() -> new UnknownResourceException(resourceUri));
         }
 
@@ -83,6 +86,38 @@ public final class ListApisTool {
         result.put("resources", page.stream().map(ListApisTool::catalogEntry).toList());
         result.put("next_cursor", nextCursor);
         return result;
+    }
+
+    /**
+     * One resource in full, carrying only the actions this caller could invoke.
+     *
+     * <p>A catalogue that offers what the ACL refuses reads as an offer and costs an agent a turn
+     * to find out otherwise: a ledger that is append-only by permission should not list
+     * {@code delete} beside {@code create}. Examples go the same way, or the ones left behind would
+     * demonstrate a call that is not on the table.
+     */
+    private static Map<String, Object> describe(McpResource resource, Set<String> invokable) {
+        var described = resource.toMap();
+
+        if (described.get("actions") instanceof Map<?, ?> actions) {
+            var kept = new LinkedHashMap<String, Object>();
+            actions.forEach((name, action) -> {
+                if (invokable.contains(String.valueOf(name))) {
+                    kept.put(String.valueOf(name), action);
+                }
+            });
+            described.put("actions", kept);
+        }
+
+        if (described.get("examples") instanceof List<?> examples) {
+            described.put("examples", examples.stream()
+                    .filter(example -> !(example instanceof Map<?, ?> m)
+                            || m.get("action") == null
+                            || invokable.contains(String.valueOf(m.get("action"))))
+                    .toList());
+        }
+
+        return described;
     }
 
     private static Map<String, Object> catalogEntry(McpResource resource) {

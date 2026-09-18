@@ -114,6 +114,29 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     }
 
     @Test
+    public void aResourceIsDescribedWithOnlyTheActionsTheCallerCanInvoke() throws Exception {
+        // the reader's permission on this collection is GET-only: offering create, update and
+        // delete beside query would read as an offer, and cost a turn to find out otherwise
+        var described = reader.callTool("list_apis", """
+                {"resource":"%s"}
+                """.formatted(VISIBLE_COLL));
+
+        var actions = described.getDocument("actions").keySet();
+
+        assertTrue(actions.contains("query"), "the read it may do must be there: " + actions);
+        assertFalse(actions.contains("create"), "a write this role cannot do was offered: " + actions);
+        assertFalse(actions.contains("delete"), "a write this role cannot do was offered: " + actions);
+
+        // admin may write it, so the same resource describes more for them: this is the caller's
+        // catalogue, not the resource's
+        var forAdmin = admin.callTool("list_apis", """
+                {"resource":"%s"}
+                """.formatted(VISIBLE_COLL));
+
+        assertTrue(forAdmin.getDocument("actions").containsKey("create"), "admin writes it: " + forAdmin.toJson());
+    }
+
+    @Test
     public void listApisCatalog_omitsWhatTheCallerCannotRead() throws Exception {
         var catalog = reader.callTool("list_apis", "{}").toJson();
 

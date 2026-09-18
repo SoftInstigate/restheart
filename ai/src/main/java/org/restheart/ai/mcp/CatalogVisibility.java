@@ -21,7 +21,10 @@
 package org.restheart.ai.mcp;
 
 import java.net.URI;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.security.DescriptorAuthorization;
@@ -85,6 +88,44 @@ final class CatalogVisibility {
                 identity.attachedParams());
 
         return authorization.isAllowed(probe);
+    }
+
+    /**
+     * The actions of {@code resource} this caller could actually invoke, by the same rule that
+     * decides whether the resource is listed at all: each one probed with its own method and path.
+     *
+     * <p>Listing an action the ACL refuses is not a leak — the resource is already visible, and its
+     * description says more than the action name does — but it wastes an agent's turn and reads as
+     * an offer. A ledger that is append-only by permission should not advertise {@code delete}.
+     *
+     * <p>An action whose path carries a variable ({@code /{id}}) is probed on the literal part
+     * before it, because there is no document id to probe with. Against the path-prefix rules ACLs
+     * are usually written with this is exact; against a rule naming one document it is generous,
+     * and generous is the right way to be wrong here: an action wrongly shown costs a {@code 403}
+     * the caller can read, an action wrongly hidden costs them an API they were entitled to.
+     */
+    static Set<String> invokableActions(DescriptorAuthorization authorization,
+                                        RequestDescriptor identity,
+                                        McpResource resource) {
+        var basePath = pathOf(resource.uri());
+
+        return resource.actions().entrySet().stream()
+                .filter(entry -> isReadable(authorization, identity,
+                        basePath + literalPath(entry.getValue().pathTemplate()), methodOf(entry.getValue())))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /** The part of a path template before its first variable, without a trailing slash: {@code /{id}} is nothing, {@code /_size} is itself. */
+    private static String literalPath(String pathTemplate) {
+        if (pathTemplate == null || pathTemplate.isBlank()) {
+            return "";
+        }
+
+        var brace = pathTemplate.indexOf('{');
+        var literal = brace < 0 ? pathTemplate : pathTemplate.substring(0, brace);
+
+        return literal.endsWith("/") ? literal.substring(0, literal.length() - 1) : literal;
     }
 
     static String methodOf(McpResource.Action action) {

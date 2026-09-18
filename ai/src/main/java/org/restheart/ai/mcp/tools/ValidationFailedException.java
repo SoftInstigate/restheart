@@ -22,7 +22,7 @@ package org.restheart.ai.mcp.tools;
 
 import java.util.List;
 
-/** {@code args}/{@code body} failed {@link org.restheart.ai.mcp.validation.ParamValidator}/{@link org.restheart.ai.mcp.validation.BodyValidator}. */
+/** {@code args} failed {@link org.restheart.ai.mcp.validation.ParamValidator}, or the action cannot be carried at all. */
 public class ValidationFailedException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 

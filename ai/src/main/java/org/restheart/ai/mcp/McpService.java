@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -1674,6 +1675,23 @@ public class McpService implements ByteArrayService {
         return resource -> CatalogVisibility.isVisible(authorization, identity, resource);
     }
 
+    /**
+     * Which actions of a resource this caller could invoke, for {@code list_apis} to describe only
+     * those. Same rule as the catalogue filter, applied per action rather than per resource: an
+     * unauthenticated deployment has no rule to apply, so everything is offered.
+     */
+    private Function<McpResource, Set<String>> invokableActionsFor(McpTransportContext ctx) {
+        var request = request(ctx);
+
+        if (request == null) {
+            return resource -> resource.actions().keySet();
+        }
+
+        var identity = RequestDescriptor.of(request.getExchange());
+
+        return resource -> CatalogVisibility.invokableActions(authorization, identity, resource);
+    }
+
     private static String baseUrl(McpTransportContext ctx) {
         return ctx.get(CTX_BASE_URL) instanceof String s ? s : "";
     }
@@ -1799,7 +1817,7 @@ public class McpService implements ByteArrayService {
             var result = listApisTool.list(
                     principal(ctx), baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "query"), stringArg(args, "kind"),
-                    intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx));
+                    intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx), invokableActionsFor(ctx));
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());

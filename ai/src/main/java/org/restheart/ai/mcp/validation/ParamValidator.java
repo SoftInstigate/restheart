@@ -27,10 +27,10 @@ import java.util.Map;
 import org.restheart.plugins.mcp.McpResource;
 
 /**
- * Checks {@code how_to_call} args against an action's {@code params} declarations:
- * required/missing, type, and enum constraints. Does not know about {@code body} —
- * that argument is validated separately by {@link BodyValidator} against the
- * action's {@code body_schema}.
+ * Checks a call's args against an action's {@code params} declarations: required/missing, type,
+ * and enum constraints. Deliberately knows nothing about {@code body}: an action's
+ * {@code body_schema} describes the document the resource stores, not what a caller sends, so the
+ * body is left to the service that will store it — see {@code HowToCallTool.resolve}.
  */
 public final class ParamValidator {
 

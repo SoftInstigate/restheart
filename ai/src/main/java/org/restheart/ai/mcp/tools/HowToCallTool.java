@@ -20,14 +20,12 @@
  */
 package org.restheart.ai.mcp.tools;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Predicate;
 
 import org.restheart.plugins.mcp.McpResource;
 
 import org.restheart.ai.mcp.transport.DescriptorRenderer;
-import org.restheart.ai.mcp.validation.BodyValidator;
 import org.restheart.ai.mcp.validation.ParamValidator;
 import org.restheart.security.BaseAccount;
 
@@ -85,8 +83,16 @@ public final class HowToCallTool {
             throw new UnknownActionException(resourceUri, actionName, resource.actions().keySet());
         }
 
-        var errors = new ArrayList<>(ParamValidator.validate(action, args));
-        errors.addAll(BodyValidator.validate(action.bodySchema(), args == null ? null : args.get("body")));
+        // Params only, deliberately. The body is not checked here, and must not be: a
+        // {@code body_schema} describes the document the resource stores, and what a caller sends
+        // is not that document. A deployment fills fields in on the way (RESTHeart's own
+        // {@code mongo.mergeRequest} stamps the author of a write and the time of it), so a schema
+        // that rightly requires them rejects a request that is right to omit them. That is a
+        // refusal the REST endpoint does not make: its checker runs after those fields are set.
+        // The body is the service's to judge, and it judges it — call_api carries the answer back
+        // with its status and its message.
+        var errors = ParamValidator.validate(action, args);
+
         if (!errors.isEmpty()) {
             throw new ValidationFailedException(errors);
         }
