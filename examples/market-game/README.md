@@ -60,8 +60,15 @@ changes and re-reads the board.
 
 ### 3. Start the game
 
-Paste [`agents/game.md`](agents/game.md) into Claude as it is. That is the only prompt, and there
-is nothing to fill in: Claude takes the service URL from the connector, or asks you for it.
+One line, pasted into Claude:
+
+```
+Read https://raw.githubusercontent.com/SoftInstigate/restheart/9.x/examples/market-game/agents/game.md and do what it says.
+```
+
+That is the whole prompt, and there is nothing to fill in: Claude takes the service URL from the
+connector, or asks you for it. Paste [`agents/game.md`](agents/game.md) itself instead if you
+have edited it, or if the host cannot fetch a URL.
 
 Claude becomes the commentator and runs the match in rounds: each round it starts three
 subagents, one per player, each with its own name and secret; they make their moves and stop;
