@@ -237,6 +237,31 @@ public class AggregationMcpResourceBuilderTest {
     }
 
     @Test
+    public void pipelineWithBlacklistedStage_saysInItsDescriptionWhyItCannotBeCalled() {
+        // the catalogue is the only place an agent can learn this before trying: resources/read
+        // answers "resource not found" (nothing is registered for a non-readable action) and
+        // call_api answers 403, and neither says the pipeline itself is the reason
+        var mcp = BsonDocument.parse("{\"description\": \"Archives the sales.\"}");
+        var stagesWithMerge = BsonArray.parse("[{\"$match\": {\"status\": \"A\"}}, {\"$merge\": \"copy\"}]");
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "archive", stagesWithMerge, mcp, "db", defaultChecker()).orElseThrow();
+        var description = resource.actions().get("execute").description();
+
+        assertTrue(description.startsWith("Archives the sales."), "the owner's own description comes first: " + description);
+        assertTrue(description.contains("$merge"), "must name the stage that is refused: " + description);
+        assertTrue(description.contains("403"), "must say what calling it answers: " + description);
+    }
+
+    @Test
+    public void aClearedPipeline_keepsTheOwnersDescriptionUntouched() {
+        var mcp = BsonDocument.parse("{\"description\": \"Sales by status.\"}");
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", defaultChecker()).orElseThrow();
+
+        assertEquals("Sales by status.", resource.actions().get("execute").description());
+    }
+
+    @Test
     public void noSecurityChecker_isNotMarkedReadable() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
 

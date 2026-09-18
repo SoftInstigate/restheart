@@ -106,6 +106,10 @@ public final class AggregationMcpResourceBuilder {
                 .filter(name -> !referencedNames.contains(name))
                 .forEach(name -> warnings.add("mcp.params declares '" + name + "' but the pipeline does not reference it"));
 
+        // one check, two uses: whether the read side is offered at all, and — when it is not —
+        // what to tell an agent that would otherwise learn it only from a 403
+        var refusal = pipelineRefusal(stages, dbName, securityChecker);
+
         builder.action("execute", a -> {
             a.method("GET");
             // the resource's own uri already IS this aggregation's full address (built just above
@@ -113,8 +117,8 @@ public final class AggregationMcpResourceBuilder {
             // action.pathTemplate(), so the action's own path_template must be relative (empty),
             // not repeat pathTemplate, or the rendered URL doubles up "/_aggrs/<uri>"
             a.pathTemplate("");
-            a.description(description(mcp));
-            a.readable(isPipelineSafeToRead(stages, dbName, securityChecker));
+            a.description(describeWithRefusal(description(mcp), refusal));
+            a.readable(refusal == null);
             a.param("jsonMode", "string", false);
 
             // A pipeline that pages itself with @skip/@limit answers to ?page and ?pagesize —
@@ -161,11 +165,32 @@ public final class AggregationMcpResourceBuilder {
      * one) or a pipeline that isn't a well-formed stage array defaults to {@code false} — never
      * {@code readable} on anything we can't positively clear.
      */
-    private static boolean isPipelineSafeToRead(BsonValue stages, String dbName, AggregationPipelineSecurityChecker securityChecker) {
-        if (securityChecker == null || !(stages instanceof BsonArray stagesArray)) {
-            return false;
+    private static String pipelineRefusal(BsonValue stages, String dbName, AggregationPipelineSecurityChecker securityChecker) {
+        if (securityChecker == null) {
+            return "the deployment's aggregation security is unavailable";
         }
-        return securityChecker.validatePipeline(stagesArray, dbName).isEmpty();
+        if (!(stages instanceof BsonArray stagesArray)) {
+            return "the pipeline is not a well-formed array of stages";
+        }
+        return securityChecker.validatePipeline(stagesArray, dbName)
+                .map(v -> "the deployment's aggregation security refuses this pipeline (" + v.type() + " '" + v.operator() + "' at " + v.location() + ")")
+                .orElse(null);
+    }
+
+    /**
+     * An aggregation whose pipeline the security checker refuses cannot be read <em>or</em>
+     * executed: the REST endpoint behind it answers {@code 403}, so both {@code resources/read}
+     * and {@code call_api} fail. Saying so in the action's own description is the only place an
+     * agent finds out before trying — the resource stays in the catalogue, because it is the
+     * owner's own opt-in and hiding it would leave them wondering where it went, but it no longer
+     * looks callable.
+     */
+    private static String describeWithRefusal(String description, String refusal) {
+        if (refusal == null) {
+            return description;
+        }
+        var note = "Not callable: " + refusal + ". Reading or invoking it answers 403.";
+        return description == null || description.isBlank() ? note : description + " " + note;
     }
 
     private static boolean isExplicitlyDisabled(BsonDocument mcp) {

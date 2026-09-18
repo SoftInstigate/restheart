@@ -42,7 +42,8 @@ import kong.unirest.Unirest;
  *       {@code AggregationPipelineSecurityChecker} clears its pipeline — the same checker the real
  *       {@code GET /_aggrs/} endpoint enforces. A pipeline with a blacklisted stage
  *       ({@code $out}, {@code $merge}, ... by default) stays {@code how_to_call}-only, so
- *       {@code resources/read} can never trigger it.</li>
+ *       {@code resources/read} can never trigger it — and its own description says so, since the
+ *       REST endpoint refuses it too and the catalogue is where an agent finds out.</li>
  *   <li><b>Required-ness comes from the pipeline, not the metadata.</b> A bare
  *       <code>{"$var": "x"}</code> has no default and would throw if unbound, so it is required
  *       whether or not {@code mcp.params} says so; <code>{"$var": ["x", default]}</code> is not.</li>
@@ -207,6 +208,21 @@ public class McpAggregationResourceIT extends AbstactIT {
         var message = envelope.toJson();
         assertFalse(message.contains("\"actions\""), "must not fall back to the resource description: " + message);
         assertFalse(message.contains("widget"), "must not return data it was never given a filter for: " + message);
+    }
+
+    @Test
+    public void theUnsafeAggregationSaysWhyItCannotBeCalled() throws Exception {
+        // it stays in the catalogue — it is the owner's own opt-in — but an agent must not have to
+        // discover from a 403, or from a misleading "resource not found", that the deployment
+        // refuses this pipeline
+        var context = mcp.callTool("list_apis", """
+                {"resource":"%s"}
+                """.formatted(UNSAFE));
+
+        var description = context.getDocument("actions").getDocument("execute").getString("description").getValue();
+
+        assertTrue(description.contains("$out"), "must name the stage that is refused: " + description);
+        assertTrue(description.contains("403"), "must say what calling it answers: " + description);
     }
 
     @Test
