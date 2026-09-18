@@ -28,6 +28,7 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.BsonJava;
 import org.restheart.plugins.mcp.McpResource;
 
 /**
@@ -85,7 +86,7 @@ public final class GraphqlAppMcpResourceBuilder {
         examples(mcp).forEach(ex -> builder.example(
                 stringOrNull(ex, "description"),
                 "execute",
-                ex.get("args") instanceof BsonDocument args ? BsonJavaConverter.toMap(args) : Map.of()));
+                ex.get("args") instanceof BsonDocument args ? BsonJava.toMap(args) : Map.of()));
 
         var queries = SdlContextBuilder.queries(sdl);
         if (!queries.isEmpty()) {

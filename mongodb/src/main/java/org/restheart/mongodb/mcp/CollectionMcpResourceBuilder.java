@@ -29,6 +29,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.BsonJava;
 import org.restheart.plugins.mcp.McpResource;
 
 /**
@@ -37,11 +38,14 @@ import org.restheart.plugins.mcp.McpResource;
  *
  * <p>The {@code actions} map (query/get/create/update/delete) is derived purely from the
  * collection's static metadata (its JSON Schema, for {@code create}/{@code update} body
- * schemas) — it does <b>not</b> filter by the calling principal's ACL. An action a principal
- * cannot actually perform is still described; invoking it fails with RESTHeart's normal 403,
- * exactly as it would for any other REST client. This keeps the builder a pure function of
- * collection metadata, and avoids duplicating ACL enforcement that already exists on the real
- * request path — the agent learns forbidden actions by trying them, same as a human would.
+ * schemas) — it does <b>not</b> filter by the calling principal's ACL, which keeps the builder a
+ * pure function of that metadata and duplicates no enforcement: invoking an action a principal
+ * cannot perform fails with RESTHeart's normal 403, exactly as it would for any other REST client.
+ *
+ * <p>What a caller is <em>shown</em> is narrowed later, once, where the catalogue is rendered:
+ * {@code list_apis} describes a resource with only the actions that caller could invoke (see
+ * {@code CatalogVisibility.invokableActions} in restheart-ai). Advertising a write the ACL refuses
+ * reads as an offer; refusing it is still the real request path's job, not this builder's.
  */
 public final class CollectionMcpResourceBuilder {
 
@@ -148,7 +152,7 @@ public final class CollectionMcpResourceBuilder {
             builder.example(
                     stringOrNull(ex, "description"),
                     action != null ? action : "query",
-                    ex.get("args") instanceof BsonDocument args ? BsonJavaConverter.toMap(args) : Map.of());
+                    ex.get("args") instanceof BsonDocument args ? BsonJava.toMap(args) : Map.of());
         });
 
         var aggregationUris = enabledLinkedUris(collectionUri, "/_aggrs/", aggrs);

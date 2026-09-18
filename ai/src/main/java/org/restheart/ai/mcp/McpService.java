@@ -67,6 +67,7 @@ import org.restheart.plugins.security.DescriptorAuthorization;
 import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.URLUtils;
 import org.restheart.utils.InProcessDispatcher;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
@@ -1320,40 +1321,22 @@ public class McpService implements ByteArrayService {
      * {@code page} to an integer, {@code filter} to a parsed JSON object) so {@link ParamValidator}
      * sees the right Java type.
      *
-     * <p>Also synthesizes any declared object-typed param that has named sub-properties (e.g. an
-     * aggregation's {@code avars}, one property per {@code $var} it references) from flat
-     * top-level keys, when the object itself wasn't explicitly provided — so {@code
-     * ?status=A&limit=5} works exactly like {@code ?avars=\{"status":"A","limit":5\}}. Fully
-     * generic — not aggregation-specific: any resource kind whose schema declares an object param
-     * with {@code properties} benefits from this. {@code how_to_call}'s own composed URL still
-     * needs the nested form (real RESTHeart REST API requirement, unrelated to this in-process
-     * dispatch), so this only matters for {@code resources/read}.
+     * <p>Nothing is restructured. A caller that passes an object param one property at a time
+     * ({@code ?status=A} for an aggregation's {@code avars}) has them carried through as they came:
+     * the request goes to the service in-process, and binding a flat query parameter to what the
+     * pipeline declared is that service's own rule, applied on the real request path. Building the
+     * nested object here instead would be a second answer to the same question, and the two would
+     * drift the day the first one changed.
      */
     private Map<String, Object> coerceArgs(Map<String, Object> rawArgs, McpResource.Action action) {
         var coerced = new LinkedHashMap<>(rawArgs);
-        action.params().forEach((name, param) -> {
-            // Only when the object param is entirely absent — not when it's present but not yet
-            // coerced (e.g. a raw "?avars={...}" JSON string still awaiting the coercion step
-            // below): checking `instanceof Map` here instead would run synthesis before that
-            // string is parsed, clobbering an explicitly-provided nested value with the
-            // synthesized one.
-            if ("object".equals(param.type()) && param.properties() != null && !param.properties().isEmpty()
-                    && !coerced.containsKey(name)) {
-                var synthesized = new LinkedHashMap<String, Object>();
-                param.properties().forEach((propName, propParam) -> {
-                    if (coerced.containsKey(propName)) {
-                        synthesized.put(propName, coerceScalar(coerced.get(propName), propParam.type()));
-                    }
-                });
-                if (!synthesized.isEmpty()) {
-                    coerced.put(name, synthesized);
-                }
-            }
 
+        action.params().forEach((name, param) -> {
             if (coerced.get(name) instanceof String) {
                 coerced.put(name, coerceScalar(coerced.get(name), param.type()));
             }
         });
+
         return coerced;
     }
 
@@ -1505,7 +1488,6 @@ public class McpService implements ByteArrayService {
         return RequestOverrides.str(req, RequestOverrides.MCP_PUBLIC_BASE_URL, resolveBaseUrl(req));
     }
 
-    /** Mirrors {@code OAuthProtectedResourceMetadataService.resolveServerUrl} (restheart-security). */
     /**
      * The base URL every resource URI this request produces is built from, when no override is
      * attached — the fallback of {@link #requestBaseUrl}.
@@ -1524,25 +1506,7 @@ public class McpService implements ByteArrayService {
      * resources} primitive off entirely.
      */
     private String resolveBaseUrl(ByteArrayRequest req) {
-        if (publicBaseUrl != null && !publicBaseUrl.isBlank()) {
-            return publicBaseUrl;
-        }
-
-        var exchange = req.getExchange();
-        var headers = exchange.getRequestHeaders();
-
-        var forwardedProto = headers.getFirst("X-Forwarded-Proto");
-        var forwardedHost = headers.getFirst("X-Forwarded-Host");
-        if (forwardedProto != null && forwardedHost != null) {
-            return forwardedProto + "://" + forwardedHost;
-        }
-
-        var host = headers.getFirst("Host");
-        if (host != null) {
-            return exchange.getRequestScheme() + "://" + host;
-        }
-
-        return "";
+        return URLUtils.externalBaseUrl(publicBaseUrl, req.getExchange());
     }
 
     private static BaseAccount principal(McpTransportContext ctx) {

@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-commons
  * %%
- * Copyright (C) 2014 - 2026 SoftInstigate
+ * Copyright (C) 2024 - 2026 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.mcp;
+package org.restheart.plugins.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -30,23 +30,23 @@ import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.junit.jupiter.api.Test;
 
-public class BsonJavaConverterTest {
+public class BsonJavaTest {
 
     @Test
     public void nullValue_convertsToNull() {
-        assertNull(BsonJavaConverter.toJava(BsonNull.VALUE));
+        assertNull(BsonJava.toJava(BsonNull.VALUE));
     }
 
     @Test
     public void scalarArray_convertsToList() {
         var arr = BsonArray.parse("[1, \"a\", true]");
-        assertEquals(List.of(1, "a", true), BsonJavaConverter.toJava(arr));
+        assertEquals(List.of(1, "a", true), BsonJava.toJava(arr));
     }
 
     @Test
     public void document_convertsToMapRecursively() {
         var doc = BsonDocument.parse("{\"a\": {\"b\": 1}}");
-        var result = BsonJavaConverter.toMap(doc);
+        var result = BsonJava.toMap(doc);
 
         @SuppressWarnings("unchecked")
         var nested = (java.util.Map<String, Object>) result.get("a");

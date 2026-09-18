@@ -10,6 +10,9 @@ Scenario: GET /.well-known/oauth-protected-resource - returns metadata without a
     And match response.resource == '#present'
     And match response.authorization_servers == '#array'
     And match response.authorization_servers[0] == '#present'
+    # the instance names itself by what the request came in on, when the operator configured no
+    # server-url: the same answer /mcp gives for its own resource URIs, from one place
+    And match response.authorization_servers[0] == 'http://localhost:8080'
 
 Scenario: GET /.well-known/oauth-protected-resource - resource field contains server URL
     Given path '/.well-known/oauth-protected-resource'

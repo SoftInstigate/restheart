@@ -52,6 +52,41 @@ public class URLUtils {
      * @param s the string to process
      * @return the string without trailing slashes, or null if input is null
      */
+    /**
+     * The base URL an external client reaches this instance at: {@code configured} when the
+     * operator set one, else what the request says it came in on.
+     *
+     * <p>Order, and each step is there for a deployment that exists: the configured value first,
+     * because behind a proxy only the operator knows the public name; then
+     * {@code X-Forwarded-Proto} and {@code X-Forwarded-Host} together, which is what a proxy that
+     * terminates TLS leaves behind; then the exchange's own scheme and {@code Host}. An empty
+     * string when even that is missing, which is not a URL and is meant to be noticed.
+     *
+     * <p>Shared because more than one service has to answer the same question — what to call
+     * myself in something I hand out — and two answers that drift produce a document naming a
+     * host that another document does not.
+     *
+     * @param configured the operator's own value, or {@code null}/blank when unset
+     * @param exchange the request being served
+     */
+    public static String externalBaseUrl(String configured, HttpServerExchange exchange) {
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+
+        var headers = exchange.getRequestHeaders();
+        var forwardedProto = headers.getFirst("X-Forwarded-Proto");
+        var forwardedHost = headers.getFirst("X-Forwarded-Host");
+
+        if (forwardedProto != null && forwardedHost != null) {
+            return forwardedProto + "://" + forwardedHost;
+        }
+
+        var host = headers.getFirst("Host");
+
+        return host != null ? exchange.getRequestScheme() + "://" + host : "";
+    }
+
     public static String removeTrailingSlashes(String s) {
         if (s == null) {
             return null;

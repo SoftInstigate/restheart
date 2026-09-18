@@ -41,6 +41,26 @@ public class ParamValidatorTest {
     }
 
     @Test
+    public void anObjectParamSuppliedOnePropertyAtATime_counts() {
+        // the resource template advertises the flat shape and nothing else — an aggregation's is
+        // .../byStatus{?status}, never {?avars} — so a caller that fills in exactly what it was
+        // shown must not be told it is missing an object it was never offered
+        var properties = Map.of("status", new McpResource.Param("string", null, true, null, null));
+        var action = McpResource.builder()
+                .uri("https://host/x")
+                .action("execute", a -> a.param("avars", new McpResource.Param("object", null, true, null, null, properties)))
+                .build()
+                .actions().get("execute");
+
+        assertTrue(ParamValidator.validate(action, Map.of("status", "A")).isEmpty(),
+                "the flat form is the one the template asks for");
+        assertTrue(ParamValidator.validate(action, Map.of("avars", Map.of("status", "A"))).isEmpty(),
+                "and the nested form is still the one a tool call sends");
+        assertEquals(List.of("missing required param 'avars'"), ParamValidator.validate(action, Map.of()),
+                "neither shape supplied is the case worth reporting early");
+    }
+
+    @Test
     public void noParamsDeclared_anyArgsValid() {
         var errors = ParamValidator.validate(new McpResource.Action(), Map.of("whatever", "value"));
         assertTrue(errors.isEmpty());

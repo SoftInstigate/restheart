@@ -32,6 +32,7 @@ import org.restheart.security.ACLRegistry;
 import static org.restheart.utils.GsonUtils.array;
 import static org.restheart.utils.GsonUtils.object;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.URLUtils;
 
 /**
  * OAuth 2.0 Protected Resource Metadata endpoint per RFC 9728.
@@ -97,34 +98,9 @@ public class OAuthProtectedResourceMetadataService implements JsonService {
         }
     }
 
-    /**
-     * Resolves the server base URL using the following priority order:
-     * <ol>
-     *   <li>Configured {@code server-url}</li>
-     *   <li>{@code X-Forwarded-Proto} + {@code X-Forwarded-Host} headers (reverse proxy)</li>
-     *   <li>Request scheme + {@code Host} header</li>
-     * </ol>
-     */
+    /** @see URLUtils#externalBaseUrl(String, io.undertow.server.HttpServerExchange) */
     private String resolveServerUrl(JsonRequest request) {
-        if (serverUrl != null && !serverUrl.isBlank()) {
-            return serverUrl;
-        }
-
-        var exchange = request.getExchange();
-        var headers = exchange.getRequestHeaders();
-
-        var forwardedProto = headers.getFirst("X-Forwarded-Proto");
-        var forwardedHost = headers.getFirst("X-Forwarded-Host");
-        if (forwardedProto != null && forwardedHost != null) {
-            return forwardedProto + "://" + forwardedHost;
-        }
-
-        var host = headers.getFirst("Host");
-        if (host != null) {
-            return exchange.getRequestScheme() + "://" + host;
-        }
-
-        return "";
+        return URLUtils.externalBaseUrl(serverUrl, request.getExchange());
     }
 
     /**

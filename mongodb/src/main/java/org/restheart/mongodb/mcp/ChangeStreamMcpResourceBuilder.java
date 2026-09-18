@@ -30,6 +30,7 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.BsonJava;
 import org.restheart.plugins.mcp.McpResource;
 
 /**
@@ -115,7 +116,7 @@ public final class ChangeStreamMcpResourceBuilder {
         examples(mcp).forEach(ex -> builder.example(
                 stringOrNull(ex, "description"),
                 "subscribe",
-                ex.get("args") instanceof BsonDocument args ? BsonJavaConverter.toMap(args) : Map.of()));
+                ex.get("args") instanceof BsonDocument args ? BsonJava.toMap(args) : Map.of()));
 
         builder.extra("pipeline_summary", pipelineSummary(mcp, stages));
         if (stringOrNull(mcp, "event_type") != null) {
@@ -160,9 +161,9 @@ public final class ChangeStreamMcpResourceBuilder {
         var description = stringOrNull(def, "description");
         var required = def.get("required") instanceof BsonBoolean b ? b.getValue() : defaultRequired;
         List<Object> enumValues = def.get("enum") instanceof BsonArray arr
-                ? arr.stream().map(BsonJavaConverter::toJava).toList()
+                ? arr.stream().map(BsonJava::toJava).toList()
                 : null;
-        var defaultValue = def.get("default") != null ? BsonJavaConverter.toJava(def.get("default")) : null;
+        var defaultValue = def.get("default") != null ? BsonJava.toJava(def.get("default")) : null;
         return new McpResource.Param(type, description, required, enumValues, defaultValue);
     }
 }

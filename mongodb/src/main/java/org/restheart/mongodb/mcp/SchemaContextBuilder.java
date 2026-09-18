@@ -23,6 +23,7 @@ package org.restheart.mongodb.mcp;
 import java.util.Map;
 
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.BsonJava;
 
 /**
  * Converts a collection's existing JSON Schema (stored as BSON in its {@code jsonSchema}
@@ -42,6 +43,6 @@ public final class SchemaContextBuilder {
         if (jsonSchema == null || !jsonSchema.isDocument()) {
             return null;
         }
-        return BsonJavaConverter.toMap(jsonSchema.asDocument());
+        return BsonJava.toMap(jsonSchema.asDocument());
     }
 }

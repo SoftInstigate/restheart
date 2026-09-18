@@ -37,6 +37,21 @@ public final class ParamValidator {
     private ParamValidator() {
     }
 
+    /**
+     * Whether an object param with named sub-properties was supplied one property at a time,
+     * rather than as the object.
+     *
+     * <p>Both shapes are offered to the caller, so both must count as supplied. A resource
+     * template advertises the flat one and nothing else — an aggregation's is
+     * {@code .../byStatus{?status}}, not {@code {?avars}} — so a caller that fills in exactly what
+     * the template asked for would otherwise be told it is missing the object it was never shown.
+     * What each shape then binds to is the service's business, not this validator's.
+     */
+    private static boolean suppliedFlat(McpResource.Param param, Map<String, Object> args) {
+        return param.properties() != null
+                && param.properties().keySet().stream().anyMatch(args::containsKey);
+    }
+
     /** @return human-readable error messages, empty if {@code args} satisfies every declared param */
     public static List<String> validate(McpResource.Action action, Map<String, Object> args) {
         var errors = new ArrayList<String>();
@@ -46,7 +61,7 @@ public final class ParamValidator {
             var value = effectiveArgs.get(name);
 
             if (value == null) {
-                if (param.required() && param.defaultValue() == null) {
+                if (param.required() && param.defaultValue() == null && !suppliedFlat(param, effectiveArgs)) {
                     errors.add("missing required param '" + name + "'");
                 }
                 return;
