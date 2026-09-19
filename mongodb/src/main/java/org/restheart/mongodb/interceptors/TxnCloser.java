@@ -62,7 +62,12 @@ public class TxnCloser implements MongoInterceptor {
             return;
         }
 
-        if (response.isRollbackRequested()) {
+        if (response.isRollbackRequested() || response.isInError()) {
+            // A write that already failed has nothing to commit, and MongoDB has usually aborted
+            // the transaction for us the moment the write raised — so committing would fail with
+            // NoSuchTransaction, which carries the TransientTransactionError label, and commit()
+            // would rewrite an honest 409 (a duplicate _id, say) as a retryable write conflict.
+            // The client then retries a request whose answer can never change.
             abort(txn, request);
         } else if (ClientSessionInjector.serverStartedTxn(request)) {
             commit(txn, response);
@@ -73,13 +78,23 @@ public class TxnCloser implements MongoInterceptor {
     }
 
     /**
-     * Aborting a transaction the client owns ({@code ?sid=&txn=}) discards the client's whole
+     * Where a write ends when it is not going to be committed: an interceptor asked to undo it, or
+     * it failed on its own and the response already carries the reason.
+     *
+     * <p>Aborting a transaction the client owns ({@code ?sid=&txn=}) discards the client's whole
      * transaction, not just this write. That is the only safe outcome: leaving a refused document
      * in an uncommitted transaction the client can still commit would defeat the check that refused
-     * it. The interceptor that called {@code rollback()} has already put the reason in the response.
+     * it. Whatever refused the write has already put the reason in the response, and nothing here
+     * touches it.
      */
     private void abort(TxnClientSessionImpl txn, MongoRequest request) {
-        txn.abortTransaction();
+        try {
+            txn.abortTransaction();
+        } catch (final MongoException me) {
+            // the server may have aborted it already, which is the normal case after a failed
+            // write: there is nothing left to end, and nothing the client needs to be told
+            LOGGER.debug("The transaction was already over when we came to abort it", me);
+        }
 
         if (request.isTxnRequested()) {
             LOGGER.debug("Transaction aborted, the write was rolled back");
@@ -89,9 +104,11 @@ public class TxnCloser implements MongoInterceptor {
     }
 
     /**
-     * A failed commit is the one case where the response already says the write succeeded and it
-     * did not, so the status has to be rewritten. A transient error means a concurrent write to the
-     * same document won the race; nothing was written and the client can repeat the request.
+     * Only for a write that succeeded. A failed commit is then the one case where the response
+     * already says the write was applied and it was not, so the status has to be rewritten — and
+     * rewriting is safe precisely because there is no earlier error to overwrite. A transient
+     * error means a concurrent write to the same document won the race; nothing was written and
+     * the client can repeat the request.
      */
     private void commit(TxnClientSessionImpl txn, MongoResponse response) {
         try {

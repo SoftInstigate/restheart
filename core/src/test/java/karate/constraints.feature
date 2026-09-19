@@ -114,6 +114,34 @@ Scenario: An insert is checked like any other write
     When method GET
     Then assert responseStatus == 404
 
+Scenario: A duplicate _id is a duplicate _id, not a write conflict
+
+    # The collection declares a rule, so the write runs in a transaction. A duplicate key ends that
+    # transaction the moment it is raised, and committing it afterwards fails with an error MongoDB
+    # labels transient — which is how this answer once came back marked retryable, sending clients
+    # to repeat a request whose answer can never change.
+    * header Authorization = authHeader
+    Given path accounts
+    And request { "_id": "alice", "balance": 10 }
+    When method POST
+    Then assert responseStatus == 409
+    And match response.retryable == '#notpresent'
+    And match response.constraint == '#notpresent'
+
+    # the original alice is untouched: the failed write left nothing behind
+    * header Authorization = authHeader
+    Given path accounts + '/alice'
+    When method GET
+    Then assert responseStatus == 200
+    And match response.balance == 20
+
+    # and the collection still works afterwards: the transaction was closed, not left hanging
+    * header Authorization = authHeader
+    Given path accounts
+    And request { "_id": "erin", "balance": 30 }
+    When method POST
+    Then assert responseStatus == 201
+
 Scenario: A delete is checked too, and notEmpty reads the other way round
 
     # joe is not an admin, so removing him breaks nothing
@@ -212,7 +240,7 @@ Scenario: The guard document is taken on every write to a guarded collection
     # pass and the guarantee would be gone.
     * header Authorization = authHeader
     Given path accounts
-    And request { "_id": "dave", "balance": 5 }
+    And request { "_id": "dave", "balance": 30 }
     When method POST
     Then assert responseStatus == 201
 
