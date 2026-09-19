@@ -142,7 +142,7 @@ check "trader2 with its own secret reads its own objective" trader2 "$(objective
 echo "== myState, which answers only to the pair"
 mystate() {
   curl -s -u "$TABLE_USER:$TABLE_PASSWORD" -G "$BASE/market_events/_aggrs/myState" \
-    --data-urlencode "avars={\"player\":\"$1\",\"secret\":\"$2\"}" | python3 -c '
+    --data-urlencode "trader=$1" --data-urlencode "secret=$2" | python3 -c '
 import json, sys
 try: rows = json.loads(sys.stdin.read())
 except Exception: print("unreadable"); raise SystemExit
