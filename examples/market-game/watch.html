@@ -104,6 +104,18 @@
   .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--dim); margin-top: 10px; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); cursor: pointer; }
+  .replaybar { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; align-items: center;
+               background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+               padding: 12px 16px; margin-bottom: 20px; }
+  .replaybar .rpnow { grid-column: 1 / -1; color: var(--dim); font-size: 13px; min-height: 20px; }
+  .replaybar select { font: inherit; font-size: 13px; padding: 6px 8px; border-radius: 7px;
+                      border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .replaybar input[type=range] { width: 100%; accent-color: var(--accent); }
+  .replaybar button { min-width: 82px; }
+  @media (max-width: 560px) {
+    .replaybar { grid-template-columns: auto auto auto; }
+    .replaybar input[type=range] { grid-column: 1 / -1; order: -1; }
+  }
   .foot { color: var(--dim); font-size: 13px; margin-top: 28px; }
   .hidden { display: none !important; }
 </style>
@@ -118,6 +130,7 @@
     </div>
     <div class="row" style="gap:10px">
       <label class="toggle"><input type="checkbox" id="spoilers"> show the private objectives</label>
+      <button class="ghost" id="replay">replay</button>
       <button class="ghost" id="pause">pause</button>
       <button class="ghost hidden" id="again">look again</button>
     </div>
@@ -129,16 +142,30 @@
       <div class="f-url"><label for="url">Service URL</label>
         <input type="text" id="url" placeholder="https://xxxxxx.eu-central-1-shared-1.restheart.com" spellcheck="false"></div>
       <div class="f-s"><label for="user">User</label><input type="text" id="user" value="table" spellcheck="false"></div>
-      <div class="f-s"><label for="pass">Password</label><input type="password" id="pass" placeholder="Aged-Harbour-Kettle-7"></div>
+      <div class="f-s"><label for="pass">Password</label><input type="password" id="pass" value="Aged-Harbour-Kettle-7"></div>
       <button id="connect">Watch</button>
     </div>
     <div class="err hidden" id="error"></div>
-    <div class="hint">The account the game is played through, created by <code>rhc setup</code>. Its password is in the README.
-      Nothing is sent anywhere else, and it stays in this browser.</div>
+    <div class="hint">The account the game is played through, created by <code>rhc setup</code>. Its password is filled in
+      already, because it is the same for every game and is in the open in <code>game/reference.ts</code>. Change it there and
+      here if you change it on the service. Nothing is sent anywhere but your own service, and it stays in this browser.</div>
   </section>
 
   <div id="game" class="hidden">
     <div class="banner hidden" id="winner"></div>
+
+    <div class="replaybar hidden" id="replaybar">
+      <button id="rpPlay">pause</button>
+      <input type="range" id="rpScrub" min="0" max="0" value="0" aria-label="position in the match">
+      <select id="rpSpeed" aria-label="replay speed">
+        <option value="1600">slow</option>
+        <option value="800" selected>1&times;</option>
+        <option value="400">2&times;</option>
+        <option value="150">fast</option>
+      </select>
+      <button class="ghost" id="rpExit">back to live</button>
+      <div class="rpnow" id="rpNow"></div>
+    </div>
 
     <section>
       <h2>Standings</h2>
@@ -209,6 +236,8 @@ let creds = null;      // { base, user, pass }
 let timer = null;
 let paused = false;
 let objectives = null; // { trader1: doc, ... } once the spoilers box is ticked
+let allEvents = [];    // the ledger as the last draw read it, which replay walks
+const rp = { on: false, i: 0, playing: false, timer: null, step: 800 };
 
 // ── remembering the connection, a convenience only ────────────────────────────
 function remember(c) {
@@ -418,6 +447,79 @@ function renderPrices(board) {
 
 function side(s) { return s ? s.qty + ' ' + s.item : '?'; }
 
+/**
+ * The board as it stood after the first `upTo` events, rebuilt from the ledger alone.
+ *
+ * The server derives the live board with the same arithmetic, in an aggregation; this is the
+ * client's copy of it, and it exists only so the match can be watched again from the start. Every
+ * renderer on this page takes a board, so a reconstructed one drives all of them unchanged.
+ */
+function boardAt(events, upTo) {
+  const qty = {}, committed = {}, offers = {}, open = {}, settled = [];
+  let winner = null;
+  const add = (who, item, n) => {
+    if (!qty[who]) qty[who] = {};
+    qty[who][item] = (qty[who][item] || 0) + n;
+  };
+  const commit = (who, item, n) => {
+    if (!committed[who]) committed[who] = {};
+    committed[who][item] = (committed[who][item] || 0) + n;
+  };
+
+  events.forEach(e => { if (e.type === 'offer') offers[e.offerId] = e; });
+
+  events.slice(0, upTo + 1).forEach(e => {
+    if (e.type === 'genesis') {
+      (e.grants || []).forEach(g => add(e.actor, g.item, g.qty));
+    } else if (e.type === 'offer') {
+      open[e.offerId] = e;
+      if (e.give) commit(e.actor, e.give.item, e.give.qty);
+    } else if (e.type === 'trade') {
+      const o = offers[e.offerId];
+      if (o && o.give && o.want) {
+        add(o.actor, o.give.item, -o.give.qty);
+        add(o.actor, o.want.item, o.want.qty);
+        add(e.actor, o.give.item, o.give.qty);
+        add(e.actor, o.want.item, -o.want.qty);
+        commit(o.actor, o.give.item, -o.give.qty);
+        settled.push({ offerId: o.offerId, from: o.actor, to: e.actor, gave: o.give, got: o.want,
+                       ts: e.ts || o.ts || { $date: 0 } });
+      }
+      delete open[e.offerId];
+    } else if (e.type === 'claim') {
+      winner = e;
+    }
+  });
+
+  const holdings = Object.keys(qty).sort().map(who => ({
+    _id: who,
+    goods: ITEMS.filter(i => qty[who][i] !== undefined).map(item => {
+      const held = qty[who][item] || 0;
+      const c = Math.max(0, Math.min(held, (committed[who] || {})[item] || 0));
+      return { item, qty: held, committed: c, available: held - c };
+    }),
+  }));
+
+  return { holdings, openOffers: Object.values(open), settledTrades: settled, winner: winner ? [winner] : [] };
+}
+
+/** One event in words, for the replay's running commentary. */
+function describeEvent(e, events) {
+  const name = p => '<span class="who-name" style="color:' + colourOf(p) + '">' + esc(p) + '</span>';
+  if (!e) return '';
+  if (e.type === 'genesis') {
+    return name(e.actor) + ' starts with ' + (e.grants || []).map(g => g.qty + ' ' + g.item).join(', ');
+  }
+  if (e.type === 'offer') return name(e.actor) + ' offers ' + esc(side(e.give)) + ' for ' + esc(side(e.want));
+  if (e.type === 'trade') {
+    const o = events.find(x => x.type === 'offer' && x.offerId === e.offerId);
+    return name(e.actor) + ' accepts ' + (o ? esc(side(o.give)) + ' for ' + esc(side(o.want)) + ' from ' + name(o.actor)
+                                            : '<span class="mono">' + esc(e.offerId) + '</span>');
+  }
+  if (e.type === 'claim') return name(e.actor) + ' claims victory';
+  return name(e.actor) + ' ' + esc(e.type);
+}
+
 function renderOffers(board) {
   const open = board.openOffers || [];
   if (open.length === 0) { $('offers').innerHTML = '<p class="empty">Nothing is on the table.</p>'; return; }
@@ -521,6 +623,8 @@ async function refresh() {
     renderRounds(events, board);
 
     lastSize = events.length;
+    allEvents = events;
+    $('replay').disabled = events.filter(e => e.type !== 'genesis').length === 0;
     $('foot').textContent = events.length + ' events on the ledger · read at ' + new Date().toLocaleTimeString();
     $('game').classList.remove('hidden');
     $('setup').classList.add('hidden');
@@ -548,6 +652,7 @@ async function refresh() {
 
 /** One cheap read; the expensive redraw only when the ledger has actually grown. */
 async function tick() {
+  if (rp.on) return;
   if (over || paused || document.hidden) { schedule(); return; }
   try {
     const size = (await api('/market_events/_size'))._size;
@@ -604,8 +709,81 @@ $('again').addEventListener('click', () => start());
 
 // A hidden tab is not polled at all, so coming back to it should not mean waiting out a minute.
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && creds && !over && !paused) { delay = POLL_MIN; stop(); tick(); }
+  if (!document.hidden && creds && !over && !paused && !rp.on) { delay = POLL_MIN; stop(); tick(); }
 });
+
+// ── replay ────────────────────────────────────────────────────────────────────
+// The match is slow to play and quick to watch: the ledger is the whole of it, in order, so
+// walking it forward redraws every panel as it stood at that moment.
+function rpRender() {
+  const board = boardAt(allEvents, rp.i);
+  const upTo = allEvents.slice(0, rp.i + 1);
+  renderPlayers(board);
+  renderCoin(upTo, board);
+  renderPrices(board);
+  renderOffers(board);
+  renderRounds(upTo, board);
+  renderWinner(board, upTo);
+
+  const e = allEvents[rp.i];
+  const at = tsOf(e) ? new Date(tsOf(e)).toLocaleTimeString() : 'the opening';
+  $('rpNow').innerHTML = '<strong>' + (rp.i + 1) + ' of ' + allEvents.length + '</strong> · ' + at + ' · ' + describeEvent(e, allEvents);
+  $('rpScrub').value = String(rp.i);
+  $('foot').textContent = 'replaying ' + allEvents.length + ' events';
+}
+
+function rpStop() {
+  rp.playing = false;
+  if (rp.timer) clearTimeout(rp.timer);
+  rp.timer = null;
+  $('rpPlay').textContent = 'play';
+}
+
+function rpAdvance() {
+  if (rp.i >= allEvents.length - 1) { rpStop(); setStatus('replay finished', ''); return; }
+  rp.i++;
+  rpRender();
+  rp.timer = setTimeout(rpAdvance, rp.step);
+}
+
+function rpPlay() {
+  if (rp.i >= allEvents.length - 1) rp.i = 0;
+  rp.playing = true;
+  $('rpPlay').textContent = 'pause';
+  setStatus('replaying the match', '');
+  rpRender();
+  rp.timer = setTimeout(rpAdvance, rp.step);
+}
+
+function rpEnter() {
+  if (!allEvents.length) return;
+  rp.on = true;
+  rp.i = 0;
+  stop();
+  $('replaybar').classList.remove('hidden');
+  $('replay').classList.add('hidden');
+  $('pause').classList.add('hidden');
+  $('again').classList.add('hidden');
+  $('rpScrub').max = String(allEvents.length - 1);
+  rpPlay();
+}
+
+function rpExit() {
+  rpStop();
+  rp.on = false;
+  $('replaybar').classList.add('hidden');
+  $('replay').classList.remove('hidden');
+  start();
+}
+
+$('replay').addEventListener('click', rpEnter);
+$('rpExit').addEventListener('click', rpExit);
+$('rpPlay').addEventListener('click', () => { if (rp.playing) { rpStop(); setStatus('replay paused', ''); } else rpPlay(); });
+$('rpSpeed').addEventListener('change', e => {
+  rp.step = Number(e.target.value);
+  if (rp.playing) { if (rp.timer) clearTimeout(rp.timer); rp.timer = setTimeout(rpAdvance, rp.step); }
+});
+$('rpScrub').addEventListener('input', e => { rpStop(); rp.i = Number(e.target.value); rpRender(); setStatus('replay paused', ''); });
 
 $('spoilers').addEventListener('change', () => { objectives = null; if (creds) refresh(); });
 

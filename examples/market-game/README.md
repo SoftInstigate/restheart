@@ -97,6 +97,11 @@ up to a minute, a move brings it back to ten seconds, and a hidden tab is not po
 a claim lands the page stops for good and says so, because there is nothing left to wait for. Press
 **look again** after a `--force game` to pick up the new board.
 
+**Replay** walks the whole match from the opening deal to the claim, a few frames a second, with
+the board, the charts and the commentary redrawn at each step. The ledger is the match, in order,
+so the page rebuilds each moment from it with the same arithmetic the server's aggregation uses.
+Scrub to any point, change the speed, or press **back to live**.
+
 Rounds are not in the ledger. The page infers them from the gaps between events, which is what a
 spectator sees anyway. Tick **show the private objectives** to unlock all three with the secrets
 from `game/reference.ts` and watch each player's progress bar. It spoils the match, which is the
