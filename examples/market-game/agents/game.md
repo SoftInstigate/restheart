@@ -95,14 +95,14 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 > The public game needs nothing from you: the board, the prices, the items and the players are
 > read with `resources/read`, or with `list_apis` and `call_api` like any other resource.
 >
-> Two things are yours alone, and your secret is what proves they are. Appending to the ledger
-> takes it as an argument of the call, `"trader"` and `"secret"`; `myState` takes the same pair
-> inside `avars`, because an aggregation reads its parameters from there. Nowhere else.
+> Two things are yours alone, and your secret is what proves they are: appending to the ledger, and
+> reading your own state. Both take the same two arguments, `"trader"` and `"secret"`, written the
+> same way. Nowhere else.
 >
 > ```
 > # where you stand: holdings, objective, what is still missing, and canClaim
 > call_api {"resource":"<SERVICE-URL>/market_events/_aggrs/myState","action":"execute",
->           "args":{"avars":{"player":"{{PLAYER}}","secret":"{{SECRET}}"}}}
+>           "args":{"trader":"{{PLAYER}}","secret":"{{SECRET}}"}}
 >
 > # the whole game in one read: holdings, open offers, settled trades, prices,
 > # the next offer id free for each player, and the winner

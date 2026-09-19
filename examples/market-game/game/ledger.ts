@@ -302,7 +302,7 @@ const holdings = {
     params: { player: { type: 'string', description: 'A player id, e.g. trader1' } },
     examples: [
       { description: "Everyone's holdings", action: 'execute', args: {} },
-      { description: 'Just trader1', action: 'execute', args: { avars: { player: 'trader1' } } },
+      { description: 'Just trader1', action: 'execute', args: { player: 'trader1' } },
     ],
   },
 };
@@ -338,7 +338,7 @@ const pricesFor = {
       'where coin met a good are here: a swap of grain for silk prices neither. The board ' +
       'carries the same thing summarised, so read this when you want the individual deals.',
     params: { item: { type: 'string', enum: [...ITEMS], description: 'One of coin, grain, ore, silk' } },
-    examples: [{ description: 'What has silk been going for?', action: 'execute', args: { avars: { item: 'silk' } } }],
+    examples: [{ description: 'What has silk been going for?', action: 'execute', args: { item: 'silk' } }],
   },
 };
 
@@ -372,7 +372,7 @@ const myState = {
   type: 'pipeline',
   stages: [
     ...HOLDINGS,
-    { $match: { '_id.player': { $var: 'player' } } },
+    { $match: { '_id.player': { $var: 'trader' } } },
     ...BY_PLAYER,
     { $addFields: { objective: { $switch: { branches: OBJECTIVE_TABLE, default: null } } } },
     { $match: { objective: { $ne: null } } },
@@ -421,17 +421,17 @@ const myState = {
     description:
       'Where you stand: what you hold, your objective, how much of each requirement is still ' +
       'missing, and canClaim — true when the board already says you have won. Read it after ' +
-      'your moves as well as before them, or you will win a round before you notice. Send your ' +
-      'player name and your secret; a wrong pair returns nothing. The objective\'s opening hint ' +
+      'your moves as well as before them, or you will win a round before you notice. Send the ' +
+      'same trader and secret you sign a write with; a wrong pair returns nothing. The objective\'s opening hint ' +
       'is not here on purpose: it was written for the first move and says nothing true later.',
     params: {
-      player: { type: 'string', description: 'Your player id, e.g. trader1' },
+      trader: { type: 'string', description: 'Your player id, e.g. trader1' },
       secret: { type: 'string', description: 'The secret that proves you are that player' },
     },
     examples: [{
       description: 'Where am I, and can I claim?',
       action: 'execute',
-      args: { avars: { player: 'trader1', secret: '<your secret>' } },
+      args: { trader: 'trader1', secret: '<your secret>' },
     }],
   },
 };
