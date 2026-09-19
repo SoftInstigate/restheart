@@ -1721,6 +1721,7 @@ public class McpService implements ByteArrayService {
         properties.put("args", schemaProp("object", "Action arguments — values for params and body declared by the resource."));
 
         return McpSchema.Tool.builder("call_api", inputSchema(properties, List.of("resource", "action")))
+                .outputSchema(callApiOutputSchema())
                 .description("""
                         Executes an action of a known MCP resource — create, update, delete, invoke — and returns \
                         what the API answered: `status` (the HTTP status code), `headers` and `body` (parsed JSON \
@@ -1776,6 +1777,28 @@ public class McpService implements ByteArrayService {
                         resource's list_apis output.\
                         """.formatted(DescriptorRenderer.CREDENTIAL_PLACEHOLDER))
                 .build();
+    }
+
+    /**
+     * The shape of every {@code call_api} answer, declared so the result can come back structured
+     * rather than as a string the model has to parse again.
+     *
+     * <p>{@code body} is deliberately untyped: it is whatever the API returned, an object for one
+     * document, an array for a collection, a string when the response was not JSON.
+     */
+    private static Map<String, Object> callApiOutputSchema() {
+        var properties = new LinkedHashMap<String, Object>();
+        properties.put("status", schemaProp("integer", "The HTTP status the API answered with."));
+        properties.put("headers", schemaProp("object", "Response headers, each as name to its first value."));
+        properties.put("body", Map.of("description", "The response body, parsed when the API returned JSON."));
+        properties.put("truncated", schemaProp("boolean", "Present and true when the body was too large and was cut."));
+        properties.put("body_bytes", schemaProp("integer", "The body's real size, when it was truncated."));
+
+        var schema = new LinkedHashMap<String, Object>();
+        schema.put("type", "object");
+        schema.put("properties", properties);
+        schema.put("required", List.of("status", "headers"));
+        return schema;
     }
 
     private static Map<String, Object> inputSchema(Map<String, Object> properties, List<String> required) {
@@ -1858,7 +1881,7 @@ public class McpService implements ByteArrayService {
                     principal, baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
                     attachedParamsOf(ctx));
-            return textResult(jsonMapper.writeValueAsString(callApiResult(result)));
+            return structuredResult(callApiResult(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());
         } catch (java.util.concurrent.TimeoutException e) {
@@ -1895,6 +1918,17 @@ public class McpService implements ByteArrayService {
 
     private static CallToolResult textResult(String text) {
         return new CallToolResult(List.of(TextContent.builder(text).build()), false, null, null);
+    }
+
+    /**
+     * A tool answer given twice: once as {@code structuredContent}, which is what a client that
+     * knows the tool's {@code outputSchema} reads, and once serialized in a text block, which is
+     * all an older client understands. The protocol asks for both, and they are the same map, so
+     * they cannot disagree.
+     */
+    private CallToolResult structuredResult(Map<String, Object> result) throws java.io.IOException {
+        return new CallToolResult(List.of(TextContent.builder(jsonMapper.writeValueAsString(result)).build()),
+                false, result, null);
     }
 
     private static CallToolResult errorResult(String message) {

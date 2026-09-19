@@ -22,6 +22,7 @@ package org.restheart.ai.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -124,6 +125,26 @@ public class McpServiceTest {
         // one tool for every action: a host that asks before a destructive tool asks before every call
         assertFalse(tool.annotations().readOnlyHint(), "call_api writes");
         assertTrue(tool.annotations().destructiveHint(), "must state the worst case, since the action is not known per tool");
+    }
+
+    /**
+     * A tool that declares an output schema must answer with structured content, so the client
+     * gets the result as data rather than as a string to parse a second time. The shape never
+     * varies with the resource being called, which is what makes declaring it possible at all.
+     */
+    @Test
+    public void callApiToolDefinition_declaresTheShapeOfItsAnswer() {
+        var schema = McpService.callApiToolDefinition().outputSchema();
+
+        assertNotNull(schema, "without an output schema a client has no reason to read structuredContent");
+        assertEquals("object", schema.get("type"));
+
+        @SuppressWarnings("unchecked")
+        var properties = (Map<String, Object>) schema.get("properties");
+        assertTrue(properties.keySet().containsAll(Set.of("status", "headers", "body")),
+                "status, headers and body are what call_api answers with");
+        assertEquals(List.of("status", "headers"), schema.get("required"),
+                "a body is not guaranteed — a 204 has none");
     }
 
     @Test

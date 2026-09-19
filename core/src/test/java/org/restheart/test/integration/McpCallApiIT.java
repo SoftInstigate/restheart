@@ -88,6 +88,31 @@ public class McpCallApiIT extends AbstactIT {
         assertTrue(text.contains("buy milk"), "the created document is not readable: " + text);
     }
 
+    /**
+     * The same answer twice: {@code structuredContent} for a client that knows the tool's output
+     * schema, and the serialized text block for one that does not. They must agree — a client
+     * reading one and a client reading the other cannot be told different things.
+     */
+    @Test
+    public void theAnswerComesBackStructured_andTheTextBlockSaysTheSame() throws Exception {
+        var response = mcp.rpc("tools/call", """
+                {"name":"call_api","arguments":{"resource":"%s","action":"create","args":{"body":{"title":"structured","done":false}}}}
+                """.formatted(TEST_COLL));
+
+        var result = response.getDocument("result");
+
+        assertTrue(result.containsKey("structuredContent"),
+                "call_api declares an outputSchema, so it must answer with structured content: " + result.toJson());
+
+        var structured = result.getDocument("structuredContent");
+        assertEquals(201, structured.getInt32("status").getValue(), structured.toJson());
+        assertTrue(structured.containsKey("headers"), "the schema requires headers: " + structured.toJson());
+
+        var text = result.getArray("content").get(0).asDocument().getString("text").getValue();
+        var fromText = BsonDocument.parse(text);
+        assertEquals(structured, fromText, "the two halves of the same answer disagree");
+    }
+
     @Test
     public void updateAndDelete_reachTheDocumentThroughItsId() throws Exception {
         var created = mcp.callTool("call_api", """
