@@ -174,11 +174,16 @@ public class McpAuthorizationIT extends AbstactIT {
                 """.formatted(ALLOWED_COLL));
         assertEquals(403, create.getInt32("status").getValue(), "call_api granted more than the caller had: " + create.toJson());
 
-        // the denied collection is not even in this caller's catalog, so it cannot be named
-        var error = asMcpUser.callToolExpectingError("call_api", """
+        // the denied collection is hidden from this caller's catalog, but call_api never refuses on
+        // catalogue visibility (#743): it dispatches, and the ACL that would refuse the GET refuses
+        // this too, so the agent reads the real status instead of being told the resource is absent
+        var denied = asMcpUser.callTool("call_api", """
                 {"resource":"%s","action":"size","args":{}}
                 """.formatted(DENIED_COLL));
-        assertTrue(error.contains("unknown"), "a resource the caller may not read must stay unknown to call_api: " + error);
+        assertEquals(403, denied.getInt32("status").getValue(),
+                "call_api reached a collection this caller may not read: " + denied.toJson());
+        assertFalse(denied.toJson().contains("classified"),
+                "denied data leaked through call_api: " + denied.toJson());
     }
 
     // ----------------------------------------------------------------- helpers
