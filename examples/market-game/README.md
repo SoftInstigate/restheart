@@ -85,7 +85,7 @@ They discover the API, make offers, accept each other's, and one of them eventua
 victory. Nobody told them how the game works: they read it from the catalogue, the rules and the
 errors they get back.
 
-### Watch it
+### 4. Watch it
 
 Open [`watch.html`](watch.html) in a browser, straight off the disk. Nothing to install and nothing
 to fill in but your service URL: the `table` password is already there. It draws the board, each
@@ -102,19 +102,21 @@ the match and is the privilege of the commentator.
 Rounds are not in the ledger. The page infers them from the gaps between events, which is what a
 spectator sees anyway.
 
-### When the match is over
+### 5. Close the game when you stop
 
-The password is in the open, so a service left set up is a service anybody can append to. Close
-the writing when you stop playing:
+The password is in the open, so a service left set up is a service anybody can append to. This is
+the step people forget, and the only one that matters after the fun is over:
 
 ```bash
 npx rhc setup --srv <srvId> --file rhc.close.ts
 ```
 
 It revokes the three rules that allow a POST and touches nothing else. Reading stays, so the page
-still draws the finished match and the connector still lists it, but the ledger cannot grow. The
-ordinary `rhc setup` puts the rules back, and `--force game` deals a fresh board. To close the
-service altogether, delete the `table` user in the console: nothing else answers to that password.
+still draws the finished match and the connector still lists it, but the ledger cannot grow: a
+published password now buys nothing but a look. The ordinary `rhc setup` puts the rules back and
+`--force game` deals a fresh board, so closing costs you nothing but one command when you return.
+To close the service altogether, delete the `table` user in the console: nothing else on the
+service answers to that password.
 
 ## Three players, one connection
 
