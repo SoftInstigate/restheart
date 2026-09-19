@@ -31,6 +31,7 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.plugins.mcp.BsonJava;
+import org.restheart.exchange.ExchangeKeys;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.security.AggregationPipelineSecurityChecker;
 
@@ -43,10 +44,12 @@ import org.restheart.security.AggregationPipelineSecurityChecker;
  * otherwise auto-generated {@link PipelineSummarizer} heuristic, which can't meaningfully
  * describe non-linear pipelines ({@code $lookup}/{@code $facet}/...).
  *
- * <p>The declared per-variable types surface as a single {@code avars} object param (with a
- * {@code properties} entry per variable), not one param per variable name — RESTHeart binds
- * {@code $var} references from one JSON query param, {@code ?avars={"name":"value",...}}, so
- * that's the shape {@code how_to_call} must render.
+ * <p>Each declared variable surfaces as a param of its own. Since 9.9 RESTHeart binds any query
+ * parameter it does not reserve for itself as a {@code $var}, so {@code ?status=A} is all a caller
+ * needs, and an agent filling one field per variable has an easier job than one assembling a JSON
+ * blob. A variable whose name collides with a reserved parameter ({@code page}, {@code sort},
+ * {@code filter}, ...) cannot travel that way and keeps the legacy form, bundled into
+ * {@code avars} — which still works, for every variable, against any version.
  */
 public final class AggregationMcpResourceBuilder {
 
@@ -91,15 +94,28 @@ public final class AggregationMcpResourceBuilder {
                 .subscribable(true)
                 .description(description(mcp));
 
-        var avarsProperties = new LinkedHashMap<String, McpResource.Param>();
+        // one entry per variable, split by whether its name can travel as a query parameter
+        var flatParams = new LinkedHashMap<String, McpResource.Param>();
+        var reservedNameParams = new LinkedHashMap<String, McpResource.Param>();
+
         referencedNames.forEach(name -> {
             var requiredByShape = scanResult.isRequired(name);
+            final McpResource.Param param;
+
             if (declaredParams.get(name) instanceof BsonDocument paramDef) {
-                avarsProperties.put(name, toParam(paramDef, requiredByShape));
+                param = toParam(paramDef, requiredByShape);
             } else {
-                avarsProperties.put(name, new McpResource.Param("string", null, requiredByShape, null, null));
+                param = new McpResource.Param("string", null, requiredByShape, null, null);
                 warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to a "
                         + (requiredByShape ? "required" : "optional") + " string");
+            }
+
+            if (ExchangeKeys.RESERVED_QPARAM_KEYS.contains(name)) {
+                reservedNameParams.put(name, param);
+                warnings.add("$var '" + name + "' has the name of a reserved query parameter, so it can only be "
+                        + "passed inside avars");
+            } else {
+                flatParams.put(name, param);
             }
         });
 
@@ -133,13 +149,18 @@ public final class AggregationMcpResourceBuilder {
                         "How many results per page.", false, null, null));
             }
 
-            // RESTHeart binds $var references from a single JSON query param named "avars"
-            // (e.g. ?avars={"status":"A"}), not one query param per variable name — declaring
-            // them individually here would make how_to_call render "?status=A", which RESTHeart
-            // rejects with QueryVariableNotBoundException
-            if (!avarsProperties.isEmpty()) {
-                var required = avarsProperties.values().stream().anyMatch(McpResource.Param::required);
-                a.param("avars", new McpResource.Param("object", "MongoDB $var bindings for this pipeline.", required, null, null, avarsProperties));
+            // Since 9.9 every non-reserved query parameter is bound as a $var, so each one is
+            // declared on its own: how_to_call renders "?status=A", and an agent has a field to
+            // fill rather than a JSON object to compose.
+            flatParams.forEach(a::param);
+
+            // The exceptions keep the legacy shape, because a parameter named `page` or `sort`
+            // would be read by RESTHeart itself before the pipeline ever saw it.
+            if (!reservedNameParams.isEmpty()) {
+                var required = reservedNameParams.values().stream().anyMatch(McpResource.Param::required);
+                a.param("avars", new McpResource.Param("object",
+                        "MongoDB $var bindings whose names are reserved query parameters, so they cannot be sent flat.",
+                        required, null, null, reservedNameParams));
             }
         });
 

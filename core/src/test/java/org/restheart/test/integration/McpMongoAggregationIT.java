@@ -21,6 +21,7 @@
 package org.restheart.test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
@@ -34,7 +35,7 @@ import kong.unirest.Unirest;
 /**
  * Integration test for #616: an aggregation with both a declared (in {@code mcp.params}) and an
  * undeclared {@code $var} reference, exercised end-to-end through {@code /mcp} — confirms
- * {@code AggregationMcpResourceBuilder}'s {@code avars} bundling, the undeclared-variable
+ * {@code AggregationMcpResourceBuilder}'s per-variable params, the undeclared-variable
  * fallback-with-warning, and that the composed descriptor actually executes.
  */
 public class McpMongoAggregationIT extends AbstactIT {
@@ -90,13 +91,15 @@ public class McpMongoAggregationIT extends AbstactIT {
     }
 
     @Test
-    void context_showsAvarsWithDeclaredAndAutoDiscoveredParamsPlusWarning() throws Exception {
+    void context_showsEachVariableAsItsOwnParamPlusWarning() throws Exception {
         var context = mcp.callTool("list_apis", "{\"resource\": \"" + AGGR_URI + "\"}");
 
         assertEquals("aggregation", context.getString("kind").getValue());
 
-        var avars = context.getDocument("actions").getDocument("execute").getDocument("params").getDocument("avars");
-        var properties = avars.getDocument("properties");
+        // Since 9.9 a flat query parameter binds a $var, so each one is a param of its own and
+        // there is no avars object to unwrap.
+        var properties = context.getDocument("actions").getDocument("execute").getDocument("params");
+        assertFalse(properties.containsKey("avars"), "no variable here has a reserved name: " + properties.toJson());
 
         var region = properties.getDocument("region");
         assertEquals("string", region.getString("type").getValue());

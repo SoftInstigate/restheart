@@ -124,6 +124,21 @@ public interface ExchangeKeys {
     /** Query parameter for specifying MongoDB read preference. */
     public static final String READ_PREFERENCE_QPARAM_KEY = "readPreference";
 
+    /**
+     * The query parameters RESTHeart reads itself, and therefore cannot hand to a pipeline.
+     *
+     * <p>Since 9.9 any other query parameter is bound as an aggregation or change-stream
+     * {@code $var}, which is why the set has to be written down: a variable named after one of
+     * these can only be passed the legacy way, inside {@code avars}.
+     */
+    public static final java.util.Set<String> RESERVED_QPARAM_KEYS = java.util.Set.of(
+            PAGE_QPARAM_KEY, PAGESIZE_QPARAM_KEY, COUNT_QPARAM_KEY, SORT_BY_QPARAM_KEY, SORT_QPARAM_KEY,
+            FILTER_QPARAM_KEY, HINT_QPARAM_KEY, AGGREGATION_VARIABLES_QPARAM_KEY, KEYS_QPARAM_KEY,
+            CACHE_QPARAM_KEY, HAL_QPARAM_KEY, DOC_ID_TYPE_QPARAM_KEY, ETAG_CHECK_QPARAM_KEY,
+            SHARDKEY_QPARAM_KEY, NO_PROPS_KEY, REPRESENTATION_FORMAT_KEY, CLIENT_SESSION_KEY, TXNID_KEY,
+            JSON_MODE_QPARAM_KEY, NO_CACHE_QPARAM_KEY, WRITE_MODE_QPARAM_KEY, WRITE_MODE_SHORT_QPARAM_KEY,
+            WRITE_CONCERN_QPARAM_KEY, READ_CONCERN_QPARAM_KEY, READ_PREFERENCE_QPARAM_KEY);
+
     // Metadata keys for collection and database configuration
 
     /** Metadata key for ETag policy configuration at the document level. */

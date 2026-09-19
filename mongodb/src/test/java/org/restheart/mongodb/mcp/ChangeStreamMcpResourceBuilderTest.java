@@ -21,6 +21,7 @@
 package org.restheart.mongodb.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -103,17 +104,21 @@ public class ChangeStreamMcpResourceBuilderTest {
         assertEquals("Notifies whenever an order's status changes", resource.extra().get("pipeline_summary"));
     }
 
+    /** A stream's variables bind from flat query parameters, through the same interpolator. */
     @Test
-    public void avarsParam_bundlesAllVariablesAsAnObjectParam() {
+    public void eachVariableIsAParamOfItsOwn() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
         var resource = ChangeStreamMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
 
-        var avars = resource.actions().get("subscribe").params().get("avars");
-        assertEquals("object", avars.type());
+        var params = resource.actions().get("subscribe").params();
+
+        assertTrue(params.containsKey("status"));
+        assertEquals("string", params.get("status").type());
+        assertFalse(params.containsKey("avars"));
     }
 
     @Test
-    public void noVarsInPipeline_noAvarsParamDeclared() {
+    public void noVarsInPipeline_noVariableParamDeclared() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
         var stagesWithNoVars = BsonArray.parse("[{\"$match\": {\"fullDocument.status\": \"A\"}}]");
 
@@ -129,7 +134,7 @@ public class ChangeStreamMcpResourceBuilderTest {
                 """);
 
         var resource = ChangeStreamMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
-        var param = resource.actions().get("subscribe").params().get("avars").properties().get("status");
+        var param = resource.actions().get("subscribe").params().get("status");
 
         assertEquals("string", param.type());
         assertEquals(List.of("open", "closed"), param.enumValues());
@@ -143,7 +148,7 @@ public class ChangeStreamMcpResourceBuilderTest {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
 
         var resource = ChangeStreamMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
-        var param = resource.actions().get("subscribe").params().get("avars").properties().get("status");
+        var param = resource.actions().get("subscribe").params().get("status");
 
         assertEquals("string", param.type());
         assertTrue(param.required());

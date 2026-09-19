@@ -24,12 +24,12 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
-import java.util.Set;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import static org.restheart.exchange.ExchangeKeys.AGGREGATION_VARIABLES_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.RESERVED_QPARAM_KEYS;
 import static org.restheart.exchange.ExchangeKeys.CACHE_QPARAM_KEY;
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import static org.restheart.exchange.ExchangeKeys.COUNT_QPARAM_KEY;
@@ -79,14 +79,6 @@ public class MongoRequestPropsInjector {
 
     // qparams with framework-defined meaning; everything else is eligible to be folded into
     // aggregation variables (avars) as a flat key=value binding
-    private static final Set<String> RESERVED_QPARAM_KEYS = Set.of(
-            PAGE_QPARAM_KEY, PAGESIZE_QPARAM_KEY, COUNT_QPARAM_KEY, SORT_BY_QPARAM_KEY, SORT_QPARAM_KEY,
-            FILTER_QPARAM_KEY, HINT_QPARAM_KEY, AGGREGATION_VARIABLES_QPARAM_KEY, KEYS_QPARAM_KEY,
-            CACHE_QPARAM_KEY, HAL_QPARAM_KEY, DOC_ID_TYPE_QPARAM_KEY, ETAG_CHECK_QPARAM_KEY,
-            SHARDKEY_QPARAM_KEY, NO_PROPS_KEY, REPRESENTATION_FORMAT_KEY, CLIENT_SESSION_KEY, TXNID_KEY,
-            JSON_MODE_QPARAM_KEY, NO_CACHE_QPARAM_KEY, WRITE_MODE_QPARAM_KEY, WRITE_MODE_SHORT_QPARAM_KEY,
-            WRITE_CONCERN_QPARAM_KEY, READ_CONCERN_QPARAM_KEY, READ_PREFERENCE_QPARAM_KEY);
-
     /**
      *
      * @param exchange the exchange to inject the properties to

@@ -24,7 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.BsonDocument;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.utils.BsonUtils;
 
 /**
  * Checks a call's args against an action's {@code params} declarations: required/missing, type,
@@ -52,6 +54,36 @@ public final class ParamValidator {
                 && param.properties().keySet().stream().anyMatch(args::containsKey);
     }
 
+    /**
+     * Whether a variable declared as a param of its own was supplied the legacy way, inside
+     * {@code avars}.
+     *
+     * <p>The mirror of {@link #suppliedFlat}. Since 9.9 an aggregation's variables are declared
+     * one by one, because that is the shape RESTHeart binds from a bare query parameter — but it
+     * still binds them from {@code ?avars={"name":...}} too, and refusing that here would make the
+     * MCP layer stricter than the endpoint it dispatches to, turning a call the server would have
+     * answered into a validation error.
+     */
+    private static boolean suppliedInAvars(String name, Map<String, Object> args) {
+        var avars = args.get("avars");
+
+        if (avars instanceof Map<?, ?> asMap) {
+            return asMap.containsKey(name);
+        }
+
+        // From a resources/read URI the whole query string arrives as text, and `avars` is not a
+        // declared param any more, so nothing coerced it into an object on the way in.
+        if (avars instanceof String raw) {
+            try {
+                return BsonUtils.parse(raw) instanceof BsonDocument doc && doc.containsKey(name);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
     /** @return human-readable error messages, empty if {@code args} satisfies every declared param */
     public static List<String> validate(McpResource.Action action, Map<String, Object> args) {
         var errors = new ArrayList<String>();
@@ -61,7 +93,9 @@ public final class ParamValidator {
             var value = effectiveArgs.get(name);
 
             if (value == null) {
-                if (param.required() && param.defaultValue() == null && !suppliedFlat(param, effectiveArgs)) {
+                if (param.required() && param.defaultValue() == null
+                        && !suppliedFlat(param, effectiveArgs)
+                        && !suppliedInAvars(name, effectiveArgs)) {
                     errors.add("missing required param '" + name + "'");
                 }
                 return;

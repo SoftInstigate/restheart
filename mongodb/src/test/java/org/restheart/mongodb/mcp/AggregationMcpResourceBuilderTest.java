@@ -90,25 +90,54 @@ public class AggregationMcpResourceBuilderTest {
         assertEquals("Orders whose stock covers less than the last quarter's demand", resource.extra().get("pipeline_summary"));
     }
 
+    /**
+     * Since 9.9 RESTHeart binds any query parameter it does not reserve as a {@code $var}, so a
+     * variable is a param of its own. An agent then fills a field per variable instead of
+     * composing a JSON object, and {@code how_to_call} renders {@code ?status=A}.
+     */
     @Test
-    public void avarsParam_bundlesAllVariablesAsAnObjectParam() {
+    public void eachVariableIsAParamOfItsOwn() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
 
-        var avars = resource.actions().get("execute").params().get("avars");
-        assertEquals("object", avars.type());
-        assertTrue(resource.actions().get("execute").params().containsKey("avars"));
+        var params = resource.actions().get("execute").params();
+
+        assertTrue(params.containsKey("status"));
+        assertEquals("string", params.get("status").type());
+        assertFalse(params.containsKey("avars"), "the legacy blob is only for names RESTHeart reserves");
+    }
+
+    /**
+     * A variable named after a query parameter RESTHeart reads itself would never reach the
+     * pipeline: `?sort=...` is the sort of the request. Those keep the legacy form, and the
+     * resource says so in its warnings rather than declaring something that cannot work.
+     */
+    @Test
+    public void aVariableNamedLikeAReservedParameterKeepsTheLegacyForm() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var stages = BsonArray.parse("[{\"$sort\": {\"$var\": \"sort\"}}]");
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "bySort", stages, mcp, "db", null).orElseThrow();
+        var params = resource.actions().get("execute").params();
+
+        assertFalse(params.containsKey("sort"));
+        assertEquals("object", params.get("avars").type());
+        assertTrue(params.get("avars").properties().containsKey("sort"));
+
+        @SuppressWarnings("unchecked")
+        var warnings = (List<String>) resource.extra().get("warnings");
+        assertTrue(warnings.stream().anyMatch(w -> w.contains("reserved query parameter")));
     }
 
     @Test
-    public void noVarsInPipeline_noAvarsParamDeclared() {
+    public void noVarsInPipeline_noVariableParamDeclared() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
         var stagesWithNoVars = BsonArray.parse("[{\"$match\": {\"status\": \"A\"}}]");
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithNoVars, mcp, "db", null).orElseThrow();
 
-        // "avars" is what a pipeline with no $var must not declare; "jsonMode" is declared by
-        // every execute action regardless, so the params map is not empty in either case
+        // a pipeline with no $var declares no variable at all; "jsonMode" is declared by every
+        // execute action regardless, so the params map is not empty in either case
         var params = resource.actions().get("execute").params();
         assertFalse(params.containsKey("avars"));
         assertEquals(Set.of("jsonMode"), params.keySet());
@@ -121,7 +150,7 @@ public class AggregationMcpResourceBuilderTest {
                 """);
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
-        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
+        var param = resource.actions().get("execute").params().get("status");
 
         assertEquals("string", param.type());
         assertEquals("Order status", param.description());
@@ -137,7 +166,7 @@ public class AggregationMcpResourceBuilderTest {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
-        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
+        var param = resource.actions().get("execute").params().get("status");
 
         assertEquals("string", param.type());
         assertTrue(param.required());
@@ -152,7 +181,7 @@ public class AggregationMcpResourceBuilderTest {
         var stagesWithDefault = BsonArray.parse("[{\"$match\": {\"status\": {\"$var\": [\"status\", \"A\"]}}}]");
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithDefault, mcp, "db", null).orElseThrow();
-        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
+        var param = resource.actions().get("execute").params().get("status");
 
         assertFalse(param.required());
     }
@@ -164,7 +193,7 @@ public class AggregationMcpResourceBuilderTest {
                 """);
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
-        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
+        var param = resource.actions().get("execute").params().get("status");
 
         // mcp.params declares "status" but doesn't set its own "required" -- since the pipeline
         // references it as a bare, non-defaulted, non-conditional $var, it's required
@@ -178,7 +207,7 @@ public class AggregationMcpResourceBuilderTest {
                 """);
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
-        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
+        var param = resource.actions().get("execute").params().get("status");
 
         // the pipeline shape says required, but the operator explicitly overrode it
         assertFalse(param.required());
