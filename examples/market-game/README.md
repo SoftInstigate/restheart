@@ -1,37 +1,30 @@
 # The market game
 
-An application with no code. Three AI agents trade goods with each other through a RESTHeart
-Cloud service's MCP server. Each has a secret objective and the wrong pile of goods. You follow
-the match from Claude, or from a page that draws the board as they play.
+An application with no code. Three AI agents trade goods with each other through a RESTHeart Cloud
+service's MCP server. Each has a secret objective and the wrong pile of goods. You follow the match
+from Claude, or from a page that draws the board as they play.
 
-Nothing here is a program. It is a data model: one collection, a schema, six rules, three
-aggregations, one account and nine permissions. RESTHeart Cloud enforces it and publishes it
-over MCP, and the agents are the user interface. That is the point of the example: **model the
-domain, and the application is there.**
+It is a data model and nothing else: one collection, a schema, six rules, four aggregations, one
+account and seven permissions. RESTHeart Cloud enforces it and publishes it over MCP, and the
+agents are the user interface. **Model the domain, and the application is there.**
 
 ## Play it
 
-You need a RESTHeart Cloud service, Node 22.18 or later, and Claude. A free service is fine, but
-make it a **fresh** one: a service set up for another app carries that app's Guards rules and
-user schema, and they apply to the players too.
+You need a RESTHeart Cloud service, Node 22.18 or later, and Claude. Use a **fresh** service: one
+set up for another app carries that app's Guards rules and user schema, and they apply here too.
 
 ### 1. Set up the service
 
+Generate a personal access token at https://cloud.restheart.com/me/tokens, then:
+
 ```bash
 npm install
-npx rhc login                       # paste a personal access token from your console profile
-npx rhc setup --srv <srvId>         # the six characters at the start of your service URL
+npx rhc login                # paste the token
+npx rhc setup --srv <srvId>  # the six characters at the start of your service URL
 ```
 
-Any token from https://cloud.restheart.com/me/tokens works: there is no role to choose and no
-permission to add. Every token is issued with the `cli` role, and `rhc` uses it to mint an admin
-token for a service you own. It is your **cloud** credential, for the setup only — the agents
-never see it, and sign in with something else entirely.
-
-That is the whole setup: the ledger and its rules, three aggregations, a change stream, a GraphQL
-app, one account and the permissions. Wait about 20 seconds after the first run for the
-permissions to take effect. Run it again any time, it changes only what differs. To wipe the
-ledger and start a new game: `npx rhc setup --srv <srvId> --force game`.
+Wait about 20 seconds for the permissions to take effect. Run it again whenever you edit the game;
+it changes only what differs. `--force game` deals a fresh board.
 
 Check that the rules refuse what they must:
 
@@ -40,23 +33,20 @@ export MCP_BASE=https://<your service URL>
 ./agents/smoke.sh
 ```
 
-It plays the moves that must go through, then an offer over the cap, an over-commitment, a
-self-deal, a trade on a missing offer, a false claim of victory and a second acceptance, and
-checks each answer. It appends to the ledger, so `--force game` afterwards for a clean board.
+It plays the legal moves and then the illegal ones, and checks every answer. It writes to the
+ledger, so deal a fresh board afterwards.
 
 ### 2. Connect Claude
 
 **Settings → Connectors → Add custom connector**, and paste the MCP endpoint from the console's
-**MCP Server** page. Claude opens the service's own sign-in page: sign in as **`table`**, password
-**`Aged-Harbour-Kettle-7`**. It is a user *of the service*, created by the setup.
+**MCP Server** page. Sign in on the service's own page as **`table`**, password
+**`Aged-Harbour-Kettle-7`**.
 
-Not as `root`, and not with the token from step 1. Root bypasses the ACL, and the ACL is the
-game: no rule matches, so `actor` is never stamped on an event and every objective is readable by
-everyone. The players would have no identity and no secrets.
+Not as `root`: root bypasses the ACL, and the ACL is the game. No rule would match, `actor` would
+never be stamped, and the players would have no identity.
 
-Then attach the resource ending in `/market_events/_aggrs/board` — that one read is the whole
-game — and subscribe to the one ending in `/market_events`, so Claude is told when the ledger
-changes and re-reads the board.
+Attach the resource ending in `/market_events/_aggrs/board` and subscribe to the one ending in
+`/market_events`, so Claude is told when the ledger changes.
 
 ### 3. Start the game
 
@@ -66,126 +56,80 @@ One line, pasted into Claude:
 Fetch the raw text of https://raw.githubusercontent.com/SoftInstigate/restheart/9.x/examples/market-game/agents/game.md, in full and not summarized, and do what it says.
 ```
 
-That is the whole prompt, and there is nothing to fill in: Claude takes the service URL from the
-connector, or asks you for it. Say "in full" and mean it: a host that summarizes a fetched page
-hands the players a paraphrase of their brief, and the exact JSON of a move matters. Paste
-[`agents/game.md`](agents/game.md) itself instead if you have edited it, or if the host cannot
-fetch a URL.
-
-Claude becomes the commentator and runs the match in rounds: each round it starts three
-subagents, one per player, each with its own name and secret; they make their moves and stop;
-Claude reads the board and tells you what happened. Then the next round. Four agents, one
-connection.
-
-A round takes a couple of minutes, and you get the commentary at the end of each one. If Claude
-instead sits silent for a quarter of an hour, it has started players that were told to play the
-whole match rather than one round: stop it and give it the prompt again.
-
-They discover the API, make offers, accept each other's, and one of them eventually claims
-victory. Nobody told them how the game works: they read it from the catalogue, the rules and the
-errors they get back.
+Claude becomes the commentator and runs the match in rounds: each round it starts three subagents,
+one per player, they make their moves and stop, and Claude tells you what happened. Nobody told
+them the rules — they read them from the catalogue and from the errors they get back.
 
 ### 4. Watch it
 
-Open [`watch.html`](watch.html) in a browser, straight off the disk. Nothing to install and nothing
-to fill in but your service URL: the `table` password is already there. It draws the board, each
-player's holdings, the coin trade by trade, how each good is split between the three of them, the
-open offers and the match round by round, and follows along while the agents play. On a desktop it
-is exactly one screen: the panels scroll inside themselves rather than pushing anything below the
-fold.
+Open [`watch.html`](watch.html) from disk. Nothing to install, and nothing to fill in but your
+service URL. It draws the standings, the coin trade by trade, how each good is split between the
+three players, the open offers and the match round by round, and follows along while they play.
 
-**Replay** walks the whole match again at a few frames a second, from the opening deal to the
-claim. Scrub to any moment, change the speed, or go back to live. Tick **show the private
-objectives** to unlock all three with the secrets and watch everyone's progress bar, which spoils
-the match and is the privilege of the commentator.
-
-Rounds are not in the ledger. The page infers them from the gaps between events, which is what a
-spectator sees anyway.
+**Replay** walks the match again at a few frames a second. **Show the private objectives** unlocks
+all three and spoils the ending, which is the privilege of the commentator.
 
 ### 5. Close the game when you stop
 
-The password is in the open, so a service left set up is a service anybody can append to. This is
-the step people forget, and the only one that matters after the fun is over:
+The password is published, so a service left set up is a service anybody can write to:
 
 ```bash
 npx rhc setup --srv <srvId> --file rhc.close.ts
 ```
 
-It revokes the three rules that allow a POST and touches nothing else. Reading stays, so the page
-still draws the finished match and the connector still lists it, but the ledger cannot grow: a
-published password now buys nothing but a look. The ordinary `rhc setup` puts the rules back and
-`--force game` deals a fresh board, so closing costs you nothing but one command when you return.
-To close the service altogether, delete the `table` user in the console: nothing else on the
-service answers to that password.
+It revokes the three rules that allow a POST. Reading stays, so the page still draws the finished
+match, but the ledger cannot grow. The ordinary setup puts the rules back.
 
 ## Three players, one connection
 
-A connector carries one identity for the whole application, and this game is built on knowing who
-wrote what: holdings, offers and victory are all computed from the `actor` of each event. Three
-subagents behind one connector would be one player with three voices.
+A connector carries one identity, and this game is built on knowing who wrote what. Three subagents
+behind it would be one player with three voices.
 
-So the account is nobody in particular. On its own it reads the public game and nothing else.
-Two arguments on the call say who is speaking:
+So the account is nobody in particular, and two arguments on the call say who is speaking:
 
 ```json
 "args": { "trader": "trader1", "secret": "seagull-brick-oath", "body": { ...the event... } }
 ```
 
-The permissions hold one rule per player, with that player's name and secret written into the
-same rule, so a call is `trader1` only when both match. The server then stamps `actor: trader1`
-from the rule itself: what a player signs is decided by the secret they proved, not by anything
-they put in the body. Wrong secret, or none, and the call is refused.
-
-**Each subagent is told its own secret and no other.** That is the whole of the separation, and
-it is the part a prompt can carry that a shared connection cannot. The commentator holds all
-three, so it can read any objective and call the match properly; the players cannot read each
-other's.
-
-Do not give the commentator a wider credential instead. It would be the connection's identity,
-therefore the players' too, and a root account bypasses the ACL: no rule would match, `actor`
-would never be stamped, and every move would be refused by the schema that requires it.
+There is one permission per player holding that player's name and secret, so a call is `trader1`
+only when both match, and the server stamps `actor` from the rule itself. **Each subagent is told
+its own secret and no other**, which is the whole of the separation. The commentator holds all
+three, so it can read any objective; the players cannot read each other's.
 
 The two private things are written differently on purpose. Appending to the ledger is a
-**predicate**: no pair, no write, and the rule that matched is what stamps `actor`. Reading your
-objective is a **filter**: the rule lets any player ask, and `@qparams['trader']` and
-`@qparams['secret']` are substituted into the query, so a wrong pair returns nothing instead of a
-refusal. A predicate there would hide the collection, since a catalogue is built by asking the ACL
-what a caller may read and that question carries no arguments.
+**predicate**: no pair, no write. Reading your own state is a **filter**, or a branch inside an
+aggregation: the rule lets anyone ask and a wrong pair returns nothing. A predicate there would
+hide the resource, because a catalogue is built by asking the ACL what a caller may read and that
+question carries no arguments.
 
-The secrets are in the open, in `game/reference.ts`, to be copied into prompts. Do not read it as
-a pattern: a secret in a query string is read by every request log and by whoever holds the
-transcript, and a published password stays published — which is what `rhc.close.ts` is for. When a
-client can hold a credential of its own, give it an account of its own.
+The secrets are in the open in `game/reference.ts`, to be copied into prompts. Do not read it as a
+pattern. When a client can hold a credential of its own, give it an account of its own.
 
 ## How it works
 
-One collection, `market_events`, append-only, the only thing anybody writes to. Four kinds of
-event: `genesis` what a player starts with, `offer` "I give X for Y", `trade` somebody accepted
-one, `claim` "I won". Everything else — who owns what, which offers are open, who is winning — is
-computed from it by aggregations. Nothing is ever updated or deleted.
+One collection, `market_events`, append-only. Four kinds of event: `genesis` what a player starts
+with, `offer` "I give X for Y", `trade` somebody accepted one, `claim` "I won". Everything else —
+holdings, open offers, prices, standings — is derived from it by aggregations. Nothing is ever
+updated or deleted.
 
-**Collisions settle themselves.** A trade's `_id` is derived from the offer's, so the second
-player to accept the same offer gets a `409`. A victory claim has the fixed `_id` `win`, so only
-one can exist.
+**Collisions settle themselves.** A trade's `_id` is derived from the offer's, so the second player
+to accept the same offer gets a `409`. A claim has the fixed `_id` `win`.
 
-**Six rules guard the rest**, each an aggregation that runs inside the write's transaction:
-no negative holdings, no offering more than you hold, no trade without a real offer, no accepting
-your own, no claiming a victory the board does not show, and nothing at all after somebody has
-won. A JSON Schema caps an offer at 3 units or 30 coin, so winning takes several trades.
+**Six rules guard the rest**, each an aggregation that runs inside the write's transaction: no
+negative holdings, no offering more than you hold, no trade without a real offer, no accepting your
+own, no claiming a victory the board does not show, and nothing at all after somebody has won. A
+JSON Schema caps an offer at 3 units or 30 coin, so winning takes several trades.
 
-**A `409` says which of three things happened**: `"retryable": true` means two writes collided
-and yours was not applied, send it again; a `"constraint"` means a rule refused it, re-read the
-board; neither means that `_id` exists already, somebody was faster.
+**A `409` says which of three things happened**: `"retryable": true` means two writes collided and
+yours was not applied, send it again; a `"constraint"` means a rule refused it; neither means that
+`_id` exists already.
 
-**The game cannot stall.** Every good is held by two players, one with 12 and one with 4, and each
-objective asks for what the other two hold, so no one is a monopolist and no one can sit still.
-The thresholds are deliberately uneven, and uneven in both directions. Two players must reach 70
-coin holding 60, so they have to sell. The third only has to stay above 40 and is the one player
-who can pay cash, which is why the market has a buyer at all — and it pays for that privilege with
-the hardest goods target of the three, 14 ore of the 16 in the game, which it cannot reach without
-buying out both holders. Make them
-all short of coin and the market freezes the moment the goods are distributed, because then no
-purchase helps the buyer and gaining coin needs somebody willing to spend it.
+**The game cannot stall.** Each good is held by two players, 12 and 4, and each objective asks for
+what the other two hold. The thresholds are uneven on purpose: two players must reach 70 coin
+holding 60, so they have to sell, while the third only needs 40 and is the one who can pay cash.
+Make them all short of coin and the market freezes the moment the goods are distributed, because
+then no purchase helps the buyer. That third player pays for its cash with the hardest goods
+target, 14 ore of the 16 that exist.
 
 ## Files
 
@@ -195,7 +139,7 @@ purchase helps the buyer and gaining coin needs somebody willing to spend it.
 | `rhc.close.ts` | the same for a service nobody is playing on: revokes every write |
 | `game/service.ts` | comparing what a service holds with what is meant, for both setups |
 | `game/schema.ts` | the JSON Schema for ledger events |
-| `game/ledger.ts` | the holdings derivation, the aggregations, the change stream, the endowments |
+| `game/ledger.ts` | the derivation, the four aggregations, the change stream, the endowments |
 | `game/rules.ts` | the six constraints |
 | `game/reference.ts` | items, players, objectives, the account and the secrets |
 | `game/acl.ts` | the permissions, and the trader/secret pairs |
@@ -205,9 +149,8 @@ purchase helps the buyer and gaining coin needs somebody willing to spend it.
 | `agents/mcp.sh` | a minimal MCP client, for checking from a terminal |
 | `agents/smoke.sh` | every rule exercised as the three players, each answer checked |
 
-Everything is in the console afterwards: the rules on the **Constraints** page, where **Run**
-tries each against the data; the resources on the **MCP Server** page, under **Test
-credentials**.
+The console shows all of it: the rules on the **Constraints** page, where **Run** tries each against
+the data, and the resources on the **MCP Server** page.
 
 More in the RESTHeart Cloud manual: [MCP Server](https://restheart.org/docs/cloud/mcp), [Data
 Constraints](https://restheart.org/docs/cloud/constraints), [the `rhc`
@@ -215,16 +158,16 @@ CLI](https://restheart.org/docs/cloud/cli).
 
 ## Things that bit us
 
-Each of these broke the example once.
-
 1. **`path-prefix` matches whole path segments.** `path-prefix('/market_')` matches nothing.
-   Name each collection.
-2. **In aggregation expressions, `$eq: ["$field", null]` is false when the field is missing.**
-   Test with `{"$eq": [{"$type": "$field"}, "object"]}` instead.
+2. **`$eq: ["$field", null]` is false when the field is missing**, in expressions. Test
+   `{"$eq": [{"$type": "$field"}, "object"]}` instead.
 3. **A bulk delete needs a filter.** To delete everything: `filter={"_id":{"$exists":true}}`.
-4. **Between two matching permissions the higher priority wins.** Do not rely on that for a
-   read filter: give the filtered collection its own permission and exclude it from the others.
-5. **Subscribing to an aggregation never notifies.** Only collections have change streams.
-   Subscribe to the collection, read the aggregation.
-6. **"Does it exist?" is not "is it what I meant?"** The setup compares each stored document
-   with the intended one, so an edited rule or permission is re-applied.
+4. **`$lookup` is blacklisted in aggregations.** Write the table into the pipeline instead.
+5. **`@qparams['x']` works in a filter, never in a predicate** — the permission would not even
+   load. Use `%{q,x}` there.
+6. **Subscribing to an aggregation never notifies.** Subscribe to the collection, read the
+   aggregation.
+7. **Between two matching permissions the higher priority wins.** Do not rely on that for a read
+   filter: give the filtered resource its own permission.
+8. **"Does it exist?" is not "is it what I meant?"** The setup compares stored documents with the
+   intended ones, so an edited rule is re-applied.

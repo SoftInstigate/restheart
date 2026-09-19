@@ -89,7 +89,7 @@ echo "== moves the rules must refuse"
 expect "trader3 offers 3 more ore (would commit 6 of 4)"  409 noOverCommitment  trader3 "$(offer trader3 "$RUN-2" ore 3 coin 10)"
 expect "trader3 accepts its own offer"                    409 noSelfDealing     trader3 "$(accept "offer:trader3:$RUN-1")"
 expect "a trade on an offer that does not exist"          409 tradeSettlesAnOffer trader2 "$(accept "offer:nobody:$RUN")"
-expect "trader1 claims victory with 3 ore of 10"          409 claimIsEarned     trader1 '{"_id":"win","offerId":"win","type":"claim"}'
+expect "trader1 claims victory holding 3 ore of the 14 it needs"          409 claimIsEarned     trader1 '{"_id":"win","offerId":"win","type":"claim"}'
 
 echo "== the unique _id"
 expect "trader3 accepts an offer already accepted"        409 - trader3 "$(accept "offer:trader1:$RUN-1")"
@@ -113,6 +113,21 @@ check "trader1 with its own secret reads its own objective" trader1 "$(objective
 check "trader1 with trader2's secret reads nothing"         none    "$(objective trader1 "$(secret_of trader2)")"
 check "no secret at all reads nothing"                      none    "$(objective trader1 '')"
 check "trader2 with its own secret reads its own objective" trader2 "$(objective trader2 "$(secret_of trader2)")"
+
+echo "== myState, which answers only to the pair"
+mystate() {
+  curl -s -u "$TABLE_USER:$TABLE_PASSWORD" -G "$BASE/market_events/_aggrs/myState" \
+    --data-urlencode "avars={\"player\":\"$1\",\"secret\":\"$2\"}" | python3 -c '
+import json, sys
+try: rows = json.loads(sys.stdin.read())
+except Exception: print("unreadable"); raise SystemExit
+if not isinstance(rows, list): print("unreadable"); raise SystemExit
+if not rows: print("none"); raise SystemExit
+r = rows[0]
+print(r.get("player", "?") + ":" + ("can-claim" if r.get("canClaim") else "not-yet"))'
+}
+check "trader1 sees its own state, and cannot claim yet" trader1:not-yet "$(mystate trader1 "$(secret_of trader1)")"
+check "a wrong secret sees nothing"                      none            "$(mystate trader1 "$(secret_of trader2)")"
 
 echo "== the board, as trader2"
 board_out="$(curl -s -u "$TABLE_USER:$TABLE_PASSWORD" -w '\n%{http_code}' "$BASE/market_events/_aggrs/board")"

@@ -95,24 +95,20 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 > The public game needs nothing from you: the board, the prices, the items and the players are
 > read with `resources/read`, or with `list_apis` and `call_api` like any other resource.
 >
-> Two things are yours alone, and you prove they are by adding your two arguments to those calls:
->
-> ```json
-> "args": { "trader": "{{PLAYER}}", "secret": "{{SECRET}}", ... }
-> ```
->
-> Add them when you **append to the ledger** and when you **read your objective**, and nowhere
-> else.
+> Two things are yours alone, and your secret is what proves they are. Appending to the ledger
+> takes it as an argument of the call, `"trader"` and `"secret"`; `myState` takes the same pair
+> inside `avars`, because an aggregation reads its parameters from there. Nowhere else.
 >
 > ```
-> # your objective, and only yours
-> call_api {"resource":"<SERVICE-URL>/market_objectives","action":"query",
->           "args":{"trader":"{{PLAYER}}","secret":"{{SECRET}}"}}
+> # where you stand: holdings, objective, what is still missing, and canClaim
+> call_api {"resource":"<SERVICE-URL>/market_events/_aggrs/myState","action":"execute",
+>           "args":{"avars":{"player":"{{PLAYER}}","secret":"{{SECRET}}"}}}
 >
-> # the whole game in one read: holdings, open offers, settled trades, winner
+> # the whole game in one read: holdings, open offers, settled trades, prices,
+> # the next offer id free for each player, and the winner
 > resources/read {"uri":"<SERVICE-URL>/market_events/_aggrs/board"}
 >
-> # what an item has been trading for, before you price your own offer
+> # every deal in one item, with the price of a single unit
 > resources/read {"uri":"<SERVICE-URL>/market_events/_aggrs/pricesFor?item=ore"}
 >
 > # a move
@@ -131,16 +127,16 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 >
 > ## Your round, in order
 >
-> 1. Read your objective, then the board.
+> 1. Read `myState`, then the board. `myState` gives you your objective, what you still lack and
+>    `canClaim`; the board gives you the open offers and what things are selling for.
 > 2. **Accept every open offer that moves you toward your objective**, best first. Do this before
 >    you publish anything: a market where everyone publishes and nobody crosses fills up with
 >    offers and settles nothing.
 > 3. Publish **one or two** offers, no more: what you can spare for what you still need, priced
->    against `pricesFor` rather than against your hopes.
-> 4. **Re-read the board after your own moves**, every time. Holdings are derived from the ledger,
->    so what you now own is not what you remember offering: a trade you accepted may have finished
->    you. If the board shows you hold what your objective asks for, claim victory at once, in this
->    round. Waiting to notice next round is how a won game is lost.
+>    against what the board says things have been going for rather than against your hopes.
+> 4. **Read `myState` again after your own moves**, every time, and claim the moment `canClaim` is
+>    true. A write answers with nothing, so what you now hold is not what you remember offering: a
+>    trade you accepted may have finished you. Noticing next round is how a won game is lost.
 > 5. Report in two or three lines — what you accepted, what you published, what you are still
 >    short of — and stop. You are not finished with the game, you are finished with this round.
 >
@@ -159,8 +155,8 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 >      "give": { "item": "grain", "qty": 3 }, "want": { "item": "silk", "qty": 3 } }
 >    ```
 >
->    Number them from where the ledger left off, not from 1, or you will collide with the offer
->    you published in an earlier round.
+>    The board tells you the number to use, under `nextOfferId`. Do not start from 1 again: you
+>    would collide with the offer you published in an earlier round.
 >
 >    `give` and `want` are from **your** point of view: you hand over `give` and receive `want`.
 >    Reading someone else's offer, it is the other way round — you receive their `give` and pay

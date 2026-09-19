@@ -260,7 +260,15 @@ const cssVar = name => getComputedStyle(document.documentElement).getPropertyVal
 const colourOf = p => cssVar(PLAYER_VAR[p] || '--dim');
 const itemColour = i => cssVar('--' + i);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const tsOf = e => (e && e.ts && typeof e.ts.$date === 'number') ? e.ts.$date : null;
+/** A time from either shape: the ledger's own `{"$date": n}` or the ISO string the board derives. */
+const millis = v => {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') { const t = Date.parse(v); return Number.isNaN(t) ? null : t; }
+  if (typeof v === 'object' && v.$date !== undefined) return millis(v.$date);
+  return null;
+};
+const tsOf = e => (e ? millis(e.ts) : null);
 
 /**
  * An error the loop must not retry. Polling a service that refuses the credentials is how a
@@ -382,7 +390,7 @@ function renderCoin(events, board) {
 
   const series = {};
   PLAYERS.forEach(p => { series[p] = [coin[p] || 0]; });
-  const trades = (board.settledTrades || []).slice().sort((a, b) => (a.ts.$date || 0) - (b.ts.$date || 0));
+  const trades = (board.settledTrades || []).slice().sort((a, b) => (millis(a.ts) || 0) - (millis(b.ts) || 0));
   trades.forEach(t => {
     if (t.gave && t.gave.item === 'coin') { coin[t.from] -= t.gave.qty; coin[t.to] += t.gave.qty; }
     if (t.got && t.got.item === 'coin') { coin[t.to] -= t.got.qty; coin[t.from] += t.got.qty; }
@@ -474,16 +482,22 @@ function renderHoldings(board) {
   $('holdingsLegend').innerHTML = PLAYERS.map(p =>
     '<span><span class="swatch" style="background:' + colourOf(p) + '"></span>' + p + '</span>').join('');
 
-  // the going rate, which is the one thing the bars do not say
-  const prices = {};
-  (board.settledTrades || []).forEach(t => {
-    const coin = t.gave.item === 'coin' ? t.gave : (t.got.item === 'coin' ? t.got : null);
-    const good = t.gave.item === 'coin' ? t.got : (t.got.item === 'coin' ? t.gave : null);
-    if (!coin || !good || !good.qty) return;
-    (prices[good.item] = prices[good.item] || []).push(coin.qty / good.qty);
-  });
-  const rates = Object.entries(prices).map(([g, v]) =>
-    (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) + ' coin per ' + g);
+  // the going rate, which is the one thing the bars do not say. The board works it out itself;
+  // a replayed board does not, so it is recomputed from the trades up to that point.
+  let rates;
+  if (board.prices) {
+    rates = board.prices.map(p => p.avgPrice + ' coin per ' + p.item + ' (last ' + p.lastPrice + ')');
+  } else {
+    const prices = {};
+    (board.settledTrades || []).forEach(t => {
+      const coin = t.gave.item === 'coin' ? t.gave : (t.got.item === 'coin' ? t.got : null);
+      const good = t.gave.item === 'coin' ? t.got : (t.got.item === 'coin' ? t.gave : null);
+      if (!coin || !good || !good.qty) return;
+      (prices[good.item] = prices[good.item] || []).push(coin.qty / good.qty);
+    });
+    rates = Object.entries(prices).map(([g, v]) =>
+      (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) + ' coin per ' + g);
+  }
   $('holdingsNote').textContent = rates.length ? 'Sold so far at ' + rates.join(', ') + '.'
                                                : 'Nothing has been sold for coin yet.';
 }
