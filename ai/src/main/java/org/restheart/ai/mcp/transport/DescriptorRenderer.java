@@ -22,7 +22,9 @@ package org.restheart.ai.mcp.transport;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -165,6 +167,42 @@ public final class DescriptorRenderer {
             }
         }
         return candidates.get(0);
+    }
+
+    /**
+     * The path an invocation will address, relative to the resource: the action's template with
+     * its placeholders filled in from {@code args}.
+     */
+    public static String pathFor(McpResource.Action action, Map<String, Object> args) {
+        return substitutePathTemplate(action == null ? null : action.pathTemplate(),
+                args == null ? Map.of() : args, new HashSet<>());
+    }
+
+    /**
+     * The query parameters an invocation will carry: every argument except the body and the ones
+     * the path template consumes, decoded as Undertow will hold them.
+     *
+     * <p>This exists so that a check made <em>before</em> a call can see exactly what the call
+     * will send. An ACL rule may decide on a query parameter — RESTHeart's own predicate language
+     * reads them with {@code %{q,name}} — and a question asked without them gets a different
+     * answer from the one the request itself will get.
+     */
+    public static Map<String, Deque<String>> queryParametersOf(McpResource.Action action, Map<String, Object> args) {
+        var effective = args == null ? Map.<String, Object>of() : args;
+
+        var consumed = new HashSet<String>();
+        substitutePathTemplate(action == null ? null : action.pathTemplate(), effective, consumed);
+        consumed.add("body");
+
+        var out = new LinkedHashMap<String, Deque<String>>();
+        effective.forEach((key, value) -> {
+            if (consumed.contains(key) || value == null) {
+                return;
+            }
+            out.put(key, new ArrayDeque<>(List.of(queryStringValue(value))));
+        });
+
+        return out;
     }
 
     private static String substitutePathTemplate(String pathTemplate, Map<String, Object> args, Set<String> consumed) {

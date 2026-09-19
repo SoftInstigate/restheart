@@ -21,6 +21,7 @@
 package org.restheart.ai.mcp.tools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -92,6 +93,40 @@ public class ListApisToolTest {
         var examples = (List<Map<String, Object>>) described.get("examples");
         assertEquals(1, examples.size(), "an example of a call that is not on the table demonstrates nothing");
         assertEquals("create", examples.get(0).get("action"));
+    }
+
+    /**
+     * The transports list names the same actions from the other side. Filtered in one place and
+     * not the other, a single listing says both that {@code create} is available and that it is
+     * not — which is exactly what an agent reported before this was fixed.
+     */
+    @Test
+    public void theTransportsListTheSameActionsAsTheActionsMap() {
+        var resource = McpResource.builder()
+                .uri("https://host/ledger")
+                .action("query", a -> a.method("GET").readable(true))
+                .action("create", a -> a.method("POST"))
+                .action("delete", a -> a.method("DELETE").pathTemplate("/{id}"))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+
+        var described = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/ledger",
+                null, null, null, null, VISIBLE, r -> Set.of("query"));
+
+        @SuppressWarnings("unchecked")
+        var actions = (Map<String, Object>) described.get("actions");
+
+        @SuppressWarnings("unchecked")
+        var transports = (List<Map<String, Object>>) described.get("transports");
+
+        assertEquals(Set.of("query"), actions.keySet());
+        assertFalse(transports.isEmpty(), "a transport carrying one action is still a transport");
+        transports.forEach(transport -> {
+            @SuppressWarnings("unchecked")
+            var names = (List<String>) transport.get("actions");
+            assertEquals(List.of("query"), names,
+                    "the transports must not offer what the actions map withholds");
+        });
     }
 
     @Test

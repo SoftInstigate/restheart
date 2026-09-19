@@ -21,11 +21,13 @@
 package org.restheart.ai.mcp;
 
 import java.net.URI;
+import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.restheart.ai.mcp.transport.DescriptorRenderer;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.security.DescriptorAuthorization;
 import org.restheart.plugins.security.RequestDescriptor;
@@ -83,11 +85,51 @@ final class CatalogVisibility {
                               RequestDescriptor identity,
                               String path,
                               String method) {
+        return isReadable(authorization, identity, path, method, Map.of());
+    }
+
+    /**
+     * The same question, asked with the query parameters the request will carry.
+     *
+     * <p>A listing has none to offer, and answers for the bare path. A call has them, and must be
+     * judged on them: an ACL rule may decide on a query parameter, and asking without it produces
+     * a refusal the real request would never have got — the resource then looks absent to a caller
+     * holding exactly what would have opened it.
+     */
+    static boolean isReadable(DescriptorAuthorization authorization,
+                              RequestDescriptor identity,
+                              String path,
+                              String method,
+                              Map<String, Deque<String>> queryParameters) {
         var probe = new RequestDescriptor(identity.principal(), method, path,
-                Map.of(), identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme(),
+                queryParameters, identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme(),
                 identity.attachedParams());
 
         return authorization.isAllowed(probe);
+    }
+
+    /**
+     * Whether this caller may invoke one action of a resource <em>with these arguments</em>.
+     *
+     * <p>Used where a specific call is being answered rather than a catalogue composed: the path
+     * carries the arguments it addresses, and the query string the ones the ACL may read. It is
+     * the same question the pipeline will ask, so the two cannot disagree.
+     */
+    static boolean canInvoke(DescriptorAuthorization authorization,
+                             RequestDescriptor identity,
+                             McpResource resource,
+                             String actionName,
+                             Map<String, Object> args) {
+        var action = resource.actions().get(actionName);
+
+        if (action == null) {
+            return false;
+        }
+
+        return isReadable(authorization, identity,
+                pathOf(resource.uri()) + DescriptorRenderer.pathFor(action, args),
+                methodOf(action),
+                DescriptorRenderer.queryParametersOf(action, args));
     }
 
     /**

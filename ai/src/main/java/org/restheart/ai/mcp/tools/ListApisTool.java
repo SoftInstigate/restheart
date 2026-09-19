@@ -109,6 +109,17 @@ public final class ListApisTool {
             described.put("actions", kept);
         }
 
+        // The transports list names the same actions from the other side, and left alone it
+        // contradicts the map above: one entry saying `create` is available and the next leaving
+        // it out. A transport that ends up carrying nothing goes with them.
+        if (described.get("transports") instanceof List<?> transports) {
+            described.put("transports", transports.stream()
+                    .map(transport -> transport instanceof Map<?, ?> t ? filterTransport(t, invokable) : transport)
+                    .filter(transport -> !(transport instanceof Map<?, ?> t)
+                            || !(t.get("actions") instanceof List<?> names) || !names.isEmpty())
+                    .toList());
+        }
+
         if (described.get("examples") instanceof List<?> examples) {
             described.put("examples", examples.stream()
                     .filter(example -> !(example instanceof Map<?, ?> m)
@@ -118,6 +129,18 @@ public final class ListApisTool {
         }
 
         return described;
+    }
+
+    /** One transport entry with only the actions this caller could invoke listed on it. */
+    private static Map<String, Object> filterTransport(Map<?, ?> transport, Set<String> invokable) {
+        var out = new LinkedHashMap<String, Object>();
+        transport.forEach((key, value) -> out.put(String.valueOf(key), value));
+
+        if (out.get("actions") instanceof List<?> names) {
+            out.put("actions", names.stream().filter(name -> invokable.contains(String.valueOf(name))).toList());
+        }
+
+        return out;
     }
 
     private static Map<String, Object> catalogEntry(McpResource resource) {

@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
 
 import org.restheart.ai.mcp.RegisteredMcpAware;
 import org.restheart.ai.mcp.transport.DescriptorRenderer;
@@ -87,16 +86,20 @@ public final class CallApiTool {
     /**
      * The {@code call_api} tool: resolves and validates the call, then executes it.
      *
-     * @throws UnknownResourceException  if {@code resourceUri} matches no known (visible) resource
+     * <p>The call is not gated here: it is dispatched through the whole handler chain, and a
+     * caller who may not make it gets the ACL's own refusal, status and body, rather than being
+     * told the resource does not exist.
+     *
+     * @throws UnknownResourceException  if {@code resourceUri} matches no known resource
      * @throws UnknownActionException    if {@code actionName} is not declared by the resource
      * @throws ValidationFailedException if {@code args} fails validation, or the action is not executable
      * @throws IOException               if the in-process dispatch fails
      * @throws TimeoutException          if the in-process dispatch does not complete in time
      */
     public McpResult call(BaseAccount principal, String baseUrl, String scope, String resourceUri, String actionName,
-                          Map<String, Object> args, Predicate<McpResource> visible, Map<String, Object> attachedParams)
+                          Map<String, Object> args, Map<String, Object> attachedParams)
             throws IOException, TimeoutException {
-        var resolved = resolver.resolve(principal, baseUrl, scope, resourceUri, actionName, args, visible);
+        var resolved = resolver.resolve(principal, baseUrl, scope, resourceUri, actionName, args);
 
         var owner = lookup.findOwner(principal, baseUrl, scope, resourceUri)
                 .orElseThrow(() -> new UnknownResourceException(resourceUri));

@@ -235,6 +235,18 @@
         projectResponse: >
           {"secret": 0}
 
+    # McpCatalogVisibilityIT — a rule that decides on a query parameter, which is precisely what a
+    # catalogue cannot know about: it is composed without one. Reading is open so the collection is
+    # listed; writing needs ?ticket=golden, so `create` is absent from the listing and callable all
+    # the same.
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-mcp-ticket"]
+      priority: 0
+
+    - role: aclreader
+      predicate: method(POST) and path-prefix[path="/test-mcp-ticket"] and equals(%{q,ticket}, 'golden')
+      priority: 0
+
     # karate/graphql/vars — the route permission the general security model requires; what the
     # query then reads is decided by the app definition's own @ variables, not here.
     - role: aclreader

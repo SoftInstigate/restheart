@@ -21,7 +21,6 @@
 package org.restheart.ai.mcp.tools;
 
 import java.util.Map;
-import java.util.function.Predicate;
 
 import org.restheart.plugins.mcp.McpResource;
 
@@ -44,14 +43,36 @@ public final class HowToCallTool {
     }
 
     /**
-     * @throws UnknownResourceException if {@code resourceUri} matches no known resource
+     * Whether a caller may be told how to make one particular call.
+     *
+     * <p>A descriptor is disclosure — parameter names, body schema, the prose written to orient an
+     * agent — so it is gated, unlike execution, which the pipeline authorizes on its own. The gate
+     * sees the arguments, because the ACL may decide on them.
+     */
+    @FunctionalInterface
+    public interface Gate {
+        boolean allows(McpResource resource, String actionName, Map<String, Object> args);
+
+        /** No request to derive an identity from, so nothing to withhold. */
+        Gate OPEN = (resource, actionName, args) -> true;
+    }
+
+    /**
+     * @throws UnknownResourceException if {@code resourceUri} matches no known resource, or the
+     *                                  gate refuses this caller the descriptor for it
      * @throws UnknownActionException   if {@code actionName} is not declared by the resource
      * @throws ValidationFailedException if {@code args} fails param or body-schema validation
      */
     public Map<String, Object> call(BaseAccount principal, String baseUrl, String scope, String resourceUri, String actionName,
-                                    Map<String, Object> args, String transportPreference,
-                                    Predicate<McpResource> visible) {
-        var resolved = resolve(principal, baseUrl, scope, resourceUri, actionName, args, visible);
+                                    Map<String, Object> args, String transportPreference, Gate gate) {
+        var resolved = resolve(principal, baseUrl, scope, resourceUri, actionName, args);
+
+        // Composing a request for a call the caller could not make would hand back, parameter by
+        // parameter, exactly what leaving it out of list_apis was meant to withhold.
+        if (!gate.allows(resolved.resource(), actionName, args)) {
+            throw new UnknownResourceException(resourceUri);
+        }
+
         return DescriptorRenderer.render(resolved.resource(), actionName, args, transportPreference);
     }
 
@@ -65,17 +86,19 @@ public final class HowToCallTool {
      * descriptor, and {@code call_api}, which then executes: the two can never disagree on what a
      * call is.
      *
-     * @throws UnknownResourceException if {@code resourceUri} matches no known (visible) resource
+     * <p>No authorization is decided here, deliberately. A caller who names a resource has not
+     * enumerated anything, and what they may do with it is the pipeline's to answer: the request
+     * is dispatched and the ACL refuses it with its own status and its own body. Deciding it twice
+     * is how the two answers end up disagreeing — and the catalogue's copy of the question is the
+     * weaker one, since a listing is composed without the arguments a rule may read.
+     *
+     * @throws UnknownResourceException if {@code resourceUri} matches no known resource
      * @throws UnknownActionException   if {@code actionName} is not declared by the resource
      * @throws ValidationFailedException if {@code args} fails param or body-schema validation
      */
     public Resolved resolve(BaseAccount principal, String baseUrl, String scope, String resourceUri, String actionName,
-                            Map<String, Object> args, Predicate<McpResource> visible) {
-        // Same filter as the catalog: composing a request for a resource the caller cannot invoke
-        // would hand back, action by action and parameter by parameter, exactly what leaving it out
-        // of list_apis was meant to withhold.
+                            Map<String, Object> args) {
         var resource = lookup.find(principal, baseUrl, scope, resourceUri)
-                .filter(visible)
                 .orElseThrow(() -> new UnknownResourceException(resourceUri));
 
         var action = resource.actions().get(actionName);

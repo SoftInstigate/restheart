@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 import org.restheart.ai.mcp.McpAwareRegistry;
@@ -40,7 +39,7 @@ import org.restheart.plugins.mcp.McpResource;
 public class HowToCallToolTest {
 
     /** These tests are about composing a request, not about who may see what. */
-    private static final Predicate<McpResource> VISIBLE = r -> true;
+    private static final HowToCallTool.Gate VISIBLE = HowToCallTool.Gate.OPEN;
 
     private static McpAware fixed(McpResource resource) {
         return new McpAware() {
@@ -67,7 +66,8 @@ public class HowToCallToolTest {
         var tool = toolFor(McpResource.builder().uri("https://host/a").action("query", a -> a.method("GET")).build());
 
         assertThrows(UnknownResourceException.class,
-                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "query", Map.of(), null, r -> false));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "query", Map.of(), null,
+                        (resource, action, args) -> false));
     }
 
     @Test

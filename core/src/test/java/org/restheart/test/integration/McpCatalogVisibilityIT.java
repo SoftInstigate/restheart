@@ -58,6 +58,10 @@ public class McpCatalogVisibilityIT extends AbstactIT {
 
     private static final String HIDDEN_DESCRIPTION = "Salary review notes, pending approval.";
 
+    /** Readable by the role; writable only by a call carrying {@code ?ticket=golden}. */
+    private static final String TICKET_DB = BASE + "/test-mcp-ticket";
+    private static final String TICKET_COLL = TICKET_DB + "/tickets";
+
     private static final String READER_BASIC =
             "Basic " + Base64.getEncoder().encodeToString("aclowner1:secret".getBytes());
     private static final String ADMIN_BASIC =
@@ -70,6 +74,7 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     public void setUpTwoCollectionsOneReadable() throws Exception {
         createCollection(BASE + "/test-mcp-acl", VISIBLE_COLL, "Inventory the reader may read.");
         createCollection(HIDDEN_DB, HIDDEN_COLL, HIDDEN_DESCRIPTION);
+        createCollection(TICKET_DB, TICKET_COLL, "Writable only with a ticket.");
 
         reader = new McpTestClient(BASE, READER_BASIC);
         reader.initialize();
@@ -103,6 +108,43 @@ public class McpCatalogVisibilityIT extends AbstactIT {
 
         assertTrue(listed.contains(VISIBLE_COLL), "the readable collection's templates are missing: " + listed);
         assertFalse(listed.contains(HIDDEN_COLL), "templates of a collection this role cannot read were listed: " + listed);
+    }
+
+    /**
+     * A listing is composed without arguments, so it cannot claim an action whose rule reads one.
+     * That is a limit of listings, not a refusal: the action is callable, and the next test calls
+     * it. Before this was fixed the two were the same thing, and an agent holding exactly the
+     * argument that would have opened the resource was told it did not exist.
+     */
+    @Test
+    public void listApis_cannotOfferAnActionWhoseRuleReadsAQueryParameter() throws Exception {
+        var described = reader.callTool("list_apis", """
+                {"resource":"%s"}
+                """.formatted(TICKET_COLL));
+
+        var actions = described.getDocument("actions");
+
+        assertTrue(actions.containsKey("query"), "reading is granted outright, so it must be listed: " + actions.toJson());
+        assertFalse(actions.containsKey("create"),
+                "the listing has no ticket to probe with, so it cannot advertise the write: " + actions.toJson());
+    }
+
+    @Test
+    public void callApi_runsTheActionTheListingCouldNotOffer() throws Exception {
+        var refused = reader.callTool("call_api", """
+                {"resource":"%s","action":"create","args":{"body":{"n":1}}}
+                """.formatted(TICKET_COLL));
+
+        assertEquals(403, refused.getInt32("status").getValue(),
+                "without the ticket the ACL refuses it — as a result the agent can read, not as an unknown resource: "
+                        + refused.toJson());
+
+        var allowed = reader.callTool("call_api", """
+                {"resource":"%s","action":"create","args":{"ticket":"golden","body":{"n":2}}}
+                """.formatted(TICKET_COLL));
+
+        assertEquals(201, allowed.getInt32("status").getValue(),
+                "with the ticket the same call must go through: " + allowed.toJson());
     }
 
     @Test
