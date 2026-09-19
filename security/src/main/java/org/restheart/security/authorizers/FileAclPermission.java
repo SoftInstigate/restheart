@@ -32,7 +32,6 @@ import org.restheart.security.BaseAclPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.undertow.predicate.PredicateParser;
 
 /**
  * ACL Permission that specifies the conditions that are necessary to perform
@@ -82,8 +81,9 @@ public class FileAclPermission extends BaseAclPermission {
         }
 
         try {
-            // check predicate
-            PredicateParser.parse(argPredicate, FileAclPermission.class.getClassLoader());
+            // check predicate, with its ACL variables masked: they are substituted per request,
+            // and their syntax is not the predicate language's — see AclVarsInterpolator.
+            AclVarsInterpolator.validatePredicate(argPredicate, FileAclPermission.class.getClassLoader());
         } catch (Throwable t) {
             throw new ConfigurationException("Wrong permission: invalid predicate: " + argPredicate, t);
         }

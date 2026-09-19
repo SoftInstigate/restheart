@@ -452,6 +452,54 @@ public class AclVarsInterpolator {
      *            the classloader to resolve the predicates, see java.util.ServiceLoader
      * @return the interpolated predicate
      */
+    /**
+     * One ACL variable as it appears in a predicate, and the quoted regions it must not be found
+     * in. Deliberately the same shape {@link #interpolateResolverExpr} substitutes at request
+     * time, so validation and interpolation agree on what a variable is.
+     */
+    private static final Pattern ANY_ACL_VAR = Pattern.compile(
+            "\\\\\"|\"(?:\\\\\"|[^\"])*\"|'(?:\\\\'|[^'])*'|"
+                    + "(@[A-Za-z_][A-Za-z0-9_]*(?![A-Za-z0-9_])(?:\\.[A-Za-z0-9_.]+|\\([^)]*\\)|\\[[^\\]]*\\])?)");
+
+    /**
+     * Checks that a permission's predicate will parse, with its variables masked.
+     *
+     * <p>A permission is parsed twice: once when it loads, to reject a typo before it can refuse
+     * requests in production, and once per request, after its variables have been substituted.
+     * Only the second parse sees values. The first sees {@code @qparams['trader']} — and square
+     * brackets are the predicate language's own syntax for a parameter list, so Undertow's
+     * tokenizer refuses the string and the permission is discarded, silently, for a predicate that
+     * would have worked on every request.
+     *
+     * <p>So the load-time parse is given what the request-time parse will see: each variable
+     * replaced by a quoted placeholder, which is the shape a substituted value takes. Syntax
+     * errors around the variables are still caught; the variables themselves are no longer
+     * required to be valid predicate syntax, which they never were.
+     */
+    public static void validatePredicate(String predicate, ClassLoader classLoader) {
+        PredicateParser.parse(maskVars(normalizeQuotes(predicate)), classLoader);
+    }
+
+    /** Every ACL variable outside a quoted string replaced by a placeholder value. */
+    static String maskVars(String predicate) {
+        if (predicate == null) {
+            return null;
+        }
+
+        var m = ANY_ACL_VAR.matcher(predicate);
+        var sb = new StringBuilder();
+
+        while (m.find()) {
+            if (m.group(1) != null) {
+                m.appendReplacement(sb, Matcher.quoteReplacement("'x'"));
+            }
+        }
+
+        m.appendTail(sb);
+
+        return sb.toString();
+    }
+
     public static Predicate interpolatePredicate(Request<?> request, String predicate, ClassLoader classLoader) throws ConfigurationException {
         var a = getAccountDocument(request);
 
