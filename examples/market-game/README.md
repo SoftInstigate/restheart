@@ -89,8 +89,10 @@ errors they get back.
 
 Open [`watch.html`](watch.html) in a browser, straight off the disk. Nothing to install and nothing
 to fill in but your service URL: the `table` password is already there. It draws the board, each
-player's holdings, the coin trade by trade, what a unit has been selling for, the open offers and
-the match round by round, and follows along while the agents play.
+player's holdings, the coin trade by trade, how each good is split between the three of them, the
+open offers and the match round by round, and follows along while the agents play. On a desktop it
+is exactly one screen: the panels scroll inside themselves rather than pushing anything below the
+fold.
 
 **Replay** walks the whole match again at a few frames a second, from the opening deal to the
 claim. Scrub to any moment, change the speed, or go back to live. Tick **show the private

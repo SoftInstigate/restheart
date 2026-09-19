@@ -32,10 +32,10 @@
     margin: 0; background: var(--bg); color: var(--ink);
     font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  .wrap { max-width: 1140px; margin: 0 auto; padding: 18px 16px 48px; }
-  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
-  h2 { font-size: 13px; margin: 0 0 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); }
-  h3 { font-size: 15px; margin: 0; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 14px 16px 20px; }
+  h1 { font-size: 19px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; margin: 0 0 8px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); }
+  h3 { font-size: 14px; margin: 0; }
   a { color: inherit; }
   code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
 
@@ -46,11 +46,39 @@
   .dot.err { background: var(--accent); animation: none; }
   @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
 
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
-  .cols > .panel { margin-bottom: 14px; }
-  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; gap: 0; } }
-  .scroller { max-height: 340px; overflow-y: auto; overscroll-behavior: contain; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; }
+  /* One screen, whatever the screen: the two feeds scroll inside themselves rather than
+     stretching the page, and their height is what the window has left. */
+  .deck { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+  .left { min-width: 0; }
+  .standings { margin-bottom: 12px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  .cols > .panel { margin-bottom: 12px; }
+  .feed { margin-bottom: 0; }
+  .scroller { overflow-y: auto; overscroll-behavior: contain; }
+  .feed .scroller { max-height: calc(100vh - 248px); min-height: 200px; }
+
+  /* On a desktop the page IS the window: the deck takes what is left under the header and each
+     column scrolls inside itself, so the match never pushes anything below the fold. Short and
+     narrow windows keep ordinary page scrolling, where that would only make panels too small. */
+  @media (min-width: 1100px) and (min-height: 620px) {
+    html, body { height: 100%; }
+    body { overflow: hidden; }
+    .wrap { height: 100%; display: flex; flex-direction: column; padding-bottom: 12px; }
+    #game { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+    .deck { flex: 1 1 auto; min-height: 0; align-items: stretch; grid-template-rows: minmax(0, 1fr); }
+    .left { height: 100%; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+    .feed { height: 100%; display: flex; flex-direction: column; margin-bottom: 0; }
+    .feed .scroller { max-height: none; min-height: 0; flex: 1 1 auto; }
+    .foot { flex: 0 0 auto; }
+  }
+  /* what the window has left after the fixed panels, and never nothing */
+  .scroller.offers { max-height: clamp(66px, calc(100vh - 655px), 150px); }
+  @media (max-width: 1100px) {
+    .deck { grid-template-columns: 1fr; }
+    .feed .scroller { max-height: 320px; }
+  }
+  @media (max-width: 720px) { .cols { grid-template-columns: 1fr; gap: 0; } }
   .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
   label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 4px; letter-spacing: .03em; }
   input[type=text], input[type=password] {
@@ -65,24 +93,24 @@
   button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
   button:disabled { opacity: .5; cursor: default; }
   .err { color: var(--accent); font-size: 14px; margin-top: 10px; }
-  .hint { color: var(--dim); font-size: 13px; margin-top: 10px; }
+  .hint { color: var(--dim); font-size: 12px; margin-top: 7px; }
 
-  .banner { border-left: 3px solid var(--ok); padding: 11px 16px; background: var(--panel);
+  .banner { border-left: 3px solid var(--ok); padding: 9px 14px; background: var(--panel);
             border-radius: var(--radius); margin-bottom: 20px; }
   .banner strong { color: var(--ok); }
-  .banner { font-size: 14px; }
+  .banner { font-size: 13px; margin-bottom: 12px; }
 
   .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; }
-  .card .who { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 11px 13px; }
+  .card .who { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; }
-  .bar { display: grid; grid-template-columns: 42px 1fr 54px; gap: 8px; align-items: center; margin: 4px 0; font-size: 12.5px; }
+  .bar { display: grid; grid-template-columns: 40px 1fr 52px; gap: 8px; align-items: center; margin: 2px 0; font-size: 12px; }
   .track { height: 9px; background: var(--line); border-radius: 5px; overflow: hidden; display: flex; }
   .fill { height: 100%; }
   .fill.held { opacity: 1; }
   .fill.committed { opacity: .38; }
   .amt { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
-  .goal { margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--dim); }
+  .goal { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--dim); }
   .goal .met { color: var(--ok); }
   .goal .short { color: var(--warn); }
 
@@ -92,12 +120,12 @@
   td { padding: 7px 8px 7px 0; border-top: 1px solid var(--line); vertical-align: top; }
   .empty { color: var(--dim); font-style: italic; }
 
-  .round { border-top: 1px solid var(--line); padding: 10px 0; }
+  .round { border-top: 1px solid var(--line); padding: 8px 0; }
   .round:first-of-type { border-top: 0; }
   .round-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
   .round-head .n { font-weight: 600; }
   .round-head .when { color: var(--dim); font-size: 12px; }
-  .ev { display: flex; gap: 8px; padding: 3px 0; font-size: 14px; align-items: baseline; }
+  .ev { display: flex; gap: 8px; padding: 2px 0; font-size: 13px; align-items: baseline; }
   .ev .tag { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--dim);
              min-width: 56px; padding-top: 2px; }
   .who-name { font-weight: 600; }
@@ -106,7 +134,7 @@
   .axis { stroke: var(--line); }
   .axis-text { fill: var(--dim); font-size: 11px; }
   .gridline { stroke: var(--line); stroke-dasharray: 2 4; }
-  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--dim); margin-top: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--dim); margin-top: 7px; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); cursor: pointer; }
   .replaybar { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; align-items: center;
@@ -121,7 +149,7 @@
     .replaybar { grid-template-columns: auto auto auto; }
     .replaybar input[type=range] { grid-column: 1 / -1; order: -1; }
   }
-  .foot { color: var(--dim); font-size: 12.5px; margin-top: 16px; }
+  .foot { color: var(--dim); font-size: 12.5px; margin-top: 10px; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -172,37 +200,38 @@
       <div class="rpnow" id="rpNow"></div>
     </div>
 
-    <section style="margin-bottom:14px">
-      <h2>Standings</h2>
-      <div class="grid3" id="players"></div>
-    </section>
+    <div class="deck">
+      <div class="left">
+        <section class="standings">
+          <h2>Standings</h2>
+          <div class="grid3" id="players"></div>
+        </section>
 
-    <div class="cols">
-      <section class="panel">
-        <h2>Coin, trade by trade</h2>
-        <div id="coinChart"></div>
-        <div class="legend" id="coinLegend"></div>
-      </section>
+        <div class="cols">
+          <section class="panel">
+            <h2>Coin, trade by trade</h2>
+            <div id="coinChart"></div>
+            <div class="legend" id="coinLegend"></div>
+          </section>
 
-      <section class="panel">
-        <h2>What a unit has sold for</h2>
-        <div id="priceChart"></div>
-        <div class="legend" id="priceLegend"></div>
-        <div class="hint" id="priceNote"></div>
-      </section>
-    </div>
+          <section class="panel">
+            <h2>Who holds what</h2>
+            <div id="holdingsChart"></div>
+            <div class="legend" id="holdingsLegend"></div>
+            <div class="hint" id="holdingsNote"></div>
+          </section>
+        </div>
 
-    <div class="cols">
-      <section class="panel">
-        <h2>Open offers</h2>
-        <div class="scroller" id="offers"></div>
-      </section>
+        <section class="panel">
+          <h2>Open offers</h2>
+          <div class="scroller offers" id="offers"></div>
+        </section>
+      </div>
 
-      <section class="panel">
+      <aside class="panel feed">
         <h2>Rounds</h2>
         <div class="scroller" id="rounds"></div>
-        <div class="hint">A round is a burst of activity: more than 45 seconds of silence starts a new one.</div>
-      </section>
+      </aside>
     </div>
 
     <div class="foot" id="foot"></div>
@@ -335,7 +364,7 @@ function renderPlayers(board) {
         return '<span class="' + (met ? 'met' : 'short') + '">' + have + '/' + r.qty + ' ' + r.item +
                (met ? ' ✓' : ' (needs ' + (r.qty - have) + ' more)') + '</span>';
       }).join(' · ');
-      goal = '<div class="goal"><div>' + esc(o.goal || '') + '</div><div style="margin-top:6px">' + parts + '</div></div>';
+      goal = '<div class="goal" title="' + esc(o.goal || '') + '">' + parts + '</div>';
     }
 
     return '<div class="card"><div class="who"><span class="swatch" style="background:' + colourOf(who) + '"></span>' +
@@ -361,7 +390,7 @@ function renderCoin(events, board) {
   });
 
   const n = trades.length;
-  const W = 640, H = 175, L = 34, R = 10, T = 10, B = 24;
+  const W = 640, H = 138, L = 34, R = 10, T = 8, B = 22;
   const values = PLAYERS.flatMap(p => series[p]);
   const lo = Math.min(30, Math.floor(Math.min(...values) / 10) * 10);
   const hi = Math.max(90, Math.ceil(Math.max(...values) / 10) * 10);
@@ -401,56 +430,62 @@ function renderCoin(events, board) {
     (objectives ? '<span>dashed: that player’s coin threshold</span>' : '');
 }
 
-/** Every settled trade where coin met a good, as coin per unit. */
-function renderPrices(board) {
-  const trades = (board.settledTrades || []).map(t => {
-    const coinSide = t.gave.item === 'coin' ? t.gave : (t.got.item === 'coin' ? t.got : null);
-    const goodSide = t.gave.item === 'coin' ? t.got : (t.got.item === 'coin' ? t.gave : null);
-    if (!coinSide || !goodSide || !goodSide.qty) return null;
-    return { item: goodSide.item, price: coinSide.qty / goodSide.qty, ts: t.ts.$date, buyer: t.gave.item === 'coin' ? t.from : t.to };
-  }).filter(Boolean).sort((a, b) => a.ts - b.ts);
+/**
+ * Who holds what: one bar per good, split between the three players. Every good exists in a fixed
+ * quantity, so the bar's length never changes and only the shares move — which is the whole story
+ * of the match, since an objective is won by cornering one of them.
+ */
+function renderHoldings(board) {
+  const held = {};
+  GOODS.forEach(g => { held[g] = {}; });
+  (board.holdings || []).forEach(h => h.goods.forEach(g => {
+    if (g.item !== 'coin') { held[g.item] = held[g.item] || {}; held[g.item][h._id] = g.qty; }
+  }));
 
-  if (trades.length === 0) {
-    $('priceChart').innerHTML = '<p class="empty">No good has been sold for coin yet.</p>';
-    $('priceLegend').innerHTML = '';
-    $('priceNote').textContent = '';
-    return;
-  }
-
-  const W = 640, H = 160, L = 34, R = 10, T = 10, B = 24;
-  const hi = Math.max(12, Math.ceil(Math.max(...trades.map(t => t.price))));
-  const x = i => L + (trades.length === 1 ? (W - L - R) / 2 : (i / (trades.length - 1)) * (W - L - R));
-  const y = v => T + (1 - v / hi) * (H - T - B);
+  const W = 640, L = 46, R = 8, ROW = 40, BAR = 22, T = 6;
+  const H = T + GOODS.length * ROW;
+  const totals = GOODS.map(g => PLAYERS.reduce((n, p) => n + (held[g][p] || 0), 0));
+  const span = Math.max(1, ...totals);
 
   let body = '';
-  for (let v = 0; v <= hi; v += Math.max(1, Math.round(hi / 4))) {
-    body += '<line class="gridline" x1="' + L + '" y1="' + y(v) + '" x2="' + (W - R) + '" y2="' + y(v) + '"/>';
-    body += '<text class="axis-text" x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
-  }
-  GOODS.forEach(g => {
-    const pts = trades.map((t, i) => ({ t, i })).filter(o => o.t.item === g);
-    if (pts.length > 1) {
-      body += '<polyline points="' + pts.map(o => x(o.i) + ',' + y(o.t.price)).join(' ') +
-        '" fill="none" stroke="' + itemColour(g) + '" stroke-width="1.5" opacity=".55"/>';
-    }
-    pts.forEach(o => {
-      body += '<circle cx="' + x(o.i) + '" cy="' + y(o.t.price) + '" r="4" fill="' + itemColour(g) + '"><title>' +
-        g + ' at ' + o.t.price.toFixed(1) + ' coin each, bought by ' + o.t.buyer + '</title></circle>';
+  GOODS.forEach((g, r) => {
+    const y = T + r * ROW;
+    body += '<text class="axis-text" x="0" y="' + (y + BAR / 2 + 4) + '">' + g + '</text>';
+    body += '<rect x="' + L + '" y="' + y + '" width="' + (W - L - R) + '" height="' + BAR +
+            '" rx="4" fill="var(--line)"/>';
+    let x = L;
+    PLAYERS.forEach(p => {
+      const n = held[g][p] || 0;
+      if (!n) return;
+      const w = (n / span) * (W - L - R);
+      body += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + BAR + '" fill="' +
+        colourOf(p) + '" opacity=".92"><title>' + p + ' holds ' + n + ' ' + g + '</title></rect>';
+      if (w > 22) {
+        body += '<text x="' + (x + w / 2) + '" y="' + (y + BAR / 2 + 4) + '" text-anchor="middle" ' +
+          'font-size="11" fill="var(--panel)" font-weight="600">' + n + '</text>';
+      }
+      x += w;
     });
+    body += '<text class="axis-text" x="' + (W - R) + '" y="' + (y + BAR + 13) + '" text-anchor="end">of ' +
+      totals[r] + '</text>';
   });
-  body += '<line class="axis" x1="' + L + '" y1="' + (H - B) + '" x2="' + (W - R) + '" y2="' + (H - B) + '"/>';
-  body += '<text class="axis-text" x="' + L + '" y="' + (H - B + 16) + '">first cash sale</text>';
-  body += '<text class="axis-text" x="' + (W - R) + '" y="' + (H - B + 16) + '" text-anchor="end">latest</text>';
 
-  $('priceChart').innerHTML = svg(W, H, body);
-  $('priceLegend').innerHTML = GOODS.filter(g => trades.some(t => t.item === g)).map(g =>
-    '<span><span class="swatch" style="background:' + itemColour(g) + '"></span>' + g + '</span>').join('');
-  const avg = {};
-  GOODS.forEach(g => {
-    const p = trades.filter(t => t.item === g).map(t => t.price);
-    if (p.length) avg[g] = (p.reduce((a, b) => a + b, 0) / p.length).toFixed(1);
+  $('holdingsChart').innerHTML = svg(W, H, body);
+  $('holdingsLegend').innerHTML = PLAYERS.map(p =>
+    '<span><span class="swatch" style="background:' + colourOf(p) + '"></span>' + p + '</span>').join('');
+
+  // the going rate, which is the one thing the bars do not say
+  const prices = {};
+  (board.settledTrades || []).forEach(t => {
+    const coin = t.gave.item === 'coin' ? t.gave : (t.got.item === 'coin' ? t.got : null);
+    const good = t.gave.item === 'coin' ? t.got : (t.got.item === 'coin' ? t.gave : null);
+    if (!coin || !good || !good.qty) return;
+    (prices[good.item] = prices[good.item] || []).push(coin.qty / good.qty);
   });
-  $('priceNote').textContent = 'Average so far: ' + Object.entries(avg).map(([g, v]) => v + ' coin per ' + g).join(', ') + '.';
+  const rates = Object.entries(prices).map(([g, v]) =>
+    (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) + ' coin per ' + g);
+  $('holdingsNote').textContent = rates.length ? 'Sold so far at ' + rates.join(', ') + '.'
+                                               : 'Nothing has been sold for coin yet.';
 }
 
 function side(s) { return s ? s.qty + ' ' + s.item : '?'; }
@@ -626,7 +661,7 @@ async function refresh() {
     const won = renderWinner(board, events);
     renderPlayers(board);
     renderCoin(events, board);
-    renderPrices(board);
+    renderHoldings(board);
     renderOffers(board);
     renderRounds(events, board);
 
@@ -728,7 +763,7 @@ function rpRender() {
   const upTo = allEvents.slice(0, rp.i + 1);
   renderPlayers(board);
   renderCoin(upTo, board);
-  renderPrices(board);
+  renderHoldings(board);
   renderOffers(board);
   renderRounds(upTo, board);
   renderWinner(board, upTo);
