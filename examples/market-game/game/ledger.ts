@@ -41,6 +41,7 @@ export const GROUPED_BY_OFFER = [
       genesis: firstOfType('genesis'),
       offer: firstOfType('offer'),
       trade: firstOfType('trade'),
+      cancel: firstOfType('cancel'),
       claim: firstOfType('claim'),
     },
   },
@@ -83,9 +84,18 @@ export const MOVEMENTS = [
           },
         ],
       },
+      // An offer holds its goods until it settles — or until its author withdraws it, which is
+      // what `cancel` is for: without it a mistaken offer commits the goods for the rest of the
+      // game, and the market fills with offers nobody will ever cross.
       commitments: {
         $cond: [
-          { $and: [isObject('$offer'), { $ne: [{ $type: '$trade' }, 'object'] }] },
+          {
+            $and: [
+              isObject('$offer'),
+              { $ne: [{ $type: '$trade' }, 'object'] },
+              { $ne: [{ $type: '$cancel' }, 'object'] },
+            ],
+          },
           [{ player: '$offer.actor', item: '$offer.give.item', qty: '$offer.give.qty' }],
           [],
         ],
@@ -199,7 +209,7 @@ const board = {
       $facet: {
         holdings: [...PER_PLAYER_ITEM, ...BY_PLAYER, { $sort: { _id: 1 } }],
         openOffers: [
-          { $match: { offer: { $ne: null }, trade: null } },
+          { $match: { offer: { $ne: null }, trade: null, cancel: null } },
           { $replaceRoot: { newRoot: '$offer' } },
           { $sort: { ts: 1, offerId: 1 } },
           { $project: { _id: 0, offerId: 1, give: 1, want: 1, from: '$actor', ts: iso('$ts') } },
@@ -249,14 +259,27 @@ const board = {
         ],
       },
     },
+    // An empty `winner` does not say the game is open. It says nobody had won when this was read,
+    // and a reader has no way to tell how long ago that was: one player read it seven seconds
+    // before a claim landed and spent its turn on a move the rules had already closed.
+    {
+      $addFields: {
+        over: { $gt: [{ $size: '$winner' }, 0] },
+        asOf: iso('$$NOW'),
+      },
+    },
   ],
   mcp: {
     enabled: true,
     description:
       'The whole game in one read: who holds what, which offers are still open, the last ' +
-      'settled trades, and the winner if anyone has claimed victory. Takes no parameters. ' +
-      'This is the resource to attach in a chat to watch a game unfold — subscribe to the ' +
-      'market_events collection to be told when it changes.',
+      'settled trades, what things have sold for, the next free offer id of each player, and ' +
+      'the winner if anyone has claimed victory. `over` says the game is finished and `asOf` ' +
+      'says when this was read, because an empty winner only means nobody had won by then. In ' +
+      'settledTrades the point of view is the player who published the offer: `from` is that ' +
+      'player, `gave` is what they handed over and `got` is what they received. Takes no ' +
+      'parameters. This is the resource to attach in a chat to watch a game unfold — subscribe ' +
+      'to the market_events collection to be told when it changes.',
     examples: [{ description: 'Read the board', action: 'execute', args: {} }],
   },
 };
@@ -323,6 +346,11 @@ const pricesFor = {
  * Your own position, and whether you have won: holdings, the objective that only you can unlock,
  * how far each requirement still is, and `canClaim`.
  *
+ * <p>Deliberately without the objective's `hint`. The hint is prose written for the opening
+ * position and it does not age: read beside holdings that have moved, it contradicts them, and an
+ * agent that believes it plays the wrong move. What is true at any moment is in `progress`, which
+ * is computed — `short` and `met`, requirement by requirement.
+ *
  * The secret is checked inside the pipeline, not by a permission: the objective is picked by a
  * branch that matches the player AND the secret, so a wrong pair matches nothing and the
  * aggregation returns nothing. That leaves the permission argument-free, which is what keeps this
@@ -336,7 +364,7 @@ const pricesFor = {
 /** player + secret → that player's objective, as pipeline branches. See the note on myState. */
 const OBJECTIVE_TABLE = OBJECTIVES_SEED.map(o => ({
   case: { $and: [{ $eq: ['$_id', o.player] }, { $eq: [{ $var: 'secret' }, SECRETS[o.player]] }] },
-  then: { goal: o.goal, requires: o.requires, hint: o.hint },
+  then: { goal: o.goal, requires: o.requires },
 }));
 
 const myState = {
@@ -386,7 +414,7 @@ const myState = {
       },
     },
     { $addFields: { canClaim: { $allElementsTrue: { $map: { input: '$progress', as: 'p', in: '$$p.met' } } } } },
-    { $project: { _id: 0, player: '$_id', goal: '$objective.goal', hint: '$objective.hint', goods: 1, progress: 1, canClaim: 1 } },
+    { $project: { _id: 0, player: '$_id', goal: '$objective.goal', goods: 1, progress: 1, canClaim: 1 } },
   ],
   mcp: {
     enabled: true,
@@ -394,7 +422,8 @@ const myState = {
       'Where you stand: what you hold, your objective, how much of each requirement is still ' +
       'missing, and canClaim — true when the board already says you have won. Read it after ' +
       'your moves as well as before them, or you will win a round before you notice. Send your ' +
-      'player name and your secret; a wrong pair returns nothing.',
+      'player name and your secret; a wrong pair returns nothing. The objective\'s opening hint ' +
+      'is not here on purpose: it was written for the first move and says nothing true later.',
     params: {
       player: { type: 'string', description: 'Your player id, e.g. trader1' },
       secret: { type: 'string', description: 'The secret that proves you are that player' },
@@ -436,7 +465,8 @@ export const LEDGER_META = {
     description:
       'The market ledger: every event of the game, append-only. genesis = a player\'s starting ' +
       'endowment; offer = a public proposal to swap goods; trade = the acceptance that settles ' +
-      'an offer; claim = a player declaring victory. Nothing here is ever updated or deleted — ' +
+      'an offer; cancel = the author withdrawing an offer nobody took, which frees the goods it ' +
+      'held; claim = a player declaring victory. Nothing here is ever updated or deleted — ' +
       'holdings, standings and the board are derived from this log by the aggregations.',
     examples: [
       {
@@ -466,6 +496,14 @@ export const LEDGER_META = {
           '— they are read from the offer — nor who you are: the server sets actor.',
         action: 'create',
         args: { body: { _id: 'accept:offer:trader1:1', offerId: 'offer:trader1:1', type: 'trade' } },
+      },
+      {
+        description:
+          'Withdraw your own offer:trader1:1, which nobody has accepted. The goods it was ' +
+          'holding become available again. Only the player who published it may withdraw it, ' +
+          'and an offer already accepted cannot be withdrawn.',
+        action: 'create',
+        args: { body: { _id: 'cancel:offer:trader1:1', offerId: 'offer:trader1:1', type: 'cancel' } },
       },
       {
         description: 'Claim victory. _id is the constant "win", so only one claim can ever exist.',

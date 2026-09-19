@@ -2,7 +2,7 @@
  * The shape of a legal ledger event, and the cap on offer size.
  *
  * This is what keeps the game honest without a game engine: an event that is not one of the
- * four shapes is refused by the server, and no offer may move more than 3 units of a good (or
+ * five shapes is refused by the server, and no offer may move more than 3 units of a good (or
  * 30 coin) at a time — so an objective takes several trades and cannot be met in one lucky swap.
  *
  * `actor` is who wrote the event. A client that sends one has it overwritten from the
@@ -28,7 +28,7 @@ export const MARKET_EVENT_SCHEMA = {
   $schema: 'http://json-schema.org/draft-04/schema#',
   description:
     'Shape of a market ledger event. actor is who wrote it, set by the server from the ' +
-    'authenticated user. An event that is not one of the four legal shapes is refused, and no ' +
+    'authenticated user. An event that is not one of the five legal shapes is refused, and no ' +
     'offer may move more than 3 units of a good (or 30 coin) at a time.',
   type: 'object',
   oneOf: [
@@ -58,6 +58,11 @@ export const MARKET_EVENT_SCHEMA = {
       title: 'trade',
       required: ['_id', 'offerId', 'type', 'actor'],
       properties: { type: { enum: ['trade'] }, actor: { type: 'string' } },
+    },
+    {
+      title: 'cancel',
+      required: ['_id', 'offerId', 'type', 'actor'],
+      properties: { type: { enum: ['cancel'] }, actor: { type: 'string' } },
     },
     {
       title: 'claim',

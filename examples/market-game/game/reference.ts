@@ -115,7 +115,7 @@ export const OBJECTIVES_SEED = [
     secret: SECRETS.trader1,
     goal: 'Own at least 14 ore and at least 40 coin.',
     requires: [{ item: 'ore', qty: 14 }, { item: 'coin', qty: 40 }],
-    hint: 'There are 16 ore in the game and you need 14 of them: 12 are trader2\'s, who wants silk, and 4 are trader3\'s. You must buy out almost the whole supply, and an offer moves at most 3 at a time, so this takes five deals and you cannot afford a single seller who refuses you. What pays for them is the one advantage you have: you hold 60 coin and need only 40, so you can pay cash where the others cannot. Spend it — the twenty you can spare are exactly what makes the difference, and hoarding them leaves you short of ore instead.',
+    hint: 'At the opening, before anything has moved: There are 16 ore in the game and you need 14 of them: 12 are trader2\'s, who wants silk, and 4 are trader3\'s. You must buy out almost the whole supply, and an offer moves at most 3 at a time, so this takes five deals and you cannot afford a single seller who refuses you. What pays for them is the one advantage you have: you hold 60 coin and need only 40, so you can pay cash where the others cannot. Spend it — the twenty you can spare are exactly what makes the difference, and hoarding them leaves you short of ore instead.',
   },
   {
     _id: 'objective:trader2',
@@ -123,7 +123,7 @@ export const OBJECTIVES_SEED = [
     secret: SECRETS.trader2,
     goal: 'Own at least 10 silk and at least 70 coin.',
     requires: [{ item: 'silk', qty: 10 }, { item: 'coin', qty: 70 }],
-    hint: 'trader3 holds most of the silk and wants grain, of which you have only 4 — trader1 has the rest. You start 10 coin short, so you cannot buy your way there: something you own has to be sold for cash, and sell ore first. Not everyone at this table needs more coin than they hold, so there is one player who can afford to buy from you. Find out who by watching who accepts.',
+    hint: 'At the opening, before anything has moved: trader3 holds most of the silk and wants grain, of which you have only 4 — trader1 has the rest. You start 10 coin short, so you cannot buy your way there: something you own has to be sold for cash, and sell ore first. Not everyone at this table needs more coin than they hold, so there is one player who can afford to buy from you. Find out who by watching who accepts.',
   },
   {
     _id: 'objective:trader3',
@@ -131,6 +131,6 @@ export const OBJECTIVES_SEED = [
     secret: SECRETS.trader3,
     goal: 'Own at least 10 grain and at least 70 coin.',
     requires: [{ item: 'grain', qty: 10 }, { item: 'coin', qty: 70 }],
-    hint: 'trader1 holds most of the grain and wants ore, of which you have only 4 — trader2 has the rest. You start 10 coin short, so you cannot buy your way there: something you own has to be sold for cash, and sell silk first. Not everyone at this table needs more coin than they hold, so there is one player who can afford to buy from you. Find out who by watching who accepts.',
+    hint: 'At the opening, before anything has moved: trader1 holds most of the grain and wants ore, of which you have only 4 — trader2 has the rest. You start 10 coin short, so you cannot buy your way there: something you own has to be sold for cash, and sell silk first. Not everyone at this table needs more coin than they hold, so there is one player who can afford to buy from you. Find out who by watching who accepts.',
   },
 ];

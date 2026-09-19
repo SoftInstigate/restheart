@@ -55,6 +55,64 @@ const tradeSettlesAnOffer = {
 };
 
 /**
+ * Only the player who published an offer may withdraw it, and only an offer that exists.
+ *
+ * <p>Withdrawing is the one way back out of a promise: until it settles, an offer holds the goods
+ * it names, and a mistaken one would hold them for the rest of the game. But it is the author's
+ * way out, not everybody's — otherwise a player could clear the board of the offers it does not
+ * like, which is the same as refusing to trade while pretending to.
+ */
+const cancelWithdrawsYourOwnOffer = {
+  name: 'cancelWithdrawsYourOwnOffer',
+  message: 'only the player who published an offer may withdraw it, and only an offer that exists',
+  stages: [
+    ...GROUPED_BY_OFFER,
+    {
+      $match: {
+        $expr: {
+          $and: [
+            { $eq: [{ $type: '$cancel' }, 'object'] },
+            {
+              $or: [
+                { $ne: [{ $type: '$offer' }, 'object'] },
+                { $ne: ['$cancel.actor', '$offer.actor'] },
+              ],
+            },
+          ],
+        },
+      },
+    },
+    { $project: { _id: 1, withdrawnBy: '$cancel.actor', publishedBy: '$offer.actor' } },
+  ],
+};
+
+/**
+ * An offer is settled or withdrawn, never both.
+ *
+ * <p>Whichever arrives second is refused, so the race resolves itself: withdraw an offer somebody
+ * is accepting and the withdrawal loses; accept an offer its author is withdrawing and the
+ * acceptance does.
+ */
+const anOfferIsSettledOrWithdrawn = {
+  name: 'anOfferIsSettledOrWithdrawn',
+  message: 'an offer that was accepted cannot be withdrawn, and a withdrawn offer cannot be accepted',
+  stages: [
+    ...GROUPED_BY_OFFER,
+    {
+      $match: {
+        $expr: {
+          $and: [
+            { $eq: [{ $type: '$cancel' }, 'object'] },
+            { $eq: [{ $type: '$trade' }, 'object'] },
+          ],
+        },
+      },
+    },
+    { $project: { _id: 1, acceptedBy: '$trade.actor', withdrawnBy: '$cancel.actor' } },
+  ],
+};
+
+/**
  * You cannot accept your own offer. Economically it nets to zero, so nothing would break;
  * but it closes an offer nobody else could then take, and the board would show a trade
  * that never happened.
@@ -144,12 +202,15 @@ const claimIsEarned = {
  */
 const gameEndsAtTheClaim = {
   name: 'gameEndsAtTheClaim',
-  message: 'the game is over: no offers or trades after a victory has been claimed',
+  message: 'the game is over: no move of any kind after a victory has been claimed',
   stages: [
     {
       $facet: {
         won: [{ $match: { type: 'claim' } }, { $project: { _id: 0, ts: 1 } }],
-        moves: [{ $match: { type: { $in: ['offer', 'trade'] } } }, { $project: { _id: 1, type: 1, actor: 1, ts: 1 } }],
+        moves: [
+          { $match: { type: { $in: ['offer', 'trade', 'cancel'] } } },
+          { $project: { _id: 1, type: 1, actor: 1, ts: 1 } },
+        ],
       },
     },
     { $unwind: '$won' },
@@ -163,6 +224,8 @@ export const CONSTRAINTS = [
   noNegativeHoldings,
   noOverCommitment,
   tradeSettlesAnOffer,
+  cancelWithdrawsYourOwnOffer,
+  anOfferIsSettledOrWithdrawn,
   noSelfDealing,
   claimIsEarned,
   gameEndsAtTheClaim,

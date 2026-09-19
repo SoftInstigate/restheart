@@ -44,6 +44,22 @@ case "$probe" in
   *)   echo "trader1 gets $probe reading /market_objectives; something is off with the service before the game even starts." >&2; exit 1 ;;
 esac
 
+# The moves below are written against the opening position: trader3 offers 3 of the 4 ore it starts
+# with, and the rule that refuses an over-commitment is proved by offering 3 more. Run twice on the
+# same ledger and the first run's open offers are still holding those goods, so the legal moves get
+# refused and the refusals arrive under the wrong rule — a failure that reads as a regression and
+# is not one. Cheaper to refuse than to mislead.
+events="$(curl -s -u "$TABLE_USER:$TABLE_PASSWORD" "$BASE/market_events/_size" | python3 -c '
+import json, sys
+try: print(json.loads(sys.stdin.read()).get("_size", -1))
+except Exception: print(-1)')"
+
+if [ "$events" -gt 3 ] 2>/dev/null; then
+  echo "the ledger already holds $events events: these checks need the opening position." >&2
+  echo "Deal a fresh board first:  npx rhc setup --srv <srvId> --force game" >&2
+  exit 1
+fi
+
 # post <trader> <json> → prints "<status> <body>"
 post() {
   local who="$1"
@@ -75,6 +91,7 @@ except Exception: print("-")' "$resp")"
 
 offer() { printf '{"_id":"offer:%s:%s","offerId":"offer:%s:%s","type":"offer","give":{"item":"%s","qty":%s},"want":{"item":"%s","qty":%s}}' "$1" "$2" "$1" "$2" "$3" "$4" "$5" "$6"; }
 accept() { printf '{"_id":"accept:%s","offerId":"%s","type":"trade"}' "$1" "$1"; }
+cancel() { printf '{"_id":"cancel:%s","offerId":"%s","type":"cancel"}' "$1" "$1"; }
 
 echo "== moves that must work"
 expect "trader1 offers 3 grain for 3 ore"                 201 - trader1 "$(offer trader1 "$RUN-1" grain 3 ore 3)"
@@ -90,6 +107,14 @@ expect "trader3 offers 3 more ore (would commit 6 of 4)"  409 noOverCommitment  
 expect "trader3 accepts its own offer"                    409 noSelfDealing     trader3 "$(accept "offer:trader3:$RUN-1")"
 expect "a trade on an offer that does not exist"          409 tradeSettlesAnOffer trader2 "$(accept "offer:nobody:$RUN")"
 expect "trader1 claims victory holding 3 ore of the 14 it needs"          409 claimIsEarned     trader1 '{"_id":"win","offerId":"win","type":"claim"}'
+
+echo "== withdrawing an offer"
+expect "trader1 publishes an offer it means to withdraw"  201 - trader1 "$(offer trader1 "$RUN-3" silk 1 coin 5)"
+expect "trader2 cannot withdraw trader1's offer"          409 cancelWithdrawsYourOwnOffer trader2 "$(cancel "offer:trader1:$RUN-3")"
+expect "a withdrawal naming no offer at all"              409 cancelWithdrawsYourOwnOffer trader1 "$(cancel "offer:nobody:$RUN")"
+expect "trader1 withdraws its own offer"                  201 - trader1 "$(cancel "offer:trader1:$RUN-3")"
+expect "a withdrawn offer cannot be accepted"             409 anOfferIsSettledOrWithdrawn trader2 "$(accept "offer:trader1:$RUN-3")"
+expect "an offer already accepted cannot be withdrawn"    409 anOfferIsSettledOrWithdrawn trader1 "$(cancel "offer:trader1:$RUN-1")"
 
 echo "== the unique _id"
 expect "trader3 accepts an offer already accepted"        409 - trader3 "$(accept "offer:trader1:$RUN-1")"

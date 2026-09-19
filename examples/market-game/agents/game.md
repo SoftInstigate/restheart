@@ -132,8 +132,10 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 > 2. **Accept every open offer that moves you toward your objective**, best first. Do this before
 >    you publish anything: a market where everyone publishes and nobody crosses fills up with
 >    offers and settles nothing.
-> 3. Publish **one or two** offers, no more: what you can spare for what you still need, priced
->    against what the board says things have been going for rather than against your hopes.
+> 3. Look at your own open offers on the board. Withdraw any that no longer serve you: each one is
+>    holding goods you cannot otherwise promise. Then publish **one or two** more, no more: what you
+>    can spare for what you still need, priced against what the board says things have been going
+>    for. If a good has never sold for coin it has no price yet, and the one you name becomes it.
 > 4. **Read `myState` again after your own moves**, every time, and claim the moment `canClaim` is
 >    true. A write answers with nothing, so what you now hold is not what you remember offering: a
 >    trade you accepted may have finished you. Noticing next round is how a won game is lost.
@@ -162,7 +164,18 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 >    Reading someone else's offer, it is the other way round — you receive their `give` and pay
 >    their `want`. Getting this backwards is the easiest way to lose goods you meant to keep.
 >
-> 4. **Accept an offer** by appending a `trade` whose `_id` is `accept:<the offer's id>`:
+> 4. **Withdraw an offer of your own** that nobody has taken, by appending a `cancel` whose `_id`
+>    is `cancel:<the offer's id>`:
+>
+>    ```json
+>    { "_id": "cancel:offer:{{PLAYER}}:1", "offerId": "offer:{{PLAYER}}:1", "type": "cancel" }
+>    ```
+>
+>    The goods it was holding become available again. Only your own, only one nobody has accepted,
+>    and never after somebody has won. Use it when an offer no longer serves you: left open it goes
+>    on holding its goods, and you will find yourself unable to promise what you appear to own.
+>
+> 5. **Accept an offer** by appending a `trade` whose `_id` is `accept:<the offer's id>`:
 >
 >    ```json
 >    { "_id": "accept:offer:trader1:1", "offerId": "offer:trader1:1", "type": "trade" }
@@ -171,26 +184,29 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 >    You do **not** restate the terms — they are read from the offer, so they cannot be altered on
 >    the way in. The `_id` is derived from the offer id, so exactly one acceptance can ever exist.
 >
-> 5. **A `409 Conflict` means one of three things, and the body says which.** Read it before you
+> 6. **A `409 Conflict` means one of three things, and the body says which.** Read it before you
 >    react:
 >    - `"retryable": true` — two writes to the ledger collided and yours lost *without being
 >      applied*. Send exactly the same request again; that is the whole handling.
->    - `"constraint": "noNegativeHoldings"` — the trade would leave someone, possibly you, holding
->      less than nothing. The server refused it and rolled it back. Retrying repeats the answer;
->      re-read the board instead.
+>    - a `"constraint"` — a rule of the game refused it and the server rolled it back. The name
+>      says which: `noNegativeHoldings` if it would leave somebody owning less than nothing,
+>      `noOverCommitment` if you promised more than you hold, `anOfferIsSettledOrWithdrawn` if
+>      somebody withdrew or accepted it while you were deciding, `gameEndsAtTheClaim` if the match
+>      is already over. Retrying repeats the answer; re-read `myState` and the board instead.
 >    - neither — the `_id` already exists: someone accepted that offer milliseconds before you.
 >      Take it gracefully and move on.
-> 6. **An offer may move at most 3 units of a good, or 30 coin.** A JSON Schema on the collection
+> 7. **An offer may move at most 3 units of a good, or 30 coin.** A JSON Schema on the collection
 >    enforces it, not good manners: anything larger comes back 400. Your objective therefore takes
 >    several trades, and no single swap wins the game.
-> 7. **Do not promise what you do not have.** You *can* publish two offers of the same 3 silk
+> 8. **Do not promise what you do not have.** You *can* publish two offers of the same 3 silk
 >    while holding 4 — the schema does not see across documents. But the second acceptance is
 >    refused by the constraint above, whoever it is that accepts, and the board shows what you
->    committed. Read your own `available` before you publish.
-> 8. **Claim victory** with `{ "_id": "win", "offerId": "win", "type": "claim" }`. The `_id` is the
+>    committed. Read your own `available` before you publish, and withdraw an offer you no longer
+>    want rather than leaving it to hold goods you need.
+> 9. **Claim victory** with `{ "_id": "win", "offerId": "win", "type": "claim" }`. The `_id` is the
 >    constant `win`, so only one claim can ever exist and the second one gets 409. A false claim is
 >    checkable against the board, so do not make one.
-> 9. **Never send `actor` or `ts`.** The server sets both — `actor` to the player your secret
+> 10. **Never send `actor` or `ts`.** The server sets both — `actor` to the player your secret
 >    proved, `ts` to the current time — and overwrites whatever you put there. You cannot act in
 >    someone else's name, and you cannot backdate an event to change where it lands in the history.
 >

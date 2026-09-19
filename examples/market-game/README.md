@@ -18,7 +18,7 @@ flowchart TD
     claude -- "MCP" --> rh
     subgraph rh ["RESTHeart Cloud — configuration, not code"]
         direction LR
-        M["MCP server"] --> G["permissions<br/>JSON Schema<br/>6 constraints"]
+        M["MCP server"] --> G["permissions<br/>JSON Schema<br/>8 constraints"]
         G --> L[("market_events<br/><i>append-only</i>")]
         L --> A["aggregations<br/>board · holdings<br/>prices · myState"]
     end
@@ -31,7 +31,7 @@ flowchart TD
 |---|---|
 | a service to accept a move | a collection, `market_events`, published by RESTHeart |
 | input validation | a JSON Schema on that collection |
-| business rules | six constraints, each an aggregation run inside the write's transaction |
+| business rules | eight constraints, each an aggregation run inside the write's transaction |
 | authentication and roles | seven permissions, which also stamp who wrote what |
 | queries and read models | four aggregations: the board, holdings, prices, your own state |
 | an API and a client | REST, GraphQL and MCP, generated; three agents and a static page |
@@ -137,7 +137,7 @@ when a client can hold a credential of its own, give it an account of its own.
 | `rhc.close.ts` | the same for a service nobody is playing on: revokes every write |
 | `game/schema.ts` | the JSON Schema for ledger events |
 | `game/ledger.ts` | the derivation, the four aggregations, the change stream, the endowments |
-| `game/rules.ts` | the six constraints |
+| `game/rules.ts` | the eight constraints |
 | `game/reference.ts` | items, players, objectives, the account and the secrets |
 | `game/acl.ts` | the permissions, and the trader/secret pairs |
 | `game/graphql.ts` | the GraphQL app |
