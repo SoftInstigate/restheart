@@ -108,6 +108,11 @@ Scenario: An insert is checked like any other write
     When method POST
     Then assert responseStatus == 409
     And match response.constraint == 'noNegativeBalance'
+    # The POST handler adds Location and ETag the moment it sets 201, and the constraint then
+    # rolls the write back. They must not survive: a client following them would ask for a
+    # document that was never created, having been told the write had a location.
+    And match responseHeaders['Location'] == '#notpresent'
+    And match responseHeaders['ETag'] == '#notpresent'
 
     * header Authorization = authHeader
     Given path accounts + '/carol'
@@ -127,6 +132,7 @@ Scenario: A duplicate _id is a duplicate _id, not a write conflict
     Then assert responseStatus == 409
     And match response.retryable == '#notpresent'
     And match response.constraint == '#notpresent'
+    And match responseHeaders['Location'] == '#notpresent'
 
     # the original alice is untouched: the failed write left nothing behind
     * header Authorization = authHeader

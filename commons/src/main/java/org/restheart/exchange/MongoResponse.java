@@ -290,6 +290,16 @@ public class MongoResponse extends BsonResponse {
         setStatusCode(code);
         setInError(true);
         setContent(getErrorContent(code, HttpStatus.getStatusText(code), message, t, false));
+
+        // A write is often refused after the handler has already described the document it was
+        // about to create. The POST handler adds `Location` the moment it sets 201 — its own
+        // comment says the handlers after it may change the status — and a RESPONSE interceptor,
+        // a data constraint say, then rolls the write back and calls this. Left alone, a 409
+        // would carry `Location` and `ETag` pointing at a document that was never created, which
+        // is worse than carrying nothing: a client that follows them gets a 404 for a write it
+        // was told had a location.
+        getHeaders().remove(Headers.LOCATION);
+        getHeaders().remove(Headers.ETAG);
     }
 
     /**
