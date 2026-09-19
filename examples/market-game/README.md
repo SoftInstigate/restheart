@@ -85,6 +85,18 @@ They discover the API, make offers, accept each other's, and one of them eventua
 victory. Nobody told them how the game works: they read it from the catalogue, the rules and the
 errors they get back.
 
+### Watch it
+
+Open [`watch.html`](watch.html) in a browser, straight off the disk, and give it the same `table`
+credentials. It is one file with nothing to install: the board, each player's holdings, coin trade
+by trade, what a unit has been selling for, the open offers and the match round by round, refreshed
+every few seconds while the agents play.
+
+Rounds are not in the ledger. The page infers them from the gaps between events, which is what a
+spectator sees anyway. Tick **show the private objectives** to unlock all three with the secrets
+from `game/reference.ts` and watch each player's progress bar. It spoils the match, which is the
+point of being the commentator rather than a player.
+
 ## Three players, one connection
 
 A connector carries one identity for the whole application, and this game is built on knowing who
@@ -165,6 +177,7 @@ purchase helps the buyer and gaining coin needs somebody willing to spend it.
 | `game/acl.ts` | the permissions, and the trader/secret pairs |
 | `game/graphql.ts` | the GraphQL app |
 | `agents/game.md` | the prompt: a commentator that runs rounds of three subagents |
+| `watch.html` | the spectator page: open it from disk, no build, no dependencies |
 | `agents/mcp.sh` | a minimal MCP client, for checking from a terminal |
 | `agents/smoke.sh` | every rule exercised as the three players, each answer checked |
 

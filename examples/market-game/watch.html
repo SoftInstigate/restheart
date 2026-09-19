@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market Game Watch</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f6f4; --panel: #fff; --ink: #14181f; --dim: #5d6672; --line: #e2e4e8;
+    --accent: #b4491f; --ok: #1f7a4d; --warn: #a3690d;
+    --p1: #b4491f; --p2: #1f5fa8; --p3: #6b3fa0;
+    --coin: #c08a11; --grain: #a37419; --ore: #4a6076; --silk: #8b4a9c;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101215; --panel: #171a1f; --ink: #e8eaed; --dim: #99a1ad; --line: #272b32;
+      --accent: #e97a4e; --ok: #4ec287; --warn: #d9a441;
+      --p1: #e97a4e; --p2: #6aa9e8; --p3: #b48ae0;
+      --coin: #e6b93f; --grain: #cf9b3a; --ore: #8aa4bd; --silk: #c184d6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101215; --panel: #171a1f; --ink: #e8eaed; --dim: #99a1ad; --line: #272b32;
+    --accent: #e97a4e; --ok: #4ec287; --warn: #d9a441;
+    --p1: #e97a4e; --p2: #6aa9e8; --p3: #b48ae0;
+    --coin: #e6b93f; --grain: #cf9b3a; --ore: #8aa4bd; --silk: #c184d6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 15px; margin: 0 0 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); }
+  h3 { font-size: 15px; margin: 0; }
+  a { color: inherit; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  .status { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+  .dot.live { background: var(--ok); animation: pulse 2s ease-in-out infinite; }
+  .dot.err { background: var(--accent); animation: none; }
+  @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 20px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 4px; letter-spacing: .03em; }
+  input[type=text], input[type=password] {
+    font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--bg); color: var(--ink); min-width: 0; width: 100%;
+  }
+  .f-url { flex: 3 1 320px; } .f-s { flex: 1 1 130px; }
+  button {
+    font: inherit; padding: 8px 16px; border-radius: 7px; border: 1px solid transparent;
+    background: var(--ink); color: var(--panel); cursor: pointer;
+  }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  button:disabled { opacity: .5; cursor: default; }
+  .err { color: var(--accent); font-size: 14px; margin-top: 10px; }
+  .hint { color: var(--dim); font-size: 13px; margin-top: 10px; }
+
+  .banner { border-left: 3px solid var(--ok); padding: 14px 18px; background: var(--panel);
+            border-radius: var(--radius); margin-bottom: 20px; }
+  .banner strong { color: var(--ok); }
+
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .card .who { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; }
+  .bar { display: grid; grid-template-columns: 46px 1fr 60px; gap: 8px; align-items: center; margin: 6px 0; font-size: 13px; }
+  .track { height: 9px; background: var(--line); border-radius: 5px; overflow: hidden; display: flex; }
+  .fill { height: 100%; }
+  .fill.held { opacity: 1; }
+  .fill.committed { opacity: .38; }
+  .amt { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .goal { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--dim); }
+  .goal .met { color: var(--ok); }
+  .goal .short { color: var(--warn); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-weight: 500; color: var(--dim); font-size: 12px; letter-spacing: .04em;
+       text-transform: uppercase; padding: 0 8px 8px 0; }
+  td { padding: 7px 8px 7px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  .empty { color: var(--dim); font-style: italic; }
+
+  .round { border-top: 1px solid var(--line); padding: 14px 0; }
+  .round:first-of-type { border-top: 0; }
+  .round-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .round-head .n { font-weight: 600; }
+  .round-head .when { color: var(--dim); font-size: 12px; }
+  .ev { display: flex; gap: 8px; padding: 3px 0; font-size: 14px; align-items: baseline; }
+  .ev .tag { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--dim);
+             min-width: 56px; padding-top: 2px; }
+  .who-name { font-weight: 600; }
+
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .axis { stroke: var(--line); }
+  .axis-text { fill: var(--dim); font-size: 11px; }
+  .gridline { stroke: var(--line); stroke-dasharray: 2 4; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--dim); margin-top: 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); cursor: pointer; }
+  .foot { color: var(--dim); font-size: 13px; margin-top: 28px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Market Game</h1>
+      <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">not connected</span></div>
+    </div>
+    <div class="row" style="gap:10px">
+      <label class="toggle"><input type="checkbox" id="spoilers"> show the private objectives</label>
+      <button class="ghost" id="pause">pause</button>
+    </div>
+  </header>
+
+  <section class="panel" id="setup">
+    <h2>The table's credentials</h2>
+    <div class="row">
+      <div class="f-url"><label for="url">Service URL</label>
+        <input type="text" id="url" placeholder="https://xxxxxx.eu-central-1-shared-1.restheart.com" spellcheck="false"></div>
+      <div class="f-s"><label for="user">User</label><input type="text" id="user" value="table" spellcheck="false"></div>
+      <div class="f-s"><label for="pass">Password</label><input type="password" id="pass" placeholder="Aged-Harbour-Kettle-7"></div>
+      <button id="connect">Watch</button>
+    </div>
+    <div class="err hidden" id="error"></div>
+    <div class="hint">The account the game is played through, created by <code>rhc setup</code>. Its password is in the README.
+      Nothing is sent anywhere else, and it stays in this browser.</div>
+  </section>
+
+  <div id="game" class="hidden">
+    <div class="banner hidden" id="winner"></div>
+
+    <section>
+      <h2>Standings</h2>
+      <div class="grid3" id="players"></div>
+    </section>
+
+    <section class="panel" style="margin-top:20px">
+      <h2>Coin, trade by trade</h2>
+      <div id="coinChart"></div>
+      <div class="legend" id="coinLegend"></div>
+    </section>
+
+    <section class="panel">
+      <h2>What a unit has sold for</h2>
+      <div id="priceChart"></div>
+      <div class="legend" id="priceLegend"></div>
+      <div class="hint" id="priceNote"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Open offers</h2>
+      <div id="offers"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Rounds</h2>
+      <div id="rounds"></div>
+      <div class="hint">A round is a burst of activity: a gap of more than 45 seconds starts a new one. The ledger records
+        no rounds of its own, only events and the order they arrived in.</div>
+    </section>
+
+    <div class="foot" id="foot"></div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+// The players' secrets are in the open in game/reference.ts, so this page can unlock the
+// objectives the same way a player does: one pair per player, sent as query parameters.
+const SECRETS = {
+  trader1: 'seagull-brick-oath',
+  trader2: 'copper-lantern-drift',
+  trader3: 'velvet-anchor-moss',
+};
+const PLAYERS = Object.keys(SECRETS);
+const PLAYER_VAR = { trader1: '--p1', trader2: '--p2', trader3: '--p3' };
+const ITEMS = ['coin', 'grain', 'ore', 'silk'];
+const GOODS = ['grain', 'ore', 'silk'];
+const ROUND_GAP_MS = 45000;
+
+const $ = id => document.getElementById(id);
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const colourOf = p => cssVar(PLAYER_VAR[p] || '--dim');
+const itemColour = i => cssVar('--' + i);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const tsOf = e => (e && e.ts && typeof e.ts.$date === 'number') ? e.ts.$date : null;
+
+/**
+ * An error the loop must not retry. Polling a service that refuses the credentials is how a
+ * mistyped password becomes a brute-force alarm: RESTHeart blocks an address after five failed
+ * sign-ins in ten seconds, and a page retrying every few seconds gets there on its own.
+ */
+function fatal(message) { const e = new Error(message); e.fatal = true; return e; }
+
+let creds = null;      // { base, user, pass }
+let timer = null;
+let paused = false;
+let objectives = null; // { trader1: doc, ... } once the spoilers box is ticked
+
+// ── remembering the connection, a convenience only ────────────────────────────
+function remember(c) {
+  try { localStorage.setItem('market-game-watch', JSON.stringify(c)); } catch (e) { /* private window */ }
+}
+function recall() {
+  try { return JSON.parse(localStorage.getItem('market-game-watch') || 'null'); } catch (e) { return null; }
+}
+
+// ── talking to the service ────────────────────────────────────────────────────
+async function api(path) {
+  const url = creds.base + path + (path.includes('?') ? '&' : '?') + 'rep=s';
+  const res = await fetch(url, {
+    headers: { Authorization: 'Basic ' + btoa(creds.user + ':' + creds.pass) },
+    cache: 'no-store',
+  });
+  if (res.status === 401) throw fatal('the service refused those credentials (401). Check the password, then press Watch again.');
+  if (res.status === 429) throw fatal('the service is rate-limiting this address (429). It counts failed sign-ins over ten ' +
+    'seconds, so wait a moment, fix the password and press Watch again.');
+  if (res.status === 403) throw new Error('that account may not read ' + path + ' (403)');
+  if (!res.ok) throw new Error('the service answered ' + res.status + ' for ' + path);
+  return res.json();
+}
+
+/** The whole ledger, oldest first. Paged, because a long match outruns one page. */
+async function ledger() {
+  const all = [];
+  for (let page = 1; page <= 10; page++) {
+    const docs = await api('/market_events?pagesize=100&page=' + page);
+    if (!Array.isArray(docs) || docs.length === 0) break;
+    all.push(...docs);
+    if (docs.length < 100) break;
+  }
+  const order = { genesis: 0, offer: 1, trade: 1, claim: 2 };
+  return all.sort((a, b) => {
+    const ta = tsOf(a), tb = tsOf(b);
+    if (ta === null && tb === null) return String(a._id).localeCompare(String(b._id));
+    if (ta === null) return -1;
+    if (tb === null) return 1;
+    if (ta !== tb) return ta - tb;
+    return (order[a.type] || 1) - (order[b.type] || 1);
+  });
+}
+
+async function readObjectives() {
+  const out = {};
+  for (const p of PLAYERS) {
+    const docs = await api('/market_objectives?trader=' + p + '&secret=' + encodeURIComponent(SECRETS[p]));
+    if (Array.isArray(docs) && docs.length) out[p] = docs[0];
+  }
+  return out;
+}
+
+// ── drawing ───────────────────────────────────────────────────────────────────
+function svg(w, h, body) {
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" role="img">' + body + '</svg>';
+}
+
+function renderPlayers(board) {
+  const holdings = board.holdings || [];
+  const maxGood = Math.max(4, ...holdings.flatMap(h => h.goods.filter(g => g.item !== 'coin').map(g => g.qty)));
+  const maxCoin = Math.max(60, ...holdings.flatMap(h => h.goods.filter(g => g.item === 'coin').map(g => g.qty)));
+
+  $('players').innerHTML = holdings.map(h => {
+    const who = h._id;
+    const by = {};
+    h.goods.forEach(g => { by[g.item] = g; });
+    const bars = ITEMS.map(item => {
+      const g = by[item] || { qty: 0, committed: 0 };
+      const scale = item === 'coin' ? maxCoin : maxGood;
+      const held = Math.max(0, g.qty - (g.committed || 0));
+      const pct = v => (scale ? (v / scale) * 100 : 0) + '%';
+      return '<div class="bar"><span>' + item + '</span>' +
+        '<span class="track">' +
+          '<span class="fill held" style="width:' + pct(held) + ';background:' + itemColour(item) + '"></span>' +
+          '<span class="fill committed" style="width:' + pct(g.committed || 0) + ';background:' + itemColour(item) + '"></span>' +
+        '</span>' +
+        '<span class="amt">' + g.qty + (g.committed ? ' <span title="committed to open offers">(' + g.committed + ')</span>' : '') + '</span></div>';
+    }).join('');
+
+    let goal = '';
+    if (objectives && objectives[who]) {
+      const o = objectives[who];
+      const parts = (o.requires || []).map(r => {
+        const have = (by[r.item] || { qty: 0 }).qty;
+        const met = have >= r.qty;
+        return '<span class="' + (met ? 'met' : 'short') + '">' + have + '/' + r.qty + ' ' + r.item +
+               (met ? ' ✓' : ' (needs ' + (r.qty - have) + ' more)') + '</span>';
+      }).join(' · ');
+      goal = '<div class="goal"><div>' + esc(o.goal || '') + '</div><div style="margin-top:6px">' + parts + '</div></div>';
+    }
+
+    return '<div class="card"><div class="who"><span class="swatch" style="background:' + colourOf(who) + '"></span>' +
+      '<h3>' + who + '</h3></div>' + bars + goal + '</div>';
+  }).join('');
+}
+
+/** Coin after every settled trade, replayed from the endowments the ledger opens with. */
+function renderCoin(events, board) {
+  const coin = {};
+  PLAYERS.forEach(p => { coin[p] = 0; });
+  events.filter(e => e.type === 'genesis').forEach(e => {
+    (e.grants || []).forEach(g => { if (g.item === 'coin') coin[e.actor] = (coin[e.actor] || 0) + g.qty; });
+  });
+
+  const series = {};
+  PLAYERS.forEach(p => { series[p] = [coin[p] || 0]; });
+  const trades = (board.settledTrades || []).slice().sort((a, b) => (a.ts.$date || 0) - (b.ts.$date || 0));
+  trades.forEach(t => {
+    if (t.gave && t.gave.item === 'coin') { coin[t.from] -= t.gave.qty; coin[t.to] += t.gave.qty; }
+    if (t.got && t.got.item === 'coin') { coin[t.to] -= t.got.qty; coin[t.from] += t.got.qty; }
+    PLAYERS.forEach(p => series[p].push(coin[p] || 0));
+  });
+
+  const n = trades.length;
+  const W = 640, H = 220, L = 34, R = 10, T = 12, B = 26;
+  const values = PLAYERS.flatMap(p => series[p]);
+  const lo = Math.min(30, Math.floor(Math.min(...values) / 10) * 10);
+  const hi = Math.max(90, Math.ceil(Math.max(...values) / 10) * 10);
+  const x = i => L + (n === 0 ? 0 : (i / n) * (W - L - R));
+  const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+
+  let body = '';
+  for (let v = lo; v <= hi; v += 10) {
+    body += '<line class="gridline" x1="' + L + '" y1="' + y(v) + '" x2="' + (W - R) + '" y2="' + y(v) + '"/>';
+    body += '<text class="axis-text" x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+  }
+  if (objectives) {
+    PLAYERS.forEach(p => {
+      const req = objectives[p] && (objectives[p].requires || []).find(r => r.item === 'coin');
+      if (!req) return;
+      body += '<line x1="' + L + '" y1="' + y(req.qty) + '" x2="' + (W - R) + '" y2="' + y(req.qty) +
+        '" stroke="' + colourOf(p) + '" stroke-dasharray="4 4" stroke-width="1" opacity=".55"/>';
+    });
+  }
+  PLAYERS.forEach(p => {
+    const pts = series[p].map((v, i) => x(i) + ',' + y(v)).join(' ');
+    body += '<polyline points="' + pts + '" fill="none" stroke="' + colourOf(p) + '" stroke-width="2" ' +
+            'stroke-linejoin="round" stroke-linecap="round"/>';
+    series[p].forEach((v, i) => {
+      body += '<circle cx="' + x(i) + '" cy="' + y(v) + '" r="2.5" fill="' + colourOf(p) + '"><title>' +
+        p + ': ' + v + ' coin after ' + i + ' trade' + (i === 1 ? '' : 's') + '</title></circle>';
+    });
+  });
+  body += '<line class="axis" x1="' + L + '" y1="' + (H - B) + '" x2="' + (W - R) + '" y2="' + (H - B) + '"/>';
+  body += '<text class="axis-text" x="' + L + '" y="' + (H - B + 16) + '">start</text>';
+  if (n > 0) body += '<text class="axis-text" x="' + (W - R) + '" y="' + (H - B + 16) + '" text-anchor="end">' +
+    n + ' trade' + (n === 1 ? '' : 's') + '</text>';
+
+  $('coinChart').innerHTML = svg(W, H, body);
+  $('coinLegend').innerHTML = PLAYERS.map(p =>
+    '<span><span class="swatch" style="background:' + colourOf(p) + '"></span>' + p + '</span>').join('') +
+    (objectives ? '<span>dashed: that player’s coin threshold</span>' : '');
+}
+
+/** Every settled trade where coin met a good, as coin per unit. */
+function renderPrices(board) {
+  const trades = (board.settledTrades || []).map(t => {
+    const coinSide = t.gave.item === 'coin' ? t.gave : (t.got.item === 'coin' ? t.got : null);
+    const goodSide = t.gave.item === 'coin' ? t.got : (t.got.item === 'coin' ? t.gave : null);
+    if (!coinSide || !goodSide || !goodSide.qty) return null;
+    return { item: goodSide.item, price: coinSide.qty / goodSide.qty, ts: t.ts.$date, buyer: t.gave.item === 'coin' ? t.from : t.to };
+  }).filter(Boolean).sort((a, b) => a.ts - b.ts);
+
+  if (trades.length === 0) {
+    $('priceChart').innerHTML = '<p class="empty">No good has been sold for coin yet.</p>';
+    $('priceLegend').innerHTML = '';
+    $('priceNote').textContent = '';
+    return;
+  }
+
+  const W = 640, H = 200, L = 34, R = 10, T = 12, B = 26;
+  const hi = Math.max(12, Math.ceil(Math.max(...trades.map(t => t.price))));
+  const x = i => L + (trades.length === 1 ? (W - L - R) / 2 : (i / (trades.length - 1)) * (W - L - R));
+  const y = v => T + (1 - v / hi) * (H - T - B);
+
+  let body = '';
+  for (let v = 0; v <= hi; v += Math.max(1, Math.round(hi / 4))) {
+    body += '<line class="gridline" x1="' + L + '" y1="' + y(v) + '" x2="' + (W - R) + '" y2="' + y(v) + '"/>';
+    body += '<text class="axis-text" x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+  }
+  GOODS.forEach(g => {
+    const pts = trades.map((t, i) => ({ t, i })).filter(o => o.t.item === g);
+    if (pts.length > 1) {
+      body += '<polyline points="' + pts.map(o => x(o.i) + ',' + y(o.t.price)).join(' ') +
+        '" fill="none" stroke="' + itemColour(g) + '" stroke-width="1.5" opacity=".55"/>';
+    }
+    pts.forEach(o => {
+      body += '<circle cx="' + x(o.i) + '" cy="' + y(o.t.price) + '" r="4" fill="' + itemColour(g) + '"><title>' +
+        g + ' at ' + o.t.price.toFixed(1) + ' coin each, bought by ' + o.t.buyer + '</title></circle>';
+    });
+  });
+  body += '<line class="axis" x1="' + L + '" y1="' + (H - B) + '" x2="' + (W - R) + '" y2="' + (H - B) + '"/>';
+  body += '<text class="axis-text" x="' + L + '" y="' + (H - B + 16) + '">first cash sale</text>';
+  body += '<text class="axis-text" x="' + (W - R) + '" y="' + (H - B + 16) + '" text-anchor="end">latest</text>';
+
+  $('priceChart').innerHTML = svg(W, H, body);
+  $('priceLegend').innerHTML = GOODS.filter(g => trades.some(t => t.item === g)).map(g =>
+    '<span><span class="swatch" style="background:' + itemColour(g) + '"></span>' + g + '</span>').join('');
+  const avg = {};
+  GOODS.forEach(g => {
+    const p = trades.filter(t => t.item === g).map(t => t.price);
+    if (p.length) avg[g] = (p.reduce((a, b) => a + b, 0) / p.length).toFixed(1);
+  });
+  $('priceNote').textContent = 'Average so far: ' + Object.entries(avg).map(([g, v]) => v + ' coin per ' + g).join(', ') + '.';
+}
+
+function side(s) { return s ? s.qty + ' ' + s.item : '?'; }
+
+function renderOffers(board) {
+  const open = board.openOffers || [];
+  if (open.length === 0) { $('offers').innerHTML = '<p class="empty">Nothing is on the table.</p>'; return; }
+  $('offers').innerHTML = '<table><thead><tr><th>Offered by</th><th>Gives</th><th>Wants</th><th>Id</th></tr></thead><tbody>' +
+    open.map(o => '<tr><td><span class="who-name" style="color:' + colourOf(o.actor || o.from) + '">' +
+      esc(o.actor || o.from || '?') + '</span></td><td>' + esc(side(o.give || o.gives)) + '</td><td>' +
+      esc(side(o.want || o.wants)) + '</td><td class="mono">' + esc(o.offerId || o._id || '') + '</td></tr>').join('') +
+    '</tbody></table>';
+}
+
+/** Events grouped into rounds by the gaps between them. */
+function renderRounds(events, board) {
+  const settled = {};
+  (board.settledTrades || []).forEach(t => { settled[t.offerId] = t; });
+
+  const played = events.filter(e => e.type !== 'genesis' && tsOf(e) !== null);
+  if (played.length === 0) {
+    $('rounds').innerHTML = '<p class="empty">The table is set and nobody has moved yet.</p>';
+    return;
+  }
+  const rounds = [];
+  played.forEach(e => {
+    const last = rounds[rounds.length - 1];
+    if (!last || tsOf(e) - last.end > ROUND_GAP_MS) rounds.push({ start: tsOf(e), end: tsOf(e), events: [e] });
+    else { last.end = tsOf(e); last.events.push(e); }
+  });
+
+  const when = ms => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const name = p => '<span class="who-name" style="color:' + colourOf(p) + '">' + esc(p) + '</span>';
+
+  $('rounds').innerHTML = rounds.map((r, i) => {
+    const lines = r.events.map(e => {
+      if (e.type === 'offer') {
+        const taken = settled[e.offerId] ? ' <span style="color:var(--ok)">taken</span>' : '';
+        return '<div class="ev"><span class="tag">offer</span><span>' + name(e.actor) + ' offers ' +
+          esc(side(e.give)) + ' for ' + esc(side(e.want)) + taken + '</span></div>';
+      }
+      if (e.type === 'trade') {
+        const t = settled[e.offerId];
+        const detail = t ? ' — ' + name(t.from) + ' gave ' + esc(side(t.gave)) + ' for ' + esc(side(t.got)) : '';
+        return '<div class="ev"><span class="tag">trade</span><span>' + name(e.actor) + ' accepts ' +
+          '<span class="mono">' + esc(e.offerId) + '</span>' + detail + '</span></div>';
+      }
+      if (e.type === 'claim') {
+        return '<div class="ev"><span class="tag">claim</span><span>' + name(e.actor) + ' claims victory</span></div>';
+      }
+      return '<div class="ev"><span class="tag">' + esc(e.type) + '</span><span>' + name(e.actor) + '</span></div>';
+    }).join('');
+    const trades = r.events.filter(e => e.type === 'trade').length;
+    return '<div class="round"><div class="round-head"><span class="n">Round ' + (i + 1) + '</span>' +
+      '<span class="when">' + when(r.start) + ' · ' + r.events.length + ' events, ' + trades +
+      ' settled</span></div>' + lines + '</div>';
+  }).reverse().join('');
+}
+
+function renderWinner(board, events) {
+  // The claim's _id is the constant 'win', so the player is in `actor`, never in `_id`.
+  const w = board.winner;
+  const doc = Array.isArray(w) ? (w.length ? w[0] : null) : (w || null);
+  const who = doc && (typeof doc === 'string' ? doc : (doc.actor || doc.player || doc.winner));
+  const el = $('winner');
+  if (!who) { el.classList.add('hidden'); return; }
+  const claim = events.find(e => e.type === 'claim');
+  const at = claim && tsOf(claim) ? ' at ' + new Date(tsOf(claim)).toLocaleTimeString() : '';
+  el.innerHTML = '<strong>' + esc(String(who)) + ' claimed victory' + at + '.</strong> ' +
+    'The ledger is append-only, so the board stays as it was won. Reset it with ' +
+    '<code>rhc setup --srv &lt;srvId&gt; --force game</code> for a rematch.';
+  el.classList.remove('hidden');
+}
+
+// ── the loop ──────────────────────────────────────────────────────────────────
+function setStatus(text, kind) {
+  $('statusText').textContent = text;
+  $('dot').className = 'dot' + (kind ? ' ' + kind : '');
+}
+
+async function refresh() {
+  try {
+    const [boards, events] = await Promise.all([api('/market_events/_aggrs/board'), ledger()]);
+    const board = Array.isArray(boards) ? (boards[0] || {}) : boards;
+    if ($('spoilers').checked && !objectives) objectives = await readObjectives();
+    if (!$('spoilers').checked) objectives = null;
+
+    renderWinner(board, events);
+    renderPlayers(board);
+    renderCoin(events, board);
+    renderPrices(board);
+    renderOffers(board);
+    renderRounds(events, board);
+
+    $('foot').textContent = events.length + ' events on the ledger · read at ' + new Date().toLocaleTimeString();
+    $('game').classList.remove('hidden');
+    $('setup').classList.add('hidden');
+    setStatus(paused ? 'paused' : 'watching ' + creds.base.replace(/^https?:\/\//, '').split('.')[0], paused ? '' : 'live');
+    $('error').classList.add('hidden');
+  } catch (err) {
+    if (err.fatal) stop();
+    setStatus(err.fatal ? 'stopped' : 'cannot read the game', 'err');
+    $('error').textContent = err.message;
+    $('error').classList.remove('hidden');
+    $('setup').classList.remove('hidden');
+  }
+}
+
+function stop() { if (timer) clearInterval(timer); timer = null; }
+
+function start() {
+  stop();
+  refresh();
+  timer = setInterval(() => { if (!paused && !document.hidden) refresh(); }, 5000);
+}
+
+$('connect').addEventListener('click', () => {
+  const base = $('url').value.trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//.test(base)) {
+    $('error').textContent = 'The service URL starts with https:// — it is the one on the console’s Connect page.';
+    $('error').classList.remove('hidden');
+    return;
+  }
+  creds = { base, user: $('user').value.trim() || 'table', pass: $('pass').value };
+  remember(creds);
+  start();
+});
+
+$('pause').addEventListener('click', () => {
+  paused = !paused;
+  $('pause').textContent = paused ? 'resume' : 'pause';
+  if (!paused) refresh(); else setStatus('paused', '');
+});
+
+$('spoilers').addEventListener('change', () => { objectives = null; if (creds) refresh(); });
+
+document.querySelectorAll('#url, #user, #pass').forEach(el =>
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') $('connect').click(); }));
+
+const saved = recall();
+if (saved && saved.base && saved.pass) {
+  $('url').value = saved.base;
+  $('user').value = saved.user || 'table';
+  $('pass').value = saved.pass || '';
+  creds = saved;
+  start();
+}
+</script>
+</body>
+</html>
