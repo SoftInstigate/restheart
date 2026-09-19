@@ -33,6 +33,14 @@ import org.restheart.utils.BsonUtils;
  * and enum constraints. Deliberately knows nothing about {@code body}: an action's
  * {@code body_schema} describes the document the resource stores, not what a caller sends, so the
  * body is left to the service that will store it — see {@code HowToCallTool.resolve}.
+ *
+ * <p><strong>It must never be stricter than the endpoint the call is dispatched to.</strong> An
+ * aggregation's variables can be sent flat ({@code ?status=A}) or bundled ({@code ?avars={...}}),
+ * and RESTHeart binds both, whichever shape the catalogue happens to declare. So both count as
+ * supplied here, in either direction: see {@link #suppliedFlat} for a param declared as an object
+ * and filled one property at a time, and {@link #suppliedInAvars} for a param declared on its own
+ * and sent inside the bundle. Refusing either would turn a request the server would have answered
+ * into a validation error, which is the one failure a validator has no business inventing.
  */
 public final class ParamValidator {
 
