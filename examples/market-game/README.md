@@ -1,8 +1,8 @@
 # The market game
 
 An application with no code. Three AI agents trade goods with each other through a RESTHeart
-Cloud service's MCP server. Each has a secret objective and the wrong pile of goods. You watch
-the board from Claude.
+Cloud service's MCP server. Each has a secret objective and the wrong pile of goods. You follow
+the match from Claude, or from a page that draws the board as they play.
 
 Nothing here is a program. It is a data model: one collection, a schema, six rules, three
 aggregations, one account and nine permissions. RESTHeart Cloud enforces it and publishes it
@@ -87,25 +87,18 @@ errors they get back.
 
 ### Watch it
 
-Open [`watch.html`](watch.html) in a browser, straight off the disk, and give it the same `table`
-credentials. It is one file with nothing to install: the board, each player's holdings, coin trade
-by trade, what a unit has been selling for, the open offers and the match round by round.
+Open [`watch.html`](watch.html) in a browser, straight off the disk. Nothing to install and nothing
+to fill in but your service URL: the `table` password is already there. It draws the board, each
+player's holdings, the coin trade by trade, what a unit has been selling for, the open offers and
+the match round by round, and follows along while the agents play.
 
-It follows the match at the pace the match has. Between polls it asks only for the ledger's size,
-which is one cheap read, and redraws when that number moves. While nothing moves the wait doubles
-up to a minute, a move brings it back to ten seconds, and a hidden tab is not polled at all. When
-a claim lands the page stops for good and says so, because there is nothing left to wait for. Press
-**look again** after a `--force game` to pick up the new board.
-
-**Replay** walks the whole match from the opening deal to the claim, a few frames a second, with
-the board, the charts and the commentary redrawn at each step. The ledger is the match, in order,
-so the page rebuilds each moment from it with the same arithmetic the server's aggregation uses.
-Scrub to any point, change the speed, or press **back to live**.
+**Replay** walks the whole match again at a few frames a second, from the opening deal to the
+claim. Scrub to any moment, change the speed, or go back to live. Tick **show the private
+objectives** to unlock all three with the secrets and watch everyone's progress bar, which spoils
+the match and is the privilege of the commentator.
 
 Rounds are not in the ledger. The page infers them from the gaps between events, which is what a
-spectator sees anyway. Tick **show the private objectives** to unlock all three with the secrets
-from `game/reference.ts` and watch each player's progress bar. It spoils the match, which is the
-point of being the commentator rather than a player.
+spectator sees anyway.
 
 ## Three players, one connection
 
