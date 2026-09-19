@@ -32,21 +32,25 @@
     margin: 0; background: var(--bg); color: var(--ink);
     font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 18px 16px 48px; }
   h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
-  h2 { font-size: 15px; margin: 0 0 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); }
+  h2 { font-size: 13px; margin: 0 0 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); }
   h3 { font-size: 15px; margin: 0; }
   a { color: inherit; }
   code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
 
-  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
   .status { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
   .dot.live { background: var(--ok); animation: pulse 2s ease-in-out infinite; }
   .dot.err { background: var(--accent); animation: none; }
   @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
 
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .cols > .panel { margin-bottom: 14px; }
+  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; gap: 0; } }
+  .scroller { max-height: 340px; overflow-y: auto; overscroll-behavior: contain; }
   .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
   label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 4px; letter-spacing: .03em; }
   input[type=text], input[type=password] {
@@ -63,21 +67,22 @@
   .err { color: var(--accent); font-size: 14px; margin-top: 10px; }
   .hint { color: var(--dim); font-size: 13px; margin-top: 10px; }
 
-  .banner { border-left: 3px solid var(--ok); padding: 14px 18px; background: var(--panel);
+  .banner { border-left: 3px solid var(--ok); padding: 11px 16px; background: var(--panel);
             border-radius: var(--radius); margin-bottom: 20px; }
   .banner strong { color: var(--ok); }
+  .banner { font-size: 14px; }
 
-  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
-  .card .who { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 15px; }
+  .card .who { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; }
-  .bar { display: grid; grid-template-columns: 46px 1fr 60px; gap: 8px; align-items: center; margin: 6px 0; font-size: 13px; }
+  .bar { display: grid; grid-template-columns: 42px 1fr 54px; gap: 8px; align-items: center; margin: 4px 0; font-size: 12.5px; }
   .track { height: 9px; background: var(--line); border-radius: 5px; overflow: hidden; display: flex; }
   .fill { height: 100%; }
   .fill.held { opacity: 1; }
   .fill.committed { opacity: .38; }
   .amt { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
-  .goal { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--dim); }
+  .goal { margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--dim); }
   .goal .met { color: var(--ok); }
   .goal .short { color: var(--warn); }
 
@@ -87,7 +92,7 @@
   td { padding: 7px 8px 7px 0; border-top: 1px solid var(--line); vertical-align: top; }
   .empty { color: var(--dim); font-style: italic; }
 
-  .round { border-top: 1px solid var(--line); padding: 14px 0; }
+  .round { border-top: 1px solid var(--line); padding: 10px 0; }
   .round:first-of-type { border-top: 0; }
   .round-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
   .round-head .n { font-weight: 600; }
@@ -106,7 +111,7 @@
   .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); cursor: pointer; }
   .replaybar { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; align-items: center;
                background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-               padding: 12px 16px; margin-bottom: 20px; }
+               padding: 10px 14px; margin-bottom: 14px; }
   .replaybar .rpnow { grid-column: 1 / -1; color: var(--dim); font-size: 13px; min-height: 20px; }
   .replaybar select { font: inherit; font-size: 13px; padding: 6px 8px; border-radius: 7px;
                       border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
@@ -116,7 +121,7 @@
     .replaybar { grid-template-columns: auto auto auto; }
     .replaybar input[type=range] { grid-column: 1 / -1; order: -1; }
   }
-  .foot { color: var(--dim); font-size: 13px; margin-top: 28px; }
+  .foot { color: var(--dim); font-size: 12.5px; margin-top: 16px; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -167,35 +172,38 @@
       <div class="rpnow" id="rpNow"></div>
     </div>
 
-    <section>
+    <section style="margin-bottom:14px">
       <h2>Standings</h2>
       <div class="grid3" id="players"></div>
     </section>
 
-    <section class="panel" style="margin-top:20px">
-      <h2>Coin, trade by trade</h2>
-      <div id="coinChart"></div>
-      <div class="legend" id="coinLegend"></div>
-    </section>
+    <div class="cols">
+      <section class="panel">
+        <h2>Coin, trade by trade</h2>
+        <div id="coinChart"></div>
+        <div class="legend" id="coinLegend"></div>
+      </section>
 
-    <section class="panel">
-      <h2>What a unit has sold for</h2>
-      <div id="priceChart"></div>
-      <div class="legend" id="priceLegend"></div>
-      <div class="hint" id="priceNote"></div>
-    </section>
+      <section class="panel">
+        <h2>What a unit has sold for</h2>
+        <div id="priceChart"></div>
+        <div class="legend" id="priceLegend"></div>
+        <div class="hint" id="priceNote"></div>
+      </section>
+    </div>
 
-    <section class="panel">
-      <h2>Open offers</h2>
-      <div id="offers"></div>
-    </section>
+    <div class="cols">
+      <section class="panel">
+        <h2>Open offers</h2>
+        <div class="scroller" id="offers"></div>
+      </section>
 
-    <section class="panel">
-      <h2>Rounds</h2>
-      <div id="rounds"></div>
-      <div class="hint">A round is a burst of activity: a gap of more than 45 seconds starts a new one. The ledger records
-        no rounds of its own, only events and the order they arrived in.</div>
-    </section>
+      <section class="panel">
+        <h2>Rounds</h2>
+        <div class="scroller" id="rounds"></div>
+        <div class="hint">A round is a burst of activity: more than 45 seconds of silence starts a new one.</div>
+      </section>
+    </div>
 
     <div class="foot" id="foot"></div>
   </div>
@@ -353,7 +361,7 @@ function renderCoin(events, board) {
   });
 
   const n = trades.length;
-  const W = 640, H = 220, L = 34, R = 10, T = 12, B = 26;
+  const W = 640, H = 175, L = 34, R = 10, T = 10, B = 24;
   const values = PLAYERS.flatMap(p => series[p]);
   const lo = Math.min(30, Math.floor(Math.min(...values) / 10) * 10);
   const hi = Math.max(90, Math.ceil(Math.max(...values) / 10) * 10);
@@ -409,7 +417,7 @@ function renderPrices(board) {
     return;
   }
 
-  const W = 640, H = 200, L = 34, R = 10, T = 12, B = 26;
+  const W = 640, H = 160, L = 34, R = 10, T = 10, B = 24;
   const hi = Math.max(12, Math.ceil(Math.max(...trades.map(t => t.price))));
   const x = i => L + (trades.length === 1 ? (W - L - R) / 2 : (i / (trades.length - 1)) * (W - L - R));
   const y = v => T + (1 - v / hi) * (H - T - B);
