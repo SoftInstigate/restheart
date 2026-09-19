@@ -89,8 +89,13 @@ errors they get back.
 
 Open [`watch.html`](watch.html) in a browser, straight off the disk, and give it the same `table`
 credentials. It is one file with nothing to install: the board, each player's holdings, coin trade
-by trade, what a unit has been selling for, the open offers and the match round by round, refreshed
-every few seconds while the agents play.
+by trade, what a unit has been selling for, the open offers and the match round by round.
+
+It follows the match at the pace the match has. Between polls it asks only for the ledger's size,
+which is one cheap read, and redraws when that number moves. While nothing moves the wait doubles
+up to a minute, a move brings it back to ten seconds, and a hidden tab is not polled at all. When
+a claim lands the page stops for good and says so, because there is nothing left to wait for. Press
+**look again** after a `--force game` to pick up the new board.
 
 Rounds are not in the ledger. The page infers them from the gaps between events, which is what a
 spectator sees anyway. Tick **show the private objectives** to unlock all three with the secrets

@@ -119,6 +119,7 @@
     <div class="row" style="gap:10px">
       <label class="toggle"><input type="checkbox" id="spoilers"> show the private objectives</label>
       <button class="ghost" id="pause">pause</button>
+      <button class="ghost hidden" id="again">look again</button>
     </div>
   </header>
 
@@ -478,20 +479,32 @@ function renderWinner(board, events) {
   const doc = Array.isArray(w) ? (w.length ? w[0] : null) : (w || null);
   const who = doc && (typeof doc === 'string' ? doc : (doc.actor || doc.player || doc.winner));
   const el = $('winner');
-  if (!who) { el.classList.add('hidden'); return; }
+  if (!who) { el.classList.add('hidden'); return false; }
   const claim = events.find(e => e.type === 'claim');
   const at = claim && tsOf(claim) ? ' at ' + new Date(tsOf(claim)).toLocaleTimeString() : '';
   el.innerHTML = '<strong>' + esc(String(who)) + ' claimed victory' + at + '.</strong> ' +
     'The ledger is append-only, so the board stays as it was won. Reset it with ' +
     '<code>rhc setup --srv &lt;srvId&gt; --force game</code> for a rematch.';
   el.classList.remove('hidden');
+  return true;
 }
 
 // ── the loop ──────────────────────────────────────────────────────────────────
+// A match is slow: a round is minutes of thinking and a handful of writes. So the page asks the
+// ledger's size, which is one cheap read, and only redraws when that number has moved. While
+// nothing moves the wait doubles, up to a minute, and a move snaps it back. Once a claim is on
+// the board there is nothing left to wait for, and the page stops for good.
+const POLL_MIN = 10000, POLL_MAX = 60000;
+let delay = POLL_MIN;
+let lastSize = -1;
+let over = false;
+
 function setStatus(text, kind) {
   $('statusText').textContent = text;
   $('dot').className = 'dot' + (kind ? ' ' + kind : '');
 }
+
+function shortHost() { return creds.base.replace(/^https?:\/\//, '').split('.')[0]; }
 
 async function refresh() {
   try {
@@ -500,33 +513,71 @@ async function refresh() {
     if ($('spoilers').checked && !objectives) objectives = await readObjectives();
     if (!$('spoilers').checked) objectives = null;
 
-    renderWinner(board, events);
+    const won = renderWinner(board, events);
     renderPlayers(board);
     renderCoin(events, board);
     renderPrices(board);
     renderOffers(board);
     renderRounds(events, board);
 
+    lastSize = events.length;
     $('foot').textContent = events.length + ' events on the ledger · read at ' + new Date().toLocaleTimeString();
     $('game').classList.remove('hidden');
     $('setup').classList.add('hidden');
-    setStatus(paused ? 'paused' : 'watching ' + creds.base.replace(/^https?:\/\//, '').split('.')[0], paused ? '' : 'live');
     $('error').classList.add('hidden');
+
+    if (won) {
+      over = true;
+      stop();
+      setStatus('the match is over', '');
+      $('pause').classList.add('hidden');
+      $('again').classList.remove('hidden');
+    } else {
+      setStatus(paused ? 'paused' : 'watching ' + shortHost(), paused ? '' : 'live');
+    }
+    return true;
   } catch (err) {
     if (err.fatal) stop();
     setStatus(err.fatal ? 'stopped' : 'cannot read the game', 'err');
     $('error').textContent = err.message;
     $('error').classList.remove('hidden');
     $('setup').classList.remove('hidden');
+    return false;
   }
 }
 
-function stop() { if (timer) clearInterval(timer); timer = null; }
+/** One cheap read; the expensive redraw only when the ledger has actually grown. */
+async function tick() {
+  if (over || paused || document.hidden) { schedule(); return; }
+  try {
+    const size = (await api('/market_events/_size'))._size;
+    if (size !== lastSize) {
+      delay = POLL_MIN;
+      await refresh();
+    } else {
+      delay = Math.min(delay * 2, POLL_MAX);
+      setStatus('watching ' + shortHost() + ' · quiet for now', 'live');
+    }
+  } catch (err) {
+    if (err.fatal) { stop(); setStatus('stopped', 'err'); $('error').textContent = err.message;
+                     $('error').classList.remove('hidden'); $('setup').classList.remove('hidden'); return; }
+    delay = Math.min(delay * 2, POLL_MAX);
+  }
+  schedule();
+}
 
-function start() {
+function schedule() { stop(); if (!over) timer = setTimeout(tick, delay); }
+
+function stop() { if (timer) clearTimeout(timer); timer = null; }
+
+async function start() {
   stop();
-  refresh();
-  timer = setInterval(() => { if (!paused && !document.hidden) refresh(); }, 5000);
+  over = false;
+  delay = POLL_MIN;
+  lastSize = -1;
+  $('again').classList.add('hidden');
+  $('pause').classList.remove('hidden');
+  if (await refresh()) schedule();
 }
 
 $('connect').addEventListener('click', () => {
@@ -544,7 +595,16 @@ $('connect').addEventListener('click', () => {
 $('pause').addEventListener('click', () => {
   paused = !paused;
   $('pause').textContent = paused ? 'resume' : 'pause';
-  if (!paused) refresh(); else setStatus('paused', '');
+  if (paused) { stop(); setStatus('paused', ''); }
+  else { delay = POLL_MIN; start(); }
+});
+
+// After `--force game` the ledger is new and shorter, so nothing polls its way back: ask again.
+$('again').addEventListener('click', () => start());
+
+// A hidden tab is not polled at all, so coming back to it should not mean waiting out a minute.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && creds && !over && !paused) { delay = POLL_MIN; stop(); tick(); }
 });
 
 $('spoilers').addEventListener('change', () => { objectives = null; if (creds) refresh(); });
