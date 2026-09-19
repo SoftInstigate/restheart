@@ -102,6 +102,20 @@ the match and is the privilege of the commentator.
 Rounds are not in the ledger. The page infers them from the gaps between events, which is what a
 spectator sees anyway.
 
+### When the match is over
+
+The password is in the open, so a service left set up is a service anybody can append to. Close
+the writing when you stop playing:
+
+```bash
+npx rhc setup --srv <srvId> --file rhc.close.ts
+```
+
+It revokes the three rules that allow a POST and touches nothing else. Reading stays, so the page
+still draws the finished match and the connector still lists it, but the ledger cannot grow. The
+ordinary `rhc setup` puts the rules back, and `--force game` deals a fresh board. To close the
+service altogether, delete the `table` user in the console: nothing else answers to that password.
+
 ## Three players, one connection
 
 A connector carries one identity for the whole application, and this game is built on knowing who
@@ -138,7 +152,8 @@ what a caller may read and that question carries no arguments.
 
 The secrets are in the open, in `game/reference.ts`, to be copied into prompts. Do not read it as
 a pattern: a secret in a query string is read by every request log and by whoever holds the
-transcript. When a client can hold a credential of its own, give it an account of its own.
+transcript, and a published password stays published — which is what `rhc.close.ts` is for. When a
+client can hold a credential of its own, give it an account of its own.
 
 ## How it works
 
@@ -175,6 +190,8 @@ purchase helps the buyer and gaining coin needs somebody willing to spend it.
 | File | What it is |
 |---|---|
 | `rhc.setup.ts` | what the service must have, as steps that check and apply |
+| `rhc.close.ts` | the same for a service nobody is playing on: revokes every write |
+| `game/service.ts` | comparing what a service holds with what is meant, for both setups |
 | `game/schema.ts` | the JSON Schema for ledger events |
 | `game/ledger.ts` | the holdings derivation, the aggregations, the change stream, the endowments |
 | `game/rules.ts` | the six constraints |
