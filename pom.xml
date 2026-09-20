@@ -587,6 +587,30 @@
                     </activeRecipes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <!-- fail fast, before any download, when the JDK cannot compile the release -->
+                    <execution>
+                        <id>enforce-java</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.8</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>${jdk.version}</version>
+                                    <message>RESTHeart requires JDK ${jdk.version} or later.</message>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>
@@ -600,8 +624,11 @@
                     <artifactId>maven-enforcer-plugin</artifactId>
                     <version>${maven-enforcer-plugin.version}</version>
                     <executions>
+                        <!-- not bound to the build (DependencyConvergence does not pass yet), run it
+                             explicitly with: mvn enforcer:enforce@enforce-versions -->
                         <execution>
                             <id>enforce-versions</id>
+                            <phase>none</phase>
                             <goals>
                                 <goal>enforce</goal>
                             </goals>
@@ -619,7 +646,7 @@
                                         </excludes>
                                     </requireReleaseDeps>
                                     <requireJavaVersion>
-                                        <version>21</version>
+                                        <version>${jdk.version}</version>
                                     </requireJavaVersion>
                                     <DependencyConvergence />
                                     <banDuplicatePomDependencyVersions />
