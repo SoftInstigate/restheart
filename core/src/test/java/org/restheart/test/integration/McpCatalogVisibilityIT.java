@@ -36,7 +36,7 @@ import kong.unirest.Unirest;
  *
  * <p>Reads are authorized one at a time, and {@link McpAclEnforcementIT} covers that. The catalog
  * used to be the same for everybody, so a caller allowed to reach {@code /mcp} could list every
- * MCP-enabled resource on the server — its URI, its actions including the writing ones, its
+ * MCP-enabled resource on the server — its URI, its
  * parameter names, and its {@code mcp.description}, which is prose written to explain what the data
  * is. This class pins that it no longer can, on every channel that lists or describes:
  * {@code resources/list}, {@code resources/templates/list}, {@code list_apis} both as a catalog and
@@ -111,22 +111,23 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     }
 
     /**
-     * A listing is composed without arguments, so it cannot claim an action whose rule reads one.
-     * That is a limit of listings, not a refusal: the action is callable, and the next test calls
-     * it. Before this was fixed the two were the same thing, and an agent holding exactly the
-     * argument that would have opened the resource was told it did not exist.
+     * An action whose rule reads a query parameter is listed like any other. A listing carries no
+     * arguments, so probing it would answer no for the very caller entitled to it — and an agent
+     * that reads a catalogue without {@code create} concludes the service is read-only, which is
+     * how three matches of {@code examples/market-game} ended.
      */
     @Test
-    public void listApis_cannotOfferAnActionWhoseRuleReadsAQueryParameter() throws Exception {
+    public void listApis_offersAnActionWhoseRuleReadsAQueryParameter() throws Exception {
         var described = reader.callTool("list_apis", """
                 {"resource":"%s"}
                 """.formatted(TICKET_COLL));
 
         var actions = described.getDocument("actions");
 
-        assertTrue(actions.containsKey("query"), "reading is granted outright, so it must be listed: " + actions.toJson());
-        assertFalse(actions.containsKey("create"),
-                "the listing has no ticket to probe with, so it cannot advertise the write: " + actions.toJson());
+        assertTrue(actions.containsKey("query"), actions.toJson());
+        assertTrue(actions.containsKey("create"),
+                "the write is what this collection is for, and the listing cannot know about the ticket: "
+                        + actions.toJson());
     }
 
     @Test
@@ -155,27 +156,29 @@ public class McpCatalogVisibilityIT extends AbstactIT {
                 "admin can read it, so hiding it from admin means the filter is denying rather than filtering: " + listed);
     }
 
+    /**
+     * The actions of a resource are the same for everybody, because they say what the resource is
+     * rather than what this caller may do with it: a REST collection has them all, an aggregation
+     * only its execution. Who may do what is decided when the call is made.
+     */
     @Test
-    public void aResourceIsDescribedWithOnlyTheActionsTheCallerCanInvoke() throws Exception {
-        // the reader's permission on this collection is GET-only: offering create, update and
-        // delete beside query would read as an offer, and cost a turn to find out otherwise
+    public void aResourceIsDescribedWithEveryActionItsKindAffords() throws Exception {
         var described = reader.callTool("list_apis", """
                 {"resource":"%s"}
                 """.formatted(VISIBLE_COLL));
 
-        var actions = described.getDocument("actions").keySet();
+        var forReader = described.getDocument("actions").keySet();
 
-        assertTrue(actions.contains("query"), "the read it may do must be there: " + actions);
-        assertFalse(actions.contains("create"), "a write this role cannot do was offered: " + actions);
-        assertFalse(actions.contains("delete"), "a write this role cannot do was offered: " + actions);
+        assertTrue(forReader.contains("query"), forReader.toString());
+        assertTrue(forReader.contains("create"),
+                "a collection has create whoever is asking; the 403 comes when it is called: " + forReader);
 
-        // admin may write it, so the same resource describes more for them: this is the caller's
-        // catalogue, not the resource's
         var forAdmin = admin.callTool("list_apis", """
                 {"resource":"%s"}
                 """.formatted(VISIBLE_COLL));
 
-        assertTrue(forAdmin.getDocument("actions").containsKey("create"), "admin writes it: " + forAdmin.toJson());
+        assertEquals(forReader, forAdmin.getDocument("actions").keySet(),
+                "the actions do not depend on the caller: only the resources do");
     }
 
     @Test

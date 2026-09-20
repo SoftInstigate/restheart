@@ -80,14 +80,4 @@ class CatalogVisibilityTest {
         assertFalse(CatalogVisibility.canInvoke(PAIRED, IDENTITY, ledger(), "delete", Map.of("trader", "trader1")));
     }
 
-    @Test
-    @DisplayName("the listing, which has no arguments, leaves that action out — and that is not a refusal to call it")
-    void theListingCannotKnow() {
-        var invokable = CatalogVisibility.invokableActions(PAIRED, IDENTITY, ledger());
-
-        assertFalse(invokable.contains("create"),
-                "a listing is composed without arguments, so it cannot claim the action is available");
-        assertTrue(CatalogVisibility.canInvoke(PAIRED, IDENTITY, ledger(), "create", Map.of("trader", "trader1")),
-                "being left out of the listing must not make the call itself unreachable");
-    }
 }

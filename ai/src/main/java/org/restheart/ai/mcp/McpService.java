@@ -1658,27 +1658,6 @@ public class McpService implements ByteArrayService {
         return (resource, actionName, args) -> CatalogVisibility.canInvoke(authorization, identity, resource, actionName, args);
     }
 
-    /**
-     * Which actions of a resource this caller could invoke, for {@code list_apis} to describe only
-     * those. Same rule as the catalogue filter, applied per action rather than per resource: an
-     * unauthenticated deployment has no rule to apply, so everything is offered.
-     *
-     * <p>Asked without arguments, because a listing has none. An action whose rule reads a query
-     * parameter therefore does not appear, and is callable all the same: what a listing withholds
-     * it withholds from discovery, never from {@code call_api}.
-     */
-    private Function<McpResource, Set<String>> invokableActionsFor(McpTransportContext ctx) {
-        var request = request(ctx);
-
-        if (request == null) {
-            return resource -> resource.actions().keySet();
-        }
-
-        var identity = RequestDescriptor.of(request.getExchange());
-
-        return resource -> CatalogVisibility.invokableActions(authorization, identity, resource);
-    }
-
     private static String baseUrl(McpTransportContext ctx) {
         return ctx.get(CTX_BASE_URL) instanceof String s ? s : "";
     }
@@ -1827,7 +1806,7 @@ public class McpService implements ByteArrayService {
             var result = listApisTool.list(
                     principal(ctx), baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "query"), stringArg(args, "kind"),
-                    intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx), invokableActionsFor(ctx));
+                    intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx));
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());

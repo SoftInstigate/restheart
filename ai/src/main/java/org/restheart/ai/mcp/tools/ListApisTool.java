@@ -25,8 +25,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.restheart.plugins.mcp.McpResource;
@@ -55,11 +53,11 @@ public final class ListApisTool {
      */
     public Map<String, Object> list(BaseAccount principal, String baseUrl, String scope, String resourceUri,
                                     String query, String kind, Integer limit, String cursor,
-                                    Predicate<McpResource> visible, Function<McpResource, Set<String>> invokableActions) {
+                                    Predicate<McpResource> visible) {
         if (resourceUri != null) {
             return lookup.find(principal, baseUrl, scope, resourceUri)
                     .filter(visible)
-                    .map(resource -> describe(resource, invokableActions.apply(resource)))
+                    .map(ListApisTool::describe)
                     .orElseThrow(() -> new UnknownResourceException(resourceUri));
         }
 
@@ -89,58 +87,21 @@ public final class ListApisTool {
     }
 
     /**
-     * One resource in full, carrying only the actions this caller could invoke.
+     * One resource in full, with every action its kind affords.
      *
-     * <p>A catalogue that offers what the ACL refuses reads as an offer and costs an agent a turn
-     * to find out otherwise: a ledger that is append-only by permission should not list
-     * {@code delete} beside {@code create}. Examples go the same way, or the ones left behind would
-     * demonstrate a call that is not on the table.
+     * <p>The actions are not filtered by the ACL, and that is deliberate. A REST collection has
+     * all of them, an aggregation only its execution, a GraphQL app its query: the set is a
+     * property of the kind, not a secret, and a caller who knows what a collection is knows it
+     * already. Filtering them bought a courtesy — an append-only ledger not advertising
+     * {@code delete} — and cost far more: a listing is composed without arguments, so an action
+     * whose rule reads one was dropped for the very caller entitled to it, and three matches of
+     * {@code examples/market-game} ended with the agent concluding the service was read-only.
+     *
+     * <p>Whether a given call is permitted is decided when it is made, and {@code call_api} says
+     * so: a non-2xx is a result to read, and a 403 means this session's role may not do it.
      */
-    private static Map<String, Object> describe(McpResource resource, Set<String> invokable) {
-        var described = resource.toMap();
-
-        if (described.get("actions") instanceof Map<?, ?> actions) {
-            var kept = new LinkedHashMap<String, Object>();
-            actions.forEach((name, action) -> {
-                if (invokable.contains(String.valueOf(name))) {
-                    kept.put(String.valueOf(name), action);
-                }
-            });
-            described.put("actions", kept);
-        }
-
-        // The transports list names the same actions from the other side, and left alone it
-        // contradicts the map above: one entry saying `create` is available and the next leaving
-        // it out. A transport that ends up carrying nothing goes with them.
-        if (described.get("transports") instanceof List<?> transports) {
-            described.put("transports", transports.stream()
-                    .map(transport -> transport instanceof Map<?, ?> t ? filterTransport(t, invokable) : transport)
-                    .filter(transport -> !(transport instanceof Map<?, ?> t)
-                            || !(t.get("actions") instanceof List<?> names) || !names.isEmpty())
-                    .toList());
-        }
-
-        if (described.get("examples") instanceof List<?> examples) {
-            described.put("examples", examples.stream()
-                    .filter(example -> !(example instanceof Map<?, ?> m)
-                            || m.get("action") == null
-                            || invokable.contains(String.valueOf(m.get("action"))))
-                    .toList());
-        }
-
-        return described;
-    }
-
-    /** One transport entry with only the actions this caller could invoke listed on it. */
-    private static Map<String, Object> filterTransport(Map<?, ?> transport, Set<String> invokable) {
-        var out = new LinkedHashMap<String, Object>();
-        transport.forEach((key, value) -> out.put(String.valueOf(key), value));
-
-        if (out.get("actions") instanceof List<?> names) {
-            out.put("actions", names.stream().filter(name -> invokable.contains(String.valueOf(name))).toList());
-        }
-
-        return out;
+    private static Map<String, Object> describe(McpResource resource) {
+        return resource.toMap();
     }
 
     private static Map<String, Object> catalogEntry(McpResource resource) {
