@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.bson.BsonDocument;
+import org.restheart.plugins.mcp.CatalogCondition;
 import org.restheart.plugins.mcp.McpResource;
 
 /**
@@ -58,7 +59,9 @@ public final class DatabaseMcpResourceBuilder {
         var builder = McpResource.builder()
                 .uri(databaseUri)
                 .kind("database")
-                .description(description(mcp));
+                .description(description(mcp))
+                .showIf(CatalogCondition.showIf(mcp))
+                .hideFromRoles(CatalogCondition.hideFromRoles(mcp));
 
         if (mcpEnabledCollectionUris != null && !mcpEnabledCollectionUris.isEmpty()) {
             builder.extra("collections", List.copyOf(mcpEnabledCollectionUris));

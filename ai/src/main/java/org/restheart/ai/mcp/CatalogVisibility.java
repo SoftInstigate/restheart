@@ -22,15 +22,21 @@ package org.restheart.ai.mcp;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 
 import org.restheart.exchange.Request;
+import org.restheart.plugins.mcp.CatalogCondition;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.security.AclPermissions;
 import org.restheart.security.BaseAclPermission;
+import org.restheart.security.EvaluationScope.Scope;
 import org.restheart.security.MongoPermissions;
 import org.restheart.security.analysis.ListingContext;
 import org.restheart.security.analysis.ListingEvaluator;
 import org.restheart.security.analysis.MongoGates;
+import org.restheart.security.analysis.PermissionHints;
+import org.restheart.security.analysis.PredicateExpression;
 import org.restheart.security.analysis.PredicateSyntax;
 import org.restheart.security.analysis.RequestListingContext;
 import org.restheart.security.analysis.Truth;
@@ -70,10 +76,54 @@ final class CatalogVisibility {
      * nothing a caller could do with it, so there is nothing to decide.
      */
     static boolean isVisible(AclPermissions permissions, Request<?> request, McpResource resource) {
-        var action = readAction(resource);
+        if (hiddenFromCaller(resource, request)) {
+            return false;
+        }
 
-        return action == null
-                || isReadable(permissions, request, pathOf(resource.uri()), methodOf(action));
+        var action = readAction(resource);
+        var path = pathOf(resource.uri());
+        var method = methodOf(action);
+
+        if (resource.showIf() != null) {
+            return declared(resource, new RequestListingContext(request, path, method));
+        }
+
+        return action == null || isReadable(permissions, request, path, method);
+    }
+
+    /**
+     * Whether the resource names one of this caller's roles in {@code hide_from_roles}.
+     *
+     * <p>Decided first and final: it is the one answer the publisher gave outright, and the only
+     * one that holds whatever the permissions say.
+     */
+    private static boolean hiddenFromCaller(McpResource resource, Request<?> request) {
+        if (resource.hideFromRoles().isEmpty() || !request.isAuthenticated()) {
+            return false;
+        }
+
+        return request.getAuthenticatedAccount().getRoles().stream().anyMatch(resource.hideFromRoles()::contains);
+    }
+
+    /**
+     * A resource whose {@code mcp} block declares {@code show_if}: the condition decides, and the
+     * analysis of the permissions is not consulted at all — that is what declaring it is for.
+     *
+     * <p>It may only read what a listing has. One that does not is an authoring mistake, and the
+     * resource is not announced: a condition that cannot be evaluated is not a reason to announce
+     * something its author meant to keep quiet.
+     */
+    private static boolean declared(McpResource resource, ListingContext context) {
+        var problems = CatalogCondition.problemsWith(resource.showIf());
+
+        if (!problems.isEmpty()) {
+            LOGGER.warn("{} declares a catalogue condition that cannot be evaluated, so it is not announced: {}",
+                    resource.uri(), String.join("; ", problems));
+
+            return false;
+        }
+
+        return ListingEvaluator.evaluate(resource.showIf(), context) == Truth.TRUE;
     }
 
     /**
@@ -118,6 +168,10 @@ final class CatalogVisibility {
      * decided to hide.
      */
     private static boolean mayAllow(BaseAclPermission permission, ListingContext context) {
+        if (!PermissionHints.publishes(permission)) {
+            return false;
+        }
+
         var source = permission.predicateSource().orElse(null);
 
         if (source == null) {
@@ -125,7 +179,8 @@ final class CatalogVisibility {
         }
 
         try {
-            var possible = ListingEvaluator.evaluate(PredicateSyntax.parse(source), context);
+            var possible = ListingEvaluator.evaluate(PredicateSyntax.parse(source),
+                    withHints(context, PermissionHints.resolved(permission)));
 
             return possible.mayBeTrue() && gates(permission) == Truth.TRUE;
         } catch (PredicateSyntax.SyntaxException e) {
@@ -136,6 +191,52 @@ final class CatalogVisibility {
 
             return true;
         }
+    }
+
+    /**
+     * The context, plus whatever rules this permission declares for atoms nobody else does.
+     *
+     * <p>Per permission, because the declaration is: the same opaque predicate may be one the
+     * author of this rule knows and the author of another does not.
+     */
+    private static ListingContext withHints(ListingContext context, Map<String, Scope> hints) {
+        if (hints.isEmpty()) {
+            return context;
+        }
+
+        return new ListingContext() {
+            @Override
+            public String path() {
+                return context.path();
+            }
+
+            @Override
+            public String method() {
+                return context.method();
+            }
+
+            @Override
+            public Optional<String> attribute(String token) {
+                return context.attribute(token);
+            }
+
+            @Override
+            public Optional<String> variable(String token) {
+                return context.variable(token);
+            }
+
+            @Override
+            public Optional<Scope> scopeOf(String predicateName) {
+                var declared = hints.get(predicateName);
+
+                return declared != null ? Optional.of(declared) : context.scopeOf(predicateName);
+            }
+
+            @Override
+            public Optional<Boolean> evaluate(PredicateExpression.Atom atom) {
+                return context.evaluate(atom);
+            }
+        };
     }
 
     /** The {@code mongo} switches, for the ordinary read a listing is about. */

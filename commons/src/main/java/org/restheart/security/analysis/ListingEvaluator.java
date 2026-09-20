@@ -324,12 +324,15 @@ public final class ListingEvaluator {
      * one that is, so they are read here rather than asked of the context.
      */
     private Optional<String> ofCandidate(String token) {
-        return switch (token) {
-            case "%{RELATIVE_PATH}", "%{REQUEST_PATH}", "%{REQUEST_URL}", "%{REQUEST_URI}", "%R" ->
-                ctx.path().contains("{") ? Optional.empty() : Optional.of(ctx.path());
-            case "%m", "%{METHOD}" -> Optional.of(ctx.method());
-            default -> Optional.empty();
-        };
+        if ("%m".equals(token) || "%{METHOD}".equals(token)) {
+            return Optional.of(ctx.method());
+        }
+
+        if (Determined.CANDIDATE_ATTRIBUTES.contains(token)) {
+            return ctx.path().contains("{") ? Optional.empty() : Optional.of(ctx.path());
+        }
+
+        return Optional.empty();
     }
 
     private static Truth anyOf(List<String> values, java.util.function.Function<String, Truth> test) {

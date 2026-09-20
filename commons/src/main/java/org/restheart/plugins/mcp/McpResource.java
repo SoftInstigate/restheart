@@ -21,10 +21,12 @@
 package org.restheart.plugins.mcp;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -47,6 +49,8 @@ public final class McpResource {
     private final Map<String, Object> auth;
     private final List<Example> examples;
     private final Map<String, Object> extra;
+    private final String showIf;
+    private final Set<String> hideFromRoles;
 
     private McpResource(Builder b) {
         this.uri = Objects.requireNonNull(b.uri, "uri is required");
@@ -70,6 +74,24 @@ public final class McpResource {
         }
 
         this.examples = List.copyOf(b.examples);
+        this.showIf = b.showIf;
+        this.hideFromRoles = Set.copyOf(b.hideFromRoles);
+    }
+
+    /**
+     * The condition under which this resource is announced, as written in its {@code mcp} metadata,
+     * or {@code null} when there is none and the caller's permissions decide.
+     *
+     * <p>Deliberately absent from {@link #toMap()}: it says who is told about the resource, which
+     * is nobody's business but the server's — least of all the agent reading the catalog.
+     */
+    public String showIf() {
+        return showIf;
+    }
+
+    /** The roles this resource is not announced to. Also absent from {@link #toMap()}. */
+    public Set<String> hideFromRoles() {
+        return hideFromRoles;
     }
 
     public String uri() {
@@ -374,6 +396,8 @@ public final class McpResource {
         private final Map<Transport, List<String>> transportActions = new LinkedHashMap<>();
         private final List<Example> examples = new ArrayList<>();
         private final Map<String, Object> extra = new LinkedHashMap<>();
+        private String showIf;
+        private final Set<String> hideFromRoles = new LinkedHashSet<>();
 
         public Builder uri(String uri) {
             this.uri = uri;
@@ -422,6 +446,20 @@ public final class McpResource {
         /** Sets a kind-specific top-level field not modeled by the generic framework (see {@link McpResource#extra()}). */
         public Builder extra(String key, Object value) {
             extra.put(key, value);
+            return this;
+        }
+
+        /** @see McpResource#showIf() */
+        public Builder showIf(String predicate) {
+            this.showIf = predicate;
+            return this;
+        }
+
+        /** @see McpResource#hideFromRoles() */
+        public Builder hideFromRoles(Collection<String> roles) {
+            if (roles != null) {
+                this.hideFromRoles.addAll(roles);
+            }
             return this;
         }
 

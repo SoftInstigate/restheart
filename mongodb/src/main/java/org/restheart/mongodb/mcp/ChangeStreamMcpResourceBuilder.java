@@ -30,6 +30,7 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.CatalogCondition;
 import org.restheart.plugins.mcp.BsonJava;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.plugins.mcp.McpResource;
@@ -81,6 +82,8 @@ public final class ChangeStreamMcpResourceBuilder {
                 .uri(collectionUri + pathTemplate)
                 .kind("change-stream")
                 .description(description(mcp))
+                .showIf(CatalogCondition.showIf(mcp))
+                .hideFromRoles(CatalogCondition.hideFromRoles(mcp))
                 .transport(McpResource.Transport.WEBSOCKET, "subscribe")
                 .transport(McpResource.Transport.SSE, "subscribe");
 

@@ -30,6 +30,7 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.CatalogCondition;
 import org.restheart.plugins.mcp.BsonJava;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.plugins.mcp.McpResource;
@@ -92,7 +93,9 @@ public final class AggregationMcpResourceBuilder {
                 // pipeline's result changes, but a notification only means "re-read", and the
                 // source collection changing is exactly when re-reading is worth it.
                 .subscribable(true)
-                .description(description(mcp));
+                .description(description(mcp))
+                .showIf(CatalogCondition.showIf(mcp))
+                .hideFromRoles(CatalogCondition.hideFromRoles(mcp));
 
         // one entry per variable, split by whether its name can travel as a query parameter
         var flatParams = new LinkedHashMap<String, McpResource.Param>();

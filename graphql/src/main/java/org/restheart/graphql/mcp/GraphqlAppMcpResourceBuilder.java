@@ -28,6 +28,7 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.CatalogCondition;
 import org.restheart.plugins.mcp.BsonJava;
 import org.restheart.plugins.mcp.McpResource;
 
@@ -67,6 +68,8 @@ public final class GraphqlAppMcpResourceBuilder {
                 .uri(appUri)
                 .kind("graphql-app")
                 .description(description(mcp))
+                .showIf(CatalogCondition.showIf(mcp))
+                .hideFromRoles(CatalogCondition.hideFromRoles(mcp))
                 .transport(McpResource.Transport.HTTP);
 
         builder.action("execute", a -> {
