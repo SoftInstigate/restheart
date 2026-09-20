@@ -22,6 +22,7 @@ package org.restheart.mongodb.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,6 +31,7 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.junit.jupiter.api.Test;
+import org.restheart.plugins.mcp.McpResource;
 
 public class CollectionMcpResourceBuilderTest {
 
@@ -202,6 +204,54 @@ public class CollectionMcpResourceBuilderTest {
         assertTrue(create.contains("_id already exists"));
         assertFalse(create.contains("retryable"), "no transaction, so no write conflict to retry");
         assertNull(resource.actions().get("update").description());
-        assertNull(resource.actions().get("delete").description());
+
+        // delete always says what it deletes: on a collection resource the name reads as "delete
+        // the collection", and the action that does that is a different one
+        var delete = resource.actions().get("delete").description();
+        assertTrue(delete.contains("one document"), delete);
+        assertTrue(delete.contains("'drop'"), delete);
+        assertFalse(delete.contains("retryable"), "no transaction, so no write conflict to retry");
+    }
+
+    /**
+     * The operations on the collection itself, which the ACL decides like any other — published
+     * with what tells them apart from the ones on its documents.
+     */
+    @Test
+    public void theDataManagementApiIsPublished_markedAsActingOnTheResource() {
+        var mcp = BsonDocument.parse("{\"description\": \"Orders.\"}");
+
+        var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, null, null, null).orElseThrow();
+
+        for (var name : List.of("properties", "set_properties", "drop", "indexes", "create_index",
+                "delete_index")) {
+            var action = resource.actions().get(name);
+
+            assertNotNull(action, name + " is not published");
+            assertEquals(McpResource.Target.RESOURCE, action.target(), name + " acts on the collection itself");
+            assertTrue(action.requires().contains("mongo.allowManagementRequests"),
+                    name + " must name the switch its permission needs: " + action.requires());
+        }
+
+        // and the ones on documents stay as they are
+        for (var name : List.of("query", "get", "create", "update", "delete")) {
+            assertEquals(McpResource.Target.ELEMENT, resource.actions().get(name).target(), name);
+        }
+    }
+
+    /**
+     * Dropping a collection needs its current ETag in {@code If-Match}; as a query parameter it
+     * would be a request missing a condition, answered with a 409 the agent cannot interpret.
+     */
+    @Test
+    public void theDropDeclaresItsEtagAsAHeader() {
+        var mcp = BsonDocument.parse("{\"description\": \"Orders.\"}");
+
+        var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, null, null, null).orElseThrow();
+        var etag = resource.actions().get("drop").params().get("etag");
+
+        assertNotNull(etag);
+        assertTrue(etag.required());
+        assertEquals("If-Match", etag.header());
     }
 }
