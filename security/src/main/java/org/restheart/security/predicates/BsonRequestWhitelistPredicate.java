@@ -30,6 +30,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.Request;
+import org.restheart.security.EvaluationScope;
 import org.restheart.utils.BsonUtils;
 
 import io.undertow.predicate.Predicate;
@@ -112,7 +113,13 @@ public class BsonRequestWhitelistPredicate implements Predicate {
     }
 
 
-    public static class Builder implements PredicateBuilder {
+    public static class Builder implements PredicateBuilder, EvaluationScope {
+        /** Reads the request this listing cannot have yet, so it never discriminates in a catalog. */
+        @Override
+        public Scope scope() {
+            return Scope.CALL;
+        }
+
         @Override
         public String name() {
             return "bson-request-whitelist";

@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
+import org.restheart.security.EvaluationScope;
+
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -50,7 +52,13 @@ public class InPredicate implements Predicate {
     }
 
 
-    public static class Builder implements PredicateBuilder {
+    public static class Builder implements PredicateBuilder, EvaluationScope {
+        /** Takes the class of the exchange attributes it compares. */
+        @Override
+        public Scope scope() {
+            return Scope.ARGUMENTS;
+        }
+
         @Override
         public String name() {
             return "in";

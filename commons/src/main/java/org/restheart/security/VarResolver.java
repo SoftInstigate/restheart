@@ -116,4 +116,21 @@ public interface VarResolver {
     default boolean cacheable() {
         return true;
     }
+
+    /**
+     * When this variable's value is already determined — before the call that will read it exists.
+     *
+     * <p>The MCP catalog decides what to list by analysing the caller's permissions rather than by
+     * putting them a fabricated request, so a variable that depends only on the session is worth
+     * resolving there, while one that depends on the call is not: it has no value yet.
+     *
+     * <p>The default is {@link EvaluationScope.Scope#CALL}, which is the prudent reading — a
+     * condition on it is left undetermined, which never removes a resource from a listing and never
+     * discriminates on one either. A resolver that reads nothing but the session declares
+     * {@link EvaluationScope.Scope#LISTING} and is then resolved for real, which is what makes a
+     * condition such as {@code equals(@subscription.plan, 'gold')} decide a listing exactly.
+     */
+    default EvaluationScope.Scope scope() {
+        return EvaluationScope.Scope.CALL;
+    }
 }
