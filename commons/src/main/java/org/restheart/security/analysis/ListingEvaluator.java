@@ -50,6 +50,9 @@ public final class ListingEvaluator {
     private final ListingContext ctx;
     private final Map<String, Optional<String>> bindings = new HashMap<>();
 
+    /** The methods {@code io.undertow.predicate.IdempotentPredicate} considers idempotent. */
+    private static final List<String> IDEMPOTENT = List.of("GET", "DELETE", "PUT", "HEAD", "OPTIONS");
+
     private ListingEvaluator(ListingContext ctx) {
         this.ctx = ctx;
     }
@@ -107,8 +110,7 @@ public final class ListingEvaluator {
             case "path-template" -> anyOf(pathsOf(atom), this::template);
             case "method" -> method(atom);
             case "secure" -> Truth.TRUE;
-            case "idempotent" -> Truth.of(List.of("GET", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE")
-                    .contains(ctx.method().toUpperCase()));
+            case "idempotent" -> Truth.of(IDEMPOTENT.contains(ctx.method().toUpperCase()));
             case "equals" -> equalValues(atom);
             case "contains" -> contains(atom);
             case "exists" -> exists(atom);
@@ -176,27 +178,27 @@ public final class ListingEvaluator {
         return Truth.of(array.contains(value));
     }
 
+    /**
+     * {@code gte} and {@code lte} take exactly two operands, and a side that is not a number makes
+     * them false rather than true — {@code NumericComparisonPredicate}'s own rule, which this must
+     * not soften: a comparison that could not be made has not been satisfied.
+     */
     private Truth compare(Atom atom, boolean greater) {
         var values = resolveAll(atom, "value");
 
-        if (values == null || values.size() < 2) {
+        if (values == null) {
             return Truth.UNDETERMINED;
+        }
+
+        if (values.size() != 2) {
+            return Truth.FALSE;
         }
 
         try {
             var left = Double.parseDouble(values.get(0));
+            var right = Double.parseDouble(values.get(1));
 
-            for (var i = 1; i < values.size(); i++) {
-                var right = Double.parseDouble(values.get(i));
-
-                if (greater ? left < right : left > right) {
-                    return Truth.FALSE;
-                }
-
-                left = right;
-            }
-
-            return Truth.TRUE;
+            return Truth.of(greater ? left >= right : left <= right);
         } catch (NumberFormatException e) {
             return Truth.FALSE;
         }
