@@ -138,7 +138,7 @@ public class ListApisToolTest {
     @Test
     public void resourceMode_unknownUri_throws() {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/a", "service", "A")), "p1", "/a", Map.of()));
-        assertThrows(UnknownResourceException.class, () -> tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/does-not-exist", null, null, null, null, VISIBLE));
+        assertThrows(UnknownResourceException.class, () -> tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/does-not-exist", null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE));
     }
 
     @Test
@@ -198,7 +198,7 @@ public class ListApisToolTest {
                 "p1", "/x", Map.of()));
 
         var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null,
-                r -> r.uri().endsWith("/allowed"));
+                r -> r.uri().endsWith("/allowed"), ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -215,7 +215,7 @@ public class ListApisToolTest {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/denied", "collection", "B")), "p1", "/x", Map.of()));
 
         assertThrows(UnknownResourceException.class,
-                () -> tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/denied", null, null, null, null, r -> false));
+                () -> tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/denied", null, null, null, null, r -> false, ListApisTool.Verdicts.NONE));
     }
 
     @Test
