@@ -183,6 +183,20 @@ public final class CallApiTool {
             headers.put(Headers.HOST, url.getRawAuthority());
             headers.put(Headers.ACCEPT, "application/json");
 
+            // Whatever the descriptor states beyond those, except the credential placeholder, which
+            // stands for the caller this request already runs as.
+            if (descriptor.get("headers") instanceof Map<?, ?> declared) {
+                declared.forEach((name, value) -> {
+                    var header = String.valueOf(name);
+
+                    if (value == null || "Authorization".equalsIgnoreCase(header) || "Host".equalsIgnoreCase(header)) {
+                        return;
+                    }
+
+                    headers.put(HttpString.tryFromString(header), String.valueOf(value));
+                });
+            }
+
             byte[] body = null;
 
             if (descriptor.get("body") != null) {

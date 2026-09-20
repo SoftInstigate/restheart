@@ -193,12 +193,86 @@ final class CatalogVisibility {
         }
 
         for (var permission : permissions) {
-            if (mayAllow(permission, context)) {
+            if (predicateTruth(permission, context).and(gates(permission, MongoGates.Action.ORDINARY)).mayBeTrue()) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * What a listing can say about this caller performing one action.
+     *
+     * <p>Three answers, and the third is not a hedge: a rule may decide on something the call
+     * carries, which a listing does not have, and saying so is more use to an agent than guessing.
+     * Whatever the answer, the action stays in the description and stays callable — the catalog
+     * announces, the pipeline decides.
+     */
+    static Map<String, Object> verdict(AclPermissions permissions, Request<?> request, McpResource resource,
+            String actionName) {
+        var action = resource.actions().get(actionName);
+
+        if (action == null) {
+            return Map.of();
+        }
+
+        var path = pathOf(resource.uri()) + (action.pathTemplate() == null ? "" : action.pathTemplate());
+
+        return verdict(permissions.of(request), new RequestListingContext(request, path, methodOf(action)), action, path);
+    }
+
+    /** The same question with the rules and the context already in hand. Visible for testing. */
+    static Map<String, Object> verdict(Collection<BaseAclPermission> rules, ListingContext context,
+            McpResource.Action action, String path) {
+        var asked = askedOf(action);
+
+        if (rules.isEmpty()) {
+            return undecided("no rule that applies to you could be read, so this was not decided here");
+        }
+
+        var best = Truth.FALSE;
+        var bestIgnoringSwitches = Truth.FALSE;
+
+        for (var permission : rules) {
+            var predicate = predicateTruth(permission, context);
+
+            bestIgnoringSwitches = bestIgnoringSwitches.or(predicate);
+            best = best.or(predicate.and(gates(permission, asked)));
+        }
+
+        return switch (best) {
+            case TRUE -> Map.of("permitted", "yes");
+            case UNDETERMINED -> undecided("a rule that could permit it decides on what the call carries, "
+                    + "which a catalogue does not have");
+            case FALSE -> refused(action, bestIgnoringSwitches, path);
+        };
+    }
+
+    private static Map<String, Object> undecided(String why) {
+        return Map.of("permitted", "unknown", "note", why);
+    }
+
+    /**
+     * Why it is refused, told apart: a rule covers the request and a switch of that rule withholds
+     * it, or no rule covers the request at all. The two are fixed in different places.
+     */
+    private static Map<String, Object> refused(McpResource.Action action, Truth ignoringSwitches, String path) {
+        if (ignoringSwitches.mayBeTrue() && !action.requires().isEmpty()) {
+            return Map.of("permitted", "no",
+                    "note", "a rule of yours covers this request, but it does not grant "
+                            + String.join(" and ", action.requires()));
+        }
+
+        return Map.of("permitted", "no",
+                "note", "no rule that applies to you covers " + methodOf(action) + " on " + path);
+    }
+
+    /** What the action asks of MongoDB, as far as the switches of a permission are concerned. */
+    private static MongoGates.Action askedOf(McpResource.Action action) {
+        return action.requires().contains("mongo.allowManagementRequests")
+                ? MongoGates.Action.managementRequest()
+                : MongoGates.Action.ORDINARY;
     }
 
     /**
@@ -213,29 +287,27 @@ final class CatalogVisibility {
      * there is nothing to read, and refusing what cannot be read would hide resources nobody
      * decided to hide.
      */
-    private static boolean mayAllow(BaseAclPermission permission, ListingContext context) {
+    private static Truth predicateTruth(BaseAclPermission permission, ListingContext context) {
         if (!PermissionHints.publishes(permission)) {
-            return false;
+            return Truth.FALSE;
         }
 
         var source = permission.predicateSource().orElse(null);
 
         if (source == null) {
-            return true;
+            return Truth.UNDETERMINED;
         }
 
         try {
-            var possible = ListingEvaluator.evaluate(PredicateSyntax.parse(source),
+            return ListingEvaluator.evaluate(PredicateSyntax.parse(source),
                     withHints(context, PermissionHints.resolved(permission)));
-
-            return possible.mayBeTrue() && gates(permission) == Truth.TRUE;
         } catch (PredicateSyntax.SyntaxException e) {
-            // A permission the server accepted but this cannot read: show, rather than hide
-            // something on the strength of our own parser disagreeing with Undertow's.
+            // A permission the server accepted but this cannot read: leave it open, rather than
+            // decide anything on the strength of our own parser disagreeing with Undertow's.
             LOGGER.debug("could not read the predicate of a permission for a catalog listing, "
-                    + "treating it as possible: {}", e.getMessage());
+                    + "leaving it undecided: {}", e.getMessage());
 
-            return true;
+            return Truth.UNDETERMINED;
         }
     }
 
@@ -285,10 +357,10 @@ final class CatalogVisibility {
         };
     }
 
-    /** The {@code mongo} switches, for the ordinary read a listing is about. */
-    private static Truth gates(BaseAclPermission permission) {
+    /** The {@code mongo} switches of a permission, for what the action asks. */
+    private static Truth gates(BaseAclPermission permission, MongoGates.Action asked) {
         try {
-            return MongoGates.allows(MongoPermissions.from(permission), MongoGates.Action.ORDINARY);
+            return MongoGates.allows(MongoPermissions.from(permission), asked);
         } catch (Exception e) {
             return Truth.TRUE;
         }

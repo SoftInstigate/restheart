@@ -1632,6 +1632,22 @@ public class McpService implements ByteArrayService {
     }
 
     /**
+     * What each action of a described resource says about this caller.
+     *
+     * <p>Computed per request, like the listing it decorates, and resolved once for the whole
+     * description rather than once per action.
+     */
+    private ListApisTool.Verdicts verdictsFor(McpTransportContext ctx) {
+        var request = request(ctx);
+
+        if (request == null || permissions == null) {
+            return ListApisTool.Verdicts.NONE;
+        }
+
+        return (resource, actionName) -> CatalogVisibility.verdict(permissions, request, resource, actionName);
+    }
+
+    /**
      * Whether this caller may be handed the descriptor of one particular call.
      *
      * <p>{@code how_to_call} follows the catalog: a resource in your listing hands you its
@@ -1798,7 +1814,7 @@ public class McpService implements ByteArrayService {
             var result = listApisTool.list(
                     principal(ctx), baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "query"), stringArg(args, "kind"),
-                    intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx));
+                    intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx), verdictsFor(ctx));
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());

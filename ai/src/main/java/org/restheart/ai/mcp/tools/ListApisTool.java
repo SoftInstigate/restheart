@@ -53,11 +53,11 @@ public final class ListApisTool {
      */
     public Map<String, Object> list(BaseAccount principal, String baseUrl, String scope, String resourceUri,
                                     String query, String kind, Integer limit, String cursor,
-                                    Predicate<McpResource> visible) {
+                                    Predicate<McpResource> visible, Verdicts verdicts) {
         if (resourceUri != null) {
             return lookup.find(principal, baseUrl, scope, resourceUri)
                     .filter(visible)
-                    .map(ListApisTool::describe)
+                    .map(resource -> describe(resource, verdicts))
                     .orElseThrow(() -> new UnknownResourceException(resourceUri));
         }
 
@@ -97,11 +97,46 @@ public final class ListApisTool {
      * whose rule reads one was dropped for the very caller entitled to it, and three matches of
      * {@code examples/market-game} ended with the agent concluding the service was read-only.
      *
-     * <p>Whether a given call is permitted is decided when it is made, and {@code call_api} says
-     * so: a non-2xx is a result to read, and a 403 means this session's role may not do it.
+     * <p>What each action says about <em>this</em> caller is added instead: whether the rules that
+     * apply to them permit it, refuse it, or leave it undecided until the call carries its
+     * arguments. That is information the agent can act on, where an omission is a silence it has
+     * to guess at.
      */
-    private static Map<String, Object> describe(McpResource resource) {
-        return resource.toMap();
+    private static Map<String, Object> describe(McpResource resource, Verdicts verdicts) {
+        var described = resource.toMap();
+
+        if (verdicts == null || !(described.get("actions") instanceof Map<?, ?> actions)) {
+            return described;
+        }
+
+        actions.forEach((name, action) -> {
+            if (action instanceof Map<?, ?> fields) {
+                @SuppressWarnings("unchecked")
+                var mutable = (Map<String, Object>) fields;
+                mutable.putAll(verdicts.of(resource, String.valueOf(name)));
+            }
+        });
+
+        return described;
+    }
+
+    /**
+     * What a listing can say about this caller performing one action of one resource.
+     *
+     * <p>Marking, never omitting. An action left out cannot be told from an action the kind does
+     * not have, and an agent that reads a collection without {@code create} concludes the service
+     * is read-only — that happened, and cost three matches of {@code examples/market-game}. A
+     * marked action still describes the resource truthfully and still says what not to try; and it
+     * remains callable, because a catalog decides what is announced and never what is allowed.
+     */
+    @FunctionalInterface
+    public interface Verdicts {
+
+        /** Fields to add to the action's description — empty when there is nothing to say. */
+        Map<String, Object> of(McpResource resource, String actionName);
+
+        /** Says nothing, for a caller there is nothing to say about. */
+        Verdicts NONE = (resource, actionName) -> Map.of();
     }
 
     private static Map<String, Object> catalogEntry(McpResource resource) {

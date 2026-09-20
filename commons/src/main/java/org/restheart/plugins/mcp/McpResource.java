@@ -231,6 +231,25 @@ public final class McpResource {
         }
     }
 
+    /**
+     * What an action acts on.
+     *
+     * <p>The one thing an agent cannot work out from a name, and the one where the mistake does not
+     * undo: on a collection, {@code delete} reads as "delete the collection" and deletes a
+     * document, while {@code create} is a creation <em>under</em> the resource rather than of it.
+     */
+    public enum Target {
+        /** The resource itself: its properties, its indexes, its existence. */
+        RESOURCE,
+
+        /** Something under the resource: a document of a collection, a collection of a database. */
+        ELEMENT;
+
+        public String wireName() {
+            return name().toLowerCase();
+        }
+    }
+
     /** One invokable action of a resource (e.g. {@code query}, {@code create}, {@code execute}). */
     public static final class Action {
         private String method;
@@ -239,6 +258,8 @@ public final class McpResource {
         private Map<String, Object> bodySchema;
         private String description;
         private boolean readable;
+        private Target target = Target.ELEMENT;
+        private final List<String> requires = new ArrayList<>();
 
         public Action method(String method) {
             this.method = method;
@@ -272,6 +293,36 @@ public final class McpResource {
         public Action readable(boolean readable) {
             this.readable = readable;
             return this;
+        }
+
+        /**
+         * What this action acts on. Defaults to {@link Target#ELEMENT}, which is what most actions
+         * of a collection do and what a reader is least likely to be surprised by.
+         */
+        public Action target(Target target) {
+            this.target = target;
+            return this;
+        }
+
+        public Target target() {
+            return target;
+        }
+
+        /**
+         * A condition of the caller's permission this action needs beyond the permission matching
+         * its method and path — named so that both an agent and a diagnostic can quote it, as in
+         * {@code mongo.allowManagementRequests}.
+         *
+         * <p>They are additional, never sufficient: a permission that grants them and does not
+         * match the request still refuses it, and one that matches without them refuses it too.
+         */
+        public Action requires(String... conditions) {
+            requires.addAll(List.of(conditions));
+            return this;
+        }
+
+        public List<String> requires() {
+            return List.copyOf(requires);
         }
 
         public boolean readable() {
@@ -330,6 +381,14 @@ public final class McpResource {
             if (readable) {
                 m.put("readable", true);
             }
+            // Only when it is the resource: an action on an element is the ordinary case, and
+            // saying so on every one of them would pad the catalog with what is already expected.
+            if (target == Target.RESOURCE) {
+                m.put("target", target.wireName());
+            }
+            if (!requires.isEmpty()) {
+                m.put("requires", List.copyOf(requires));
+            }
             return m;
         }
     }
@@ -341,10 +400,26 @@ public final class McpResource {
      * full {@code body_schema}, which is for the request body, not a query/path param's value.
      */
     public record Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue,
-                        Map<String, Param> properties) {
+                        Map<String, Param> properties, String header) {
 
         public Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue) {
-            this(type, description, required, enumValues, defaultValue, null);
+            this(type, description, required, enumValues, defaultValue, null, null);
+        }
+
+        public Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue,
+                Map<String, Param> properties) {
+            this(type, description, required, enumValues, defaultValue, properties, null);
+        }
+
+        /**
+         * The same parameter, carried as a request header instead of a query parameter.
+         *
+         * <p>Some conditions of the HTTP API are stated that way and cannot be stated otherwise:
+         * dropping a collection needs its current ETag in {@code If-Match}, and a request without
+         * it is refused with a {@code 409} whatever its query string says.
+         */
+        public Param asHeader(String name) {
+            return new Param(type, description, required, enumValues, defaultValue, properties, name);
         }
 
         Map<String, Object> toMap() {
@@ -366,6 +441,9 @@ public final class McpResource {
                 var propsJson = new LinkedHashMap<String, Object>();
                 properties.forEach((name, p) -> propsJson.put(name, p.toMap()));
                 m.put("properties", propsJson);
+            }
+            if (header != null) {
+                m.put("header", header);
             }
             return m;
         }

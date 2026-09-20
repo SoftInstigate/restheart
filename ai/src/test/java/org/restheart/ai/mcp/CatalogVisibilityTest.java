@@ -20,6 +20,7 @@
  */
 package org.restheart.ai.mcp;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.restheart.plugins.mcp.McpResource;
 import org.restheart.security.BaseAclPermission;
 import org.restheart.security.EvaluationScope.Scope;
 import org.restheart.security.analysis.ListingContext;
@@ -142,6 +144,66 @@ class CatalogVisibilityTest {
     @Test
     void aPermissionWithoutAPredicateIsTakenAsPossible() {
         assertTrue(CatalogVisibility.isReadable(List.of(permission(null)), listing("/orders", "GET", Map.of())));
+    }
+
+    // ------------------------------------------------------------ what an action says
+
+    private static McpResource.Action action(java.util.function.Consumer<McpResource.Action> shape) {
+        var resource = McpResource.builder().uri("https://host/todos").kind("collection")
+                .description("d").action("it", shape).build();
+
+        return resource.actions().get("it");
+    }
+
+    private static Map<String, Object> verdict(String predicate, McpResource.Action action, String path) {
+        return CatalogVisibility.verdict(List.of(permission(predicate)),
+                listing(path, action.method() == null ? "GET" : action.method(), Map.of()), action, path);
+    }
+
+    @Test
+    void anActionARuleCoversIsPermitted() {
+        var read = action(a -> a.method("GET").pathTemplate(""));
+
+        assertEquals("yes", verdict("path('/todos') and method(GET)", read, "/todos").get("permitted"));
+    }
+
+    @Test
+    void anActionNoRuleCoversIsRefused_andSaysWhichRequestWasNotCovered() {
+        var drop = action(a -> a.method("DELETE").pathTemplate(""));
+        var v = verdict("path('/todos') and method(GET)", drop, "/todos");
+
+        assertEquals("no", v.get("permitted"));
+        assertTrue(String.valueOf(v.get("note")).contains("DELETE on /todos"), v.toString());
+    }
+
+    /**
+     * Two conditions, both necessary. A rule covering {@code DELETE /todos} still does not permit a
+     * drop unless its own {@code mongo} block grants management requests, and the note says so
+     * rather than leaving the author to guess which of the two is missing.
+     */
+    @Test
+    void anActionASwitchWithholdsSaysWhichSwitch() {
+        var drop = action(a -> a.method("DELETE").pathTemplate("").requires("mongo.allowManagementRequests"));
+        var v = verdict("path('/todos') and method(DELETE)", drop, "/todos");
+
+        assertEquals("no", v.get("permitted"));
+        assertTrue(String.valueOf(v.get("note")).contains("allowManagementRequests"), v.toString());
+    }
+
+    @Test
+    void anActionWhoseRuleDecidesOnTheCallIsNotDecidedHere() {
+        var create = action(a -> a.method("POST").pathTemplate(""));
+        var v = verdict("path('/todos') and method(POST) and equals(%{q,ticket}, 'golden')", create, "/todos");
+
+        assertEquals("unknown", v.get("permitted"));
+    }
+
+    @Test
+    void withNoRuleToReadNothingIsDecided() {
+        var read = action(a -> a.method("GET").pathTemplate(""));
+
+        assertEquals("unknown", CatalogVisibility.verdict(List.of(), listing("/todos", "GET", Map.of()), read, "/todos")
+                .get("permitted"));
     }
 
     @Test

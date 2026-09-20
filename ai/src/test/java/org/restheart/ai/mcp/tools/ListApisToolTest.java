@@ -87,7 +87,7 @@ public class ListApisToolTest {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
 
         var described = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/ledger",
-                null, null, null, null, VISIBLE);
+                null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var actions = (Map<String, Object>) described.get("actions");
@@ -113,7 +113,7 @@ public class ListApisToolTest {
                 new RegisteredMcpAware(fixed(resource("https://host/a", "service", "A")), "p1", "/a", Map.of()),
                 new RegisteredMcpAware(fixed(resource("https://host/b", "service", "B"), resource("https://host/c", "service", "C")), "p2", "/b", Map.of()));
 
-        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -129,7 +129,7 @@ public class ListApisToolTest {
     public void resourceMode_returnsFullContext_ignoresOtherFilters() {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/a", "collection", "A")), "p1", "/a", Map.of()));
 
-        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "irrelevant", "irrelevant", 1, "irrelevant", VISIBLE);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "irrelevant", "irrelevant", 1, "irrelevant", VISIBLE, ListApisTool.Verdicts.NONE);
 
         assertEquals("https://host/a", result.get("uri"));
         assertEquals("collection", result.get("kind"));
@@ -148,7 +148,7 @@ public class ListApisToolTest {
                         resource("https://host/products", "collection", "Catalog items")),
                 "p1", "/x", Map.of()));
 
-        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, "ORDER", null, null, null, VISIBLE);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, "ORDER", null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -162,7 +162,7 @@ public class ListApisToolTest {
                 fixed(resource("https://host/a", "collection", "A"), resource("https://host/b", "graphql-app", "B")),
                 "p1", "/x", Map.of()));
 
-        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, "GraphQL-App", null, null, VISIBLE);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, "GraphQL-App", null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -176,14 +176,14 @@ public class ListApisToolTest {
                 fixed(resource("https://host/a", "s", null), resource("https://host/b", "s", null), resource("https://host/c", "s", null)),
                 "p1", "/x", Map.of()));
 
-        var firstPage = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, 2, null, VISIBLE);
+        var firstPage = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, 2, null, VISIBLE, ListApisTool.Verdicts.NONE);
         @SuppressWarnings("unchecked")
         var firstResources = (List<Map<String, Object>>) firstPage.get("resources");
         assertEquals(2, firstResources.size());
         assertEquals("https://host/a", firstResources.get(0).get("uri"));
         assertEquals("2", firstPage.get("next_cursor"));
 
-        var secondPage = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, 2, (String) firstPage.get("next_cursor"), VISIBLE);
+        var secondPage = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, 2, (String) firstPage.get("next_cursor"), VISIBLE, ListApisTool.Verdicts.NONE);
         @SuppressWarnings("unchecked")
         var secondResources = (List<Map<String, Object>>) secondPage.get("resources");
         assertEquals(1, secondResources.size());
@@ -221,7 +221,7 @@ public class ListApisToolTest {
     @Test
     public void emptyRegistry_emptyCatalog() {
         var tool = new ListApisTool(lookup());
-        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");

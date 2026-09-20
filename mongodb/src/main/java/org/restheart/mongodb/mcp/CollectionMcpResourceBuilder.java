@@ -112,7 +112,7 @@ public final class CollectionMcpResourceBuilder {
         // flag on the read. It takes the same filter the read does: GET /<coll>/_size?filter={...}
         // counts that query, which is the count an agent usually wants.
         builder.action("size", a -> {
-            a.method("GET").pathTemplate("/_size").readable(true);
+            a.method("GET").pathTemplate("/_size").readable(true).target(McpResource.Target.RESOURCE);
             a.description("Number of documents matching the filter, or in the whole collection if no filter is given.");
             a.param("filter", "object", false);
             a.param("count", new McpResource.Param("string",
@@ -145,10 +145,12 @@ public final class CollectionMcpResourceBuilder {
         builder.action("delete", a -> {
             a.method("DELETE").pathTemplate("/{id}");
             a.param("id", "string", true);
-            if (!rules.isEmpty()) {
-                a.description(writeGuidance(rules));
-            }
+            a.description("Deletes one document. To delete the collection itself, with every document in it, "
+                    + "the action is 'drop'."
+                    + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
         });
+
+        managementActions(builder);
 
         examples(mcp).forEach(ex -> {
             var action = stringOrNull(ex, "action");
@@ -169,6 +171,65 @@ public final class CollectionMcpResourceBuilder {
         }
 
         return Optional.of(builder.build());
+    }
+
+    /**
+     * The operations that act on the collection itself rather than on its documents — the data
+     * management API, <a href="https://restheart.org/docs/mongodb-rest/dbs-collections">documented
+     * here</a> and for <a href="https://restheart.org/docs/mongodb-rest/indexes">indexes here</a>.
+     *
+     * <p>Published like any other action, because they are legitimate operations and the ACL is
+     * what decides whether they may be performed. They take two conditions, both necessary: a
+     * permission matching the method and the path, <em>and</em> {@code allowManagementRequests} in
+     * that permission's {@code mongo} block, which is off unless written. Neither grants on its own.
+     */
+    private static void managementActions(McpResource.Builder builder) {
+        builder.action("properties", a -> {
+            a.method("GET").pathTemplate("/_meta").target(McpResource.Target.RESOURCE).requires("mongo.allowManagementRequests");
+            a.description("The collection's own properties, metadata included: jsonSchema, aggrs, streams, "
+                    + "constraints, mcp. Carries the _etag that 'drop' requires.");
+        });
+
+        builder.action("set_properties", a -> {
+            a.method("PATCH").pathTemplate("").target(McpResource.Target.RESOURCE).requires("mongo.allowManagementRequests");
+            a.description("Merges these properties into the collection's own. This changes how the collection "
+                    + "behaves — jsonSchema, aggrs, streams, constraints, and the mcp block that publishes it — "
+                    + "not the documents in it.");
+        });
+
+        builder.action("drop", a -> {
+            a.method("DELETE").pathTemplate("").target(McpResource.Target.RESOURCE).requires("mongo.allowManagementRequests");
+            a.description("Deletes the collection and every document in it. Not reversible. Requires the "
+                    + "collection's current _etag, which 'properties' returns: without it the answer is 409.");
+            a.param("etag", new McpResource.Param("string",
+                    "The collection's current _etag, read with the 'properties' action.",
+                    true, null, null).asHeader("If-Match"));
+        });
+
+        builder.action("indexes", a -> {
+            a.method("GET").pathTemplate("/_indexes").target(McpResource.Target.RESOURCE).requires("mongo.allowManagementRequests");
+            a.description("The collection's indexes.");
+        });
+
+        builder.action("create_index", a -> {
+            a.method("PUT").pathTemplate("/_indexes/{name}").target(McpResource.Target.RESOURCE).requires("mongo.allowManagementRequests");
+            a.description("Creates an index under this name. An index is never updated: to change one, delete it "
+                    + "and create it again. Options that do not hold for the data — 'unique' on a property that "
+                    + "is not — answer 406.");
+            a.param("name", "string", true);
+            a.bodySchema(Map.of(
+                    "type", "object",
+                    "required", List.of("keys"),
+                    "properties", Map.of(
+                            "keys", Map.of("type", "object", "description", "The indexed properties, as MongoDB names them: {\"qty\": 1}."),
+                            "ops", Map.of("type", "object", "description", "Index options, as MongoDB names them: {\"unique\": true}."))));
+        });
+
+        builder.action("delete_index", a -> {
+            a.method("DELETE").pathTemplate("/_indexes/{name}").target(McpResource.Target.RESOURCE).requires("mongo.allowManagementRequests");
+            a.description("Deletes the index of this name.");
+            a.param("name", "string", true);
+        });
     }
 
     private static final String DUPLICATE_ID = "409 Conflict means a document with this _id already exists.";

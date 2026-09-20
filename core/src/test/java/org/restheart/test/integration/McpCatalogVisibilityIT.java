@@ -284,6 +284,70 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     }
 
     // ------------------------------------------------------------------------
+    // what each action says about this caller
+    // ------------------------------------------------------------------------
+
+    /**
+     * The data management API is published like any other action, and an action that acts on the
+     * collection itself says so — the one thing an agent cannot work out from a name, where the
+     * mistake does not undo.
+     */
+    @Test
+    public void aCollectionPublishesTheOperationsOnItself_andSaysTheyAreOnIt() throws Exception {
+        var described = reader.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}");
+        var actions = described.getDocument("actions");
+
+        assertTrue(actions.keySet().containsAll(java.util.List.of(
+                "properties", "set_properties", "drop", "indexes", "create_index", "delete_index")),
+                "the data management API is not published: " + actions.keySet());
+
+        assertEquals("resource", actions.getDocument("drop").getString("target").getValue(),
+                "drop acts on the collection, and must say so: " + actions.getDocument("drop").toJson());
+        assertFalse(actions.getDocument("delete").containsKey("target"),
+                "delete acts on a document, which is the ordinary case and stays unsaid: "
+                        + actions.getDocument("delete").toJson());
+    }
+
+    /** The drop needs the collection's ETag, and an action that needs one declares where it goes. */
+    @Test
+    public void theDropDeclaresTheEtagItNeeds_asAHeader() throws Exception {
+        var described = reader.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}");
+        var etag = described.getDocument("actions").getDocument("drop").getDocument("params").getDocument("etag");
+
+        assertEquals("If-Match", etag.getString("header").getValue(),
+                "without it the drop answers 409 and the agent cannot tell why: " + etag.toJson());
+    }
+
+    /**
+     * Marked, never omitted. The reader may read this collection and may not drop it; both actions
+     * are described, and each says which it is.
+     */
+    @Test
+    public void everyActionSaysWhetherThisCallerCanPerformIt() throws Exception {
+        var actions = reader.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}").getDocument("actions");
+
+        assertEquals("yes", actions.getDocument("query").getString("permitted").getValue(),
+                "the reader may read it: " + actions.getDocument("query").toJson());
+
+        var drop = actions.getDocument("drop");
+        assertEquals("no", drop.getString("permitted").getValue(),
+                "no permission of this role grants management requests: " + drop.toJson());
+        assertTrue(drop.getString("note").getValue().contains("allowManagementRequests")
+                        || drop.getString("note").getValue().contains("DELETE"),
+                "the note must say what is missing: " + drop.toJson());
+    }
+
+    /** A rule that decides on a query parameter is not decided by a catalogue, and says so. */
+    @Test
+    public void anActionWhoseRuleReadsAQueryParameterIsLeftUndecided() throws Exception {
+        var actions = reader.callTool("list_apis", "{\"resource\":\"" + TICKET_COLL + "\"}").getDocument("actions");
+        var create = actions.getDocument("create");
+
+        assertEquals("unknown", create.getString("permitted").getValue(),
+                "the ticket is an argument of the call, which a listing does not have: " + create.toJson());
+    }
+
+    // ------------------------------------------------------------------------
     // what the resource itself declares
     // ------------------------------------------------------------------------
 

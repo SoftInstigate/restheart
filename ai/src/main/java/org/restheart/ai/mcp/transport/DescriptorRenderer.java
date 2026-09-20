@@ -87,6 +87,11 @@ public final class DescriptorRenderer {
         var body = effectiveArgs.get("body");
         consumed.add("body");
 
+        // A parameter the action declares as a header is one: sending it in the query string would
+        // not be a different spelling of the same request, it would be a request missing a
+        // condition — dropping a collection without If-Match is refused with a 409.
+        var declaredHeaders = headersFrom(action, effectiveArgs, consumed);
+
         // an SSE/WebSocket subscription is still opened over a plain HTTP(S)/WS(S) URL that can
         // carry a query string exactly like any GET — a change-stream's own $var bindings
         // (avars) go through here identically to an aggregation's, so this must not be
@@ -96,12 +101,35 @@ public final class DescriptorRenderer {
         var url = baseUrl + path + queryString;
 
         return switch (transport) {
-            case HTTP -> renderHttp(action, url, body);
+            case HTTP -> renderHttp(action, url, body, declaredHeaders);
             case WEBSOCKET, SSE -> renderStreaming(transport, action, url);
         };
     }
 
-    private static Map<String, Object> renderHttp(McpResource.Action action, String url, Object body) {
+    /** The values of the action's header-carried parameters, by header name, marking them consumed. */
+    private static Map<String, Object> headersFrom(McpResource.Action action, Map<String, Object> args,
+            Set<String> consumed) {
+        var headers = new LinkedHashMap<String, Object>();
+
+        action.params().forEach((name, param) -> {
+            if (param.header() == null) {
+                return;
+            }
+
+            consumed.add(name);
+
+            var value = args.get(name);
+
+            if (value != null) {
+                headers.put(param.header(), String.valueOf(value));
+            }
+        });
+
+        return headers;
+    }
+
+    private static Map<String, Object> renderHttp(McpResource.Action action, String url, Object body,
+            Map<String, Object> declaredHeaders) {
         var descriptor = new LinkedHashMap<String, Object>();
         descriptor.put("transport", Transport.HTTP.wireName());
         if (action.method() != null) {
@@ -114,6 +142,7 @@ public final class DescriptorRenderer {
         if (body != null) {
             headers.put("Content-Type", "application/json");
         }
+        headers.putAll(declaredHeaders);
         descriptor.put("headers", headers);
 
         if (body != null) {
