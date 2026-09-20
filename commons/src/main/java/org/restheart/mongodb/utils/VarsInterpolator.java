@@ -159,7 +159,13 @@ public class VarsInterpolator {
     static Optional<BsonValue> lookup(BsonDocument values, String name, Request<?> request) {
         if (name != null && name.startsWith("@")) {
             return AclVarsInterpolator.isRegisteredVar(name)
-                    ? AclVarsInterpolator.resolveRegisteredVar(request, name)
+                    // a resolver that answers null leaves the variable unbound, rather than
+                    // binding null: {"owner": null} matches every document that has no owner, so
+                    // a pipeline scoped by {"$var": "@user._id"} - which a JWT account never has -
+                    // would return exactly the documents it is meant to exclude. Unbound fails the
+                    // request instead, and an author who wants a fallback writes one:
+                    // {"$var": ["@user._id", <default>]}
+                    ? AclVarsInterpolator.resolveRegisteredVar(request, name).filter(v -> !v.isNull())
                     : Optional.empty();
         }
 

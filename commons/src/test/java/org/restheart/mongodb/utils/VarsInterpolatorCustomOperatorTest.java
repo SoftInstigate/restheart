@@ -21,6 +21,13 @@ package org.restheart.mongodb.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+import java.util.Set;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.security.JwtAccount;
+import io.undertow.server.HttpServerExchange;
 import static org.mockito.Mockito.mock;
 
 import java.util.UUID;
@@ -108,5 +115,44 @@ class VarsInterpolatorCustomOperatorTest {
         var result = VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, new BsonDocument());
 
         assertEquals(stage, result);
+    }
+
+    // --- a @ name the server resolves to nothing is unbound, not null ---
+
+    private static MongoRequest jwtRequest() {
+        var request = mock(MongoRequest.class);
+        when(request.getExchange()).thenReturn(mock(HttpServerExchange.class));
+        // a JWT account carries the token's claims: it has a sub, it has no _id
+        when(request.getAuthenticatedAccount())
+                .thenReturn(new JwtAccount("alice", Set.of("user"), "{\"sub\":\"alice\"}"));
+        return request;
+    }
+
+    @Test
+    void aVarTheServerResolvesToNothingIsUnbound() {
+        // not {"owner": null}, which in MongoDB matches every document without an owner: a
+        // pipeline scoped by @user._id must fail rather than return what it means to exclude
+        var stage = BsonDocument.parse("{\"owner\": {\"$var\": \"@user._id\"}}");
+
+        assertThrows(QueryVariableNotBoundException.class,
+                () -> VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, new BsonDocument(), jwtRequest()));
+    }
+
+    @Test
+    void aVarTheServerResolvesToNothingTakesItsDefault() throws Exception {
+        var stage = BsonDocument.parse("{\"owner\": {\"$var\": [\"@user._id\", \"nobody\"]}}");
+
+        var result = VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, new BsonDocument(), jwtRequest());
+
+        assertEquals(BsonDocument.parse("{\"owner\": \"nobody\"}"), result);
+    }
+
+    @Test
+    void aVarTheServerResolvesIsStillBound() throws Exception {
+        var stage = BsonDocument.parse("{\"owner\": {\"$var\": \"@user.sub\"}}");
+
+        var result = VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, new BsonDocument(), jwtRequest());
+
+        assertEquals(BsonDocument.parse("{\"owner\": \"alice\"}"), result);
     }
 }
