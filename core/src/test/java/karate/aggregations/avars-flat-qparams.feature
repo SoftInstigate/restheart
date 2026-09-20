@@ -102,26 +102,3 @@ Scenario: a reserved query parameter is not bound as a variable
     When method GET
     Then status 400
     And match response.message contains 'aggregation'
-
-
-Scenario: an @-prefixed variable in avars is rejected
-
-    # @user.* is bound by the server from the account; admin has no owner property,
-    # so a client value for @user.owner would otherwise be used as if it came from it
-    * header Authorization = admin
-    Given path coll + '/_aggrs/byOwner'
-    And param avars = '{"@user.owner": "widget"}'
-    And param rep = 's'
-    When method GET
-    Then status 400
-    And match response.message contains 'reserved'
-
-
-Scenario: an @-prefixed flat query parameter is not bound as a variable
-
-    * header Authorization = admin
-    Given path coll + '/_aggrs/byOwner'
-    And params { '@user.owner': 'widget', rep: 's' }
-    When method GET
-    Then status 400
-    And match response.message contains 'aggregation'

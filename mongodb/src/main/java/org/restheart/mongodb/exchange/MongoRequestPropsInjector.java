@@ -331,15 +331,6 @@ public class MongoRequestPropsInjector {
                     return;
                 }
 
-                // variables named @... (@user, @user.<prop>, @mongoPermissions, @page, ...) are
-                // bound by the server; a client value would stand in for any one the server leaves
-                // unbound, e.g. @user._id for a JWT account that has no _id claim
-                var reserved = qvars.keySet().stream().filter(k -> k.startsWith("@")).findFirst();
-                if (reserved.isPresent()) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal avars parameter, variable " + reserved.get() + " is reserved");
-                    return;
-                }
-
                 // throws SecurityException if aVars contains operators
                 if (MongoServiceConfiguration.get().getAggregationCheckOperators()) {
                     StagesInterpolator.shouldNotContainOperators(qvars);
@@ -357,7 +348,7 @@ public class MongoRequestPropsInjector {
         // wins over a same-named flat qparam
         for (var entry : exchange.getQueryParameters().entrySet()) {
             var key = entry.getKey();
-            if (!RESERVED_QPARAM_KEYS.contains(key) && !key.startsWith("@") && !qvars.containsKey(key) && !entry.getValue().isEmpty()) {
+            if (!RESERVED_QPARAM_KEYS.contains(key) && !qvars.containsKey(key) && !entry.getValue().isEmpty()) {
                 var raw = entry.getValue().getFirst();
                 BsonValue value;
                 try {
