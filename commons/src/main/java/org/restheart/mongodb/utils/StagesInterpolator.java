@@ -349,6 +349,10 @@ public class StagesInterpolator {
      * @param avars the aggregation variables document to inject defaults into
      */
     public static void injectAvars(MongoRequest request, BsonDocument avars) {
+        // @-prefixed variables are bound only here: drop any that came from the client, otherwise
+        // one would survive wherever the account lacks the property (e.g. @user._id under JWT)
+        avars.keySet().removeIf(k -> k.startsWith("@"));
+
         // add @page, @pagesize, @limit and @skip to avars to allow handling
         // paging in the aggregation via default page and pagesize query params
         avars.put("@page", new BsonInt32(request.getPage()));
@@ -371,11 +375,11 @@ public class StagesInterpolator {
 
             avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null
                     ? BsonNull.VALUE
-                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
+                    : AclVarsInterpolator.interpolateFilter(request, mongoPermissions.getReadFilter()));
 
             avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null
                     ? BsonNull.VALUE
-                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
+                    : AclVarsInterpolator.interpolateFilter(request, mongoPermissions.getWriteFilter()));
         } else {
             avars.put("@mongoPermissions", new MongoPermissions().asBson());
             avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);

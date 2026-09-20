@@ -33,6 +33,8 @@ Scenario: create the database, the collection and its documents
     # limited   — {"$var": "max"} used where MongoDB demands a number, so a 200 proves
     #             the flat value was parsed as one rather than passed through as a string
     # byPage    — {"$var": "page"} on a RESERVED name: must never be bound from ?page=
+    # byOwner   — {"$var": "@user.owner"}: admin has no owner property, so only the
+    #             server may bind it, and a client value must never stand in for it
     * header Authorization = admin
     Given path '/test-avars-flat/purchases'
     And request
@@ -57,6 +59,12 @@ Scenario: create the database, the collection and its documents
           "uri": "byPage",
           "stages": [
             { "$match": { "item": { "$var": "page" } } }
+          ]
+        },
+        {
+          "uri": "byOwner",
+          "stages": [
+            { "$match": { "item": { "$var": "@user.owner" } } }
           ]
         }
       ]

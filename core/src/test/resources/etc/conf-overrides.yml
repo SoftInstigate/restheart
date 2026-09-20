@@ -127,6 +127,12 @@
       password: secret
       roles: [ aclreader ]
 
+    # acl-filter-unbound-var.feature: a file realm account has no _id, and neither has a JWT
+    # issued for it, so the @user._id in the readFilter below is never bound for this user.
+    - userid: unboundreader
+      password: secret
+      roles: [ unboundreader ]
+
 /mongoRealmAuthenticator/users-db: restheart-test
 
 /fileAclAuthorizer:
@@ -228,6 +234,42 @@
           {"owner": "@user.userid"}
         projectResponse: >
           {"secret": 0}
+
+    # ChangeStreamPermissionsIT — readFilter and projectResponse apply to change streams as they
+    # do to a GET.
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-cs-acl"]
+      priority: 0
+      mongo:
+        readFilter: >
+          {"owner": "@user.userid"}
+        projectResponse: >
+          {"secret": 0}
+
+    # acl-filter-unbound-var.feature — an unbound variable must match no document instead of
+    # becoming null, which would match every document without an owner.
+    - role: unboundreader
+      predicate: method(GET) and path-prefix[path="/test-acl-unbound"]
+      priority: 0
+      mongo:
+        readFilter: >
+          {"$or": [{"owner": "@user._id"}, {"public": true}]}
+
+    # acl-filter-unbound-var.feature — a mergeRequest must refuse the write rather than stamp
+    # null where the permission requires the caller's identity
+    - role: unboundreader
+      predicate: method(POST) and path[path="/test-acl-unbound/docs"]
+      priority: 0
+      mongo:
+        mergeRequest: >
+          {"owner": "@user._id"}
+
+    - role: unboundreader
+      predicate: method(POST) and path[path="/test-acl-unbound/stamped"]
+      priority: 0
+      mongo:
+        mergeRequest: >
+          {"owner": "@user.userid"}
 
     - role: poweruser
       predicate: path-prefix[path="/testmytmpdb"]

@@ -56,11 +56,12 @@ import org.restheart.exchange.Request;
  *
  * <h2>Failure semantics</h2>
  * <p>Returning {@code null} (or a {@link org.bson.BsonNull}) is treated the same as an unresolved
- * variable: in a {@code readFilter}/{@code mergeRequest} document the value becomes
- * {@code BsonNull.VALUE}; in an ACL {@code predicate} string the expression is replaced with a
- * random, unguessable token, so any comparison against it fails and the predicate is not
- * satisfied. A broken resolver denies access, it never widens it. Throwing from {@link #resolve}
- * is handled the same way as returning {@code null}.
+ * variable: in an ACL {@code predicate} string and in a {@code readFilter}/{@code writeFilter}
+ * document the expression is replaced with a random, unguessable token, so any comparison
+ * against it fails: the predicate is not satisfied and the filter matches no document (a negation
+ * such as {@code $ne} of it still matches). In a {@code mergeRequest} document an unbound
+ * {@code @user} variable makes the write refused, any other becomes {@code BsonNull.VALUE}.
+ * Throwing from {@link #resolve} is handled the same way as returning {@code null}.
  *
  * <h2>Resolver contract</h2>
  * <ol>

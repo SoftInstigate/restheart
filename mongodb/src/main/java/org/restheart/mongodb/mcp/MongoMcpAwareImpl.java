@@ -504,7 +504,7 @@ public final class MongoMcpAwareImpl {
         if (permissions == null || permissions.getReadFilter() == null) {
             return null;
         }
-        return AclVarsInterpolator.interpolateBson(ctx.authorization().request(), permissions.getReadFilter()).asDocument();
+        return AclVarsInterpolator.interpolateFilter(ctx.authorization().request(), permissions.getReadFilter()).asDocument();
     }
 
     /** Hides whatever {@code mongo.projectResponse} hides, using the interceptor's own implementation. */
