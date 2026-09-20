@@ -32,21 +32,17 @@ import org.junit.jupiter.api.Test;
 import kong.unirest.Unirest;
 
 /**
- * Authorization parity between {@code resources/read} and the equivalent REST {@code GET}
- * (restheart#722).
+ * Authorization parity between {@code resources/read} and the equivalent REST {@code GET}.
  *
- * <p>Documents-mode reads execute in-process: no self-directed HTTP call, therefore no real
- * exchange for the ACL engine to match against. {@code McpService.operationsToAuthorize()}
- * bridges that by describing the equivalent REST operation as a {@code RequestDescriptor}, which
- * {@code core}'s {@code AuthorizersHandler} evaluates against every {@code
- * DescriptorAwareAuthorizer} using the same voting algorithm real requests go through.
+ * <p>A read through MCP runs the composed request through the whole pipeline in-process, so the
+ * ACL engine matches a real exchange and decides exactly as it would for the REST call. This suite
+ * proves the two answer the same way.
  *
- * <p>This is the suite that proves the bridge holds, and it is deliberately written as a
- * <b>parity</b> check rather than a list of expected outcomes: each test asks REST and MCP the
- * same question and asserts they answer the same way. A test that merely hard-coded "MCP denies
- * this" would still pass if MCP started denying everything — which is precisely the bug that
- * shipped once already, when overriding {@code operationsToAuthorize()} made every {@code /mcp}
- * request 403 regardless of what it was asking for.
+ * <p>It is deliberately written as a <b>parity</b> check rather than a list of expected outcomes:
+ * each test asks REST and MCP the same question and asserts they agree. A test that merely
+ * hard-coded "MCP denies this" would still pass if MCP started denying everything — which is
+ * precisely the bug that shipped once, when every {@code /mcp} request answered 403 regardless of
+ * what it was asking for.
  *
  * <p>The {@code mcpuser} role (see {@code conf-overrides.yml}) may reach {@code /mcp} and may
  * {@code GET} exactly one database, so both the allowed and the denied side are exercised by the
@@ -109,9 +105,8 @@ public class McpAuthorizationIT extends AbstactIT {
 
     @Test
     public void denialIsAboutTheData_notAboutReachingMcp() throws Exception {
-        // the regression that shipped once: overriding operationsToAuthorize() made the handler
-        // deny every /mcp request, so nothing worked. Tools must keep working for a caller whose
-        // data permissions are narrow.
+        // the regression that shipped once: the handler denied every /mcp request, so nothing
+        // worked. Tools must keep working for a caller whose data permissions are narrow.
         var catalog = asMcpUser.callTool("list_apis", "{}");
 
         assertTrue(catalog.containsKey("resources"),

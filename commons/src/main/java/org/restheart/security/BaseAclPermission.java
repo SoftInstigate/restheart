@@ -19,6 +19,7 @@
  */
 package org.restheart.security;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -197,6 +198,19 @@ public abstract class BaseAclPermission {
      */
     public int getPriority() {
         return priority;
+    }
+
+    /**
+     * The predicate as it was written, when this permission has one.
+     *
+     * <p>For whoever needs to <em>read</em> the rule rather than apply it — the MCP catalog, which
+     * has to answer whether some call could satisfy it and cannot get that by evaluating it against
+     * a request that does not exist. Empty for a permission whose condition is code.
+     *
+     * @return the source text, variables unsubstituted, or empty
+     */
+    public Optional<String> predicateSource() {
+        return Optional.empty();
     }
 
     /**

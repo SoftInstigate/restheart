@@ -63,8 +63,7 @@ import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.plugins.mcp.McpResult;
-import org.restheart.plugins.security.DescriptorAuthorization;
-import org.restheart.plugins.security.RequestDescriptor;
+import org.restheart.plugins.security.AclPermissions;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
@@ -135,8 +134,8 @@ public class McpService implements ByteArrayService {
     private PluginsRegistry pluginsRegistry;
 
     /** The framework's own answer to "could this caller perform this operation?" — see {@link #visibleTo}. */
-    @Inject("descriptor-authorization")
-    private DescriptorAuthorization authorization;
+    @Inject("acl-permissions")
+    private AclPermissions permissions;
 
     @Inject("config")
     private Map<String, Object> config;
@@ -515,23 +514,20 @@ public class McpService implements ByteArrayService {
      * subscription that succeeds, opens a change stream, generates notifications, and drops every
      * one of them.
      *
-     * <p>Asking here, before accepting, turns a silent forever-wait into an answer. The question is
-     * put to the framework's own authorization, so it cannot disagree with what the {@code GET}
-     * would actually get.
+     * <p>Asking here, before accepting, turns a silent forever-wait into an answer. It is the same
+     * reading of the caller's permissions the catalog uses, so a rule that grants {@code POST} on
+     * the endpoint and nothing else is seen for what it is, while a rule this cannot read leaves
+     * the subscription accepted rather than refused.
      */
     private boolean canReceiveNotifications(McpTransportContext ctx) {
         var request = request(ctx);
 
-        if (request == null || authorization == null) {
+        if (request == null || permissions == null) {
             return true;
         }
 
-        var caller = RequestDescriptor.of(request.getExchange());
-        var endpoint = PluginUtils.actualUri(config, McpService.class);
-
-        return authorization.isAllowed(new RequestDescriptor(caller.principal(), "GET", endpoint,
-                Map.of(), caller.headers(), caller.cookies(), caller.remoteAddress(), caller.scheme(),
-                caller.attachedParams()));
+        return CatalogVisibility.isReadable(permissions, request,
+                PluginUtils.actualUri(config, McpService.class), "GET");
     }
 
     /** @see #canReceiveNotifications */
@@ -1557,7 +1553,7 @@ public class McpService implements ByteArrayService {
     /**
      * The catalog filter for whoever is asking: a resource is listed only if a read of it would be
      * authorized, decided by the very rule that authorizes the read
-     * ({@link org.restheart.plugins.security.DescriptorAuthorization}).
+     * ({@code acl-permissions}).
      *
      * <p>Everything is visible when there is no request to derive an identity from — which happens
      * only for calls that do not come from a client, and never for a real one.
@@ -1574,8 +1570,8 @@ public class McpService implements ByteArrayService {
      * method the read uses, falling back to the owning resource's and then to {@code GET}. Not
      * finding a URI is never a reason to show it.
      *
-     * <p><strong>Undecidable means not visible.</strong> With no catalog and no authorization to
-     * consult — the service not initialized yet — this hides everything rather than showing
+     * <p><strong>Undecidable means not visible.</strong> With no catalog and no permissions to
+     * read — the service not initialized yet — this hides everything rather than showing
      * everything. On a process serving one tenant that costs an empty listing and a warning; on a
      * shared one, answering "visible" to a question it cannot answer hands a caller the names of
      * resources belonging to someone else. In practice this branch is unreachable: the interceptor
@@ -1584,12 +1580,10 @@ public class McpService implements ByteArrayService {
     static Predicate<String> catalogVisibility(HttpServerExchange exchange) {
         var self = instance;
 
-        if (self == null || self.resourceLookup == null || self.publicBaseUrl == null || self.authorization == null) {
+        if (self == null || self.resourceLookup == null || self.publicBaseUrl == null || self.permissions == null) {
             LOGGER.warn("Catalog visibility asked before mcpService is ready — hiding every entry rather than showing entries nobody has checked");
             return uri -> false;
         }
-
-        var identity = RequestDescriptor.of(exchange);
 
         // The same base URL the rest of the request uses, not the static one. Two different
         // values here mean two catalogue cache entries for one scope, and whichever expires last
@@ -1597,9 +1591,10 @@ public class McpService implements ByteArrayService {
         var request = Request.of(exchange);
         var baseUrl = self.effectiveBaseUrl(exchange);
         var scope = self.resolveScope(request);
+        var principal = request.isAuthenticated() ? request.getAuthenticatedAccount().getPrincipal().getName() : null;
 
-        return uri -> CatalogVisibility.isReadable(self.authorization, identity,
-                CatalogVisibility.pathOf(uri), self.readMethodOf(identity, baseUrl, scope, uri));
+        return uri -> CatalogVisibility.isReadable(self.permissions, request,
+                CatalogVisibility.pathOf(uri), self.readMethodOf(principal, baseUrl, scope, uri));
     }
 
     /**
@@ -1607,8 +1602,8 @@ public class McpService implements ByteArrayService {
      * that URI, otherwise the method of the resource it hangs off — {@code /coll/_size} reads as
      * {@code /coll} does — and {@code GET} when neither is known.
      */
-    private String readMethodOf(RequestDescriptor identity, String baseUrl, String scope, String uri) {
-        var exact = resourceLookup.find(identity.principal(), baseUrl, scope, uri);
+    private String readMethodOf(String principal, String baseUrl, String scope, String uri) {
+        var exact = resourceLookup.find(principal, baseUrl, scope, uri);
 
         if (exact.isPresent()) {
             return CatalogVisibility.methodOf(CatalogVisibility.readAction(exact.get()));
@@ -1617,7 +1612,7 @@ public class McpService implements ByteArrayService {
         var lastSlash = uri.lastIndexOf('/');
 
         if (lastSlash > 0) {
-            var owner = resourceLookup.find(identity.principal(), baseUrl, scope, uri.substring(0, lastSlash));
+            var owner = resourceLookup.find(principal, baseUrl, scope, uri.substring(0, lastSlash));
 
             if (owner.isPresent()) {
                 return CatalogVisibility.methodOf(CatalogVisibility.readAction(owner.get()));
@@ -1634,16 +1629,16 @@ public class McpService implements ByteArrayService {
             return r -> true;
         }
 
-        var identity = RequestDescriptor.of(request.getExchange());
-
-        return resource -> CatalogVisibility.isVisible(authorization, identity, resource);
+        return resource -> CatalogVisibility.isVisible(permissions, request, resource);
     }
 
     /**
-     * Whether this caller may be handed the descriptor of one particular call, arguments included.
+     * Whether this caller may be handed the descriptor of one particular call.
      *
-     * <p>Only {@code how_to_call} asks: it discloses parameter names, body schema and the prose a
-     * resource carries. {@code call_api} does not, because it executes, and execution is
+     * <p>{@code how_to_call} follows the catalog: a resource in your listing hands you its
+     * descriptor, one that is not does not. The two cannot disagree, which they could when the gate
+     * asked its own question — and what the descriptor discloses is what the listing already
+     * disclosed. {@code call_api} has no gate at all, because it executes, and execution is
      * authorized by the pipeline it runs through.
      */
     private HowToCallTool.Gate descriptorGate(McpTransportContext ctx) {
@@ -1653,9 +1648,7 @@ public class McpService implements ByteArrayService {
             return HowToCallTool.Gate.OPEN;
         }
 
-        var identity = RequestDescriptor.of(request.getExchange());
-
-        return (resource, actionName, args) -> CatalogVisibility.canInvoke(authorization, identity, resource, actionName, args);
+        return (resource, actionName, args) -> CatalogVisibility.isVisible(permissions, request, resource);
     }
 
     private static String baseUrl(McpTransportContext ctx) {

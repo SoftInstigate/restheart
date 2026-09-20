@@ -440,6 +440,22 @@ public class AclVarsInterpolator {
     }
 
     /**
+     * When the value of {@code var} is already determined — before the call that will read it
+     * exists. Asked of the resolver that claims its name, which is the only thing that knows.
+     *
+     * @return the declared scope, or empty when no resolver claims the name — an ordinary name,
+     *         not a variable at all
+     * @see VarResolver#scope()
+     */
+    public static Optional<EvaluationScope.Scope> scopeOfVar(String var) {
+        if (var == null || !var.startsWith("@") || var.length() < 2) {
+            return Optional.empty();
+        }
+
+        return AclVarsRegistryImpl.getInstance().resolver(varName(var)).map(VarResolver::scope);
+    }
+
+    /**
      * Whether some {@link VarResolver} claims {@code var}'s name — asked without resolving it, so
      * a caller can tell "this is a server-resolved variable" from "this is an ordinary name" even
      * when it has no request to resolve against.

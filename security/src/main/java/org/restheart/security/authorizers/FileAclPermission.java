@@ -22,6 +22,7 @@ package org.restheart.security.authorizers;
 
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
+import java.util.Optional;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -48,6 +49,11 @@ public class FileAclPermission extends BaseAclPermission {
     private FileAclPermission(String requestPredicate, Set<String> roles, int priority, Map<String, Object> raw) throws ConfigurationException {
         super(req -> AclVarsInterpolator.interpolatePredicate(req, requestPredicate, FileAclPermission.class.getClassLoader()).resolve(req.getExchange()), roles, priority, raw);
         this.requestPredicate = requestPredicate;
+    }
+
+    @Override
+    public Optional<String> predicateSource() {
+        return Optional.ofNullable(requestPredicate);
     }
 
     /**

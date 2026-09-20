@@ -21,10 +21,8 @@
 package org.restheart.security.authorizers;
 
 import org.restheart.exchange.Request;
-import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +32,7 @@ import org.slf4j.LoggerFactory;
         description = "allow requests according to allow predicates defined in the ACLRegistry",
         enabledByDefault = true,
         authorizerType = TYPE.ALLOWER)
-public class ACLRegistryAllower implements DescriptorAwareAuthorizer {
+public class ACLRegistryAllower implements Authorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ACLRegistryAllower.class);
 
     private final ACLRegistryImpl registry = ACLRegistryImpl.getInstance();
@@ -51,25 +49,6 @@ public class ACLRegistryAllower implements DescriptorAwareAuthorizer {
 
         return allowed;
     }
-
-    /**
-     * The same predicates, against an operation described as data.
-     *
-     * <p>Without this, a deployment that grants access from code — an interceptor registering an
-     * allow predicate, which is how a multi-tenant host authorizes its own administrators — was
-     * allowed on a real request and denied on a descriptor. The MCP catalogue filter asks by
-     * descriptor, so such a caller was shown an empty listing of resources it could in fact read:
-     * the listing contradicting the read, which is exactly what asking the framework's own
-     * authorization was meant to prevent.
-     *
-     * <p>No permission travels with the decision: a predicate is a yes or a no, and resolves no
-     * ACL document to interpolate a readFilter from.
-     */
-    @Override
-    public Decision decide(RequestDescriptor descriptor) {
-        return isAllowed(SyntheticRequestFactory.from(descriptor)) ? Decision.allowed(null, null) : Decision.DENIED;
-    }
-
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
         return registry.authenticationRequirements().isEmpty() ||

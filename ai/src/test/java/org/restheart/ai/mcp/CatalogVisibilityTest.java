@@ -23,61 +23,118 @@ package org.restheart.ai.mcp;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.restheart.plugins.mcp.McpResource;
-import org.restheart.plugins.security.DescriptorAuthorization;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
-import org.restheart.plugins.security.RequestDescriptor;
+import org.restheart.security.BaseAclPermission;
+import org.restheart.security.EvaluationScope.Scope;
+import org.restheart.security.analysis.ListingContext;
+import org.restheart.security.analysis.PredicateScopes;
 
-/**
- * A catalogue is composed without arguments, and a call carries them. Deciding a call by the
- * catalogue's question is therefore wrong whenever a rule reads one: the resource looks absent to
- * the very caller holding what would have opened it.
- *
- * <p>The fixture is an ACL of exactly that shape — RESTHeart's own predicate language reads a
- * query parameter with {@code %{q,name}}, and the market-game example authorizes on two of them.
- */
 class CatalogVisibilityTest {
 
-    /** Allows the write only when it carries trader=trader1. */
-    private static final DescriptorAuthorization PAIRED = descriptor -> {
-        var trader = descriptor.queryParameters().get("trader");
-        var carriesThePair = trader != null && "trader1".equals(trader.peekFirst());
-        return carriesThePair ? Decision.allowed(null, null) : Decision.DENIED;
-    };
+    /** A permission that is nothing but its predicate, which is all the catalog reads. */
+    private static BaseAclPermission permission(String predicate) {
+        return new BaseAclPermission(request -> true, Set.of("user"), 100, null) {
+            @Override
+            public Optional<String> predicateSource() {
+                return Optional.ofNullable(predicate);
+            }
+        };
+    }
 
-    private static final RequestDescriptor IDENTITY =
-            new RequestDescriptor(null, "GET", "/", Map.of(), Map.of(), Map.of(), "127.0.0.1", "https", Map.of());
+    /** A caller of {@code path} with {@code session} resolved for its variables. */
+    private static ListingContext listing(String path, String method, Map<String, String> session) {
+        return new ListingContext() {
+            @Override
+            public String path() {
+                return path;
+            }
 
-    private static McpResource ledger() {
-        return McpResource.builder()
-                .uri("https://host/market_events")
-                .action("query", a -> a.method("GET").readable(true))
-                .action("create", a -> a.method("POST"))
-                .build();
+            @Override
+            public String method() {
+                return method;
+            }
+
+            @Override
+            public Optional<String> attribute(String token) {
+                return Optional.ofNullable(session.get(token));
+            }
+
+            @Override
+            public Optional<String> variable(String token) {
+                return Optional.ofNullable(session.get(token));
+            }
+
+            @Override
+            public Optional<Scope> scopeOf(String name) {
+                return PredicateScopes.of(name);
+            }
+        };
+    }
+
+    private static boolean visible(String predicate, String path, String method, Map<String, String> session) {
+        return CatalogVisibility.isReadable(List.of(permission(predicate)), listing(path, method, session));
+    }
+
+    private static boolean visible(String predicate, String path, String method) {
+        return visible(predicate, path, method, Map.of());
     }
 
     @Test
-    @DisplayName("an action whose rule reads a query parameter is invokable when the call carries it")
-    void canInvokeWithTheArgument() {
-        assertTrue(CatalogVisibility.canInvoke(PAIRED, IDENTITY, ledger(), "create",
-                Map.of("trader", "trader1", "secret", "s", "body", Map.of("type", "offer"))));
+    void aRuleThatNamesTheResourceShowsIt() {
+        assertTrue(visible("path('/orders') and method(GET)", "/orders", "GET"));
     }
 
     @Test
-    @DisplayName("and refused when it carries the wrong one, or none")
-    void cannotInvokeWithoutIt() {
-        assertFalse(CatalogVisibility.canInvoke(PAIRED, IDENTITY, ledger(), "create", Map.of("trader", "trader2")));
-        assertFalse(CatalogVisibility.canInvoke(PAIRED, IDENTITY, ledger(), "create", Map.of()));
+    void aRuleAboutSomewhereElseDoesNot() {
+        assertFalse(visible("path('/orders') and method(GET)", "/invoices", "GET"));
+    }
+
+    /**
+     * #743: a rule deciding on a query parameter used to answer no to a question asked without one,
+     * and the resource disappeared for the caller holding exactly what would open it.
+     */
+    @Test
+    void aRuleThatDecidesOnTheCallStillShowsTheResource() {
+        assertTrue(visible("path('/market_events') and method(POST) and equals(%{q,secret}, 'xxx')",
+                "/market_events", "POST"));
     }
 
     @Test
-    @DisplayName("an action the resource does not declare is never invokable")
-    void unknownActionIsNotInvokable() {
-        assertFalse(CatalogVisibility.canInvoke(PAIRED, IDENTITY, ledger(), "delete", Map.of("trader", "trader1")));
+    void aConditionOnTheCallerIsDecidedExactly() {
+        var gate = "path-prefix('/orders') and equals(@user.plan, 'gold')";
+
+        assertTrue(visible(gate, "/orders", "GET", Map.of("@user.plan", "gold")));
+        assertFalse(visible(gate, "/orders", "GET", Map.of("@user.plan", "free")));
     }
 
+    @Test
+    void aPredicateNobodyDeclaresNeverHides() {
+        assertTrue(visible("path('/orders') and is-gold-customer()", "/orders", "GET"));
+    }
+
+    /** With no rule of its own, nothing can be shown. */
+    @Test
+    void noPermissionAtAllHidesEverything() {
+        assertFalse(CatalogVisibility.isReadable(List.of(), listing("/orders", "GET", Map.of())));
+    }
+
+    /**
+     * A permission whose condition is code has nothing to read, and refusing what cannot be read
+     * would hide resources nobody decided to hide.
+     */
+    @Test
+    void aPermissionWithoutAPredicateIsTakenAsPossible() {
+        assertTrue(CatalogVisibility.isReadable(List.of(permission(null)), listing("/orders", "GET", Map.of())));
+    }
+
+    @Test
+    void theMethodOfTheReadIsTheOneAsked() {
+        assertTrue(visible("path('/graphql/app') and method(POST)", "/graphql/app", "POST"));
+        assertFalse(visible("path('/graphql/app') and method(POST)", "/graphql/app", "GET"));
+    }
 }

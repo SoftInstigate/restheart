@@ -48,9 +48,9 @@ import com.google.gson.JsonParser;
  * methods now answer through RESTHeart's own response sender rather than writing SSE into the
  * exchange — see {@code UndertowStreamableServerTransportProvider.BUFFERED_METHODS}.
  *
- * <p>The rule is not restated here: {@link CatalogVisibility} asks the framework's own
- * {@code DescriptorAuthorization}, the same one applied to a real request, so a listing cannot
- * disagree with what a read would do.
+ * <p>The rule is not restated here: {@link CatalogVisibility} reads the caller's own permissions,
+ * the same ones the authorization chain applies, so this listing and {@code list_apis} cannot
+ * disagree.
  *
  * <p><strong>This filter fails loudly and closed.</strong> It is coupled to the SDK's result
  * shape, and a security filter that silently stops matching is worse than none. An entry it cannot

@@ -21,10 +21,8 @@
 package org.restheart.security.authorizers;
 
 import org.restheart.exchange.Request;
-import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +32,7 @@ import org.slf4j.LoggerFactory;
         description = "vetoes requests according to veto predicates defined in the ACLRegistry",
         enabledByDefault = true,
         authorizerType = TYPE.VETOER)
-public class ACLRegistryVetoer implements DescriptorAwareAuthorizer {
+public class ACLRegistryVetoer implements Authorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ACLRegistryVetoer.class);
 
     private final ACLRegistryImpl registry = ACLRegistryImpl.getInstance();
@@ -51,20 +49,6 @@ public class ACLRegistryVetoer implements DescriptorAwareAuthorizer {
 
         return !vetoed;
     }
-
-    /**
-     * The same predicates, against an operation described as data.
-     *
-     * <p>This one matters more than the allower's. A vetoer that is not consulted fails
-     * <em>open</em>: an operation a real request would be refused is listed as available, so the
-     * MCP catalogue advertises resources whose read then fails — or worse, names resources a
-     * deployment vetoes precisely so that this caller does not learn they exist.
-     */
-    @Override
-    public Decision decide(RequestDescriptor descriptor) {
-        return isAllowed(SyntheticRequestFactory.from(descriptor)) ? Decision.allowed(null, null) : Decision.DENIED;
-    }
-
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
         return false;

@@ -21,51 +21,63 @@
 package org.restheart.ai.mcp;
 
 import java.net.URI;
-import java.util.Deque;
-import java.util.Map;
+import java.util.Collection;
 
-import org.restheart.ai.mcp.transport.DescriptorRenderer;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.mcp.McpResource;
-import org.restheart.plugins.security.DescriptorAuthorization;
-import org.restheart.plugins.security.RequestDescriptor;
+import org.restheart.plugins.security.AclPermissions;
+import org.restheart.security.BaseAclPermission;
+import org.restheart.security.MongoPermissions;
+import org.restheart.security.analysis.ListingContext;
+import org.restheart.security.analysis.ListingEvaluator;
+import org.restheart.security.analysis.MongoGates;
+import org.restheart.security.analysis.PredicateSyntax;
+import org.restheart.security.analysis.RequestListingContext;
+import org.restheart.security.analysis.Truth;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Decides whether a resource belongs in a catalog listing for the caller who asked.
  *
- * <p>Reads are authorized one by one — a {@code resources/read} the ACL does not cover is refused
- * — but the catalog used to be the same for everybody, so any caller allowed to reach {@code /mcp}
- * could enumerate every MCP-enabled resource on the server: its URI, its actions (including the
- * writing ones), its parameter names, and its {@code mcp.description}. The description is the part
- * that matters: it is prose written to orient an agent, so it is deliberately informative about
- * what the data is.
+ * <p>The catalog is not the same for everybody: a resource's {@code mcp.description} is prose
+ * written to orient an agent, so it is deliberately informative about what the data is, and
+ * announcing it to whoever can reach {@code /mcp} announces more than a name.
  *
- * <p>The decision is not taken here. It is delegated to {@link DescriptorAuthorization}, the
- * framework's own rule — the same one applied to a real request — so a listing can never disagree
- * with what a read would actually do.
+ * <p>The question is asked of the caller's <strong>permissions</strong>, not of the authorization
+ * chain: "could some call to this resource satisfy one of them". Putting the chain a request made
+ * up for the occasion answers a different question — a rule that decides on the arguments of a call
+ * refuses one that has none, and the resource vanishes for a caller holding exactly what would open
+ * it (#743).
+ *
+ * <p>So each rule is read instead: the atoms already determined when a listing is composed are
+ * evaluated, the ones belonging to the call are left undetermined, and a resource is listed as soon
+ * as one rule <em>may</em> allow it. The result is an upper bound — it never hides what could be
+ * allowed, and at worst lists something that will answer 403, which {@code call_api} tells the
+ * agent to expect.
  */
 final class CatalogVisibility {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CatalogVisibility.class);
 
     private CatalogVisibility() {
     }
 
     /**
-     * Whether {@code resource} should appear in a listing for the caller identified by
-     * {@code identity}.
+     * Whether {@code resource} should appear in a listing for the caller making {@code request}.
      *
      * <p>Only a resource that declares no action at all stays visible unconditionally: there is
      * nothing a caller could do with it, so there is nothing to decide.
      */
-    static boolean isVisible(DescriptorAuthorization authorization,
-                             RequestDescriptor identity,
-                             McpResource resource) {
+    static boolean isVisible(AclPermissions permissions, Request<?> request, McpResource resource) {
         var action = readAction(resource);
 
         return action == null
-                || isReadable(authorization, identity, pathOf(resource.uri()), methodOf(action));
+                || isReadable(permissions, request, pathOf(resource.uri()), methodOf(action));
     }
 
     /**
-     * Whether the caller could read the resource at {@code path} — always decided, never assumed.
+     * Whether some call could let this caller read the resource at {@code path}.
      *
      * <p>{@code method} is the resource's own: probing everything with a {@code GET} would be wrong
      * for a GraphQL app, whose read is a {@code POST}, and a caller granted {@code POST} on it and
@@ -78,55 +90,61 @@ final class CatalogVisibility {
      * {@code /inventory/_size} survive a filter that had just removed {@code /inventory} — a filter
      * that fails open is worse than none, because it looks like it worked.
      */
-    static boolean isReadable(DescriptorAuthorization authorization,
-                              RequestDescriptor identity,
-                              String path,
-                              String method) {
-        return isReadable(authorization, identity, path, method, Map.of());
+    static boolean isReadable(AclPermissions permissions, Request<?> request, String path, String method) {
+        return isReadable(permissions.of(request), new RequestListingContext(request, path, method));
     }
 
-    /**
-     * The same question, asked with the query parameters the request will carry.
-     *
-     * <p>A listing has none to offer, and answers for the bare path. A call has them, and must be
-     * judged on them: an ACL rule may decide on a query parameter, and asking without it produces
-     * a refusal the real request would never have got — the resource then looks absent to a caller
-     * holding exactly what would have opened it.
-     */
-    static boolean isReadable(DescriptorAuthorization authorization,
-                              RequestDescriptor identity,
-                              String path,
-                              String method,
-                              Map<String, Deque<String>> queryParameters) {
-        var probe = new RequestDescriptor(identity.principal(), method, path,
-                queryParameters, identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme(),
-                identity.attachedParams());
-
-        return authorization.isAllowed(probe);
-    }
-
-    /**
-     * Whether this caller may invoke one action of a resource <em>with these arguments</em>.
-     *
-     * <p>Used where a specific call is being answered rather than a catalogue composed: the path
-     * carries the arguments it addresses, and the query string the ones the ACL may read. It is
-     * the same question the pipeline will ask, so the two cannot disagree.
-     */
-    static boolean canInvoke(DescriptorAuthorization authorization,
-                             RequestDescriptor identity,
-                             McpResource resource,
-                             String actionName,
-                             Map<String, Object> args) {
-        var action = resource.actions().get(actionName);
-
-        if (action == null) {
-            return false;
+    /** The same question with the rules and the context already in hand. Visible for testing. */
+    static boolean isReadable(Collection<BaseAclPermission> permissions, ListingContext context) {
+        for (var permission : permissions) {
+            if (mayAllow(permission, context)) {
+                return true;
+            }
         }
 
-        return isReadable(authorization, identity,
-                pathOf(resource.uri()) + DescriptorRenderer.pathFor(action, args),
-                methodOf(action),
-                DescriptorRenderer.queryParametersOf(action, args));
+        return false;
+    }
+
+    /**
+     * Whether one rule could allow a read of the resource {@code context} is about.
+     *
+     * <p>Two things decide it, and both are the permission's own. Its predicate, analysed; and the
+     * switches of its {@code mongo} block, which the MongoDB plugins turn into additional
+     * conditions at load time — a read is an ordinary request, so they only ever matter here for a
+     * permission that gates nothing else.
+     *
+     * <p>A permission whose condition is not text — one built from code — is taken as possible:
+     * there is nothing to read, and refusing what cannot be read would hide resources nobody
+     * decided to hide.
+     */
+    private static boolean mayAllow(BaseAclPermission permission, ListingContext context) {
+        var source = permission.predicateSource().orElse(null);
+
+        if (source == null) {
+            return true;
+        }
+
+        try {
+            var possible = ListingEvaluator.evaluate(PredicateSyntax.parse(source), context);
+
+            return possible.mayBeTrue() && gates(permission) == Truth.TRUE;
+        } catch (PredicateSyntax.SyntaxException e) {
+            // A permission the server accepted but this cannot read: show, rather than hide
+            // something on the strength of our own parser disagreeing with Undertow's.
+            LOGGER.debug("could not read the predicate of a permission for a catalog listing, "
+                    + "treating it as possible: {}", e.getMessage());
+
+            return true;
+        }
+    }
+
+    /** The {@code mongo} switches, for the ordinary read a listing is about. */
+    private static Truth gates(BaseAclPermission permission) {
+        try {
+            return MongoGates.allows(MongoPermissions.from(permission), MongoGates.Action.ORDINARY);
+        } catch (Exception e) {
+            return Truth.TRUE;
+        }
     }
 
     static String methodOf(McpResource.Action action) {
@@ -134,7 +152,7 @@ final class CatalogVisibility {
     }
 
     /**
-     * The action to probe the caller's access with: {@code query} when there is a readable one,
+     * The action to decide the caller's access with: {@code query} when there is a readable one,
      * else the first readable action — an aggregation's is {@code execute} — else simply the first
      * action of any kind.
      *

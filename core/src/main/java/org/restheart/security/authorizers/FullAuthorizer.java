@@ -22,12 +22,10 @@ package org.restheart.security.authorizers;
 
 import java.util.Map;
 import org.restheart.exchange.Request;
+import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
-import org.restheart.plugins.security.RequestDescriptor;
 
 /**
  *
@@ -37,7 +35,7 @@ import org.restheart.plugins.security.RequestDescriptor;
         name = "fullAuthorizer",
         description = "authorizes all requests",
         enabledByDefault = false)
-public class FullAuthorizer implements DescriptorAwareAuthorizer {
+public class FullAuthorizer implements Authorizer {
 
     private boolean authenticationRequired;
 
@@ -72,23 +70,6 @@ public class FullAuthorizer implements DescriptorAwareAuthorizer {
     public boolean isAllowed(final Request request) {
         return true;
     }
-
-    /**
-     * Same "allow any operation to any user" contract as {@link #isAllowed(Request)} — see
-     * restheart#722. Without this, a service plugged as {@code secured = false} (which auto-adds
-     * this authorizer specifically so the ALLOWER side is trivially satisfied for it) would still
-     * fail closed on any {@code operationsToAuthorize()}-derived check, since {@code
-     * PluginsRegistryImpl.plugService()}'s unsecured branch only forwards VETOERs plus this
-     * authorizer to {@code AuthorizersHandler} — silently contradicting what {@code secured =
-     * false} is supposed to mean for that service.
-     */
-    @Override
-    public Decision decide(RequestDescriptor descriptor) {
-        // Allows everything and resolves no permission — there is no ACL entry behind this
-        // decision, so there is no readFilter or projection to carry.
-        return Decision.allowed(null, null);
-    }
-
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAuthenticationRequired(final Request request) {

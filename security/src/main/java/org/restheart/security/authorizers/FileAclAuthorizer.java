@@ -43,15 +43,14 @@ import com.google.common.collect.Sets;
 
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.Request;
+import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.security.PermissionEnumerator;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
 import org.restheart.security.BaseAclPermission;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
-import org.restheart.plugins.security.RequestDescriptor;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +62,7 @@ import org.slf4j.LoggerFactory;
         name = "fileAclAuthorizer",
         description = "authorizes requests according to acl defined in a configuration file",
         enabledByDefault = false)
-public class FileAclAuthorizer extends FileConfigurablePlugin implements DescriptorAwareAuthorizer {
+public class FileAclAuthorizer extends FileConfigurablePlugin implements Authorizer, PermissionEnumerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileAclAuthorizer.class);
 
     public static final String $UNAUTHENTICATED = "$unauthenticated";
@@ -198,24 +197,6 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Descrip
             return true;
         }
     }
-
-    /**
-     * See restheart#722. Delegates to the exact same {@link #isAllowed(Request)} above — this is
-     * purely an adapter at the boundary: {@link SyntheticRequestFactory} builds a {@link Request}
-     * whose predicate/role evaluation reads identically to a real one, so there is exactly one
-     * implementation of the actual authorization algorithm, never two.
-     */
-    @Override
-    public Decision decide(RequestDescriptor descriptor) {
-        // The synthetic request is kept, not discarded: isAllowed() attaches the permission it
-        // matched to that request's exchange, and an ACL readFilter/projectResponse has to be
-        // interpolated against the very request it was matched against (see Decision).
-        var request = SyntheticRequestFactory.from(descriptor);
-        return isAllowed(request)
-                ? Decision.allowed(BaseAclPermission.of(request), request)
-                : Decision.DENIED;
-    }
-
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
         // don't require authentication for OPTIONS requests
@@ -247,6 +228,27 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Descrip
 
     private Stream<String> roles(HttpServerExchange exchange) {
         return account(exchange).getRoles().stream();
+    }
+
+    /**
+     * The permissions of the caller's roles, in the order {@code isAllowed} would consider them.
+     *
+     * <p>Handed over unevaluated: what the MCP catalog needs to know is whether some call could
+     * satisfy one of them, which is a question about the rule and not about this request.
+     */
+    @Override
+    public Set<BaseAclPermission> permissions(Request<?> req) {
+        var exchange = req.getExchange();
+
+        if (exchange == null) {
+            return Set.of();
+        }
+
+        var applicable = new LinkedHashSet<BaseAclPermission>();
+
+        roles(exchange).forEachOrdered(role -> applicable.addAll(rolePermissions(role)));
+
+        return applicable;
     }
 
     private LinkedHashSet<FileAclPermission> rolePermissions(final String role) {

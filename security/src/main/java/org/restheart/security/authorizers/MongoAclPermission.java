@@ -20,6 +20,7 @@
  */
 package org.restheart.security.authorizers;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -45,10 +46,17 @@ public class MongoAclPermission extends BaseAclPermission {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoAclPermission.class);
 
     private final BsonValue _id;
+    private final String requestPredicate;
 
     MongoAclPermission(BsonValue _id, String requestPredicate, Set<String> roles, int priority, BsonDocument raw) throws ConfigurationException {
         super(req -> AclVarsInterpolator.interpolatePredicate(req, requestPredicate, MongoAclPermission.class.getClassLoader()).resolve(req.getExchange()), roles, priority, raw);
         this._id = _id;
+        this.requestPredicate = requestPredicate;
+    }
+
+    @Override
+    public Optional<String> predicateSource() {
+        return Optional.ofNullable(requestPredicate);
     }
 
     /**
