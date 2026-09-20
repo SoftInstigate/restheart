@@ -36,10 +36,16 @@ import org.restheart.security.analysis.PredicateSyntax;
 /**
  * The two keys of an {@code mcp} block that say who a resource is announced to.
  *
- * <p>They decide disclosure, not access: a caller the condition showed still gets the ACL's 403,
- * and one it hid could have read the resource perfectly well. That is the whole reason they are
- * allowed to exist — declaring what to publish is the publisher's business, declaring who may read
- * is the ACL's, and a second copy of the second would drift from the first in silence.
+ * <p>They decide disclosure, not access, and in neither direction: a caller the condition showed
+ * still gets the ACL's 403, and a resource it hid can still be called — {@code call_api} and
+ * {@code resources/read} execute whatever URI they are given, and the ACL decides, so an agent that
+ * learns a URI some other way reaches it exactly as it would over REST. What these keep quiet is a
+ * name and a description, which is often the point, since a description is prose written to say
+ * what the data is. They do not keep the data.
+ *
+ * <p>That is also the whole reason they are allowed to exist: declaring what to publish is the
+ * publisher's business, declaring who may read is the ACL's, and a second copy of the second would
+ * drift from the first in silence.
  *
  * <p>They are for what the analysis of the permissions cannot reach: a resource the ACL does allow
  * and whose name must not appear anyway, and a resource whose access an authorizer written in Java
