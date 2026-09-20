@@ -1593,33 +1593,32 @@ public class McpService implements ByteArrayService {
         var scope = self.resolveScope(request);
         var principal = request.getAuthenticatedAccount() instanceof BaseAccount account ? account : null;
 
-        return uri -> CatalogVisibility.isReadable(self.permissions, request,
-                CatalogVisibility.pathOf(uri), self.readMethodOf(principal, baseUrl, scope, uri));
+        return uri -> {
+            var owner = self.resourceOwning(principal, baseUrl, scope, uri);
+            var method = owner.map(r -> CatalogVisibility.methodOf(CatalogVisibility.readAction(r))).orElse("GET");
+
+            return CatalogVisibility.isEntryVisible(self.permissions, request, owner.orElse(null),
+                    CatalogVisibility.pathOf(uri), method);
+        };
     }
 
     /**
-     * The HTTP method a read of {@code uri} would use: the resource's own when the catalog knows
-     * that URI, otherwise the method of the resource it hangs off — {@code /coll/_size} reads as
-     * {@code /coll} does — and {@code GET} when neither is known.
+     * The catalog resource a listing entry belongs to: the one named by that URI, or the one it
+     * hangs off — {@code /coll/_size} and {@code /coll/{id}} are entries of their own, synthesized
+     * from a collection's actions, and what that collection declares about itself is theirs too.
      */
-    private String readMethodOf(BaseAccount principal, String baseUrl, String scope, String uri) {
+    private Optional<McpResource> resourceOwning(BaseAccount principal, String baseUrl, String scope, String uri) {
         var exact = resourceLookup.find(principal, baseUrl, scope, uri);
 
         if (exact.isPresent()) {
-            return CatalogVisibility.methodOf(CatalogVisibility.readAction(exact.get()));
+            return exact;
         }
 
         var lastSlash = uri.lastIndexOf('/');
 
-        if (lastSlash > 0) {
-            var owner = resourceLookup.find(principal, baseUrl, scope, uri.substring(0, lastSlash));
-
-            if (owner.isPresent()) {
-                return CatalogVisibility.methodOf(CatalogVisibility.readAction(owner.get()));
-            }
-        }
-
-        return "GET";
+        return lastSlash > 0
+                ? resourceLookup.find(principal, baseUrl, scope, uri.substring(0, lastSlash))
+                : Optional.empty();
     }
 
     private Predicate<McpResource> visibleTo(McpTransportContext ctx) {

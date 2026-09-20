@@ -76,26 +76,63 @@ final class CatalogVisibility {
      * nothing a caller could do with it, so there is nothing to decide.
      */
     static boolean isVisible(AclPermissions permissions, Request<?> request, McpResource resource) {
-        if (hiddenFromCaller(resource, request)) {
-            return false;
-        }
-
         var action = readAction(resource);
-        var path = pathOf(resource.uri());
-        var method = methodOf(action);
 
-        if (resource.showIf() != null) {
-            return declared(resource, new RequestListingContext(request, path, method));
+        return isEntryVisible(permissions, request, resource, pathOf(resource.uri()), methodOf(action));
+    }
+
+    /**
+     * Whether one entry of a listing should appear for this caller.
+     *
+     * <p>A listing carries more entries than the catalog has resources: {@code /coll/_size} and
+     * {@code /coll/{id}} are entries in their own right, synthesized from a collection's actions.
+     * They are decided on their own path — a permission naming {@code path('/coll')} exactly does
+     * not cover {@code _size}, and a listing must say so — but they follow the declaration of the
+     * resource they were synthesized from, which is the one somebody wrote it on.
+     *
+     * @param owner the resource the entry belongs to, or {@code null} when the catalog has none
+     */
+    static boolean isEntryVisible(AclPermissions permissions, Request<?> request, McpResource owner,
+            String path, String method) {
+        var context = new RequestListingContext(request, path, method);
+        var declared = declaredVisibility(owner, request, context);
+
+        if (declared.isPresent()) {
+            return declared.get();
         }
 
-        return action == null || isReadable(permissions, request, path, method);
+        // a resource with no action is visible unconditionally: there is nothing to decide
+        if (owner != null && owner.actions().isEmpty()) {
+            return true;
+        }
+
+        return isReadable(permissions.of(request), context);
+    }
+
+    /**
+     * What the resource says about itself, when it says anything.
+     *
+     * <p>{@code hide_from_roles} is answered first and is final: it is the one thing the publisher
+     * stated outright. {@code show_if} then replaces the reading of the permissions altogether —
+     * that is what declaring it is for.
+     *
+     * @return empty when the resource declares nothing and the permissions decide
+     */
+    private static Optional<Boolean> declaredVisibility(McpResource resource, Request<?> request,
+            ListingContext context) {
+        if (resource == null) {
+            return Optional.empty();
+        }
+
+        if (hiddenFromCaller(resource, request)) {
+            return Optional.of(false);
+        }
+
+        return resource.showIf() == null ? Optional.empty() : Optional.of(declared(resource, context));
     }
 
     /**
      * Whether the resource names one of this caller's roles in {@code hide_from_roles}.
-     *
-     * <p>Decided first and final: it is the one answer the publisher gave outright, and the only
-     * one that holds whatever the permissions say.
      */
     private static boolean hiddenFromCaller(McpResource resource, Request<?> request) {
         if (resource.hideFromRoles().isEmpty() || !request.isAuthenticated()) {
@@ -106,8 +143,7 @@ final class CatalogVisibility {
     }
 
     /**
-     * A resource whose {@code mcp} block declares {@code show_if}: the condition decides, and the
-     * analysis of the permissions is not consulted at all — that is what declaring it is for.
+     * A resource whose {@code mcp} block declares {@code show_if}: the condition decides.
      *
      * <p>It may only read what a listing has. One that does not is an authoring mistake, and the
      * resource is not announced: a condition that cannot be evaluated is not a reason to announce
