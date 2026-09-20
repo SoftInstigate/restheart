@@ -380,11 +380,11 @@ public class StagesInterpolator {
 
             avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null
                     ? BsonNull.VALUE
-                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
+                    : AclVarsInterpolator.interpolateFilter(request, mongoPermissions.getReadFilter()));
 
             avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null
                     ? BsonNull.VALUE
-                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
+                    : AclVarsInterpolator.interpolateFilter(request, mongoPermissions.getWriteFilter()));
         } else {
             avars.put("@mongoPermissions", new MongoPermissions().asBson());
             avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);

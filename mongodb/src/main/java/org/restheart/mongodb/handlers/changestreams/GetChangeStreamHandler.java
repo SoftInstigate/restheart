@@ -21,6 +21,7 @@
 package org.restheart.mongodb.handlers.changestreams;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -272,7 +273,28 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         resolvedStages.forEach(stagesArray::add);
         securityChecker.validatePipelineOrThrow(stagesArray, request.getDBName());
 
-        return resolvedStages;
+        // apply the caller's readFilter and projectResponse, as a REST GET does: first, so that
+        // they see the events before any stage of the stream reshapes them. They come from the
+        // avars, where injectAvars put them (the filter already interpolated), so the worker key
+        // accounts for them
+        var permissionStages = new ArrayList<BsonDocument>();
+
+        var readFilter = avars.get("@mongoPermissions.readFilter");
+        if (readFilter != null && readFilter.isDocument() && !readFilter.asDocument().isEmpty()) {
+            permissionStages.add(ChangeStreamPermissions.readFilterStage(readFilter.asDocument()));
+        }
+
+        var projectResponse = avars.get("@mongoPermissions.projectResponse");
+        if (projectResponse != null && projectResponse.isDocument() && !projectResponse.asDocument().isEmpty()) {
+            permissionStages.addAll(ChangeStreamPermissions.projectResponseStages(projectResponse.asDocument()));
+        }
+
+        if (permissionStages.isEmpty()) {
+            return resolvedStages;
+        }
+
+        permissionStages.addAll(resolvedStages);
+        return permissionStages;
     }
 
     /** Finds the matching {@link ChangeStreamOperation} for the current request. */

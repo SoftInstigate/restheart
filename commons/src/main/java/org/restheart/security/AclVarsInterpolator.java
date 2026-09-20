@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -148,6 +149,71 @@ public class AclVarsInterpolator {
      * @see #
      */
     public static BsonValue interpolateBson(final Request<?> request, final BsonValue bson) {
+        return interpolateBson(request, bson, false);
+    }
+
+    /**
+     * Interpolates the variables of a {@code readFilter} or {@code writeFilter}, failing closed.
+     *
+     * <p>Unlike {@link #interpolateBson(Request, BsonValue)}, a {@code @}-prefixed variable that
+     * resolves to {@code null} (e.g. {@code @user._id} for a JWT account, whose properties are only
+     * the token claims) is not replaced with {@code null}: in a MongoDB query {@code {"owner": null}}
+     * matches every document without an owner, widening access. It is replaced instead with a
+     * random value that matches no document, the same way unbound variables are handled in
+     * predicates, and a warning is logged. The rest of the filter keeps working, so
+     * {@code {"$or": [{"tenant": "@user.tenant"}, {"public": true}]}} still returns the public
+     * documents to a user without a tenant.</p>
+     *
+     * <p>Note that negations ({@code $ne}, {@code $nin}, {@code $not}) of an unbound variable still
+     * match: avoid them with {@code @} variables in filters.</p>
+     *
+     * @param request the current request
+     * @param filter the filter to interpolate
+     * @return the interpolated filter
+     *
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    public static BsonValue interpolateFilter(final Request<?> request, final BsonValue filter) {
+        return interpolateBson(request, filter, true);
+    }
+
+    /**
+     * Finds the first {@code @user} or {@code @user.<property>} variable of {@code bson} that is not
+     * bound for the request, e.g. {@code @user._id} for a JWT account, whose properties are only
+     * the token claims.
+     *
+     * <p>A {@code mergeRequest} must not be applied when one is found: it would write
+     * {@code null} where the permission requires the caller's identity.</p>
+     *
+     * @param request the current request
+     * @param bson the document to check, e.g. a {@code mergeRequest}
+     * @return the first unbound {@code @user} variable, if any
+     *
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    public static Optional<String> firstUnboundUserVar(final Request<?> request, final BsonValue bson) {
+        if (bson.isDocument()) {
+            return bson.asDocument().values().stream()
+                    .map(v -> firstUnboundUserVar(request, v))
+                    .flatMap(Optional::stream)
+                    .findFirst();
+        } else if (bson.isArray()) {
+            return bson.asArray().stream()
+                    .map(v -> firstUnboundUserVar(request, v))
+                    .flatMap(Optional::stream)
+                    .findFirst();
+        } else if (bson.isString()) {
+            var value = bson.asString().getValue();
+
+            if ((value.equals("@user") || value.startsWith("@user.")) && resolveVar(request, value).isNull()) {
+                return Optional.of(value);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private static BsonValue interpolateBson(final Request<?> request, final BsonValue bson, final boolean filter) {
         if (bson.isDocument()) {
             var ret = new BsonDocument();
             var doc = bson.asDocument();
@@ -155,12 +221,12 @@ public class AclVarsInterpolator {
                 var value = doc.get(k);
 
                 if (value.isString()) {
-                    ret.put(k, interpolatePropValue(request, k, doc.get(k).asString().getValue()));
+                    ret.put(k, interpolateString(request, k, value.asString().getValue(), filter));
                 } else if (value.isDocument()) {
-                    ret.put(k, interpolateBson(request, value));
+                    ret.put(k, interpolateBson(request, value, filter));
                 } else if (value.isArray()) {
                     var array = new BsonArray();
-                    value.asArray().stream().forEachOrdered(e -> array.add(interpolateBson(request, e)));
+                    value.asArray().stream().forEachOrdered(e -> array.add(interpolateBson(request, e, filter)));
                     ret.put(k, array);
                 } else {
                     ret.put(k, value);
@@ -169,13 +235,25 @@ public class AclVarsInterpolator {
             return ret;
         } else if (bson.isArray()) {
             var ret = new BsonArray();
-            bson.asArray().stream().forEachOrdered(ae -> ret.add(interpolateBson(request, ae)));
+            bson.asArray().stream().forEachOrdered(ae -> ret.add(interpolateBson(request, ae, filter)));
             return ret;
         } else if (bson.isString()) {
-            return interpolatePropValue(request, null, bson.asString().getValue());
+            return interpolateString(request, null, bson.asString().getValue(), filter);
         } else {
             return bson;
         }
+    }
+
+    private static BsonValue interpolateString(final Request<?> request, final String key, final String value, final boolean filter) {
+        var interpolated = interpolatePropValue(request, key, value);
+
+        if (filter && interpolated.isNull() && value.startsWith("@")) {
+            LOGGER.warn("ACL filter variable {} is not bound for request {} {}, it will match no document",
+                    value, request.getMethod(), request.getPath());
+            return new BsonString(nextToken());
+        }
+
+        return interpolated;
     }
 
     /**
@@ -268,7 +346,7 @@ public class AclVarsInterpolator {
      * <ul>
      * <li><strong>MongoRealmAccount:</strong> Returns the account's properties document directly</li>
      * <li><strong>FileRealmAccount:</strong> Converts properties map to BSON document</li>
-     * <li><strong>JwtAccount:</strong> Returns JWT claims excluding standard fields (exp, iss, sub)</li>
+     * <li><strong>JwtAccount:</strong> Returns JWT claims excluding standard fields (exp, iss); the identity is {@code sub}, there is no {@code _id}</li>
      * </ul>
      *
      * <h3>Property Access</h3>
@@ -414,7 +492,7 @@ public class AclVarsInterpolator {
     /**
      * Invokes {@code resolver}, treating both a {@code null}/{@code BsonNull} return value and any
      * thrown exception as "unresolved" ({@link BsonNull#VALUE}) — see {@link VarResolver}'s failure
-     * semantics: a broken resolver denies access, it never widens it.
+     * semantics.
      */
     private static BsonValue safeResolve(VarResolver resolver, Request<?> request, String var) {
         try {

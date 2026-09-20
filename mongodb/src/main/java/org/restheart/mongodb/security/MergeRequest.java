@@ -32,6 +32,9 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.MongoPermissions;
+import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name = "mongoPermissionMergeRequest",
         description = "Override properties's values in write requests according to the mongo.mergeRequest ACL permission",
@@ -39,9 +42,23 @@ import org.restheart.security.MongoPermissions;
         enabledByDefault = true,
         priority = 11)
 public class MergeRequest implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MergeRequest.class);
+
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var toMerge = MongoPermissions.of(request).getMergeRequest();
+
+        // the mergeRequest stamps the caller's identity (e.g. owner: @user._id): when the account
+        // does not have that property, merging would write null and the document would belong
+        // to nobody, so the write is refused
+        var unbound = AclVarsInterpolator.firstUnboundUserVar(request, toMerge);
+        if (unbound.isPresent()) {
+            LOGGER.warn("mergeRequest variable {} is not bound for request {} {}, the write is refused",
+                    unbound.get(), request.getMethod(), request.getPath());
+            response.setInError(HttpStatus.SC_FORBIDDEN,
+                    "the permission's mergeRequest uses " + unbound.get() + ", which is not bound for the authenticated account");
+            return;
+        }
 
         if (request.getContent().isDocument()) {
             merge(request, toMerge);

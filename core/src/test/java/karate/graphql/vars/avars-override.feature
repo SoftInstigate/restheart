@@ -74,3 +74,30 @@ Background:
     When method GET
     Then status 200
     And match $[*].name == ['alpha', 'bravo']
+
+
+  Scenario: nor by naming the property rather than the whole variable
+
+    # @user is always bound by the server, so supplying it whole is refused by a value that is
+    # already there. A dotted name is the harder case: the server binds @user.userid because this
+    # account has a userid, but it would not bind @user._id, which a JWT account never has - and
+    # an aggregation scoped by {"$var": "@user._id"} is exactly what the documentation suggests.
+    # Both spellings must be answered by the resolver, not by the caller.
+    Given path '/test-graphql/test-vars/_aggrs/mine'
+    And header Authorization = owner1
+    And param rep = 's'
+    And param avars = '{"@user.userid": "aclowner2"}'
+    When method GET
+    Then status 200
+    And match $[*].name == ['alpha', 'bravo']
+
+  Scenario: nor by naming the property through the flat shorthand
+
+    Given path '/test-graphql/test-vars/_aggrs/mine'
+    And header Authorization = owner1
+    And param rep = 's'
+    And params { '@user.userid': 'aclowner2', rep: 's' }
+    When method GET
+    Then status 200
+    And match $[*].name == ['alpha', 'bravo']
+

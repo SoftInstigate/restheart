@@ -94,7 +94,7 @@ public class RequestFilters implements MongoInterceptor {
             return;
         }
 
-        var resolvedFilter = AclVarsInterpolator.interpolateBson(request, filter);
+        var resolvedFilter = AclVarsInterpolator.interpolateFilter(request, filter);
 
         if (request.getFilter() == null) {
             request.setFilter(new ArrayDeque<>());
