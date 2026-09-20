@@ -108,6 +108,23 @@
       password: secret
       roles: [ filtered, full ]
 
+    # McpAclEnforcementIT: two principals under one ACL entry whose mongo section carries a
+    # readFilter and a projectResponse, so a read through /mcp can be compared against the
+    # equivalent REST GET row by row and field by field (restheart#722).
+    - userid: aclowner1
+      password: secret
+      roles: [ aclreader ]
+
+    - userid: aclowner2
+      password: secret
+      roles: [ aclreader ]
+
+    # acl-filter-unbound-var.feature: a file realm account has no _id, and neither has a JWT
+    # issued for it, so the @user._id in the readFilter below is never bound for this user.
+    - userid: unboundreader
+      password: secret
+      roles: [ unboundreader ]
+
 /mongoRealmAuthenticator/users-db: restheart-test
 
 /fileAclAuthorizer:
@@ -180,6 +197,71 @@
           allowBulkPatch: true          # default false
           allowBulkDelete: true         # default false
           allowWriteMode: true          # default false
+
+    # McpAuthorizationIT (restheart#722). Reaching /mcp is one permission; reading data through
+    # it is another — deliberately kept separate so the suite can prove a caller that is welcome
+    # at the MCP endpoint is still refused the data its ACL does not grant. GET-only, because a
+    # documents-mode resources/read is authorized as the GET it is equivalent to.
+    - role: mcpuser
+      predicate: path-prefix[path="/mcp"]
+      priority: 0
+
+    - role: mcpuser
+      predicate: path-prefix[path="/test-mcp-authz-allowed"] and method[value="GET"]
+      priority: 0
+      mongo:
+          allowManagementRequests: true # default false
+
+    # McpAclEnforcementIT — see the users above. Reading is restricted to the caller's own rows
+    # and hides "secret"; both must hold identically through REST and through /mcp.
+    - role: aclreader
+      predicate: path-prefix[path="/mcp"]
+      priority: 0
+
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-mcp-acl"]
+      priority: 0
+      mongo:
+        readFilter: >
+          {"owner": "@user.userid"}
+        projectResponse: >
+          {"secret": 0}
+
+    # ChangeStreamPermissionsIT — readFilter and projectResponse apply to change streams as they
+    # do to a GET.
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-cs-acl"]
+      priority: 0
+      mongo:
+        readFilter: >
+          {"owner": "@user.userid"}
+        projectResponse: >
+          {"secret": 0}
+
+    # acl-filter-unbound-var.feature — an unbound variable must match no document instead of
+    # becoming null, which would match every document without an owner.
+    - role: unboundreader
+      predicate: method(GET) and path-prefix[path="/test-acl-unbound"]
+      priority: 0
+      mongo:
+        readFilter: >
+          {"$or": [{"owner": "@user._id"}, {"public": true}]}
+
+    # acl-filter-unbound-var.feature — a mergeRequest must refuse the write rather than stamp
+    # null where the permission requires the caller's identity
+    - role: unboundreader
+      predicate: method(POST) and path[path="/test-acl-unbound/docs"]
+      priority: 0
+      mongo:
+        mergeRequest: >
+          {"owner": "@user._id"}
+
+    - role: unboundreader
+      predicate: method(POST) and path[path="/test-acl-unbound/stamped"]
+      priority: 0
+      mongo:
+        mergeRequest: >
+          {"owner": "@user.userid"}
 
     - role: poweruser
       predicate: path-prefix[path="/testmytmpdb"]

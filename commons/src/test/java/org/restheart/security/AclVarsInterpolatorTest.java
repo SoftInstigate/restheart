@@ -910,4 +910,89 @@ public class AclVarsInterpolatorTest {
 
         assertFalse(permission.allow(request));
     }
+
+    // ── readFilter/writeFilter fail closed on unbound variables ─────────────
+
+    /** A JWT account only exposes its claims: {@code @user.sub} is bound, {@code @user._id} is not. */
+    private static MongoRequest jwtRequest() {
+        var request = mock(MongoRequest.class);
+        when(request.getAuthenticatedAccount())
+                .thenReturn(new JwtAccount("alice", Set.of("user"), "{\"sub\":\"alice\"}"));
+        return request;
+    }
+
+    @Test
+    public void testFilterWithUnboundVariableMatchesNothing() {
+        var filter = BsonDocument.parse("{\"owner\": \"@user._id\"}");
+
+        var result = AclVarsInterpolator.interpolateFilter(jwtRequest(), filter).asDocument();
+
+        // null would match every document without an owner; a random token matches none
+        assertTrue(result.get("owner").isString());
+        assertNotEquals("@user._id", result.getString("owner").getValue());
+    }
+
+    @Test
+    public void testFilterUnboundTokenIsNotReused() {
+        var filter = BsonDocument.parse("{\"owner\": \"@user._id\"}");
+
+        var first = AclVarsInterpolator.interpolateFilter(jwtRequest(), filter).asDocument();
+        var second = AclVarsInterpolator.interpolateFilter(jwtRequest(), filter).asDocument();
+
+        assertNotEquals(first.get("owner"), second.get("owner"));
+    }
+
+    @Test
+    public void testFilterKeepsBoundVariablesAndOtherBranches() {
+        var filter = BsonDocument.parse(
+                "{\"$or\": [{\"tenant\": \"@user.tenant\"}, {\"owner\": \"@user.sub\"}, {\"public\": true}]}");
+
+        var result = AclVarsInterpolator.interpolateFilter(jwtRequest(), filter).asDocument();
+        var branches = result.getArray("$or");
+
+        assertTrue(branches.get(0).asDocument().get("tenant").isString());
+        assertEquals("alice", branches.get(1).asDocument().getString("owner").getValue());
+        assertEquals(BsonDocument.parse("{\"public\": true}"), branches.get(2));
+    }
+
+    @Test
+    public void testFilterUnboundVariableInArray() {
+        var filter = BsonDocument.parse("{\"owner\": {\"$in\": [\"@user._id\", \"@user.sub\"]}}");
+
+        var result = AclVarsInterpolator.interpolateFilter(jwtRequest(), filter).asDocument();
+        var in = result.getDocument("owner").getArray("$in");
+
+        assertTrue(in.get(0).isString());
+        assertNotEquals("@user._id", in.get(0).asString().getValue());
+        assertEquals("alice", in.get(1).asString().getValue());
+    }
+
+    @Test
+    public void testInterpolateBsonStillResolvesUnboundToNull() {
+        // mergeRequest keeps going through interpolateBson, where an unbound variable is null
+        var doc = BsonDocument.parse("{\"owner\": \"@user._id\"}");
+
+        var result = AclVarsInterpolator.interpolateBson(jwtRequest(), doc).asDocument();
+
+        assertTrue(result.get("owner").isNull());
+    }
+
+    @Test
+    public void testFirstUnboundUserVarInMergeRequest() {
+        var mergeRequest = BsonDocument.parse(
+                "{\"author\": \"@user.sub\", \"meta\": {\"owner\": \"@user._id\"}, \"createdAt\": \"@now\"}");
+
+        var unbound = AclVarsInterpolator.firstUnboundUserVar(jwtRequest(), mergeRequest);
+
+        assertEquals("@user._id", unbound.orElseThrow());
+    }
+
+    @Test
+    public void testNoUnboundUserVarWhenAllAreBound() {
+        // @request.body.x is not an @user variable: a missing one stays null, as before
+        var mergeRequest = BsonDocument.parse(
+                "{\"author\": \"@user.sub\", \"note\": \"@request.body.note\", \"tags\": [\"@user.sub\"]}");
+
+        assertTrue(AclVarsInterpolator.firstUnboundUserVar(jwtRequest(), mergeRequest).isEmpty());
+    }
 }

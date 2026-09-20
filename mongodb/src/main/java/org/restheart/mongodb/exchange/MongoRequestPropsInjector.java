@@ -331,6 +331,14 @@ public class MongoRequestPropsInjector {
                     return;
                 }
 
+                // variables named @... (@user, @user.<prop>, @mongoPermissions, @page, ...) are
+                // bound by the server, never by the caller: a supplied value would stand in for
+                // any one the server leaves unbound - @user._id for a JWT account that has no _id
+                // claim, say - and an aggregation scoped by {"$var": "@user._id"} could then be
+                // pointed at somebody else's documents. Dropped rather than refused, so a request
+                // carrying one still runs with the server's own values.
+                qvars.keySet().removeIf(k -> k.startsWith("@"));
+
                 // throws SecurityException if aVars contains operators
                 if (MongoServiceConfiguration.get().getAggregationCheckOperators()) {
                     StagesInterpolator.shouldNotContainOperators(qvars);
@@ -348,7 +356,7 @@ public class MongoRequestPropsInjector {
         // wins over a same-named flat qparam
         for (var entry : exchange.getQueryParameters().entrySet()) {
             var key = entry.getKey();
-            if (!RESERVED_QPARAM_KEYS.contains(key) && !qvars.containsKey(key) && !entry.getValue().isEmpty()) {
+            if (!RESERVED_QPARAM_KEYS.contains(key) && !key.startsWith("@") && !qvars.containsKey(key) && !entry.getValue().isEmpty()) {
                 var raw = entry.getValue().getFirst();
                 BsonValue value;
                 try {
