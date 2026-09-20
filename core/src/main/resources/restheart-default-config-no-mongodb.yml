@@ -505,6 +505,15 @@ ollamaEmbeddingProvider:
 # McpService itself doesn't strictly require MongoDB (it can serve any McpAware plugin, e.g.
 # PingService), but it ships as part of restheart-ai like everything else above, so it's off
 # here too for consistency — enable it manually via an override if you want MCP without Mongo.
+# WHO SEES WHAT. A catalogue is composed per caller: for each MCP-enabled resource RESTHeart reads
+# the caller's own ACL permissions and lists the resource as soon as one of them could allow a read
+# of it. A rule deciding on something the call carries cannot be decided before the call exists, so
+# it is left open and the resource is listed; the call is then authorized as usual and may answer
+# 403. A resource overrides that from its own "mcp" metadata block with "hide_from_roles" (a list
+# of roles it is not announced to, which wins over everything) or "show_if" (a predicate replacing
+# the reading of the permissions, restricted to what a listing can evaluate). Neither grants nor
+# denies access: they decide what is announced.
+# See https://restheart.org/docs/ai/mcp
 mcpService:
   enabled: false
 cohereRerankProvider:

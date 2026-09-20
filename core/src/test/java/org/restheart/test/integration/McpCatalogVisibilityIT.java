@@ -58,6 +58,15 @@ public class McpCatalogVisibilityIT extends AbstactIT {
 
     private static final String HIDDEN_DESCRIPTION = "Salary review notes, pending approval.";
 
+    /** Readable by the role, and kept out of its catalogue by the resource's own declaration. */
+    private static final String BLACKLISTED_COLL = BASE + "/test-mcp-acl/catalog-blacklisted";
+
+    /** Readable by the role, announced only to a plan this caller has not got. */
+    private static final String GATED_COLL = BASE + "/test-mcp-acl/catalog-gated";
+
+    /** Readable by the role, with a condition that is true for it. */
+    private static final String CONDITIONAL_COLL = BASE + "/test-mcp-acl/catalog-conditional";
+
     /** Readable by the role; writable only by a call carrying {@code ?ticket=golden}. */
     private static final String TICKET_DB = BASE + "/test-mcp-ticket";
     private static final String TICKET_COLL = TICKET_DB + "/tickets";
@@ -73,6 +82,12 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     @BeforeEach
     public void setUpTwoCollectionsOneReadable() throws Exception {
         createCollection(BASE + "/test-mcp-acl", VISIBLE_COLL, "Inventory the reader may read.");
+        createCollection(BASE + "/test-mcp-acl", BLACKLISTED_COLL, "Underperformers, do not announce.",
+                "\"hide_from_roles\": [\"aclreader\"]");
+        createCollection(BASE + "/test-mcp-acl", GATED_COLL, "Gold customers only.",
+                "\"show_if\": \"equals(@user.plan, 'gold')\"");
+        createCollection(BASE + "/test-mcp-acl", CONDITIONAL_COLL, "Announced to whoever is authenticated.",
+                "\"show_if\": \"equals(@authenticated, 'true')\"");
         createCollection(HIDDEN_DB, HIDDEN_COLL, HIDDEN_DESCRIPTION);
         createCollection(TICKET_DB, TICKET_COLL, "Writable only with a ticket.");
 
@@ -85,12 +100,20 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     }
 
     private static void createCollection(String db, String collection, String description) {
+        createCollection(db, collection, description, null);
+    }
+
+    /** @param extraMcp further keys of the {@code mcp} block, already as JSON, or {@code null} */
+    private static void createCollection(String db, String collection, String description, String extraMcp) {
         Unirest.put(db).basicAuth("admin", "secret").contentType("application/json").body("{}").asEmpty();
+
+        var mcp = "\"enabled\": true, \"description\": \"" + description + "\""
+                + (extraMcp == null ? "" : ", " + extraMcp);
 
         Unirest.put(collection)
                 .basicAuth("admin", "secret")
                 .contentType("application/json")
-                .body("{\"mcp\": { \"enabled\": true, \"description\": \"" + description + "\" }}")
+                .body("{\"mcp\": { " + mcp + " }}")
                 .asEmpty();
     }
 
@@ -258,5 +281,62 @@ public class McpCatalogVisibilityIT extends AbstactIT {
 
         assertTrue(descriptor.contains(VISIBLE_COLL),
                 "the reader may read this collection, so how_to_call must compose for it: " + descriptor);
+    }
+
+    // ------------------------------------------------------------------------
+    // what the resource itself declares
+    // ------------------------------------------------------------------------
+
+    /**
+     * The case the permissions cannot express: the ACL allows the read — this collection is inside
+     * the prefix the role may GET — and the name is still not to be announced.
+     */
+    @Test
+    public void hideFromRoles_keepsAResourceTheAclAllowsOutOfTheCatalogue() throws Exception {
+        var catalog = admin.callTool("list_apis", "{}").toJson();
+        assertTrue(catalog.contains(BLACKLISTED_COLL),
+                "admin holds no blacklisted role, so it must still be announced: " + catalog);
+
+        var forReader = reader.callTool("list_apis", "{}").toJson();
+        assertFalse(forReader.contains(BLACKLISTED_COLL),
+                "hide_from_roles names this caller's role, so the resource must not be announced: " + forReader);
+
+        var listed = reader.rpc("resources/list", "{}").toJson();
+        assertFalse(listed.contains(BLACKLISTED_COLL),
+                "the same rule must hold on resources/list: " + listed);
+    }
+
+    /** Announcing it is refused, reading it is not: the declaration is about disclosure. */
+    @Test
+    public void hideFromRoles_doesNotRefuseTheReadItself() throws Exception {
+        var read = Unirest.get(BLACKLISTED_COLL).basicAuth("aclowner1", "secret").asString();
+
+        assertEquals(200, read.getStatus(),
+                "hide_from_roles must not deny anything, only keep it quiet: " + read.getBody());
+    }
+
+    /**
+     * A condition on the caller that does not hold: not announced, though the ACL allows the read.
+     *
+     * <p>{@code @user.plan} is not a property of this account, so the condition cannot be shown to
+     * hold — and a declared condition announces only when it does. The absence of an answer is not
+     * an answer.
+     */
+    @Test
+    public void showIf_thatDoesNotHoldKeepsTheResourceQuiet() throws Exception {
+        var forReader = reader.callTool("list_apis", "{}").toJson();
+
+        assertFalse(forReader.contains(GATED_COLL),
+                "this caller has no plan, so the condition does not hold and the resource is not announced: "
+                        + forReader);
+    }
+
+    /** And one that does hold announces it, which is the positive control of the test above. */
+    @Test
+    public void showIf_thatHoldsAnnouncesTheResource() throws Exception {
+        var forReader = reader.callTool("list_apis", "{}").toJson();
+
+        assertTrue(forReader.contains(CONDITIONAL_COLL),
+                "the caller is authenticated, so the condition holds: " + forReader);
     }
 }

@@ -968,6 +968,23 @@ mcpService:
   enabled: true
   uri: /mcp
 
+  # WHO SEES WHAT. A catalogue is composed per caller: for each MCP-enabled resource RESTHeart
+  # reads the caller's own ACL permissions and lists the resource as soon as one of them could
+  # allow a read of it. A rule that decides on something the call carries — a query parameter, the
+  # body — cannot be decided before the call exists, so it is left open and the resource is listed;
+  # the call itself is then authorized as usual and may answer 403.
+  #
+  # A resource can override that from its own "mcp" metadata block, for what the permissions
+  # cannot say:
+  #
+  #   "mcp": { "description": "...", "hide_from_roles": ["employee"] }
+  #   "mcp": { "description": "...", "show_if": "equals(@user.plan, 'gold')" }
+  #
+  # hide_from_roles wins over everything; show_if replaces the reading of the permissions and may
+  # only use conditions a listing can evaluate (the session, the resource), never the call.
+  # Neither grants nor denies access: they decide what is announced.
+  # See https://restheart.org/docs/ai/mcp
+
   # How long list_apis/how_to_call results are cached before refreshing. Trades instant
   # consistency for a bounded staleness window — see the "catalog cache" section of the docs.
   catalog-ttl-seconds: 300
