@@ -734,10 +734,18 @@ public class MqttMessageRouter {
      * access-ordered, size-bounded map: once {@link #maxCacheSize} is exceeded, the least
      * recently used entry is evicted automatically.
      *
+     * <p>A message with an empty payload removes the topic from the cache instead: it is how MQTT
+     * clears a retained message ({@code mosquitto_pub -r -n}), and the broker forwards it to an
+     * established subscription with the retain flag unset, so the payload is the only sign of it.
+     *
      * @param message the message to cache, keyed by {@link MqttMessage#getTopic()}
      */
     private void updateCache(MqttMessage message) {
-        lastMessageCache.put(message.getTopic(), message);
+        if (message.getPayloadBytes().length == 0) {
+            lastMessageCache.remove(message.getTopic());
+        } else {
+            lastMessageCache.put(message.getTopic(), message);
+        }
     }
 
     /**

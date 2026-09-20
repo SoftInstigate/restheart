@@ -1,13 +1,8 @@
 # RESTHeart configuration overrides for MqttDurabilityIT.
 #
-# Same shape as it-overrides-mongo.yml, with one deliberate difference: the writer is configured
-# to retry a failing MongoDB write for a very long time instead of giving up after three attempts.
-#
-# That difference is the whole test. With the stock retry settings a write against a stopped
-# MongoDB fails three times, the batch is dead-lettered, and dead-lettering counts as having taken
-# responsibility - so the message IS acknowledged and the broker rightly forgets it. That is
-# correct behaviour, but it is not the behaviour under test. Holding the message in retry keeps it
-# unacknowledged, which is the state the broker has to be left holding when the instance is killed.
+# Same shape as it-overrides-mongo.yml, with one deliberate difference: the drain runs every two
+# seconds instead of every half second, so the messages the test publishes are still in the buffer
+# when it stops RESTHeart - which is the situation the shutdown has to handle.
 
 ---
 /fileRealmAuthenticator:
@@ -31,16 +26,18 @@
 
 /mqtt-client/enabled: true
 /mqtt-client/broker-url: tcp://localhost:1883
-# Fixed, and clean-session false: an MQTT session is keyed on the client id, so without both the
-# restarted instance would be a new client with nothing owed to it.
+# Fixed, and clean-session false: the restarted instance resumes the same session, so the broker
+# still holds whatever the previous one did not acknowledge.
 /mqtt-client/client-id: restheart-durability-it
 /mqtt-client/clean-session: false
 
 /mqtt-router/enabled: true
 
 /mqtt-mongo-writer/enabled: true
-/mqtt-mongo-writer/drain/max-retries: 1000
-/mqtt-mongo-writer/drain/retry-delay-ms: 2000
+# so the test can recognise its own messages by _id
+/mqtt-mongo-writer/id-strategy: payload-field
+/mqtt-mongo-writer/id-field: messageId
+/mqtt-mongo-writer/drain/flush-interval-ms: 2000
 /mqtt-mongo-writer/mongo-sink:
   - topic: "sensors/#"
     database: "test-mqtt"

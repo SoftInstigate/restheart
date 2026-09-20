@@ -1,0 +1,51 @@
+# RESTHeart configuration overrides for MqttMongoOutageIT.
+#
+# The full configuration (not --standalone), since mqtt-mongo-writer needs the MongoDB client, but
+# with authentication and authorization taken out of MongoDB: the test stops the database on
+# purpose, and requests to /mqtt-sse and /mqtt must not depend on it.
+#
+# The buffer is left at its defaults: it holds what arrives during the outage, and the messages
+# are acknowledged to the broker as they are buffered, so delivery never stops.
+
+---
+/fileRealmAuthenticator:
+  enabled: true
+  users:
+    - userid: admin
+      password: secret
+      roles: [admin, user]
+
+/basicAuthMechanism/authenticator: fileRealmAuthenticator
+
+/mongoAclAuthorizer/enabled: false
+/fileAclAuthorizer:
+  enabled: true
+  permissions:
+    - role: admin
+      predicate: path-prefix('/')
+      priority: 0
+
+/logging/log-level: INFO
+/logging/no-colors: true
+
+/mqtt-client/enabled: true
+/mqtt-client/broker-url: tcp://localhost:1883
+
+/mqtt-router/enabled: true
+/mqtt-router/subscriptions:
+  - topic: "sensors/#"
+    qos: 1
+
+/mqtt-sse/enabled: true
+/mqtt-rest/enabled: true
+/mqtt-topic-authorizer/acl:
+  admin:
+    - "sensors/#"
+
+/mqtt-mongo-writer/enabled: true
+/mqtt-mongo-writer/id-strategy: payload-field
+/mqtt-mongo-writer/id-field: messageId
+/mqtt-mongo-writer/mongo-sink:
+  - topic: "sensors/#"
+    database: "test-mqtt-outage"
+    collection: "sensor-events"

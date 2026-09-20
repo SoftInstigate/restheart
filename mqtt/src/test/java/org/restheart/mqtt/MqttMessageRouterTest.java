@@ -446,6 +446,22 @@ public class MqttMessageRouterTest {
     }
 
     @Test
+    void testEmptyPayloadClearsTheCachedMessage() throws ReflectiveOperationException {
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 1000);
+        Method updateCache = privateMethod("updateCache", MqttMessage.class);
+
+        updateCache.invoke(router, new MqttMessage("sensors/temp", "{\"value\":21.5}", 1, Instant.now(), true));
+        assertNotNull(router.getLastMessage("sensors/temp"));
+
+        // mosquitto_pub -r -n: clears the retained message; a live subscription gets it with retain=0
+        updateCache.invoke(router, new MqttMessage("sensors/temp", new byte[0], 1, Instant.now(), false));
+
+        assertNull(router.getLastMessage("sensors/temp"), "an empty payload must clear the topic, not be cached");
+        assertTrue(router.getLastMessages("sensors/#").isEmpty());
+        assertEquals(0, router.getStats().getCachedMessages());
+    }
+
+    @Test
     void testCacheEvictsLeastRecentlyUsedEntryAtCapacity() throws ReflectiveOperationException {
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 2);
         Method updateCache = privateMethod("updateCache", MqttMessage.class);

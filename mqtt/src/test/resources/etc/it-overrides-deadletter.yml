@@ -1,0 +1,31 @@
+# RESTHeart configuration overrides for MqttMongoDeadLetterIT.
+#
+# The writer gives up quickly on a document MongoDB refuses: one retry, 200 ms apart, so the test
+# does not wait for the default three.
+
+---
+/fileRealmAuthenticator:
+  enabled: true
+  users:
+    - userid: admin
+      password: secret
+      roles: [admin, user]
+
+/basicAuthMechanism/authenticator: fileRealmAuthenticator
+
+/logging/log-level: INFO
+/logging/no-colors: true
+/mqtt-client/enabled: true
+/mqtt-client/broker-url: tcp://localhost:1883
+
+/mqtt-router/enabled: true
+
+/mqtt-mongo-writer/enabled: true
+/mqtt-mongo-writer/id-strategy: payload-field
+/mqtt-mongo-writer/id-field: messageId
+/mqtt-mongo-writer/drain/max-retries: 1
+/mqtt-mongo-writer/drain/retry-delay-ms: 200
+/mqtt-mongo-writer/mongo-sink:
+  - topic: "sensors/#"
+    database: "test-mqtt-deadletter"
+    collection: "sensor-events"

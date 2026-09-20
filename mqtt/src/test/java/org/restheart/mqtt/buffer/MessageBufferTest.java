@@ -535,4 +535,92 @@ public class MessageBufferTest {
         assertTrue(accepted.get(), "and complete as soon as room appears");
     }
 
+
+    // --- the ceiling in bytes, alongside the one in messages ---
+
+    /** A message whose payload alone is {@code kb} kilobytes. */
+    private Pending heavy(int kb) {
+        return new Pending(msg("t", "x".repeat(kb * 1024)), () -> { });
+    }
+
+    @Test
+    @DisplayName("max-bytes applies backpressure before capacity does, when the messages are large")
+    void testBlockingGivesUpOnBytesBeforeCapacity() {
+        // room for 100 messages, but only for 32 KB of them
+        var buffer = new MessageBuffer(100, Strategy.BLOCKING, 200L, 32 * 1024);
+
+        assertTrue(buffer.offer(heavy(8)), "8 KB fits");
+        assertTrue(buffer.offer(heavy(8)), "and so does the second");
+        assertTrue(buffer.offer(heavy(8)), "and the third");
+
+        // the fourth would pass the ceiling: it waits and is then refused, although 96 of the
+        // 100 slots are free
+        assertFalse(buffer.offer(heavy(8)), "the byte ceiling must apply before the message one");
+        assertEquals(3, buffer.size());
+        assertEquals(1, buffer.droppedCount());
+    }
+
+    @Test
+    @DisplayName("draining returns the bytes to the buffer")
+    void testDrainReleasesBytes() {
+        var buffer = new MessageBuffer(100, Strategy.BLOCKING, 200L, 32 * 1024);
+
+        assertTrue(buffer.offer(heavy(8)));
+        assertTrue(buffer.offer(heavy(8)));
+        assertTrue(buffer.offer(heavy(8)));
+        assertTrue(buffer.bytes() >= 24 * 1024, "three 8 KB messages are accounted for");
+
+        assertEquals(3, buffer.drain(10).size());
+        assertEquals(0, buffer.bytes(), "a drained buffer holds nothing");
+
+        assertTrue(buffer.offer(heavy(8)), "and has room again");
+    }
+
+    @Test
+    @DisplayName("clear() returns the bytes too")
+    void testClearReleasesBytes() {
+        var buffer = new MessageBuffer(100, Strategy.BLOCKING, 200L, 32 * 1024);
+        buffer.offer(heavy(8));
+        buffer.offer(heavy(8));
+
+        buffer.clear();
+
+        assertEquals(0, buffer.size());
+        assertEquals(0, buffer.bytes());
+        assertTrue(buffer.offer(heavy(8)));
+    }
+
+    @Test
+    @DisplayName("ring-buffer evicts the oldest messages until the new one fits in bytes")
+    void testRingEvictsUntilTheNewMessageFits() {
+        var buffer = new MessageBuffer(100, Strategy.RING, 0L, 32 * 1024);
+        buffer.offer(heavy(8));
+        buffer.offer(heavy(8));
+        buffer.offer(heavy(8));
+
+        // 24 KB held, 32 KB allowed: a 16 KB message needs two of them out of the way
+        assertTrue(buffer.offer(heavy(16)));
+
+        assertEquals(2, buffer.size(), "the two oldest were evicted to make room");
+        assertEquals(2, buffer.droppedCount());
+        assertTrue(buffer.bytes() <= 32 * 1024);
+    }
+
+    @Test
+    @DisplayName("drop-incoming refuses a message that would pass the byte ceiling")
+    void testDropIncomingRefusesOnBytes() {
+        var buffer = new MessageBuffer(100, Strategy.DROP_INCOMING, 0L, 16 * 1024);
+
+        assertTrue(buffer.offer(heavy(8)));
+        assertFalse(buffer.offer(heavy(16)), "no room for 16 KB on top of 8");
+        assertEquals(1, buffer.size());
+        assertEquals(1, buffer.droppedCount());
+    }
+
+    @Test
+    @DisplayName("Constructor rejects a non-positive max-bytes")
+    void testInvalidMaxBytes() {
+        assertThrows(IllegalArgumentException.class,
+            () -> new MessageBuffer(10, Strategy.BLOCKING, 0L, 0));
+    }
 }

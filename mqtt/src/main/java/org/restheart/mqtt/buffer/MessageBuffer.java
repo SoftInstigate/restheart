@@ -24,6 +24,7 @@ package org.restheart.mqtt.buffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -56,6 +57,9 @@ import org.slf4j.LoggerFactory;
 public class MessageBuffer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageBuffer.class);
+
+    /** Allowance for the MqttMessage, its Pending wrapper and the queue node holding them. */
+    private static final int MESSAGE_OVERHEAD_BYTES = 256;
 
     /**
      * Overflow strategy for the buffer.
@@ -104,17 +108,31 @@ public class MessageBuffer {
     }
 
     /**
-     * The default ceiling on how long {@link Strategy#BLOCKING} waits for room: 30 seconds.
-     * <p>
-     * Chosen to cover what the application layer can honestly cover - a database restart of
-     * seconds to tens of seconds - and no more. A longer outage is not something a buffer can
-     * bridge, and pretending otherwise puts the responsibility in the wrong place: that is what a
-     * properly sized replica set is for.
-     * </p>
+     * How long {@link Strategy#BLOCKING} waits for room before giving up on a message: not at all
+     * by default, it waits forever.
+     *
+     * <p>Waiting is how backpressure is applied. The writer acknowledges a message to the broker
+     * once it is buffered, so a message the buffer refuses is lost - nothing else holds it. A
+     * buffer that fills means MongoDB is not keeping up, and the right answer is to stop taking
+     * messages from the broker, which keeps them instead, rather than to discard them. Set a
+     * positive value only where losing messages is preferable to slowing ingestion down.</p>
      */
-    public static final long DEFAULT_MAX_WAIT_MS = 30_000L;
+    public static final long DEFAULT_MAX_WAIT_MS = 0L;
+
+    /**
+     * How much of the heap the buffer may hold, in bytes.
+     *
+     * <p>A ceiling in messages alone says nothing about memory: ten thousand readings of a hundred
+     * bytes are a megabyte, ten thousand images of a hundred kilobytes are a gigabyte. Both limits
+     * apply, and whichever is reached first applies backpressure.</p>
+     */
+    public static final long DEFAULT_MAX_BYTES = 64L * 1024 * 1024;
 
     private final long maxWaitMs;
+    private final long maxBytes;
+
+    /** Permits are bytes: taken when a message is buffered, returned when it leaves. */
+    private final Semaphore bytes;
 
     private final ArrayBlockingQueue<Pending> queue;
     private final Strategy strategy;
@@ -140,16 +158,48 @@ public class MessageBuffer {
      *                   giving up on a message. Zero or less waits forever.
      */
     public MessageBuffer(int capacity, Strategy strategy, long maxWaitMs) {
+        this(capacity, strategy, maxWaitMs, DEFAULT_MAX_BYTES);
+    }
+
+    /**
+     * @param capacity   how many messages the buffer holds
+     * @param strategy   what to do when it is full
+     * @param maxWaitMs  for {@link Strategy#BLOCKING} only: how long to wait for room before
+     *                   giving up on a message. Zero or less waits forever.
+     * @param maxBytes   how many bytes of messages it holds, whichever limit is reached first
+     */
+    public MessageBuffer(int capacity, Strategy strategy, long maxWaitMs, long maxBytes) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("capacity must be positive");
         }
         if (strategy == null) {
             throw new IllegalArgumentException("strategy must not be null");
         }
+        if (maxBytes <= 0) {
+            throw new IllegalArgumentException("max-bytes must be positive");
+        }
         this.capacity = capacity;
         this.strategy = strategy;
         this.maxWaitMs = maxWaitMs;
+        this.maxBytes = Math.min(maxBytes, Integer.MAX_VALUE);
+        this.bytes = new Semaphore((int) this.maxBytes);
         this.queue = new ArrayBlockingQueue<>(capacity);
+    }
+
+    /**
+     * The heap a buffered message is answerable for: its payload, plus its topic, plus a rough
+     * allowance for the object graph around them. Exact accounting is neither possible nor needed
+     * - what matters is that a buffer of large messages fills long before one of small ones.
+     *
+     * @param message the message to size
+     * @return its weight in bytes, never more than {@link #maxBytes}
+     */
+    private int weigh(Pending message) {
+        var payload = message.message().getPayloadBytes();
+        var size = (payload == null ? 0 : payload.length)
+            + message.message().getTopic().length() * 2
+            + MESSAGE_OVERHEAD_BYTES;
+        return (int) Math.min(size, maxBytes);
     }
 
     /**
@@ -176,24 +226,37 @@ public class MessageBuffer {
     }
 
     private boolean offerRing(Pending message) {
+        var weight = weigh(message);
         synchronized (queue) {
-            while (!queue.offer(message)) {
-                // Buffer full — drop oldest to make room
+            // room for both limits, made by dropping the oldest messages
+            while (!bytes.tryAcquire(weight) || queue.remainingCapacity() == 0) {
                 Pending dropped = queue.poll();
-                if (dropped != null) {
-                    recordDropped(dropped);
+                if (dropped == null) {
+                    // nothing left to evict: the queue is empty and this message still does not
+                    // fit, which only happens if it alone is heavier than the whole buffer
+                    recordDropped(message);
+                    return false;
                 }
+                bytes.release(weigh(dropped));
+                recordDropped(dropped);
             }
+            queue.offer(message);
         }
         acceptedCount.incrementAndGet();
         return true;
     }
 
     private boolean offerDropIncoming(Pending message) {
+        var weight = weigh(message);
+        if (!bytes.tryAcquire(weight)) {
+            recordDropped(message);
+            return false;
+        }
         boolean accepted = queue.offer(message);
         if (accepted) {
             acceptedCount.incrementAndGet();
         } else {
+            bytes.release(weight);
             recordDropped(message);
         }
         return accepted;
@@ -207,17 +270,26 @@ public class MessageBuffer {
             // ANYTHING to this client, SSE included. A database problem would take the live stream
             // down with it, even though the live stream does not touch the database.
             //
-            // Past the ceiling the message is dropped and counted, and the caller acknowledges it,
-            // so the connection keeps breathing. That loses data during a long outage, deliberately:
-            // covering one is a job for a replica set, not for a queue in memory.
+            // Past a configured ceiling the message is dropped and counted. It is lost: the writer
+            // has not acknowledged it yet, but it will, because nothing else is holding it. Only a
+            // deployment that prefers losing messages to slowing down should set one.
+            var weight = weigh(message);
+
             if (maxWaitMs <= 0) {
+                bytes.acquire(weight);
                 queue.put(message);
                 acceptedCount.incrementAndGet();
                 return true;
             }
-            if (queue.offer(message, maxWaitMs, TimeUnit.MILLISECONDS)) {
-                acceptedCount.incrementAndGet();
-                return true;
+
+            var deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(maxWaitMs);
+            if (bytes.tryAcquire(weight, maxWaitMs, TimeUnit.MILLISECONDS)) {
+                var left = Math.max(0, deadline - System.nanoTime());
+                if (queue.offer(message, left, TimeUnit.NANOSECONDS)) {
+                    acceptedCount.incrementAndGet();
+                    return true;
+                }
+                bytes.release(weight);
             }
             recordDropped(message);
             return false;
@@ -256,7 +328,22 @@ public class MessageBuffer {
     public List<Pending> drain(int batchSize) {
         List<Pending> batch = new ArrayList<>();
         queue.drainTo(batch, batchSize);
+        batch.forEach(pending -> bytes.release(weigh(pending)));
         return batch;
+    }
+
+    /**
+     * @return how many bytes of messages the buffer currently holds
+     */
+    public long bytes() {
+        return maxBytes - bytes.availablePermits();
+    }
+
+    /**
+     * @return the buffer's ceiling in bytes
+     */
+    public long maxBytes() {
+        return maxBytes;
     }
 
     /**
@@ -313,15 +400,20 @@ public class MessageBuffer {
      * lifetime totals.
      */
     public void clear() {
-        queue.clear();
+        synchronized (queue) {
+            List<Pending> discarded = new ArrayList<>();
+            queue.drainTo(discarded);
+            discarded.forEach(pending -> bytes.release(weigh(pending)));
+        }
     }
+
     /**
      * A buffered message together with the callback that reports it as taken.
      * <p>
-     * The two travel together because acknowledging to the broker at the moment a message enters
-     * this buffer would be a lie: the buffer is in memory, and a crash loses it. The callback is
-     * invoked by {@code MqttMongoWriter} once the message has actually reached MongoDB, or has
-     * been recorded somewhere durable, and only then is the broker told it may forget it.
+     * {@code MqttMongoWriter} acknowledges a message to the broker as soon as it is buffered -
+     * ordered MQTT acknowledgements make anything later stall ingestion for every consumer - so
+     * it passes a callback that does nothing. The field is kept for consumers that do want to
+     * report a message as taken only once they have stored it.
      * </p>
      *
      * @param message the message

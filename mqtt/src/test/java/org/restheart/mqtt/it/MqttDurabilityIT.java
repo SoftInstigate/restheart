@@ -25,34 +25,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 
 /**
- * Proves the property the whole acknowledgement rework exists for: a message the broker delivered
- * at QoS 1 reaches MongoDB even though the RESTHeart that received it was killed before it could
- * write, because it was never acknowledged and the broker still owed it.
- * <p>
- * <strong>This test cannot pass against the module as it was.</strong> The client acknowledged
- * every message the instant it was handed over, so a RESTHeart killed with anything still buffered
- * lost it outright — the broker had been told it was safe and had already forgotten it. That is
- * what made the module at-most-once end to end whatever QoS was configured.
- * </p>
- * <p>
- * The kill is deliberately ungraceful. A clean shutdown drains the buffer, and since that was
- * fixed it would write the messages by itself and prove nothing about acknowledgement; only
- * destroying the process outright leaves the question to the broker.
- * </p>
+ * An orderly shutdown: RESTHeart stops taking messages and writes what it is holding.
+ *
+ * <p>A message is acknowledged to the broker once it is buffered, not once it is in MongoDB —
+ * see {@link MqttMongoOutageIT} for why — so the buffer is the only place those messages exist.
+ * A clean stop must therefore drain it into the database rather than exit on top of it. From the
+ * moment the shutdown begins nothing new is taken: messages that arrive are left unacknowledged,
+ * so the broker keeps them for the next instance instead of racing the shutdown deadline.
+ *
+ * <p>What this does not cover, deliberately, is a {@code SIGKILL}: there is no hook to run, and
+ * what was in memory is lost. That is the module's stated guarantee, at-least-once up to the
+ * buffer.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
@@ -62,23 +55,7 @@ public class MqttDurabilityIT extends MqttITBase {
     private static final String DB = "test-mqtt";
     private static final String COLLECTION = "sensor-events";
 
-    /**
-     * The log both instances write to, set by {@code it-overrides-durability.yml}. Logback writes
-     * it with immediate flush, unlike the harness's stdout capture, which this test's SIGKILL
-     * would lose - and which is also what makes it usable as a readiness signal.
-     */
-    private static final Path SERVER_LOG = Path.of("target", "it-logs", "MqttDurabilityIT-server.log");
-
-    private GenericContainer<?> mongo;
-    private MongoClient testMongoClient;
-
-    /**
-     * A fixed host port for MongoDB, for the same reason the broker has one: this test stops and
-     * restarts the container, and Docker reassigns a dynamically published port on every start -
-     * which would leave both this test's own client and the restarted RESTHeart talking to a port
-     * nothing listens on.
-     */
-    private int mongoPort;
+    private StoppableMongo mongo;
 
     @Override
     protected boolean standalone() {
@@ -92,136 +69,62 @@ public class MqttDurabilityIT extends MqttITBase {
 
     @Override
     protected void beforeRestheartStarts() throws IOException {
-        // Both instances append to this file, and it survives between runs - so the connection
-        // count this test waits on would start already satisfied by the previous run's lines.
-        java.nio.file.Files.createDirectories(SERVER_LOG.getParent());
-        java.nio.file.Files.deleteIfExists(SERVER_LOG);
-
-        mongoPort = freePort();
-        mongo = new GenericContainer<>(System.getProperty("mongodb.image", "mongodb/mongodb-atlas-local")
-                + ":" + System.getProperty("mongodb.version", "preview"))
-            .withExposedPorts(27017)
-            .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(90)));
-        mongo.setPortBindings(List.of(mongoPort + ":27017"));
-        mongo.start();
-        testMongoClient = MongoClients.create(mongoUri());
-        awaitMongoReady();
+        mongo = new StoppableMongo();
     }
 
     @Override
     protected List<String> extraRho() {
-        return List.of("/mclient/connection-string->\"" + mongoUri() + "\"");
+        return List.of("/mclient/connection-string->\"" + mongo.uri() + "\"");
     }
 
     @Override
     protected void afterRestheartStops() {
-        if (testMongoClient != null) {
-            testMongoClient.close();
-        }
         if (mongo != null) {
-            mongo.stop();
+            mongo.close();
         }
     }
 
     @Test
-    void aMessageSurvivesTheDeathOfTheInstanceThatReceivedIt() throws Exception {
-        // Not /ping: that answers while AFTER_STARTUP initializers are still running, and
-        // mqtt-connector is deliberately the last of them. Proceeding on /ping alone let this test
-        // stop MongoDB and publish against an instance whose MQTT client had not connected - and
-        // stopping MongoDB then stalls core's changeStreamActivator for its 30 s server-selection
-        // timeout, so the connector never ran before the kill. The message was never received,
-        // never held, and nothing was owed.
-        awaitBrokerConnections(SERVER_LOG, 1, 90);
+    void aCleanShutdownWritesWhatIsStillBuffered() throws Exception {
 
         var collection = collection();
         collection.deleteMany(Filters.exists("_id"));
 
-        // Stop MongoDB before publishing. The writer will take the message into its buffer and
-        // never manage to write it, so it never reports it taken and the router never acknowledges
-        // it - which is exactly the state this test needs the broker to be left holding.
-        mongo.getDockerClient().stopContainerCmd(mongo.getContainerId()).exec();
+        // The drain runs every two seconds in this configuration, so these are still in the
+        // buffer - acknowledged to the broker, and nowhere else - when the shutdown starts.
+        var count = 50;
+        IntStream.rangeClosed(1, count).forEach(n ->
+            publish(TOPIC, "{\"messageId\":\"sd-" + n + "\",\"value\":" + n + "}"));
+        StoppableMongo.sleep(500);
 
-        publish(TOPIC, "{\"value\": 42}");
+        // SIGTERM, which runs the shutdown hook, unlike the SIGKILL of a crash
+        restheart.close();
 
-        // Long enough for the message to have travelled broker -> client -> router -> writer and
-        // for the writer to be sitting in insertWithRetry against the stopped database. The
-        // overrides give it 1000 retries two seconds apart precisely so it is still trying, and
-        // therefore has still not reported the message as taken, when it is killed below.
-        Thread.sleep(15_000);
+        assertEquals(count, collection.countDocuments(Filters.regex("_id", "^sd-")),
+            "a clean shutdown must write what it had buffered, not exit on top of it");
 
-        // kill(), not close(): a clean shutdown now drains the buffer and would write the message
-        // itself once MongoDB returns, which would prove nothing about acknowledgement.
-        restheart.kill();
-
-        mongo.getDockerClient().startContainerCmd(mongo.getContainerId()).exec();
-        awaitMongoReady();
-
-        // A new RESTHeart, same client id, resuming the session the old one left behind. The
-        // broker still owes it the message.
-        // allRho(), not extraRho(): the broker's port is probed at startup and lives only in the
-        // base class's composition. Passing half of it leaves this instance looking for a broker
-        // on 1883, where nothing listens.
+        // and the next instance carries on
         restheart = startRestheart(overridesFile(), allRho(), getClass().getSimpleName() + "-restarted.log",
             standalone());
-
-        // The second connection: the resumed session is only owed anything once this happens.
-        awaitBrokerConnections(SERVER_LOG, 2, 90);
-
-        assertTrue(awaitDocument(collection, 60_000),
-            "the message was never acknowledged, so the broker owed it to the resumed session and "
-                + "it must have been written after the restart; found "
-                + collection.countDocuments() + " documents");
-
-        var stored = collection.find().first();
-        assertEquals(TOPIC, stored.getString("topic"),
-            "and it must be the message that was published, not something else");
+        awaitBrokerConnected();
+        publish(TOPIC, "{\"messageId\":\"after\",\"value\":1}");
+        assertTrue(awaitDocument(collection, "after", 60_000),
+            "the restarted instance must store what it receives");
     }
 
-    /**
-     * @param collection    where the document should appear
-     * @param timeoutMillis how long to wait
-     * @return whether at least one document arrived before the deadline
-     */
-    private boolean awaitDocument(MongoCollection<Document> collection, long timeoutMillis)
-            throws InterruptedException {
+
+    private boolean awaitDocument(MongoCollection<Document> collection, String id, long timeoutMillis) {
         var deadline = System.currentTimeMillis() + timeoutMillis;
         while (System.currentTimeMillis() < deadline) {
-            if (collection.countDocuments() > 0) {
+            if (collection.countDocuments(Filters.eq("_id", id)) > 0) {
                 return true;
             }
-            Thread.sleep(500);
+            StoppableMongo.sleep(500);
         }
         return false;
     }
 
     private MongoCollection<Document> collection() {
-        return testMongoClient.getDatabase(DB).getCollection(COLLECTION);
-    }
-
-    private String mongoUri() {
-        return "mongodb://localhost:" + mongoPort;
-    }
-
-    /**
-     * Blocks until the database answers a {@code ping}, so the restart is not raced.
-     */
-    private void awaitMongoReady() {
-        var deadline = System.currentTimeMillis() + 90_000L;
-        RuntimeException last = null;
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                testMongoClient.getDatabase("admin").runCommand(new Document("ping", 1));
-                return;
-            } catch (RuntimeException e) {
-                last = e;
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("interrupted waiting for MongoDB", ie);
-                }
-            }
-        }
-        throw new IllegalStateException("MongoDB never answered a ping within 90s", last);
+        return mongo.client().getDatabase(DB).getCollection(COLLECTION);
     }
 }

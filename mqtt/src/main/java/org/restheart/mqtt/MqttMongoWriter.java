@@ -21,13 +21,7 @@
 
 package org.restheart.mqtt;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -82,6 +76,15 @@ import com.mongodb.client.model.WriteModel;
  * document.
  * </p>
  * <p>
+ * A message is acknowledged to the broker as soon as it is buffered, not once it is in MongoDB:
+ * MQTT acknowledgements are ordered, so holding one until the write succeeds blocks every
+ * acknowledgement behind it and the broker stops delivering to this client altogether - live
+ * consumers included - as soon as its in-flight window fills. The buffer is memory, so this
+ * process dying loses what is in it; an unreachable MongoDB, by contrast, is retried for as long
+ * as the writer runs, and only documents MongoDB <em>refuses</em> go to the dead-letter
+ * collection. See "Durability" in the module's README.
+ * </p>
+ * <p>
  * This class is a RESTHeart {@link Initializer}: {@code @OnInit} fires as soon as
  * injection is complete and does all the real setup (parsing configuration,
  * connecting the configured sinks, subscribing to the router and starting the
@@ -102,6 +105,7 @@ import com.mongodb.client.model.WriteModel;
  *     buffer:
  *       strategy: "blocking-queue"  # "blocking-queue" (default) | "ring-buffer" | "drop-incoming"
  *       capacity: 10000
+ *       max-bytes: 67108864       # 64 MB; whichever ceiling is reached first applies backpressure
  *     drain:
  *       batch-size: 200
  *       flush-interval-ms: 500
@@ -109,7 +113,7 @@ import com.mongodb.client.model.WriteModel;
  *       retry-delay-ms: 1000
  *     id-strategy: "auto"       # "auto" or "payload-field"
  *     id-field: "messageId"
- *     dead-letter-file: "./mqtt-dead-letter.log"
+ *     dead-letter-collection: "mqtt-dead-letter"
  *     mongo-sink:
  *       - topic: "sensors/#"
  *         database: "iot"
@@ -171,25 +175,25 @@ public class MqttMongoWriter implements Initializer {
     private long retryDelayMs;
     private String idStrategy;
     private String idField;
-    private String deadLetterFile;
+    private String deadLetterCollection;
 
     /**
-     * How long {@link #close()} may spend draining the buffer into MongoDB before writing what is
-     * left to the dead-letter file. Deliberately shorter than Docker's 10-second default grace
-     * period between SIGTERM and SIGKILL: overshooting it does not buy more time, it just means
-     * being killed mid-drain with the remainder neither written nor dead-lettered.
+     * How long {@link #close()} may spend draining the buffer into MongoDB before giving up on
+     * what is left. Deliberately shorter than Docker's 10-second default grace period between
+     * SIGTERM and SIGKILL: overshooting it does not buy more time, it just means being killed
+     * mid-drain.
      */
     private long shutdownTimeoutMs;
 
-    /**
-     * Size at which the dead-letter file is rotated. Without a bound this file is written by
-     * every failure path and read by nothing, so a long MongoDB outage quietly fills the disk -
-     * turning a recoverable incident into an unrecoverable one for every other service on the
-     * host. One rotation is kept, so the footprint is bounded at twice this value.
-     */
-    private long deadLetterMaxBytes;
     private List<MongoSink> sinks;
     private volatile boolean running;
+    /** Whether new messages are still taken from the router; cleared first thing on shutdown. */
+    private volatile boolean accepting;
+    /** When a shutdown must stop retrying a write, {@link Long#MAX_VALUE} while running normally. */
+    private volatile long writeDeadlineMillis = Long.MAX_VALUE;
+
+    /** The buffer no longer carries a per-message callback: see the durable subscription in {@link #onInit()}. */
+    private static final Runnable NO_OP = () -> { };
 
     private final AtomicLong duplicateCount = new AtomicLong();
 
@@ -237,12 +241,17 @@ public class MqttMongoWriter implements Initializer {
         String strategyStr = configOrDefault(bufferConfig, "strategy", "blocking-queue");
         int capacity = configOrDefault(bufferConfig, "capacity", 10000);
         long maxWaitMs = configOrDefault(bufferConfig, "max-wait-ms", MessageBuffer.DEFAULT_MAX_WAIT_MS);
+        // Both ceilings matter: capacity says how many messages, max-bytes how much heap. Ten
+        // thousand readings are a megabyte, ten thousand images are a gigabyte.
+        long maxBytes = configOrDefault(bufferConfig, "max-bytes", MessageBuffer.DEFAULT_MAX_BYTES);
         Strategy strategy = Strategy.fromConfigValue(strategyStr);
-        buffer = new MessageBuffer(capacity, strategy, maxWaitMs);
+        buffer = new MessageBuffer(capacity, strategy, maxWaitMs, maxBytes);
 
         // Exposes the buffer's live depth/throughput via GET /metrics/mqtt_buffer_* outside the JVM
         Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_size"), buffer::size);
         Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_capacity"), buffer::capacity);
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_bytes"), buffer::bytes);
+        Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_max_bytes"), buffer::maxBytes);
         Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_accepted"), buffer::acceptedCount);
         Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_dropped"), buffer::droppedCount);
         Metrics.registerGauge(MetricNameAndLabels.of("mqtt_buffer_duplicates"), duplicateCount::get);
@@ -265,9 +274,10 @@ public class MqttMongoWriter implements Initializer {
         // relative path resolves against the process working directory - which for a forked or
         // containerised RESTHeart is not where the operator is standing. Logging the resolved
         // path is the difference between a recoverable incident and a file nobody ever finds.
-        deadLetterFile = Path.of(configOrDefault(config, "dead-letter-file", "./mqtt-dead-letter.log"))
-            .toAbsolutePath().normalize().toString();
-        deadLetterMaxBytes = configOrDefault(config, "dead-letter-max-bytes", 100L * 1024 * 1024);
+        // A collection, not a file: a dead letter is a message MongoDB refused, so MongoDB was
+        // reachable when it happened, and a queue nobody can query is not a queue. It lives in
+        // the same database as the sink whose write failed.
+        deadLetterCollection = configOrDefault(config, "dead-letter-collection", "mqtt-dead-letter");
 
         // Mongo sinks
         @SuppressWarnings("unchecked")
@@ -282,24 +292,35 @@ public class MqttMongoWriter implements Initializer {
 
         // Subscribe to topics
         for (MongoSink sink : sinks) {
-            // subscribeDurable, not subscribe: the router must not acknowledge to the broker
-            // until this writer has genuinely taken the message. Buffering it is not taking it -
-            // the buffer is in memory - so the callback travels with the message and is invoked
-            // by flush(), after the write to MongoDB has succeeded.
+            // The message is acknowledged to the broker once it is in the buffer, not once it is
+            // in MongoDB. MQTT acknowledgements are ordered - hivemq-mqtt-client holds a PUBACK
+            // back until every earlier message has been acknowledged - so a message held through
+            // a MongoDB outage blocks every acknowledgement behind it, the broker's in-flight
+            // window fills (20 messages with Mosquitto's defaults) and it stops delivering to
+            // this client at all, live SSE consumers included. Taking responsibility at the
+            // buffer is what keeps ingestion independent of the database.
+            //
+            // The cost, and the module's stated guarantee: what is in the buffer is in memory
+            // only, so a SIGKILL or a power cut loses it. A clean shutdown writes it to the
+            // pending file and the next start replays it. See "Durability" in README.md.
+            //
+            // A full buffer applies backpressure instead: offer() waits for room (the default),
+            // and only a configuration that asks for it drops messages.
             router.subscribeDurable(sink.topic(), Qos.AT_LEAST_ONCE, (msg, taken) -> {
-                if (!buffer.offer(new MessageBuffer.Pending(msg, taken))) {
-                    // Refused - the buffer is full and the wait ceiling elapsed, or the strategy
-                    // drops outright. Acknowledge anyway: the message is lost either way, and
-                    // leaving it unacknowledged would hold a slot in the broker's in-flight window
-                    // and eventually stop delivery to every consumer, the live ones included. The
-                    // drop itself is counted and exposed as mqtt_buffer_dropped.
-                    taken.run();
+                if (!accepting) {
+                    // Shutting down: deliberately neither buffered nor acknowledged, so the broker
+                    // keeps this message and redelivers it to the next instance that resumes the
+                    // session. Taking it now would mean racing the shutdown deadline with it.
+                    return;
                 }
+                buffer.offer(new MessageBuffer.Pending(msg, NO_OP));
+                taken.run();
             });
             LOGGER.info("Subscribed to topic {} → {}.{}", sink.topic(), sink.database(), sink.collection());
         }
 
         // Start drain loop
+        accepting = true;
         running = true;
         Thread.ofVirtual().start(this::drainLoop);
 
@@ -446,6 +467,7 @@ public class MqttMongoWriter implements Initializer {
 
         List<Document> pending = documents;
         int attempt = 0;
+        int outageAttempt = 0;
 
         while (!pending.isEmpty()) {
             try {
@@ -487,28 +509,48 @@ public class MqttMongoWriter implements Initializer {
                     .sorted()
                     .map(pending::get)
                     .collect(Collectors.toList());
+                // These documents were rejected one by one, so MongoDB is reachable and it is
+                // the documents it does not accept - a failed validation, a size or type it
+                // refuses. Retrying a few times covers a transient rejection; past that they are
+                // dead-lettered, which is what a dead-letter file is for. An outage takes the
+                // other branch below and is never dead-lettered.
                 attempt++;
                 if (attempt > maxRetries) {
-                    LOGGER.error("Giving up on {} of {} documents into {}.{} after {} retries",
-                        retryDocs.size(), documents.size(), sink.database(), sink.collection(), maxRetries, e);
-                    deadLetter(retryDocs);
+                    LOGGER.error("Giving up on {} of {} documents into {}.{} after {} retries; "
+                        + "dead-lettering them", retryDocs.size(), documents.size(),
+                        sink.database(), sink.collection(), maxRetries, e);
+                    deadLetter(sink, retryDocs, e);
                     return;
                 }
                 pending = retryDocs;
                 if (!backoff(attempt)) {
-                    deadLetter(pending);
+                    deadLetter(sink, pending, e);
                     return;
                 }
             } catch (Exception e) {
-                attempt++;
-                if (attempt > maxRetries) {
-                    LOGGER.error("Giving up on {} documents into {}.{} after {} retries",
-                        pending.size(), sink.database(), sink.collection(), maxRetries, e);
-                    deadLetter(pending);
+                // MongoDB is unreachable, failing over, or timing out: nothing is wrong with these
+                // documents, so there is nothing to dead-letter. They are already acknowledged to
+                // the broker, which will not redeliver them, so giving up would lose them. Retry
+                // for as long as this instance runs; the buffer behind fills up and applies
+                // backpressure, which is the intended way for an outage to be felt.
+                outageAttempt++;
+                if (System.currentTimeMillis() > writeDeadlineMillis) {
+                    // Shutting down, and MongoDB did not come back within the shutdown budget.
+                    // These messages were acknowledged to the broker when they were buffered, so
+                    // nobody else is holding them: they are lost, and saying so is the honest
+                    // thing to do. The buffer is memory; this is the guarantee, not a surprise.
+                    LOGGER.warn("Shutting down with MongoDB unreachable: {} messages for {}.{} are lost",
+                        pending.size(), sink.database(), sink.collection());
                     return;
                 }
-                if (!backoff(attempt)) {
-                    deadLetter(pending);
+                if (outageAttempt == 1 || outageAttempt % 10 == 0) {
+                    LOGGER.warn("Cannot write {} documents into {}.{} (attempt {}); retrying until "
+                        + "MongoDB is back: {}", pending.size(), sink.database(), sink.collection(),
+                        outageAttempt, e.toString());
+                }
+                if (!backoff(outageAttempt)) {
+                    LOGGER.warn("Interrupted while retrying: {} messages for {}.{} are lost",
+                        pending.size(), sink.database(), sink.collection());
                     return;
                 }
             }
@@ -648,44 +690,50 @@ public class MqttMongoWriter implements Initializer {
      * @param documents the documents to append; a null or empty list is a no-op
      */
     /**
-     * Rotates the dead-letter file to {@code <file>.1} once it exceeds
-     * {@code dead-letter-max-bytes}, replacing any previous rotation.
-     * <p>
-     * One generation, not many: the point is a bound on disk usage, and keeping the most recent
-     * two windows is enough to diagnose what is failing. Rotating rather than refusing to write
-     * keeps the newest failures - the ones an operator is actually looking at - rather than
-     * preserving the oldest and discarding everything after.
-     * </p>
+     * Records documents MongoDB refused in the dead-letter collection of the sink's database.
      *
-     * @throws IOException if the rotation itself fails, so the caller reports it like any other
-     *                     dead-letter write failure rather than silently continuing
+     * <p>Only documents the database rejected one by one reach this: a wrong type, a failed
+     * validation, a size it will not take. An unreachable MongoDB is not a dead letter, it is a
+     * write to retry - and there would be nowhere to write this either, which is exactly what a
+     * dead-letter queue on a stopped server is worth.</p>
+     *
+     * <p>Each entry keeps the document as it was, with the collection it was meant for and the
+     * reason under {@code _deadLetter}. A duplicate key here means this message is already
+     * recorded, which is not a failure.</p>
+     *
+     * @param sink      the sink whose write failed
+     * @param documents the documents MongoDB refused
+     * @param cause     what MongoDB answered
      */
-    private void rotateDeadLetterIfOversized() throws IOException {
-        var file = Path.of(deadLetterFile);
-        if (!Files.exists(file) || Files.size(file) < deadLetterMaxBytes) {
-            return;
-        }
-        var rotated = Path.of(deadLetterFile + ".1");
-        Files.move(file, rotated, StandardCopyOption.REPLACE_EXISTING);
-        LOGGER.warn("Dead-letter file {} exceeded {} bytes and was rotated to {}; the previous "
-            + "rotation, if any, was replaced", deadLetterFile, deadLetterMaxBytes, rotated);
-    }
-
-    private void deadLetter(List<Document> documents) {
+    private void deadLetter(MongoSink sink, List<Document> documents, Exception cause) {
         if (documents == null || documents.isEmpty()) {
             return;
         }
 
+        var entries = documents.stream()
+            .map(doc -> new Document(doc).append("_deadLetter", new Document()
+                .append("collection", sink.collection())
+                .append("reason", cause == null ? null : cause.getMessage())
+                .append("at", Date.from(Instant.now()))))
+            .toList();
+
         try {
-            rotateDeadLetterIfOversized();
-            try (BufferedWriter out = new BufferedWriter(new FileWriter(deadLetterFile, true))) {
-                for (Document doc : documents) {
-                    out.write(doc.toJson());
-                    out.newLine();
-                }
+            mclient.getDatabase(sink.database())
+                .getCollection(deadLetterCollection)
+                .insertMany(entries, new InsertManyOptions().ordered(false));
+            LOGGER.warn("Wrote {} documents refused by {}.{} to {}.{}", entries.size(),
+                sink.database(), sink.collection(), sink.database(), deadLetterCollection);
+        } catch (MongoBulkWriteException e) {
+            var refused = e.getWriteErrors().stream()
+                .filter(err -> err.getCode() != DUPLICATE_KEY_ERROR_CODE)
+                .count();
+            if (refused > 0) {
+                LOGGER.error("{} of {} documents could not be written to {}.{} either; they are lost",
+                    refused, entries.size(), sink.database(), deadLetterCollection, e);
             }
-        } catch (IOException e) {
-            LOGGER.error("Failed to write {} documents to dead-letter file {}", documents.size(), deadLetterFile, e);
+        } catch (Exception e) {
+            LOGGER.error("Cannot write {} dead-lettered documents to {}.{}; they are lost",
+                entries.size(), sink.database(), deadLetterCollection, e);
         }
     }
 
@@ -827,7 +875,11 @@ public class MqttMongoWriter implements Initializer {
      * </p>
      */
     public void close() {
+        // Stop taking messages before anything else: what arrives from here on stays with the
+        // broker, unacknowledged, for the next instance to receive.
+        accepting = false;
         running = false;
+        writeDeadlineMillis = System.currentTimeMillis() + shutdownTimeoutMs;
 
         // Drain what is buffered, not just one batch of it. This is the only point in the whole
         // path where messages used to disappear rather than reach disk: everywhere else a failure
@@ -841,16 +893,14 @@ public class MqttMongoWriter implements Initializer {
         }
         drainUntilEmptyOrDeadline(System.currentTimeMillis() + shutdownTimeoutMs);
 
-        // Whatever the deadline did not cover goes to the dead-letter file rather than being
-        // dropped. A shutdown budget is not ours to set - a container SIGKILLs after its own
-        // grace period - so the guarantee has to be "on disk somewhere", not "written to MongoDB".
+        // Whatever the deadline did not cover is lost, and is reported as such. The buffer is in
+        // memory and these messages are already acknowledged to the broker, so there is nobody
+        // left holding them; this only happens when MongoDB is unreachable at the very moment
+        // RESTHeart is being stopped.
         var stranded = buffer.drain(Integer.MAX_VALUE);
         if (!stranded.isEmpty()) {
-            LOGGER.warn("Shutdown deadline of {} ms elapsed with {} messages still buffered; "
-                + "writing them to the dead-letter file {}", shutdownTimeoutMs, stranded.size(), deadLetterFile);
-            deadLetter(stranded.stream().map(MessageBuffer.Pending::message).map(this::toDocument).toList());
-            // Dead-lettered is taken: the message is on disk and the broker need not keep it.
-            stranded.forEach(pending -> pending.taken().run());
+            LOGGER.warn("Shutdown deadline of {} ms elapsed with {} buffered messages not written "
+                + "to MongoDB; they are lost", shutdownTimeoutMs, stranded.size());
         }
     }
 

@@ -5,9 +5,9 @@ Bridges an external MQTT broker into RESTHeart: incoming topic messages become S
 The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.0, and exposes what it receives through ordinary RESTHeart plugins. Brokers that require mutual TLS with a client certificate — AWS IoT Core among them — are not supported: the module exposes only trust-store settings (`tls`, `tls-trust-store`, `tls-trust-store-password`), never a key store or client certificate.
 
 > **New here? Start with [TUTORIALS.md](./TUTORIALS.md).** It is one progressive walkthrough in four
-> parts — stream a message to a browser, poll the last value, persist to MongoDB while deliberately
-> stopping the database, and consume messages from your own plugin — each part building on the
-> environment the previous one left running. This README is the reference; that is the way in.
+> parts — stream a message to a browser, poll the last value, persist to MongoDB, and consume
+> messages from your own plugin — each part building on the environment the previous one left
+> running. This README is the reference; that is the way in.
 
 ## Not bundled
 
@@ -62,13 +62,13 @@ flowchart LR
     router --> writer
     router --> own
     writer --> mongo
-    writer -.->|"acknowledged once stored"| broker
+    writer -.->|"acknowledged once buffered"| broker
     callers --> authz
     authz --> sse
     authz --> rest
 ```
 
-`mqtt-sse` and `mqtt-rest` are both registered with `secure = true`: they require authentication, and `mqtt-topic-authorizer` then checks the requested topic filter against the ACL before either service sees the request. Messages reach `mqtt-mongo-writer` through a *durable* listener, so the broker is acknowledged only once each one is stored — see "Durability". See "Enablement" below for what the "Enabled by default" column means in practice.
+`mqtt-sse` and `mqtt-rest` are both registered with `secure = true`: they require authentication, and `mqtt-topic-authorizer` then checks the requested topic filter against the ACL before either service sees the request. Messages reach `mqtt-mongo-writer` through a *durable* listener, which acknowledges the broker once a message is in its buffer, on its way to MongoDB — see "Durability" for what that guarantees and what it does not. See "Enablement" below for what the "Enabled by default" column means in practice.
 
 ## Enablement
 
@@ -199,10 +199,10 @@ mqtt-topic-authorizer:
 flowchart LR
     broker[("MQTT broker")] ==> client["<b>mqtt-client</b>"] ==> router["<b>mqtt-router</b>"]
     router -->|"durable listener"| writer["<b>mqtt-mongo-writer</b>"]
-    writer --> buffer["buffer<br><i>bounded; by default waits up to<br>buffer.max-wait-ms for room</i>"]
+    writer --> buffer["buffer<br><i>bounded by capacity and max-bytes;<br>waits for room when full</i>"]
     buffer -->|"drain loop, batched"| mongo[("MongoDB<br><i>db.collection per sink</i>")]
-    buffer -.->|"after drain.max-retries"| dlq[("dead-letter file")]
-    writer -.->|"acknowledges each message<br>once stored or dead-lettered"| broker
+    mongo -.->|"documents MongoDB refuses,<br>after drain.max-retries"| dlq[("dead-letter<br>collection")]
+    writer -.->|"acknowledges each message<br>once buffered"| broker
 ```
 
 ```yaml
@@ -237,7 +237,7 @@ That archive is published by [`.github/workflows/mqtt.yml`](../.github/workflows
 To build it yourself instead — necessarily, if you are working on the module:
 
 ```
-./mvnw -pl mqtt package
+./mvnw -pl mqtt -am package
 unzip mqtt/target/restheart-mqtt-<version>.zip -d /opt/restheart/plugins/
 ```
 
@@ -260,23 +260,29 @@ Then copy the settings you need from `restheart-mqtt-default-config.yml` into yo
 
 ## Durability
 
-A message is acknowledged to the broker only once a durable consumer has taken responsibility for it. With `mqtt-mongo-writer`, that means after the write to MongoDB succeeds or the batch is dead-lettered. Until then the broker still owes it, and will redeliver if this instance dies. So with QoS 1 and a persistent session, the module delivers at-least-once end to end.
+A message is acknowledged to the broker **once it is in the writer's buffer**, not once it is in MongoDB. With QoS 1 and a persistent session, the module therefore delivers at-least-once **up to the buffer**: everything the broker hands over is either written to MongoDB or recorded in the dead-letter collection, unless this process dies with messages still in memory.
 
-This is a change from the original design, where the client acknowledged every message the instant it was handed over, before anything decided whether to keep it. The broker's redelivery guarantee was discarded before the message reached storage, so the module was at-most-once whatever QoS was configured. The difference matters, and it cuts both ways: at-most-once loses messages, at-least-once duplicates them. A redelivered message is delivered again, so the same reading can be written twice — after a crash, and on any reconnect that resumes a session mid-flight. That is the trade you are making, and `id-strategy` is how you settle it: `payload-field` keys the document on something the message itself carries, so a redelivery converges on one document instead of adding a second. Leaving `id-strategy` at `auto` means every redelivery is a new document.
+**Why not acknowledge after the write.** MQTT acknowledgements are ordered — hivemq-mqtt-client holds a PUBACK back until every earlier message has been acknowledged, for compliance with the protocol. A message held through a MongoDB outage therefore blocks every acknowledgement behind it; the broker's in-flight window fills (20 messages with Mosquitto's defaults) and it stops delivering to this client **at all**, live SSE consumers included. Holding acknowledgements until the database takes the message puts MongoDB in the critical path of every consumer, which is the opposite of what this module is for. `MqttMongoOutageIT` pins the behaviour: with MongoDB stopped, forty messages — twice that window — still reach an SSE client, and all forty are written once it is back.
 
-Three things are required:
+**What this costs.** The buffer is memory. A `kill -9`, an OOM or a power cut loses what is in it, and the broker will not redeliver because it was told the messages were taken. That is the trade, stated plainly: this is telemetry-grade durability, not a transactional queue. Deployments that cannot lose a message at all need one in front of RESTHeart.
 
-- **QoS 1 or 2.** QoS 0 has no acknowledgement in the protocol at all, so there is nothing to withhold and nothing to redeliver. The guarantee does not exist at QoS 0.
-- **`clean-session: false`** (the default), so the broker keeps the session and redelivers what the last connection owed when the next one resumes.
-- **A stable `client-id`.** An MQTT session is keyed on it. The default is now derived from the RESTHeart instance name (`restheart-<instance name>`) rather than a fresh UUID per start, which is what makes it stable. **A client id must be unique across concurrently connected clients:** a broker disconnects the existing client when another connects with the same id. So several RESTHeart instances sharing one `/core/name` will knock each other off the broker in a loop. Give each instance its own name, or set `/mqtt-client/client-id` explicitly.
+**During a MongoDB outage** the writer retries the batch it is holding for as long as it runs, with an exponential backoff capped at 30 s, and the messages that keep arriving accumulate in the buffer. Nothing is dropped and nothing is dead-lettered: an unreachable database is not the documents' fault. When the buffer reaches either of its ceilings — `capacity`, 10000 messages, or `max-bytes`, 64 MB — the writer stops taking messages from the router and the broker, which is backpressure working as intended.
+
+**Where the messages queue then** is the broker. Mosquitto holds `max_queued_messages` per client, **1000 by default**, and discards beyond that. So the reserve available during an outage is the buffer plus the broker's queue, and sizing the broker is part of configuring persistence: without it, messages are lost in the broker while RESTHeart is still healthy.
+
+**An orderly shutdown** stops taking messages first — what arrives from then on is left unacknowledged, so the broker keeps it for the next instance — and then drains the buffer into MongoDB for up to `drain.shutdown-timeout-ms` (5 s by default, deliberately inside Docker's 10 s SIGTERM grace). What that budget does not cover is lost, and logged as such; in practice that means RESTHeart being stopped while MongoDB is also down.
+
+**Dead letters are for documents MongoDB refuses**, not for a MongoDB that is away: a failed validation, a size or a type it will not take. They go to the `dead-letter-collection` of the sink's database, after `drain.max-retries` attempts, with the reason attached. A dead-letter queue lives in the server it belongs to; when that server is down there is nothing to write to, and nothing to write either.
+
+Three things are required for the guarantee to hold up to the buffer:
+
+- **QoS 1 or 2.** QoS 0 has no acknowledgement in the protocol at all, so the broker never redelivers and a message lost before the buffer is lost for good.
+- **`clean-session: false`** (the default), so the broker keeps the session and redelivers what the last connection did not acknowledge when the next one resumes.
+- **A stable `client-id`.** An MQTT session is keyed on it. The default is derived from the RESTHeart instance name (`restheart-<instance name>`) rather than a fresh UUID per start, which is what makes it stable. **A client id must be unique across concurrently connected clients:** a broker disconnects the existing client when another connects with the same id. So several RESTHeart instances sharing one `/core/name` will knock each other off the broker in a loop. Give each instance its own name, or set `/mqtt-client/client-id` explicitly.
+
+`id-strategy` settles what a redelivery does. At-least-once means the same message can be received twice — after a reconnect that resumes a session mid-flight, for instance — and `payload-field` keys the document on something the message itself carries, so the second reception overwrites the first instead of adding a copy. Leaving `id-strategy` at `auto` means every redelivery is a new document.
 
 Why connecting is a separate step: a broker redelivers everything a resumed session owes the moment it sends CONNACK. Anything not listening at that instant loses those messages. The module registers consumers at three different moments — `mqtt-client` builds the client, `mqtt-router` registers the global publish consumer, `mqtt-mongo-writer` registers its durable listener at AFTER_STARTUP — so `mqtt-connector` exists purely to connect after all of them. It is enabled by default so nobody has to remember it; disabling it leaves a module that never reaches the broker, and `mqtt-status` reports that.
-
-What the guarantee does not cover: SSE and REST are live consumers and never hold up an acknowledgement — a browser must not be able to stall ingestion. The guarantee is about the persistence path, not about what a dashboard sees.
-
-**It covers a fast restart, not an outage.** `mqtt-mongo-writer`'s buffer waits up to `buffer.max-wait-ms` (30 s by default) for room before giving up on a message; past that it drops it, counts it in `mqtt_buffer_dropped`, and acknowledges it so the broker can move on. That ceiling is the honest boundary of what this layer can do: it absorbs a MongoDB restart of seconds to tens of seconds, which is what a buffer in memory is good for. **A prolonged database outage is not something an application can bridge, and this one does not pretend to** — the defence against that is a properly sized replica set, not a longer queue.
-
-The ceiling exists for a second reason, and it is the one that matters most in practice: **without it a MongoDB problem would take the live stream down with it.** An unbounded wait parks the dispatching thread, and that thread is holding a message that is therefore never acknowledged; once enough of them accumulate the broker's in-flight window fills and it stops delivering to this client altogether — SSE included, even though SSE never touches the database. Bounding the wait keeps the two independent, so consumers go on reading messages while persistence is degraded. Set `buffer.max-wait-ms` to `0` to wait indefinitely instead, accepting that coupling.
 
 ## The traps
 
@@ -285,7 +291,8 @@ Most of these are silent: nothing refuses to start, and nothing complains unless
 - **A config block present without `enabled: true` leaves the plugin off.** The block looks complete and correct; it just isn't read, because `PluginRecord.isEnabled` falls back to the plugin's compiled default (`false` for every Tier 1/2 plugin) whenever the `enabled` key is absent.
 - **Plugin config blocks are top-level keys named after the plugin.** There is no `plugins-args:` wrapper: `PluginsFactory` looks up each plugin's arguments by name directly at the root of the configuration map. That wrapper form is not handled at all, so every setting nested under it is ignored and the plugin runs entirely on defaults. This is the one trap here that announces itself: core logs a WARN at startup naming every plugin whose block a `plugins-args` wrapper swallowed ([#723](https://github.com/SoftInstigate/restheart/issues/723)).
 - **`mqtt-rest` answers `404` forever** unless something populates the router's last-message cache (`mqtt-router.subscriptions`, a live SSE client, or the writer's `mongo-sink`) **and** `mqtt-router.last-message-cache` is `true`.
-- **After a restart, `mqtt-rest` answers `404` again until the next message arrives** — the cache is in memory and does not survive the process. There is a broker-side remedy that costs nothing: if publishers publish the latest state **retained**, the broker replays it on the SUBSCRIBE this module issues at every startup, and the cache is correct immediately. Measured: with a retained value, `GET /mqtt` answers `200` straight after a restart with nothing republished; without one, `404`. This does not replace `mqtt-router.subscriptions` — with no subscription there is no SUBSCRIBE and nothing is replayed — but it removes the blind window after every restart, which on a slow topic can last a long time.
+- **After a restart, `mqtt-rest` answers `404` again until the next message arrives** — the cache is in memory and does not survive the process. There is a broker-side remedy that costs nothing: if publishers publish the latest state **retained**, the broker replays it on the SUBSCRIBE this module issues at every startup, and the cache is correct immediately. Measured: with a retained value, `GET /mqtt` answers `200` straight after a restart with nothing republished; without one, `404`. A non-retained publish does not clear a retained value; an empty retained message does (`mosquitto_pub -r -n -t <topic>`), and it also removes the topic from this module's cache at once. This does not replace `mqtt-router.subscriptions` — with no subscription there is no SUBSCRIBE and nothing is replayed — but it removes the blind window after every restart, which on a slow topic can last a long time.
+- **Restarting RESTHeart does not clear its subscriptions.** The module connects with `clean-session: false` and a stable client id, so the broker keeps the session, subscriptions included, across restarts; that is what lets it redeliver what a stopped instance never acknowledged. A subscription made by a previous run, even one no longer in the configuration, is therefore still delivered to the next, and `/mqtt` may answer `200` for a topic nothing in the current configuration subscribes to. MQTT has no way to list or clear a session's subscriptions short of discarding the session and the undelivered messages with it; restart the broker for a clean slate. The same mechanism is why `Subscribed to topic filter: ...` appears twice at startup: the subscription is issued before connecting and again once the broker reports a new session, and the second replaces the first.
 - **`mqtt-mongo-writer` with an empty `mongo-sink` runs and writes nothing.** With no sinks, the writer never subscribes to anything on the router at all, so nothing is ever offered to the buffer and it stays empty — not a buffer that fills and drains into nowhere.
 - **`mqtt-topic-authorizer` with no `acl` denies everything with `403`.** There is no permissive default.
 - **A request with no `?topic=` is not unauthenticated territory.** `mqtt-sse` subscribes such a request to its `default-topic` (`sensors/#` by default), so the ACL must grant that filter or the request is refused with `403`. Granting only specific topics while leaving `default-topic` at its default is the common mistake.
@@ -340,7 +347,7 @@ curl -u admin:secret 'http://localhost:8080/mqtt?topic=sensors/temp'
 [`mqtt/docker-compose.yml`](./docker-compose.yml) runs a self-contained two-container demo (RESTHeart plus a Mosquitto broker, no MongoDB) with the module already armed and a working ACL, so there is no broker or config to set up by hand. It mounts the built plugin — `mqtt/target/restheart-mqtt.jar` and `mqtt/target/lib` — into the RESTHeart container's plugins directory, so build the module first. From the `mqtt` directory:
 
 ```
-../mvnw -f ../pom.xml -pl commons,mqtt install -DskipTests
+../mvnw -f ../pom.xml -pl commons,mqtt -am install -DskipTests
 docker compose up
 ```
 
@@ -521,6 +528,7 @@ mqtt-mongo-writer:
   buffer:
     strategy: "blocking-queue"
     capacity: 10000
+    max-bytes: 67108864
   drain:
     batch-size: 200
     flush-interval-ms: 500
@@ -529,8 +537,7 @@ mqtt-mongo-writer:
     shutdown-timeout-ms: 5000
   id-strategy: "payload-field"
   id-field: "messageId"
-  dead-letter-file: "./mqtt-dead-letter.log"
-  dead-letter-max-bytes: 104857600
+  dead-letter-collection: "mqtt-dead-letter"
   mongo-sink:
     - topic: "sensors/#"
       database: "iot"
@@ -539,13 +546,19 @@ mqtt-mongo-writer:
 
 Requires the `mongoclient` module: it injects `mclient` rather than opening its own connection.
 
-**Buffer strategies** (`buffer.strategy`, default `blocking-queue`; `buffer.max-wait-ms` bounds how long `blocking-queue` waits, 30 s by default, `0` for no bound):
+**Buffer ceilings.** `capacity` (10000) is a number of messages and `max-bytes` (64 MB) is how much heap they may take; whichever is reached first applies backpressure. Both are needed: ten thousand readings of a hundred bytes are a megabyte, ten thousand images of a hundred kilobytes are a gigabyte. A message's weight is its payload plus its topic plus a fixed allowance for the objects around them.
+
+**Buffer strategies** (`buffer.strategy`, default `blocking-queue`; `buffer.max-wait-ms` bounds how long `blocking-queue` waits for room, `0` — the default — waits indefinitely):
 
 | value | on overflow |
 |---|---|
 | `ring-buffer` | drop the oldest message; the new one is always accepted |
 | `drop-incoming` | reject the new message |
 | `blocking-queue` | block the producer until space frees up — the only strategy that applies real backpressure rather than losing data |
+
+A message a buffer refuses is lost: it was acknowledged to the broker as it arrived, so nothing else is holding it. Set `max-wait-ms`, or a dropping strategy, only where losing messages is preferable to slowing ingestion down.
+
+**Dead letters** (`dead-letter-collection`, default `mqtt-dead-letter`) go to that collection in the same database as the sink whose write failed. Only documents MongoDB *refuses* — a failed validation, a size or type it will not take — end up there, after `drain.max-retries` attempts; each keeps the document as it was plus a `_deadLetter` sub-document naming the collection it was meant for, the reason, and when. A MongoDB that is **down** produces no dead letters: those writes are retried until it answers, and a dead-letter queue in a stopped server would be no use anyway.
 
 An unrecognised value fails at startup rather than silently falling back.
 
@@ -598,9 +611,9 @@ With `payload-field`, if the payload is not valid JSON or the field is absent, t
 
 Every `mongo-sink` entry must carry all three of `topic`, `database` and `collection`, each a string; a missing or mistyped key fails at startup naming the entry. An absent or empty `mongo-sink` list is legal and simply means nothing is persisted.
 
-Batches that still fail after `max-retries` are appended to `dead-letter-file`, one document per line as MongoDB Extended JSON — so a binary payload and the dates survive as `$binary` and `$date`, and each line parses back into exactly the document that failed. Failing to write that file is logged, never propagated.
+Documents MongoDB keeps refusing after `max-retries` are written to the `dead-letter-collection` of the sink's database, each as it was plus a `_deadLetter` sub-document with the collection it was meant for, MongoDB's reason and the time. Being documents in a collection, they can be queried, repaired and re-inserted with the same REST API as anything else. `max-retries` governs only this path: a MongoDB that is unreachable is retried indefinitely instead, because the messages have already been acknowledged to the broker and there is nowhere else for them to be.
 
-A relative `dead-letter-file` is resolved to an absolute path at startup, against the server process's working directory, and the resolved path is logged — for a forked or containerised RESTHeart that directory is rarely where the operator is standing, and a dead-letter file nobody can find is the same as no dead-letter file. The file is rotated to `<file>.1` once it passes `dead-letter-max-bytes` (100 MB by default), replacing any previous rotation, so its footprint is bounded at twice that. Nothing reads it back yet: re-ingestion is [#607](https://github.com/SoftInstigate/restheart/issues/607).
+If the dead-letter write fails too — the collection validates its documents as well, say — it is logged and those documents are lost; nothing is propagated into the drain loop. Re-ingesting them through an API of their own is [#607](https://github.com/SoftInstigate/restheart/issues/607).
 
 ## Using the client from your own plugin
 
@@ -632,7 +645,7 @@ Call `unsubscribe` or `unsubscribeDurable` when you are done. A listener that is
 
 ## Operational notes
 
-**Shutdown.** RESTHeart has no plugin shutdown callback, so the client and the writer's drain loop are stopped from JVM shutdown hooks. On a clean shutdown the writer drains its buffer into MongoDB for up to `drain.shutdown-timeout-ms` (5 s by default, deliberately inside Docker's 10 s SIGTERM grace), and anything still buffered when that elapses is written to the dead-letter file rather than dropped. A `kill -9` runs no hook at all, but what was buffered was never acknowledged, so the broker redelivers it to the next instance that resumes the session — see "Durability" above.
+**Shutdown.** RESTHeart has no plugin shutdown callback, so the client and the writer's drain loop are stopped from JVM shutdown hooks. The writer stops taking messages first — what arrives from then on is left unacknowledged for the broker to redeliver to the next instance — and then drains its buffer into MongoDB for up to `drain.shutdown-timeout-ms` (5 s by default, deliberately inside Docker's 10 s SIGTERM grace). What the budget does not cover is lost and logged, which in practice means being stopped while MongoDB is down as well. A `kill -9` runs no hook at all and loses the buffer — see "Durability" above.
 
 **Message loss is by design on the live-data paths**, each counted so it is visible rather than silent: the router's global rate limit, the SSE per-connection queue, and a pipeline's `throttle` stage. For a dashboard that is the right answer — you want the latest reading, not a backlog.
 
@@ -648,7 +661,7 @@ Call `unsubscribe` or `unsubscribeDurable` when you are done. A listener that is
 
 ## Metrics
 
-`mqtt-metrics-collector` (enabled by default whenever `mqtt-client` is armed) registers the router's counters as live Prometheus gauges via `restheart-metrics`' custom-metrics API, exposed at `GET /metrics/<name>`: `mqtt_router_topic_filters`, `mqtt_router_listeners`, `mqtt_router_cached_messages`, `mqtt_router_messages_received`, `mqtt_router_messages_dropped`. `mqtt-mongo-writer` and `mqtt-sse`, when enabled, register their own gauges the same way: `mqtt_buffer_size`, `mqtt_buffer_capacity`, `mqtt_buffer_accepted`, `mqtt_buffer_dropped`, `mqtt_buffer_duplicates`, `mqtt_sse_dropped`, `mqtt_sse_open_connections`, and `mqtt_throttle_dropped` (aggregated across every per-connection `ThrottleStage`).
+`mqtt-metrics-collector` (enabled by default whenever `mqtt-client` is armed) registers the router's counters as live Prometheus gauges via `restheart-metrics`' custom-metrics API, exposed at `GET /metrics/<name>`: `mqtt_router_topic_filters`, `mqtt_router_listeners`, `mqtt_router_cached_messages`, `mqtt_router_messages_received`, `mqtt_router_messages_dropped`. `mqtt-mongo-writer` and `mqtt-sse`, when enabled, register their own gauges the same way: `mqtt_buffer_size`, `mqtt_buffer_capacity`, `mqtt_buffer_bytes`, `mqtt_buffer_max_bytes`, `mqtt_buffer_accepted`, `mqtt_buffer_dropped`, `mqtt_buffer_duplicates`, `mqtt_sse_dropped`, `mqtt_sse_open_connections`, and `mqtt_throttle_dropped` (aggregated across every per-connection `ThrottleStage`).
 
 For a synchronous JSON view of the router's own counters without a Prometheus scrape, enable `mqtt-stats` (Tier 2, opt-in, secure) and `GET /mqtt/stats`.
 

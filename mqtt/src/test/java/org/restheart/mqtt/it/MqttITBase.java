@@ -41,11 +41,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
@@ -83,6 +87,8 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class MqttITBase {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttITBase.class);
 
     private static final String ADMIN_USER = "admin";
     private static final String ADMIN_PASSWORD = "secret";
@@ -153,9 +159,111 @@ public abstract class MqttITBase {
         //
         // The port is still not hardcoded: it is probed the same way, and with the same accepted
         // race, as the HTTP port in startRestheart - see its javadoc.
-        brokerPort = freePort();
+        // freePort() probes a port and the container binds it a moment later, so another process
+        // - often a previous container of this very suite - can take it in between. Docker then
+        // answers "address already in use" and the whole class errors out before its first test.
+        // Retrying with another port turns a flaky suite into a slightly slower one.
+        startBrokerOnAFreePort();
 
-        mosquitto = new GenericContainer<>("eclipse-mosquitto:2")
+        beforeRestheartStarts();
+
+        restheart = startRestheart(overridesFile(), allRho(), getClass().getSimpleName() + ".log", standalone());
+
+        // Not enough that the instance answers /ping: that happens while the AFTER_STARTUP
+        // initializers are still running, and mqtt-connector is deliberately the last of them. A
+        // test that published before the client had connected published into a broker nobody was
+        // subscribed to, and the message was gone for good - a 404 or an empty stream, minutes
+        // later, with nothing in the logs to say why.
+        awaitBrokerConnected();
+    }
+
+    /**
+     * Blocks until this instance's MQTT client reports a connection, so a test never publishes
+     * into a broker nothing is subscribed to. Classes whose instance has no MQTT client at all
+     * override {@link #connectsToBroker()}.
+     */
+    protected void awaitBrokerConnected() {
+        if (!connectsToBroker()) {
+            return;
+        }
+
+        var deadline = System.currentTimeMillis() + 90_000L;
+        while (System.currentTimeMillis() < deadline) {
+            if (restheartLogs().contains("Connected to MQTT broker")) {
+                return;
+            }
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("interrupted waiting for the broker connection", e);
+            }
+        }
+        throw new IllegalStateException("the MQTT client had not connected within 90s; see the instance log");
+    }
+
+    /**
+     * @return whether this class's instance is expected to connect to the broker; {@code false}
+     *         for an instance configured with no MQTT client
+     */
+    protected boolean connectsToBroker() {
+        return true;
+    }
+
+    static void retryingOnPortCollision(String what, IntConsumer startOnPort, IntSupplier freePort) {
+        var attempts = 5;
+        for (var attempt = 1; ; attempt++) {
+            var port = freePort.getAsInt();
+            try {
+                startOnPort.accept(port);
+                return;
+            } catch (RuntimeException e) {
+                if (attempt == attempts || !isPortCollision(e)) {
+                    throw e;
+                }
+                LOGGER.warn("{} could not take port {} (attempt {} of {}), trying another one",
+                    what, port, attempt, attempts);
+            }
+        }
+    }
+
+    /** Whether the container failed because something else took the port between probe and bind. */
+    private static boolean isPortCollision(Throwable t) {
+        for (var cause = t; cause != null; cause = cause.getCause()) {
+            var message = cause.getMessage();
+            if (message != null && (message.contains("address already in use")
+                    || message.contains("port is already allocated")
+                    || message.contains("ports are not available"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void startBrokerOnAFreePort() {
+        retryingOnPortCollision("The broker", port -> {
+            brokerPort = port;
+            var candidate = newMosquitto(port);
+            try {
+                candidate.start();
+            } catch (RuntimeException e) {
+                candidate.stop();
+                throw e;
+            }
+            mosquitto = candidate;
+        }, MqttITBase::freePortUnchecked);
+    }
+
+    private static int freePortUnchecked() {
+        try {
+            return freePort();
+        } catch (IOException e) {
+            throw new IllegalStateException("cannot probe a free port", e);
+        }
+    }
+
+    private static GenericContainer<?> newMosquitto(int hostPort) {
+        var container = new GenericContainer<>("eclipse-mosquitto:2")
             .withExposedPorts(1883)
             // eclipse-mosquitto:2 ships /mosquitto-no-auth.conf inside the image, containing
             // exactly "listener 1883" and "allow_anonymous true" - no config file and no volume
@@ -163,13 +271,11 @@ public abstract class MqttITBase {
             // mounted mqtt/mosquitto.conf.
             .withCommand("mosquitto", "-c", "/mosquitto-no-auth.conf")
             .waitingFor(Wait.forListeningPort());
-        mosquitto.setPortBindings(List.of(brokerPort + ":1883"));
-        mosquitto.start();
-
-        beforeRestheartStarts();
-
-        restheart = startRestheart(overridesFile(), allRho(), getClass().getSimpleName() + ".log", standalone());
+        container.setPortBindings(List.of(hostPort + ":1883"));
+        return container;
     }
+
+
 
     /**
      * Every {@code RHO} pair a RESTHeart for this test class needs: the broker's probed port,

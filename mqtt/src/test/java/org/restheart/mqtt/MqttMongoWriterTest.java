@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bson.BsonDocument;
 import org.bson.Document;
@@ -68,6 +69,7 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 
 import com.mongodb.MongoBulkWriteException;
+import com.mongodb.MongoTimeoutException;
 import com.mongodb.ServerAddress;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
@@ -117,14 +119,19 @@ public class MqttMongoWriterTest {
      * Builds a mocked mclient/db/collection chain and wires the writer's fields required to
      * exercise {@link MqttMongoWriter#flush()} without a real MongoDB.
      */
+    /** The dead-letter collection of the sink wired by {@link #wireWriterForFlush}. */
+    private MongoCollection<Document> deadLetterColl;
+
     @SuppressWarnings("unchecked")
     private MongoCollection<Document> wireWriterForFlush(MqttMongoWriter writer, String idStrategy,
-            int batchSize, int maxRetries, long retryDelayMs, String deadLetterFile) throws Exception {
+            int batchSize, int maxRetries, long retryDelayMs) throws Exception {
         MongoClient mclient = mock(MongoClient.class);
         MongoDatabase db = mock(MongoDatabase.class);
         MongoCollection<Document> coll = mock(MongoCollection.class);
+        deadLetterColl = mock(MongoCollection.class);
         when(mclient.getDatabase("db")).thenReturn(db);
         when(db.getCollection("coll")).thenReturn(coll);
+        when(db.getCollection("mqtt-dead-letter")).thenReturn(deadLetterColl);
 
         setField(writer, "mclient", mclient);
         setField(writer, "idStrategy", idStrategy);
@@ -132,7 +139,7 @@ public class MqttMongoWriterTest {
         setField(writer, "batchSize", batchSize);
         setField(writer, "maxRetries", maxRetries);
         setField(writer, "retryDelayMs", retryDelayMs);
-        setField(writer, "deadLetterFile", deadLetterFile);
+        setField(writer, "deadLetterCollection", "mqtt-dead-letter");
         setField(writer, "sinks", List.of(new MqttMongoWriter.MongoSink("sensors/#", "db", "coll")));
         return coll;
     }
@@ -650,7 +657,7 @@ public class MqttMongoWriterTest {
     @DisplayName("id-strategy 'auto' writes with insertMany, not bulkWrite")
     void testAutoStrategyUsesInsertMany() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 10, 3, 1L, "unused.log");
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 10, 3, 1L);
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
         buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> { }));
@@ -670,7 +677,7 @@ public class MqttMongoWriterTest {
     @DisplayName("id-strategy 'payload-field' writes with bulkWrite using upserting ReplaceOneModels")
     void testDedupStrategyUsesUpsertingBulkWrite() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L, "unused.log");
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L);
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class))).thenReturn(mock(BulkWriteResult.class));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
@@ -705,9 +712,7 @@ public class MqttMongoWriterTest {
     @DisplayName("A duplicate-key (11000) bulk error under a dedup strategy is treated as success: no retry, no dead-letter, counted")
     void testDuplicateKeyTreatedAsSuccess() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        Path deadLetter = Files.createTempFile("mqtt-dead-letter", ".log");
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L,
-            deadLetter.toString());
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L);
 
         // 2 documents; only index 0 is reported as an error (duplicate key) — index 1 succeeded silently
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
@@ -722,17 +727,15 @@ public class MqttMongoWriterTest {
 
         verify(coll, times(1)).bulkWrite(anyList(), any(BulkWriteOptions.class));
         assertEquals(1, writer.getDuplicateCount());
-        assertEquals(0, Files.size(deadLetter), "duplicate-key documents must not be dead-lettered");
+        verify(deadLetterColl, never()).insertMany(anyList(), any(InsertManyOptions.class));
 
-        Files.deleteIfExists(deadLetter);
     }
 
     @Test
     @DisplayName("A duplicate-key error under 'auto' is also already-stored, not a failure to retry and dead-letter")
     void testDuplicateKeyUnderAutoIsTreatedAsSuccess() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        Path deadLetter = Files.createTempFile("mqtt-dead-letter", ".log");
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 10, 3, 1L, deadLetter.toString());
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 10, 3, 1L);
 
         // auto writes with insertMany, and the driver assigns each Document an _id while encoding
         // it. So a duplicate key here can only mean this writer already stored that very document -
@@ -752,9 +755,8 @@ public class MqttMongoWriterTest {
 
         verify(coll, times(1)).insertMany(anyList(), any(InsertManyOptions.class));
         assertEquals(1, writer.getDuplicateCount(), "the duplicate must be counted, not hidden");
-        assertEquals(0, Files.size(deadLetter), "a document already in the database must not be dead-lettered");
+        verify(deadLetterColl, never()).insertMany(anyList(), any(InsertManyOptions.class));
 
-        Files.deleteIfExists(deadLetter);
     }
 
     // --- partial failure retries only the failed documents (finding M10) ---
@@ -763,7 +765,7 @@ public class MqttMongoWriterTest {
     @DisplayName("A genuine bulk-write error retries only the failed indices, not the whole batch")
     void testPartialFailureRetriesOnlyFailedDocuments() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L, "unused.log");
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 3, 1L);
 
         // First attempt: 2 documents submitted, index 0 fails with a genuine (non-duplicate-key) error
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
@@ -789,13 +791,11 @@ public class MqttMongoWriterTest {
     // --- dead-letter on exhausted retries ---
 
     @Test
-    @DisplayName("Exhausted retries append the still-failing documents to the dead-letter file, one JSON document per line")
-    void testExhaustedRetriesDeadLetter(@TempDir Path tempDir) throws Exception {
+    @DisplayName("Exhausted retries write the still-failing documents to the dead-letter collection")
+    void testExhaustedRetriesDeadLetter() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        Path deadLetterPath = tempDir.resolve("dead-letter.log");
         // maxRetries=1: the initial attempt plus exactly one retry, both failing, then dead-letter
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 1, 1L,
-            deadLetterPath.toString());
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 1, 1L);
 
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
             .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)));
@@ -806,24 +806,32 @@ public class MqttMongoWriterTest {
 
         writer.flush();
 
-        assertTrue(Files.exists(deadLetterPath), "dead-letter file should have been created");
-        List<String> lines = Files.readAllLines(deadLetterPath);
-        assertEquals(1, lines.size(), "one JSON document per line");
-        Document deadLettered = Document.parse(lines.get(0));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Document>> captor = ArgumentCaptor.forClass(List.class);
+        verify(deadLetterColl).insertMany(captor.capture(), any(InsertManyOptions.class));
+
+        assertEquals(1, captor.getValue().size());
+        Document deadLettered = captor.getValue().get(0);
         assertEquals("sensors/temp", deadLettered.getString("topic"));
         assertEquals("{\"temp\":42}", deadLettered.getString("payload"));
+        // and why it is there, next to the document itself
+        assertEquals("coll", deadLettered.get("_deadLetter", Document.class).getString("collection"));
+        assertTrue(deadLettered.get("_deadLetter", Document.class).getString("reason").contains("interrupted"),
+            "the reason must say what MongoDB answered");
     }
 
     @Test
-    @DisplayName("A failure to write the dead-letter file is logged, not thrown")
+    @DisplayName("A failure to write to the dead-letter collection is logged, not thrown")
     void testDeadLetterWriteFailureDoesNotThrow() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        // A directory cannot be opened as a FileWriter target, so writing the dead-letter will fail
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 0, 1L,
-            Files.createTempDirectory("mqtt-dead-letter-dir").toString());
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 0, 1L);
 
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
             .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)));
+        // the dead-letter collection refuses it too: nowhere left to put it, but no exception
+        // may escape the drain loop
+        when(deadLetterColl.insertMany(anyList(), any(InsertManyOptions.class)))
+            .thenThrow(new MongoTimeoutException("Timed out while waiting for a server"));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
         buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> { }));
@@ -833,13 +841,47 @@ public class MqttMongoWriterTest {
         writer.flush();
     }
 
+    // --- acknowledgement and MongoDB outages ---
+
+    @Test
+    @DisplayName("With MongoDB unreachable the batch is retried for as long as the writer runs, and never dead-lettered")
+    void testUnreachableMongoRetriesAndDoesNotDeadLetter() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter();
+        // max-retries is 1: it governs documents MongoDB refuses, and must not end an outage
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 1, 1L);
+        setField(writer, "writeDeadlineMillis", Long.MAX_VALUE);
+
+        // what the driver throws while no server is reachable: not a bulk-write error, so this
+        // exercises the other catch of insertWithRetry
+        var attempts = new AtomicInteger();
+        when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class))).thenAnswer(invocation -> {
+            // it would otherwise retry until MongoDB answers, which is the point: the shutdown
+            // deadline is what ends it
+            if (attempts.incrementAndGet() >= 5) {
+                setField(writer, "writeDeadlineMillis", System.currentTimeMillis() - 1);
+            }
+            throw new MongoTimeoutException("Timed out while waiting for a server");
+        });
+
+        MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
+        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"a\",\"temp\":42}", 1), () -> { }));
+        setField(writer, "buffer", buffer);
+
+        writer.flush();
+
+        assertEquals(5, attempts.get(),
+            "an unreachable MongoDB must be retried, not given up on after max-retries");
+        verify(deadLetterColl, never()).insertMany(anyList(), any(InsertManyOptions.class));
+    }
+
+
     // --- drain loop throughput (finding A5) ---
 
     @Test
     @DisplayName("drainUntilEmptyOrDeadline empties a buffer holding several batches within one wake-up")
     void testDrainLoopEmptiesMultipleBatchesInOneInterval() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 2, 3, 1L, "unused.log");
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 2, 3, 1L);
 
         MessageBuffer buffer = new MessageBuffer(20, Strategy.RING);
         for (int i = 0; i < 7; i++) {
@@ -861,7 +903,7 @@ public class MqttMongoWriterTest {
     @DisplayName("drainUntilEmptyOrDeadline stops once the deadline has elapsed even if the buffer is not empty")
     void testDrainLoopRespectsDeadline() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        wireWriterForFlush(writer, "auto", 1, 3, 1L, "unused.log");
+        wireWriterForFlush(writer, "auto", 1, 3, 1L);
 
         MessageBuffer buffer = new MessageBuffer(20, Strategy.RING);
         for (int i = 0; i < 5; i++) {
@@ -906,7 +948,7 @@ public class MqttMongoWriterTest {
     @DisplayName("close() drains the whole buffer, not just one batch")
     void testCloseDrainsMoreThanOneBatch() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 200, 1, 1L, deadLetterPath());
+        MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 200, 1, 1L);
         setField(writer, "shutdownTimeoutMs", 10_000L);
 
         MessageBuffer buffer = new MessageBuffer(2000, Strategy.RING);
@@ -925,11 +967,10 @@ public class MqttMongoWriterTest {
     }
 
     @Test
-    @DisplayName("close() dead-letters whatever the shutdown deadline did not cover")
-    void testCloseDeadLettersWhatTheDeadlineLeaves() throws Exception {
+    @DisplayName("close() drops what the shutdown deadline did not cover, without dead-lettering it")
+    void testCloseDropsWhatTheDeadlineLeaves() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter();
-        String deadLetter = deadLetterPath();
-        wireWriterForFlush(writer, "auto", 200, 1, 1L, deadLetter);
+        wireWriterForFlush(writer, "auto", 200, 1, 1L);
         // Zero budget: drainUntilEmptyOrDeadline runs its body exactly once (it is a do/while),
         // so one batch reaches MongoDB and the remaining 800 are past the deadline. Deterministic,
         // where a real timeout would be a race.
@@ -945,49 +986,12 @@ public class MqttMongoWriterTest {
         writer.close();
 
         assertEquals(0, buffer.size(), "nothing may be left holding a reference in the buffer");
-        var lines = Files.readAllLines(Path.of(deadLetter));
-        assertEquals(800, lines.size(),
-            "everything the deadline did not cover must reach the dead-letter file rather than "
-                + "being dropped; got " + lines.size() + " lines");
+        // The dead-letter collection is for documents MongoDB refuses, not for messages it never
+        // saw. These were acknowledged to the broker when they were buffered, and the buffer is
+        // memory: an orderly shutdown writes them, and what it cannot write is lost and logged.
+        verify(deadLetterColl, never()).insertMany(anyList(), any(InsertManyOptions.class));
     }
 
-    @Test
-    @DisplayName("the dead-letter file rotates once it passes dead-letter-max-bytes")
-    void testDeadLetterFileRotates() throws Exception {
-        MqttMongoWriter writer = new MqttMongoWriter();
-        String deadLetter = deadLetterPath();
-        wireWriterForFlush(writer, "auto", 200, 1, 1L, deadLetter);
-        setField(writer, "deadLetterMaxBytes", 64L);
-        setField(writer, "shutdownTimeoutMs", 0L);
-
-        // Two rounds, each past the 64-byte cap: the first fills the file, the second finds it
-        // oversized and rotates before writing.
-        for (int round = 0; round < 2; round++) {
-            MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-            for (int i = 0; i < 5; i++) {
-                buffer.offer(new Pending(msg("sensors/temp", "{\"round\":" + round + ",\"n\":" + i + "}", 0), () -> { }));
-            }
-            setField(writer, "buffer", buffer);
-            setField(writer, "running", true);
-            setField(writer, "batchSize", 0); // nothing reaches MongoDB; everything is stranded
-            writer.close();
-        }
-
-        assertTrue(Files.exists(Path.of(deadLetter + ".1")),
-            "the oversized file must be rotated aside rather than growing without bound");
-        assertTrue(Files.exists(Path.of(deadLetter)),
-            "and a fresh file must carry the newest failures");
-    }
-
-    /**
-     * @return a dead-letter path under the module's target directory, unique per call, so tests
-     *         neither collide with one another nor leave files in the working directory
-     */
-    private static String deadLetterPath() throws Exception {
-        var dir = Path.of("target", "dead-letter-tests");
-        Files.createDirectories(dir);
-        return dir.resolve("dl-" + System.nanoTime() + ".log").toAbsolutePath().toString();
-    }
 
     // --- configuration reading must survive YAML's choice of numeric type ---
 
@@ -1038,13 +1042,14 @@ public class MqttMongoWriterTest {
     }
 
     @Test
-    @DisplayName("a message the buffer refuses is acknowledged anyway, so the connection keeps breathing")
-    void testRefusedMessageIsStillAcknowledged() throws Exception {
-        // The wiring the whole live/durable separation rests on. When the buffer refuses a message
-        // - full, and the wait ceiling elapsed - the message is lost either way. Leaving it
-        // unacknowledged would be strictly worse than dropping it: it would hold a slot in the
-        // broker's in-flight window, and once that fills the broker stops delivering to this client
-        // entirely, SSE included. A MongoDB outage would take the live stream down with it.
+    @DisplayName("a message is acknowledged as soon as it is buffered, not when it is written")
+    void testMessageIsAcknowledgedWhenBuffered() throws Exception {
+        // The wiring the whole live/durable separation rests on. MQTT acknowledgements are
+        // ordered: hivemq-mqtt-client holds a PUBACK back until every earlier message has been
+        // acknowledged, so a message held until MongoDB takes it blocks every acknowledgement
+        // behind it, the broker's in-flight window fills and it stops delivering to this client
+        // entirely, SSE included. Acknowledging at the buffer is what keeps ingestion independent
+        // of the database, at the cost of losing what is in memory if this process dies.
         var router = mock(MqttMessageRouter.class);
         MqttMongoWriter writer = new MqttMongoWriter(router);
         setField(writer, "config", Map.of(
@@ -1065,14 +1070,15 @@ public class MqttMongoWriterTest {
             var acknowledged = new java.util.concurrent.atomic.AtomicInteger();
             Runnable ack = acknowledged::incrementAndGet;
 
-            // First fills the single slot and is held - not acknowledged until it is written.
+            // Buffered is taken: acknowledged at once, before any write is attempted.
             listener.getValue().onMessage(msg("sensors/temp", "{\"n\":1}", 1), ack);
-            assertEquals(0, acknowledged.get(), "a buffered message must not be acknowledged yet");
+            assertEquals(1, acknowledged.get(), "a buffered message must be acknowledged at once");
 
-            // Second is refused, and must be acknowledged on the spot.
+            // The single slot is now full and this strategy drops rather than waits: the message
+            // is counted as dropped and acknowledged too, since nothing else is holding it.
             listener.getValue().onMessage(msg("sensors/temp", "{\"n\":2}", 1), ack);
-            assertEquals(1, acknowledged.get(),
-                "a refused message must be acknowledged rather than left holding an in-flight slot");
+            assertEquals(2, acknowledged.get(),
+                "a dropped message must be acknowledged rather than hold an in-flight slot");
         } finally {
             writer.close();
         }
