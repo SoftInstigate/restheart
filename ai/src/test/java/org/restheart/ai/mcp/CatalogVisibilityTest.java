@@ -117,10 +117,22 @@ class CatalogVisibilityTest {
         assertTrue(visible("path('/orders') and is-gold-customer()", "/orders", "GET"));
     }
 
-    /** With no rule of its own, nothing can be shown. */
+    /**
+     * No rule to read is not the same as no rule that matches.
+     *
+     * <p>A caller with no enumerable permission still reached {@code /mcp}, so something allowed
+     * them — an authorizer whose logic is code, say. The analysis then knows nothing, and answering
+     * "not allowed" would be inventing it: nothing can be ruled out, so nothing is hidden.
+     */
     @Test
-    void noPermissionAtAllHidesEverything() {
-        assertFalse(CatalogVisibility.isReadable(List.of(), listing("/orders", "GET", Map.of())));
+    void noRuleToReadShowsEverything() {
+        assertTrue(CatalogVisibility.isReadable(List.of(), listing("/orders", "GET", Map.of())));
+    }
+
+    /** A rule that can be read and does not match is an answer, and it hides. */
+    @Test
+    void aRuleThatDoesNotMatchHides() {
+        assertFalse(visible("path('/invoices')", "/orders", "GET"));
     }
 
     /**

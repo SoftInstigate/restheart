@@ -182,6 +182,16 @@ final class CatalogVisibility {
 
     /** The same question with the rules and the context already in hand. Visible for testing. */
     static boolean isReadable(Collection<BaseAclPermission> permissions, ListingContext context) {
+        // No rule to read is not the same as no rule that matches. The caller reached /mcp, so
+        // something authorized them; if none of it is a rule we can enumerate — an authorizer whose
+        // logic is Java, which is how a hosting platform grants an administrator its own node —
+        // then the analysis knows nothing at all, and claiming "not allowed" would be inventing an
+        // answer. Nothing can be ruled out, so nothing is hidden. What should stay quiet anyway
+        // says so in its own mcp metadata.
+        if (permissions.isEmpty()) {
+            return true;
+        }
+
         for (var permission : permissions) {
             if (mayAllow(permission, context)) {
                 return true;
