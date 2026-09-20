@@ -126,7 +126,7 @@ public final class CatalogCondition {
         if (scope == Scope.ARGUMENTS) {
             var determined = atom.args().stream().allMatch(arg -> {
                 for (var i = 0; i < arg.values().size(); i++) {
-                    if (!Determined.argument(arg.values().get(i), arg.isQuoted(i))) {
+                    if (!Determined.isKnown(arg.values().get(i), arg.isQuoted(i))) {
                         return false;
                     }
                 }

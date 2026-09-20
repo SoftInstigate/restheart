@@ -45,12 +45,17 @@ public final class Determined {
             "%u", "%{REMOTE_USER}", "%a", "%{REMOTE_IP}");
 
     /**
-     * Whether one written argument has a value before the call exists.
+     * Whether one written argument is <em>known</em>: it has a value before the call exists.
+     *
+     * <p>{@code 'gold'} is, and so is {@code @user.plan} when its resolver says it reads only the
+     * session. {@code %{q,page}} is not, and neither is {@code @qparams['id']}: there is no call
+     * yet to read them from, so an atom containing one is undetermined however its predicate is
+     * declared.
      *
      * @param token  the argument as written
      * @param quoted whether it was written quoted, which makes it a literal whatever it looks like
      */
-    public static boolean argument(String token, boolean quoted) {
+    public static boolean isKnown(String token, boolean quoted) {
         if (quoted || token == null) {
             return true;
         }
