@@ -1591,7 +1591,7 @@ public class McpService implements ByteArrayService {
         var request = Request.of(exchange);
         var baseUrl = self.effectiveBaseUrl(exchange);
         var scope = self.resolveScope(request);
-        var principal = request.isAuthenticated() ? request.getAuthenticatedAccount().getPrincipal().getName() : null;
+        var principal = request.getAuthenticatedAccount() instanceof BaseAccount account ? account : null;
 
         return uri -> CatalogVisibility.isReadable(self.permissions, request,
                 CatalogVisibility.pathOf(uri), self.readMethodOf(principal, baseUrl, scope, uri));
@@ -1602,7 +1602,7 @@ public class McpService implements ByteArrayService {
      * that URI, otherwise the method of the resource it hangs off — {@code /coll/_size} reads as
      * {@code /coll} does — and {@code GET} when neither is known.
      */
-    private String readMethodOf(String principal, String baseUrl, String scope, String uri) {
+    private String readMethodOf(BaseAccount principal, String baseUrl, String scope, String uri) {
         var exact = resourceLookup.find(principal, baseUrl, scope, uri);
 
         if (exact.isPresent()) {
