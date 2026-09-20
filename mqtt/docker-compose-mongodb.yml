@@ -7,7 +7,7 @@
 #
 # Run it INSTEAD of docker-compose.yml, not alongside: both bind host ports 8080 and 1883.
 #
-#     ../mvnw -f ../pom.xml -pl mqtt package
+#     ../mvnw -f ../pom.xml -pl mqtt -am package
 #     docker compose -f docker-compose-mongodb.yml up
 name: restheart-mqtt-mongodb
 
@@ -70,7 +70,7 @@ services:
       mosquitto:
         condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8080:8080"
 
@@ -90,7 +90,27 @@ services:
   mongodb:
     # The same image the repository's own tests use, so what you see here is what CI sees.
     image: mongodb/mongodb-atlas-local:preview
+    # atlas-local names its single-node replica set member after the container hostname. Left to
+    # Docker, the hostname changes whenever the container is recreated, and a surviving data
+    # volume then holds a replica set config naming a host that no longer exists: MongoDB sits in
+    # "node is not in primary or recovering state". A fixed hostname keeps the two in step.
+    hostname: mongodb
     environment:
       DO_NOT_TRACK: "1"
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    # The image's own healthcheck, polled more often than its 30s default so RESTHeart, which
+    # waits for it, starts promptly.
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/runner", "healthcheck"]
+      interval: 5s
+      timeout: 30s
+      retries: 12
+      start_period: 10s
     ports:
       - "27017:27017" # so mongosh on the host can look at what was written
+
+volumes:
+  mongodb-data:
+  mongodb-config:

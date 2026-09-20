@@ -12,42 +12,27 @@ twice:
 | Part | What you add | What you learn |
 |---|---|---|
 | [1](#part-1--watch-a-message-arrive) | a live stream | how a broker message reaches a browser, and what the topic ACL does |
-| [2](#part-2--ask-for-the-last-value-instead-of-waiting-for-the-next-one) | a REST endpoint | why a correctly configured endpoint can still answer `404` forever |
-| [3](#part-3--keep-the-messages) | MongoDB | what the durability guarantee covers — by stopping the database on purpose |
+| [2](#part-2--ask-for-the-last-value-instead-of-waiting-for-the-next-one) | a REST endpoint | how to read the latest value of a topic on demand |
+| [3](#part-3--keep-the-messages) | MongoDB | how messages are stored, and why each one is stored once |
 | [4](#part-4--consume-the-messages-from-your-own-plugin) | your own plugin | how to consume MQTT from your own code without depending on an MQTT library |
 
 Work through them in order. Part 4 takes about forty minutes from a cold start, most of it waiting
 for Docker.
 
 Everything below was run end to end against the files in this directory, and the outputs shown are
-real, not illustrative. Where something surprising happens, it is called out rather than smoothed
-over.
-
-## Found a bug?
-
-Please open an issue at [SoftInstigate/restheart/issues](https://github.com/SoftInstigate/restheart/issues),
-and say **which part of this tutorial** you were on. What makes an MQTT report actionable:
-
-- the `RHO` you were running (or the compose file, if unmodified), since almost every surprise in
-  this module turns out to be a configuration one;
-- the `mqtt module active: ... inactive: ...` line from the startup log — it tells us in one line
-  which plugins were really on, which is rarely what people expect;
-- the server log from startup to the failure, not only the error;
-- whether you published at QoS 0 or 1 (`mosquitto_pub` defaults to **0**, which matters in part 3).
-
-Do not worry about deciding whether something is a bug or a misconfiguration. If the documentation
-let you configure it wrongly without complaining, that is worth knowing about too.
+real, not illustrative.
 
 ## Before you start
 
-You need Docker and a JDK 21+. From this directory:
+You need Docker and a JDK 25+. From this directory:
 
 ```
-../mvnw -f ../pom.xml -pl commons,mqtt install -DskipTests
+../mvnw -f ../pom.xml -pl commons,mqtt -am install -DskipTests
 ```
 
 That builds `target/restheart-mqtt.jar` and `target/lib`, which the compose files mount into the
-RESTHeart container. The module is not bundled with RESTHeart — see "Not bundled" in
+RESTHeart container. `-am` also installs `restheart-parent`, which part 4 needs to build a plugin
+against this module. With an older JDK the build stops straight away and says so. The module is not bundled with RESTHeart — see "Not bundled" in
 [README.md](./README.md) — so nothing here works until you have built it.
 
 Both compose files bind host ports **8080** and **1883**, so run one at a time and make sure
@@ -173,15 +158,18 @@ Keep terminal 1 up. Part 2 builds on this same environment.
 **Goal:** add `GET /mqtt?topic=...`, which answers immediately with the most recent message on a
 topic rather than holding a stream open. This is what a polling client or a health check wants.
 
-And, more usefully: understand why this endpoint is the one people most often report as broken.
-
 ### Enable it
 
-`mqtt-rest` is off in part 1 — the status line said so. Open `docker-compose.yml` and add one line
-to the `RHO` block:
+`mqtt-rest` is off in part 1 — the status line said so. It answers from the router's cache of the
+last message received on each topic, and the router only receives what something subscribed to. In
+part 1 that was your SSE client; for an endpoint that works whether or not anyone is streaming, the
+router needs a standing subscription of its own.
+
+Open `docker-compose.yml` and add two lines to the `RHO` block:
 
 ```yaml
         /mqtt-rest/enabled->true;
+        /mqtt-router/subscriptions->[{"topic":"sensors/#","qos":1}];
 ```
 
 Then, in terminal 1, `Ctrl-C` and:
@@ -190,52 +178,14 @@ Then, in terminal 1, `Ctrl-C` and:
 docker compose up
 ```
 
-The status line now reads `... mqtt-sse, mqtt-rest, mqtt-topic-authorizer ...`.
-
-### Publish, then poll
-
-With **no stream open** — close terminal 2's curl if it is still running — publish and ask for the
-last value:
-
-```
-docker compose exec -T mosquitto mosquitto_pub -q 1 -t sensors/temp -m '{"value":99}'
-curl -u admin:secret 'http://localhost:8080/mqtt?topic=sensors/temp'
-```
-
-```
-{"error":"No message cached for topic: sensors/temp"}
-```
-
-`404`. The plugin is enabled, the message was published, the ACL allows the topic, and the answer
-is still "nothing here". **This is the single most reported problem with this module, and it is not
-a bug.**
-
-### Why
-
-`mqtt-rest` never talks to the broker. It only ever reads the router's last-message cache, and the
-router only caches what something actually subscribed to. In part 1 the cache had an entry because
-your SSE client was subscribed to `sensors/temp`; with that client gone, nothing is subscribed, the
-broker delivers nothing, and there is nothing to cache.
-
-So `mqtt-rest` needs a subscription that exists whether or not anyone is connected. That is what
-`mqtt-router.subscriptions` is for. Add it to the `RHO` block:
-
-```yaml
-        /mqtt-router/subscriptions->[{"topic":"sensors/#","qos":1}];
-```
-
-Restart, and you will now see the subscription in the log at startup:
+The status line now reads `... mqtt-sse, mqtt-rest, mqtt-topic-authorizer ...`, and the log shows
+the subscription:
 
 ```
 Subscribed to topic filter: sensors/# with QoS AT_LEAST_ONCE
 ```
 
-(You will see that line **twice**. It is one broker subscription, issued once before the connection
-was established and re-issued once the broker reported a brand-new session. A repeated SUBSCRIBE
-for the same filter replaces the previous one, so this is noise in the log rather than a second
-subscription.)
-
-Publish and poll again:
+### Publish, then poll
 
 ```
 docker compose exec -T mosquitto mosquitto_pub -q 1 -t sensors/temp -m '{"value":21.5}'
@@ -243,71 +193,36 @@ curl -u admin:secret 'http://localhost:8080/mqtt?topic=sensors/temp'
 ```
 
 ```
-{"topic":"sensors/temp","payload":"{\"value\":21.5}","receivedAt":"2026-09-11T08:53:52.658422453Z","qos":1}
+{"topic":"sensors/temp","payload":"{\"value\":21.5}","payloadEncoding":"text","receivedAt":"2026-09-11T08:53:52.658422453Z","qos":1,"retain":false}
 ```
 
-Note `"qos":1`. That is the QoS the message was *delivered* at, which is the lower of what the
-publisher asked for and what the subscription asked for — it matters in part 3. Drop the `-q 1` from
-`mosquitto_pub` and this reads `"qos":0`, because `mosquitto_pub` defaults to QoS 0.
+`qos` is the QoS the message was delivered at: the lower of what the publisher asked for and what
+the subscription asked for. `mosquitto_pub` defaults to QoS 0, which is why the commands here pass
+`-q 1`.
 
-Two more responses worth seeing, since both are easy to mistake for something else:
+The same topic ACL as part 1 guards this endpoint:
 
 ```
-curl -u admin:secret 'http://localhost:8080/mqtt'
-{"error":"Missing required query parameter: topic"}       # 400 - unlike /mqtt-sse, there is no default
 curl -u admin:secret 'http://localhost:8080/mqtt?topic=traffic/x'
-{"msg":"Not authorized for topic: traffic/x"}             # 403 - the same ACL guards both endpoints
+{"msg":"Not authorized for topic: traffic/x"}             # 403
 ```
 
-### A remedy worth knowing, if you control the publishers
-
-The cache lives in memory, so every restart puts you back at `404` until the next message arrives —
-on a slow topic, a long blind window. There is a broker-side fix that costs nothing: publish the
-latest state **retained**.
-
-```
-docker compose exec -T mosquitto mosquitto_pub -r -q 1 -t sensors/temp -m '{"value":21.5}'
-```
-
-Now restart RESTHeart (`docker compose up -d --force-recreate restheart`) and poll again **without
-publishing anything**. It answers `200`. The broker replays its retained value on the SUBSCRIBE the
-module issues at every startup, so the cache is correct immediately. Drop the `-r` and repeat: `404`.
-
-This does not replace `mqtt-router.subscriptions` — with no subscription there is no SUBSCRIBE and
-nothing is replayed — it removes the window after each restart. With `payload-envelope: true` such a
-message arrives flagged `retain: true`, which is your warning that `receivedAt` is when *this
-instance* received it, not when the reading was taken.
-
-### One surprise you may hit instead of the 404
-
-If you restart **RESTHeart** but not the broker, you may find `/mqtt` answering `200` at a point in
-this tutorial where the text above says `404`. That is not the cache surviving — it is the broker's
-*session* surviving.
-
-The module connects with `clean-session: false` and a stable client id (derived from the RESTHeart
-instance name), because that is what makes the broker redeliver what a crashed instance never
-acknowledged — the whole basis of part 3. The cost is that subscriptions live in that session, not
-in the process: a subscription made by the RESTHeart you just killed is still there, and the broker
-keeps delivering it to the replacement. MQTT offers no way to list or clear a session's
-subscriptions, and the only way to drop them is to discard the session, which would throw away the
-undelivered messages the session exists to protect.
-
-Restart the broker (`docker compose restart mosquitto`) if you want a genuinely clean slate. Keep
-this in mind when a topic seems to be subscribed and nothing in your configuration says it should
-be.
+> [!TIP]
+> The cache lives in memory, so after a restart `/mqtt` answers `404` until the next message
+> arrives. If your publishers send the latest state as a **retained** message
+> (`mosquitto_pub -r ...`), the broker replays it when the module subscribes at startup, and the
+> endpoint answers straight away. See "The traps" in [README.md](./README.md) for this and the
+> other reasons `/mqtt` can answer `404`.
 
 ### Leave it running
 
-Keep both the `mqtt-rest` and `mqtt-router.subscriptions` lines — part 3's environment has them
-already.
+Keep both new lines — part 3's environment has them already.
 
 ---
 
 ## Part 3 — Keep the messages
 
-**Goal:** write incoming messages to MongoDB, then **stop MongoDB on purpose** while messages are
-still arriving. This is the part worth your time: it is where the module's design commitments become
-visible, and where you can check whether you believe them.
+**Goal:** write incoming messages to MongoDB, so they are kept after they have been delivered.
 
 ### Switch environments
 
@@ -319,22 +234,17 @@ docker compose -f docker-compose-mongodb.yml up
 ```
 
 Three containers now. The extra one is MongoDB; the RESTHeart configuration is part 2's plus
-`mqtt-mongo-writer`, so nothing you did is lost.
+`mqtt-mongo-writer`, which writes every message on `sensors/#` to the `iot.sensor-events`
+collection.
 
-Two of its settings are deliberate and worth reading before you go on.
+One of its settings is worth reading before you go on: **`id-strategy: payload-field`,
+`id-field: messageId`**. MQTT delivers at least once, so the same message can arrive twice, for
+example when the broker redelivers after a reconnect. Keying the document on something the message
+itself carries makes a second delivery overwrite the first instead of adding a copy. With the
+default `auto`, every delivery is a new document. So publish messages with a `messageId` from here
+on.
 
-**`id-strategy: payload-field`, `id-field: messageId`.** At-least-once delivery means duplicates are
-possible: a message redelivered after a crash is delivered *again*. Keying the document on something
-the message itself carries makes a redelivery converge on one document instead of adding a second.
-With the default `auto`, every redelivery is a new document. This is the knob that decides which way
-the trade goes, so publish messages with a `messageId` from here on.
-
-**Authentication and authorization are taken out of MongoDB** (`fileRealmAuthenticator` and
-`fileAclAuthorizer` instead of the `mongo*` ones). Without this, stopping MongoDB would also stop
-every request being authenticated, `GET /mqtt-sse` included — and a demo whose streaming endpoint
-dies with the database would demonstrate precisely the opposite of the point.
-
-### Check the happy path first
+### Store a message
 
 ```
 docker compose -f docker-compose-mongodb.yml exec -T mosquitto \
@@ -358,100 +268,38 @@ docker compose -f docker-compose-mongodb.yml exec -T mongodb \
 ]
 ```
 
-`_id` is `m1`, taken from the payload. Publish the same message again and the collection still holds
-one document.
+`_id` is `m1`, taken from the payload. Run the same `mosquitto_pub` again and query once more: the
+collection still holds one document.
 
 The other fields are BSON types, not strings, so the collection can be queried as what it is.
 `receivedAt` is a date, which has millisecond precision, so the sub-millisecond remainder is kept
-next to it in `receivedAtNanos`. Two messages inside one millisecond are ordinary at sensor rates,
-and without that field the order they arrived in would be lost. `retain` records the flag the
-broker delivered the message with. A payload that is not valid UTF-8 would be stored as BSON
-binary, byte for byte, instead of a string.
+next to it in `receivedAtNanos`: two messages inside one millisecond are ordinary at sensor rates,
+and without it the order they arrived in would be lost. A payload that is not valid UTF-8 would be
+stored as BSON binary, byte for byte, instead of a string.
 
-### Now break it
+### Publish at QoS 1
 
-Open a stream in terminal 2 and leave it running:
+A message is acknowledged to the broker once RESTHeart has it in memory, on its way to MongoDB.
+Until then the broker still owes it, and redelivers it if RESTHeart never takes it — but only at
+**QoS 1 or 2**: QoS 0, the `mosquitto_pub` default, has no acknowledgement at all, so a message
+lost before RESTHeart takes it is gone. See "Durability" in [README.md](./README.md) for the whole
+guarantee, including what a crash costs and how to size the broker's own queue.
 
-```
-curl -N -u admin:secret 'http://localhost:8080/mqtt-sse?topic=sensors/temp'
-```
-
-In terminal 3, stop the database and keep publishing:
-
-```
-docker compose -f docker-compose-mongodb.yml stop mongodb
-
-for n in 1 2 3 4 5; do
-  docker compose -f docker-compose-mongodb.yml exec -T mosquitto \
-    mosquitto_pub -q 1 -t sensors/temp -m "{\"messageId\":\"dn$n\",\"value\":$n}"
-  sleep 1
-done
-```
-
-**Terminal 2 keeps printing all five events.** `GET /mqtt?topic=sensors/temp` still answers `200`
-with the latest value. The live paths do not know or care that the database is gone — and that is
-the deliberate design: SSE and REST are live consumers and never hold up an acknowledgement, so a
-dashboard can keep working while persistence is degraded.
-
-Meanwhile the five messages are sitting in `mqtt-mongo-writer`'s in-memory buffer, unacknowledged to
-the broker.
-
-### Bring it back
-
-```
-docker compose -f docker-compose-mongodb.yml start mongodb
-
-docker compose -f docker-compose-mongodb.yml exec -T mongodb \
-  mongosh --quiet --eval 'db.getSiblingDB("iot")["sensor-events"].find({},{_id:1}).toArray()'
-```
-
-```
-[{"_id":"m1"},{"_id":"dn1"},{"_id":"dn2"},{"_id":"dn3"},{"_id":"dn4"},{"_id":"dn5"}]
-```
-
-All five arrived, within a few seconds of the database starting again (three, when this was last
-run). Nothing
-was lost and nothing was duplicated.
-
-### What you have just established, and what you have not
-
-You have established that the module absorbs a database restart. You have **not** established that
-it absorbs a database outage, and it does not claim to.
-
-`mqtt-mongo-writer`'s buffer waits up to `buffer.max-wait-ms` — **30 seconds** by default — for room
-before giving up on a message; past that it drops it, counts it in `mqtt_buffer_dropped`, and
-acknowledges it so the broker can move on. Try the same exercise with MongoDB down for two minutes
-and you will see that happen. That ceiling is the honest boundary of what an in-memory buffer is
-good for: **a prolonged database outage is not something an application layer can bridge, and the
-defence against it is a properly sized replica set, not a longer queue.**
-
-The ceiling also exists for a second reason, which matters more in practice than it sounds.
-Without it, a MongoDB problem would take the live stream down with it: an unbounded wait parks the
-thread dispatching a message, that message therefore never gets acknowledged, and once enough of
-them pile up the broker's in-flight window fills and it stops delivering to this client *at all* —
-SSE included, even though SSE never touches the database. Bounding the wait is what keeps the two
-independent. Set `buffer.max-wait-ms: 0` to wait forever instead, accepting that coupling.
-
-### The part that is easy to get wrong
-
-Publish with `-q 0` — which is `mosquitto_pub`'s **default**, so this is what you get by forgetting
-the flag — and none of the above guarantee applies. QoS 0 has no acknowledgement in the protocol at
-all, so there is nothing for the module to withhold and nothing for the broker to redeliver. The
-messages in this exercise survived because RESTHeart stayed up and its buffer held them; had you
-killed RESTHeart instead of MongoDB, QoS 0 messages would simply be gone.
-
-At-least-once end to end needs all of: **QoS 1 or 2 from the publisher**, `clean-session: false`
-(the default), and a **stable client id** — and that last one must be *unique* across concurrently
-connected instances, because a broker disconnects an existing client when another connects with the
-same id. The default is derived from the RESTHeart instance name, so several instances sharing
-`/core/name: default` will knock each other off the broker in a loop. You will see this warned about
-in the log of every environment in this tutorial:
-
-```
-mqtt-client has no client-id and this instance still carries the stock name 'default' ...
-```
-
-Harmless here, where there is one instance. Not harmless in production.
+> [!NOTE]
+> **What if MongoDB restarts?** Try it: stop the database, publish a message, start it again.
+>
+> ```
+> docker compose -f docker-compose-mongodb.yml stop mongodb
+> docker compose -f docker-compose-mongodb.yml exec -T mosquitto \
+>   mosquitto_pub -q 1 -t sensors/temp -m '{"messageId":"m2","value":22}'
+> docker compose -f docker-compose-mongodb.yml start mongodb
+> ```
+>
+> A stream open on `/mqtt-sse` keeps receiving messages while the database is down, and within a
+> few seconds of MongoDB coming back `m2` is in the collection: it waits in the writer's buffer
+> until MongoDB takes it. Nothing is dropped and nothing stops arriving — how long that holds
+> depends on how much the buffer and the broker's queue can keep, which "Durability" in
+> [README.md](./README.md) explains.
 
 ### Leave it running
 
@@ -597,3 +445,11 @@ docker compose -f docker-compose-mongodb.yml down -v
 ```
 
 `-v` removes the MongoDB volume too, so a later run starts from an empty collection.
+
+## Found a bug?
+
+The module is experimental, so reports are welcome. Open an issue at
+[SoftInstigate/restheart/issues](https://github.com/SoftInstigate/restheart/issues), say which part
+of this tutorial you were on, and include the `RHO` you were running and the
+`mqtt module active: ... inactive: ...` line from the startup log. [README.md](./README.md) lists
+what else helps under "Reporting bugs".
