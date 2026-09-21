@@ -51,10 +51,15 @@ public class WorkersWatchdogTest {
     private long now = 0;
     private final List<String> reports = new ArrayList<>();
     private final List<String> recoveries = new ArrayList<>();
+    private int halts = 0;
 
     private WorkersWatchdog.Watch watch(Executor executor) {
+        return watch(executor, null);
+    }
+
+    private WorkersWatchdog.Watch watch(Executor executor, Duration halt) {
         return new WorkersWatchdog.Watch(executor, () -> now, Duration.ofSeconds(30), () -> "THE DUMP",
-                reports::add, recoveries::add);
+                reports::add, recoveries::add, halt, () -> halts++);
     }
 
     private void advance(int seconds) {
@@ -112,6 +117,55 @@ public class WorkersWatchdogTest {
         advance(30);
         watch.check();
         assertEquals(2, reports.size(), "a new episode is reported");
+    }
+
+    @Test
+    public void withoutHaltItNeverHalts() {
+        var watch = watch(new HeldExecutor());
+
+        watch.check();
+        advance(3600);
+        watch.check();
+
+        assertEquals(1, reports.size());
+        assertEquals(0, halts);
+    }
+
+    @Test
+    public void aProcessStillStuckAfterTheHaltDelayHaltsAfterTheDump() {
+        var watch = watch(new HeldExecutor(), Duration.ofSeconds(120));
+
+        watch.check();
+        advance(30);
+        watch.check();          // the dump first
+        assertEquals(1, reports.size());
+        assertEquals(0, halts, "not before the halt delay");
+
+        advance(60);
+        watch.check();
+        assertEquals(0, halts);
+
+        advance(30);
+        watch.check();          // 120s out: halts
+        assertEquals(1, halts);
+    }
+
+    @Test
+    public void recoveringBeforeTheHaltDelayDoesNotHalt() {
+        var executor = new HeldExecutor();
+        var watch = watch(executor, Duration.ofSeconds(120));
+
+        watch.check();
+        advance(60);
+        watch.check();
+        executor.release();
+
+        advance(120);
+        watch.check();          // a fresh probe, served at once
+        executor.release();
+        watch.check();
+
+        assertEquals(0, halts);
     }
 
     @Test

@@ -1233,10 +1233,15 @@ jvmMetricsCollector:
 # interval-seconds a platform thread hands the request executor an empty task, and if it has not
 # started threshold-seconds later the dump goes to the log, once per episode. For containers with
 # no shell to run jcmd from, where the log is the only thing left to read.
+# halt-after-seconds > 0: still not serving that long after the probe, the process halts with
+# status 70 for its orchestrator to replace it (ECS, Kubernetes). A stuck process does not recover.
+# notify-email: also mail the report to this address, when the emails provider is configured.
 workersWatchdog:
   enabled: false
   interval-seconds: 10
   threshold-seconds: 30
+  halt-after-seconds: 0
+  notify-email: null
 
 # Base configuration for core module
 core:
