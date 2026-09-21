@@ -21,6 +21,7 @@
 package org.restheart.ai.util;
 
 import org.restheart.exchange.Request;
+import org.restheart.utils.URLUtils;
 
 /**
  * Reads per-request override parameters and returns the effective value, falling back
@@ -115,7 +116,7 @@ public final class RequestOverrides {
      * <p>The static {@code mcpService.public-base-url} still decides whether the resources
      * primitive is on at all, which is a property of the node and not of a tenant.
      */
-    public static final String MCP_PUBLIC_BASE_URL = "override-ai-mcp-public-base-url";
+    public static final String MCP_PUBLIC_BASE_URL = URLUtils.PUBLIC_BASE_URL_OVERRIDE;
 
     public static final String RERANK_PROVIDER = "override-ai-rerank-provider";
 

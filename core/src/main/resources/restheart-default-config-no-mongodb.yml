@@ -78,6 +78,15 @@ jwtAuthenticationMechanism:
   rolesClaim: roles
   fixedRoles: []
 
+# On a 401 from the MCP server, adds WWW-Authenticate: Bearer resource_metadata="…" pointing at
+# the OAuth protected resource metadata, beside the other challenges (Basic stays). MCP 2025-06-18
+# requires it; 2025-11-25 clients also find the metadata at the well-known URI without it.
+# It never authenticates anybody, and it speaks only when oauthProtectedResourceMetadataService and
+# mcpService are both enabled, and only on the MCP server's own path: elsewhere it is inert.
+# See https://restheart.org/docs/security/oauth#the-challenge-on-a-refused-mcp-request
+oauthResourceChallengeMechanism:
+  enabled: true
+
 # Digest Authentication
 # See https://restheart.org/docs/security/authentication#digest-authentication
 digestAuthMechanism:

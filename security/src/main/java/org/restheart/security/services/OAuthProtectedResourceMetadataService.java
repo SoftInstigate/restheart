@@ -34,6 +34,8 @@ import static org.restheart.utils.GsonUtils.object;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
 
+import io.undertow.server.HttpServerExchange;
+
 /**
  * OAuth 2.0 Protected Resource Metadata endpoint per RFC 9728.
  *
@@ -57,7 +59,8 @@ import org.restheart.utils.URLUtils;
 )
 public class OAuthProtectedResourceMetadataService implements JsonService {
 
-    private static final String WELL_KNOWN_PREFIX = "/.well-known/oauth-protected-resource";
+    /** Fixed by RFC 9728 §3, which is why the handler below does not read the configured uri. */
+    public static final String WELL_KNOWN_PREFIX = "/.well-known/oauth-protected-resource";
 
     @Inject("config")
     private Map<String, Object> config;
@@ -80,7 +83,7 @@ public class OAuthProtectedResourceMetadataService implements JsonService {
     public void handle(JsonRequest request, JsonResponse response) throws Exception {
         switch (request.getMethod()) {
             case GET -> {
-                var base = resolveServerUrl(request);
+                var base = baseUrl(request.getExchange());
                 var resourcePath = extractResourcePath(request.getPath());
                 var resourceUrl = resourcePath.isEmpty() ? base : base + resourcePath;
 
@@ -98,9 +101,28 @@ public class OAuthProtectedResourceMetadataService implements JsonService {
         }
     }
 
-    /** @see URLUtils#externalBaseUrl(String, io.undertow.server.HttpServerExchange) */
-    private String resolveServerUrl(JsonRequest request) {
-        return URLUtils.externalBaseUrl(serverUrl, request.getExchange());
+    /**
+     * The base URL this document names the resource and the authorization server with.
+     *
+     * <p>Public because it has a second reader: {@code OAuthResourceChallengeMechanism}, whose
+     * {@code WWW-Authenticate} points a client at this document. The two must name the same host
+     * — a challenge sending the client to one URL and a document answering with another is a
+     * client that refuses the metadata — so there is one resolution, and it is this one.
+     *
+     * @see URLUtils#publicBaseUrl(String, HttpServerExchange)
+     */
+    public String baseUrl(HttpServerExchange exchange) {
+        return URLUtils.publicBaseUrl(serverUrl, exchange);
+    }
+
+    /**
+     * Where the metadata of the resource at {@code resourcePath} is published: the well-known
+     * prefix with the resource path appended, as RFC 9728 §3.1 builds it.
+     *
+     * @param resourcePath the path of the protected resource, e.g. {@code /mcp}
+     */
+    public String metadataUrl(HttpServerExchange exchange, String resourcePath) {
+        return baseUrl(exchange) + WELL_KNOWN_PREFIX + (resourcePath == null || "/".equals(resourcePath) ? "" : resourcePath);
     }
 
     /**

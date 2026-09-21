@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 import org.bson.BsonValue;
+import org.restheart.exchange.Request;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 
 import io.undertow.UndertowOptions;
@@ -45,22 +46,30 @@ public class URLUtils {
     }
 
     /**
-     * Removes trailing slashes from a given string path.
-     * For example, given string "/ciao/this/has/trailings/////" returns
-     * "/ciao/this/has/trailings".
+     * The attached parameter a multi-tenant deployment uses to say, per request, the public base
+     * URL of the tenant the request is for — scheme and host as the client wrote them.
      *
-     * @param s the string to process
-     * @return the string without trailing slashes, or null if input is null
+     * <p>Named for the MCP server, which was its first reader, and kept that way because the name
+     * is a contract with the deployments that attach it. It answers a question broader than MCP:
+     * what this tenant is called from outside. See {@link #publicBaseUrl}.
      */
+    public static final String PUBLIC_BASE_URL_OVERRIDE = "override-ai-mcp-public-base-url";
+
     /**
      * The base URL an external client reaches this instance at: {@code configured} when the
      * operator set one, else what the request says it came in on.
      *
      * <p>Order, and each step is there for a deployment that exists: the configured value first,
-     * because behind a proxy only the operator knows the public name; then
-     * {@code X-Forwarded-Proto} and {@code X-Forwarded-Host} together, which is what a proxy that
-     * terminates TLS leaves behind; then the exchange's own scheme and {@code Host}. An empty
-     * string when even that is missing, which is not a URL and is meant to be noticed.
+     * because behind a proxy only the operator knows the public name; then {@code X-Forwarded-Proto}
+     * and {@code X-Forwarded-Host}, which is what a proxy that terminates TLS leaves behind; then the
+     * exchange's own scheme and {@code Host}. An empty string when even the host is missing, which
+     * is not a URL and is meant to be noticed.
+     *
+     * <p>The two forwarded headers are read one by one, not as a pair. A proxy that preserves the
+     * {@code Host} it was called with has no reason to add {@code X-Forwarded-Host}, and several do
+     * exactly that; requiring both threw the forwarded scheme away and answered {@code http://} for
+     * a site served over {@code https://}. Of a comma-separated {@code X-Forwarded-Proto}, left by a
+     * chain of proxies, the first entry is the one the client used.
      *
      * <p>Shared because more than one service has to answer the same question — what to call
      * myself in something I hand out — and two answers that drift produce a document naming a
@@ -75,18 +84,52 @@ public class URLUtils {
         }
 
         var headers = exchange.getRequestHeaders();
-        var forwardedProto = headers.getFirst("X-Forwarded-Proto");
         var forwardedHost = headers.getFirst("X-Forwarded-Host");
+        var host = forwardedHost != null && !forwardedHost.isBlank() ? forwardedHost.strip() : headers.getFirst("Host");
 
-        if (forwardedProto != null && forwardedHost != null) {
-            return forwardedProto + "://" + forwardedHost;
+        if (host == null || host.isBlank()) {
+            return "";
         }
 
-        var host = headers.getFirst("Host");
+        var forwardedProto = headers.getFirst("X-Forwarded-Proto");
+        var scheme = forwardedProto != null && !forwardedProto.isBlank()
+                ? forwardedProto.split(",")[0].strip()
+                : exchange.getRequestScheme();
 
-        return host != null ? exchange.getRequestScheme() + "://" + host : "";
+        return scheme + "://" + host;
     }
 
+    /**
+     * {@link #externalBaseUrl}, except that a base URL attached to the request as
+     * {@link #PUBLIC_BASE_URL_OVERRIDE} wins over everything.
+     *
+     * <p>On a node that serves many tenants, one per host, a configured value cannot be right for
+     * all of them, and the forwarded headers depend on a proxy the node does not control. The
+     * deployment knows which tenant a request is for, attaches its public base URL before
+     * authentication, and every document that names this tenant — the MCP catalogue, the
+     * protected-resource metadata, the challenge that points at it — then names it the same way.
+     *
+     * @param configured the operator's own value, or {@code null}/blank when unset
+     * @param exchange the request being served
+     */
+    public static String publicBaseUrl(String configured, HttpServerExchange exchange) {
+        var attached = exchange.getAttachment(Request.ATTACHED_PARAMS_KEY);
+
+        if (attached != null && attached.get(PUBLIC_BASE_URL_OVERRIDE) instanceof String override && !override.isBlank()) {
+            return override;
+        }
+
+        return externalBaseUrl(configured, exchange);
+    }
+
+    /**
+     * Removes trailing slashes from a given string path.
+     * For example, given string "/ciao/this/has/trailings/////" returns
+     * "/ciao/this/has/trailings".
+     *
+     * @param s the string to process
+     * @return the string without trailing slashes, or null if input is null
+     */
     public static String removeTrailingSlashes(String s) {
         if (s == null) {
             return null;
