@@ -115,6 +115,30 @@ Scenario: Test mongodb mergeRequest
   And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }
 
 
+# A bulk insert: every document of the array is merged. The whole array used to be read as one
+# document, and every bulk POST on a collection with a mergeRequest answered 500.
+Scenario: Test mongodb mergeRequest with a bulk POST
+
+  * def setupData = call read('predicate-acl-setup.feature')
+
+  * headers { Authorization: '#(test)'}
+  Given path 'test-predicates/coll'
+  And request [ { title: 'bulk mergeRequest 1' }, { title: 'bulk mergeRequest 2' } ]
+  When method POST
+  Then assert responseStatus == 200 || responseStatus == 201
+
+  * headers { Authorization: '#(admin)'}
+  Given path 'test-predicates/coll'
+  And param filter = '{"title": {"$in": ["bulk mergeRequest 1", "bulk mergeRequest 2"]}}'
+  And param rep = 's'
+  When method GET
+  Then status 200
+  And match response == '#[2]'
+  And match each response contains { author: 'test', status: 'draft' }
+
+  And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }
+
+
 # Test that PATCH with update operators works correctly with mergeRequest
 Scenario: Test mongodb mergeRequest with PATCH update operators
 

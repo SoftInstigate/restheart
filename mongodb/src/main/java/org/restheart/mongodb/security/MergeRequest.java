@@ -25,6 +25,7 @@ import static org.restheart.utils.BsonUtils.isUpdateOperator;
 import static org.restheart.utils.BsonUtils.unescapeKeys;
 
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
@@ -61,19 +62,21 @@ public class MergeRequest implements MongoInterceptor {
         }
 
         if (request.getContent().isDocument()) {
-            merge(request, toMerge);
+            merge(request, request.getContent().asDocument(), toMerge);
         } else if (request.getContent().isArray()) {
-            request.getContent().asArray().stream().map(doc -> doc.asDocument())
-                    .forEachOrdered(doc -> merge(request, toMerge));
+            // every document of a bulk insert, each one merged: merging the request content itself
+            // read an array as a document and failed every bulk POST with a 500
+            request.getContent().asArray().stream()
+                    .filter(BsonValue::isDocument)
+                    .map(BsonValue::asDocument)
+                    .forEachOrdered(doc -> merge(request, doc, toMerge));
         }
     }
 
-    private void merge(MongoRequest request, BsonDocument toMerge) {
+    private void merge(MongoRequest request, BsonDocument content, BsonDocument toMerge) {
         // unescapeKeys converts _$push -> $push, _$set -> $set, etc.
         // so that update operators in mergeRequest config are recognized
         var iToMerge = unescapeKeys(AclVarsInterpolator.interpolateBson(request, toMerge)).asDocument();
-
-        var content = request.getContent().asDocument();
 
         if (containsUpdateOperators(iToMerge)) {
             // mergeRequest config contains update operators (e.g. $push).
