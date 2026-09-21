@@ -301,8 +301,10 @@ public class MqttMongoWriter implements Initializer {
             // buffer is what keeps ingestion independent of the database.
             //
             // The cost, and the module's stated guarantee: what is in the buffer is in memory
-            // only, so a SIGKILL or a power cut loses it. A clean shutdown writes it to the
-            // pending file and the next start replays it. See "Durability" in README.md.
+            // only, so a SIGKILL or a power cut loses it, and the broker will not redeliver
+            // because it was told the messages were taken. A clean shutdown drains the buffer
+            // into MongoDB instead, having stopped accepting first. See "Durability" in
+            // README.md.
             //
             // A full buffer applies backpressure instead: offer() waits for room (the default),
             // and only a configuration that asks for it drops messages.
@@ -882,10 +884,10 @@ public class MqttMongoWriter implements Initializer {
         writeDeadlineMillis = System.currentTimeMillis() + shutdownTimeoutMs;
 
         // Drain what is buffered, not just one batch of it. This is the only point in the whole
-        // path where messages used to disappear rather than reach disk: everywhere else a failure
-        // ends in the dead-letter file, but a clean shutdown wrote a single batch and dropped the
-        // rest. The two failures also arrive together in practice - RESTHeart gets restarted
-        // during a MongoDB incident, which is precisely when the buffer is full.
+        // path where messages used to disappear silently: everywhere else a failure ends in the
+        // dead-letter collection, but a clean shutdown wrote a single batch and dropped the rest.
+        // The two failures also arrive together in practice - RESTHeart gets restarted during a
+        // MongoDB incident, which is precisely when the buffer is full.
         var remaining = buffer.size();
         if (remaining > 0) {
             LOGGER.info("Shutting down with {} buffered messages; draining for up to {} ms",
