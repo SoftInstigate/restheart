@@ -74,7 +74,7 @@ To run **every** integration test — core's and mqtt's — in one go:
 ./mvnw clean verify -Pmqtt-it
 ```
 
-`-Pmqtt-it` does not switch off core's own test profiles (`mongodb` and `start-server` are activated by a property, not by default), and the reactor builds `mqtt` after `core` is completely done — its server and MongoDB container already stopped — so mqtt's tests find the core that was just built. This takes about 15 minutes: 193 core and 21 mqtt integration tests. It combines with the same options as core's suite, for example `-P-mongodb,mongodb-classic,mqtt-it -Dmongodb.version=8.0`.
+`-Pmqtt-it` does not switch off core's own test profiles (`mongodb` and `start-server` are activated by a property, not by default), and the reactor builds `mqtt` after `core` is completely done — its server and MongoDB container already stopped — so mqtt's tests find the core that was just built. This takes about 15 minutes, and runs core's integration tests plus mqtt's 24. It combines with the same options as core's suite, for example `-P-mongodb,mongodb-classic,mqtt-it -Dmongodb.version=8.0`.
 
 If core's tests fail immediately with `Conflict. The container name "/mongodb-atlas-local-1" is already in use`, a previous run was interrupted before it could stop its MongoDB container. Unless you kept it on purpose to re-run tests against it (see "Re-run tests without rebuilding" below), remove it with `docker rm -f -v mongodb-atlas-local-1`.
 

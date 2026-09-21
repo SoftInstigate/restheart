@@ -2,7 +2,7 @@
 #
 # Requires the plugin to have been built first, since it bind-mounts mqtt/target:
 #
-#   ../mvnw -f ../pom.xml -pl mqtt -am package
+#   ../mvnw -f ../pom.xml -pl mqtt -am install -DskipTests
 #   docker compose up
 #
 # Then, in another shell:

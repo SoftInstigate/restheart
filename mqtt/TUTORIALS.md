@@ -27,7 +27,7 @@ real, not illustrative.
 You need Docker and a JDK 25+. From this directory:
 
 ```
-../mvnw -f ../pom.xml -pl commons,mqtt -am install -DskipTests
+../mvnw -f ../pom.xml -pl mqtt -am install -DskipTests
 ```
 
 That builds `target/restheart-mqtt.jar` and `target/lib`, which the compose files mount into the

@@ -82,9 +82,9 @@ mqtt-client:
   broker-url: "tcp://broker:1883"
 ```
 
-`mqtt-router` is registered with `enabledByDefault = false` too, and is enabled together with `mqtt-client`. It does not rely on `ProvidersChecker` following the injection graph: a disabled provider is never instantiated, so with `mqtt-client` off, `mqtt-client` is absent from the provider registry entirely and an enabled `mqtt-router` would log a "no provider found" ERROR on every startup. Enabling `mqtt-client` without `mqtt-router` leaves the module with no message routing, so enable both.
+`mqtt-router` is registered with `enabledByDefault = false` too, and is enabled together with `mqtt-client`. It is not left to `ProvidersChecker` to follow the injection graph and switch it off on its own. `ProvidersChecker` does drop `mqtt-router` quietly when `mqtt-client` is disabled — the provider's *descriptor* is still there, so it takes the "the provider is disabled" branch and logs at DEBUG. But dropping it makes `mqtt-router` absent from the set of valid providers, and every *enabled* plugin injecting it then hits the "no provider found" branch, at ERROR. `mqtt-metrics-collector` is `enabledByDefault = true` and injects `mqtt-router`, so an `mqtt-router` left enabled over a disabled `mqtt-client` produces an ERROR line on every startup for it, and one more for each Tier 2 plugin still switched on. Enabling `mqtt-client` without `mqtt-router` leaves the module with no message routing, so enable both.
 
-**Tier 2 (opt-in surfaces).** Arming Tier 1 alone exposes no HTTP endpoint. `mqtt-sse`, `mqtt-rest` and `mqtt-mongo-writer` are each independently registered with `enabledByDefault = false`, and are switched on one at a time as needed:
+**Tier 2 (opt-in surfaces).** Arming Tier 1 alone exposes no HTTP endpoint. `mqtt-sse`, `mqtt-rest`, `mqtt-mongo-writer` and `mqtt-stats` are each independently registered with `enabledByDefault = false`, and are switched on one at a time as needed:
 
 ```yaml
 mqtt-sse:
@@ -94,6 +94,9 @@ mqtt-rest:
   enabled: true
 
 mqtt-mongo-writer:
+  enabled: true
+
+mqtt-stats:
   enabled: true
 ```
 
@@ -347,7 +350,7 @@ curl -u admin:secret 'http://localhost:8080/mqtt?topic=sensors/temp'
 [`mqtt/docker-compose.yml`](./docker-compose.yml) runs a self-contained two-container demo (RESTHeart plus a Mosquitto broker, no MongoDB) with the module already armed and a working ACL, so there is no broker or config to set up by hand. It mounts the built plugin — `mqtt/target/restheart-mqtt.jar` and `mqtt/target/lib` — into the RESTHeart container's plugins directory, so build the module first. From the `mqtt` directory:
 
 ```
-../mvnw -f ../pom.xml -pl commons,mqtt -am install -DskipTests
+../mvnw -f ../pom.xml -pl mqtt -am install -DskipTests
 docker compose up
 ```
 
@@ -668,9 +671,11 @@ For a synchronous JSON view of the router's own counters without a Prometheus sc
 ## Building
 
 ```
-./mvnw -pl mqtt test                      # this module's unit tests, no Docker needed
-./mvnw -pl mqtt package                   # also produces the installable archive — see "Installing"
+./mvnw -pl mqtt -am test                  # this module's unit tests, no Docker needed
+./mvnw -pl mqtt -am package               # also produces the installable archive — see "Installing"
 ```
+
+`-am` builds the parent POM and `restheart-commons` alongside the module, which is what a fresh checkout needs; drop it once they are in your local repository.
 
 The integration tests are opt-in, behind the `mqtt-it` profile: they need Docker, and nobody who is not working on MQTT should have to pay for it. They run against **the core built in this checkout**, not a published image: `MqttITBase` launches `core/target/restheart.jar` as a subprocess, with core's plugins and this module staged into its plugins directory, next to a Mosquitto broker container (and a MongoDB one for the writer's tests).
 

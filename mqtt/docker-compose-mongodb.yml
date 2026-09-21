@@ -7,7 +7,7 @@
 #
 # Run it INSTEAD of docker-compose.yml, not alongside: both bind host ports 8080 and 1883.
 #
-#     ../mvnw -f ../pom.xml -pl mqtt -am package
+#     ../mvnw -f ../pom.xml -pl mqtt -am install -DskipTests
 #     docker compose -f docker-compose-mongodb.yml up
 name: restheart-mqtt-mongodb
 

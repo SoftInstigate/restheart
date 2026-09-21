@@ -60,11 +60,12 @@ public class MqttPluginGatingTest {
         assertFalse(annotation.enabledByDefault(),
             "mqtt-router must be enabledByDefault = false. It used to keep the annotation default "
                 + "of true, on the reasoning that ProvidersChecker would follow mqtt-client through "
-                + "the injection graph and disable this provider with it. That does not hold: a "
-                + "disabled provider is never instantiated, so mqtt-client is absent from the "
-                + "provider registry entirely and the injection lands on PluginsFactory's "
-                + "'no provider found' branch - three ERROR lines on every startup. Since the "
-                + "module ships with RESTHeart, every installation would print them");
+                + "the injection graph and disable this provider with it. It does disable it, and "
+                + "quietly - mqtt-client's descriptor is still in PluginsScanner.providers(), so "
+                + "the check takes the 'the provider is disabled' branch, at DEBUG. But that drops "
+                + "mqtt-router from the set of valid providers, and every plugin still enabled that "
+                + "injects it then takes the 'no provider found' branch instead, at ERROR - "
+                + "mqtt-metrics-collector for one, which is enabledByDefault = true");
     }
 
     @Test

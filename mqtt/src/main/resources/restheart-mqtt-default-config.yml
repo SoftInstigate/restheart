@@ -10,8 +10,9 @@
 # mqtt-client is the root of the module's injection graph and ships with
 # enabledByDefault = false in code, so the module is dormant when the jar is
 # simply dropped into plugins/. Setting "enabled: true" below arms it.
-# mqtt-sse, mqtt-rest and mqtt-mongo-writer are separate, second-tier opt-ins
-# on top of that; enabling mqtt-client alone does not expose any of them.
+# mqtt-sse, mqtt-rest, mqtt-mongo-writer and mqtt-stats are separate,
+# second-tier opt-ins on top of that; enabling mqtt-client alone does not
+# expose any of them.
 mqtt-client:
   enabled: true
   broker-url: "tcp://localhost:1883"          # tcp:// (default), ssl:// or mqtts://, ws://, wss://
@@ -135,24 +136,39 @@ mqtt-sse:
 # and connected) and a non-empty "mongo-sink" list below - with an empty or
 # absent mongo-sink there is nothing to route incoming messages to and no
 # document is ever written.
+#
+# A message is acknowledged to the broker once it is in the buffer, not once
+# it is in MongoDB: MQTT acknowledgements are ordered, so holding one until
+# the write succeeds blocks every acknowledgement behind it and the broker
+# stops delivering to this client at all - live SSE consumers included - as
+# soon as its in-flight window fills. The buffer is memory, so a SIGKILL
+# loses what is in it. See "Durability" in README.md.
 # mqtt-mongo-writer:
 #   enabled: true
 #   buffer:
 #     strategy: "blocking-queue"                # default; applies backpressure. "ring-buffer" and
 #                                               # "drop-incoming" lose messages under load - see README
-#     capacity: 10000
-#     max-wait-ms: 30000                        # blocking-queue only: how long to wait for room
-#                                               # before dropping and acknowledging. Covers a fast
-#                                               # database restart; a long outage is a replica-set
-#                                               # problem, and an unbounded wait would stall SSE
-#                                               # too. 0 waits forever.
+#     capacity: 10000                           # ceiling in messages
+#     max-bytes: 67108864                       # 64 MB; ceiling in heap. Whichever is reached first
+#                                               # applies backpressure - ten thousand readings are a
+#                                               # megabyte, ten thousand images are a gigabyte.
+#     max-wait-ms: 0                            # blocking-queue only: how long to wait for room
+#                                               # before giving up on the message. 0 (the default)
+#                                               # waits indefinitely, so a full buffer applies real
+#                                               # backpressure instead of losing data. A message a
+#                                               # buffer refuses IS lost - it was acknowledged to the
+#                                               # broker as it arrived, so nothing else is holding it.
 #   drain:
 #     batch-size: 200
 #     flush-interval-ms: 500
-#     max-retries: 3
+#     max-retries: 3                            # governs dead-lettering only; an unreachable MongoDB
+#                                               # is retried for as long as the writer runs
 #     retry-delay-ms: 1000
-#     shutdown-timeout-ms: 5000                 # how long a clean shutdown may drain into MongoDB
-#                                               # before the rest goes to the dead-letter file
+#     shutdown-timeout-ms: 5000                 # how long a clean shutdown may drain into MongoDB.
+#                                               # What the budget does not cover is lost, and logged
+#                                               # as such. Deliberately inside Docker's 10s SIGTERM
+#                                               # grace: overshooting it just means being killed
+#                                               # mid-drain.
 #   id-strategy: "auto"                         # "auto" | "payload-field"
 #                                               # auto: every redelivery is a new document.
 #                                               # payload-field: keyed on a field the message itself
@@ -161,8 +177,13 @@ mqtt-sse:
 #                                               # the publisher can do that: anything the receiver
 #                                               # computes differs between two receptions.
 #   id-field: "messageId"                       # field name when id-strategy = "payload-field"
-#   dead-letter-file: "./mqtt-dead-letter.log"  # documents dropped after exhausting max-retries, one JSON per line
-#   dead-letter-max-bytes: 104857600            # rotates to <file>.1 past this size; footprint bounded at 2x
+#   dead-letter-collection: "mqtt-dead-letter"  # collection, in the sink's own database, for the
+#                                               # documents MongoDB *refuses* - a failed validation,
+#                                               # a size or a type it will not take - after
+#                                               # drain.max-retries attempts, each with a _deadLetter
+#                                               # sub-document naming the collection, the reason and
+#                                               # the time. A MongoDB that is merely down produces no
+#                                               # dead letters: those writes are retried instead.
 #   mongo-sink:
 #     - topic: "sensors/#"
 #       database: "iot"
@@ -170,3 +191,12 @@ mqtt-sse:
 #     - topic: "traffic/#"
 #       database: "iot"
 #       collection: "traffic-events"
+
+# MQTT Stats Service - synchronous JSON snapshot of the router's counters at
+# GET /mqtt/stats (secure: true, so it needs authentication).
+# Tier 2 opt-in: enabledByDefault = false in code, left disabled here too.
+# The same counters are also exposed as Prometheus gauges by
+# mqtt-metrics-collector (enabled by default, needs restheart-metrics) at
+# GET /metrics/mqtt_router_*; this service is for reading them without a scrape.
+# mqtt-stats:
+#   enabled: true

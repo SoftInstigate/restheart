@@ -9,11 +9,11 @@ Works in **standalone mode** — no MongoDB connection required. Requires an MQT
 From the repository root, install the two artifacts the plugin compiles against first (if not already done), then build the plugin:
 
 ```bash
-./mvnw install -pl commons,mqtt -am -DskipTests
+./mvnw -pl mqtt -am install -DskipTests
 cd examples/mqtt-logger && ../../mvnw package -DskipTests
 ```
 
-`mqtt` is needed as well as `commons`: the plugin depends on `restheart-mqtt`, and without it in the local repository the build cannot resolve `MqttMessageRouter`. `-am` installs their parent, `restheart-parent`, as well: without it Maven cannot read the two artifacts' POMs.
+`restheart-mqtt` is needed as well as `restheart-commons`: the plugin depends on it, and without it in the local repository the build cannot resolve `MqttMessageRouter`. `-am` covers both, plus their parent `restheart-parent` — `mqtt` pulls `commons` in as a dependency, and without the parent Maven cannot read either artifact's POM.
 
 ### Dependencies
 

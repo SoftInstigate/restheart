@@ -1002,7 +1002,8 @@ public class MqttMongoWriterTest {
         // reader used to cast blind; because the cast is erased, the ClassCastException surfaced
         // at the assignment inside onInit and took the whole server down at startup with
         // "Integer cannot be cast to Long". Every long-valued key here was affected -
-        // flush-interval-ms, retry-delay-ms, shutdown-timeout-ms, dead-letter-max-bytes.
+        // flush-interval-ms, retry-delay-ms, shutdown-timeout-ms, buffer.max-wait-ms and
+        // buffer.max-bytes.
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         setField(writer, "config", Map.of(
             "id-strategy", "auto",
