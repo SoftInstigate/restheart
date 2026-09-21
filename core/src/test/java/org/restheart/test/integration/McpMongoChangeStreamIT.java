@@ -164,7 +164,9 @@ public class McpMongoChangeStreamIT extends AbstactIT {
             try (var reader = new BufferedReader(new InputStreamReader(is))) {
                 String line;
                 while ((line = reader.readLine()) != null && lines.size() < count) {
-                    if (!line.isBlank()) {
+                    // ": ..." is a keep-alive comment, not part of an event: it must not
+                    // eat into the fixed budget of lines this reader captures
+                    if (!line.isBlank() && !line.startsWith(":")) {
                         lines.add(line);
                     }
                 }
