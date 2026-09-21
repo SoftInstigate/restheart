@@ -203,7 +203,11 @@ public class CollectionMcpResourceBuilderTest {
         var create = resource.actions().get("create").description();
         assertTrue(create.contains("_id already exists"));
         assertFalse(create.contains("retryable"), "no transaction, so no write conflict to retry");
-        assertNull(resource.actions().get("update").description());
+        // update says what PATCH actually does, which is the thing most likely to be assumed wrongly
+        var update = resource.actions().get("update").description();
+        assertTrue(update.contains("does not exist is not created"), update);
+        assertTrue(update.contains("$inc"), "the body may use update operators: " + update);
+        assertFalse(update.contains("wm"), "the write mode is not offered: it needs its own permission");
 
         // delete always says what it deletes: on a collection resource the name reads as "delete
         // the collection", and the action that does that is a different one

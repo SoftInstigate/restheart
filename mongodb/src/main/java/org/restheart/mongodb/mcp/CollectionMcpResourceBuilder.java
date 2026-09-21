@@ -125,7 +125,8 @@ public final class CollectionMcpResourceBuilder {
 
         builder.action("create", a -> {
             a.method("POST");
-            a.description(rules.isEmpty() ? DUPLICATE_ID : writeGuidance(rules));
+            a.description("Creates one document, or several at once when the body is an array of them. "
+                    + (rules.isEmpty() ? DUPLICATE_ID : writeGuidance(rules)));
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
             }
@@ -134,9 +135,7 @@ public final class CollectionMcpResourceBuilder {
         builder.action("update", a -> {
             a.method("PATCH").pathTemplate("/{id}");
             a.param("id", "string", true);
-            if (!rules.isEmpty()) {
-                a.description(writeGuidance(rules));
-            }
+            a.description(UPDATE_ONLY_UPDATES + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
             }
@@ -181,8 +180,14 @@ public final class CollectionMcpResourceBuilder {
      * <p>They take two conditions, both necessary, exactly as the management ones do: a permission
      * matching the method and the path — an exact {@code path('/<coll>')} does not, a
      * {@code path-prefix} does — and the switch of that permission's {@code mongo} block, off
-     * unless written. The filter is required here and not optional: a bulk write without one is a
-     * write to every document in the collection.
+     * unless written.
+     *
+     * <p>The filter is declared required because the API requires it: {@code MongoRequestPropsInjector}
+     * answers {@code 400} to a bulk write that carries none. Saying so in the catalogue turns a
+     * refusal the agent would have to discover into a parameter it knows to send.
+     *
+     * <p>Bulk <em>inserts</em> are not among these: posting an array to the collection is what
+     * creates many documents at once, so it is the {@code create} action, and no switch gates it.
      */
     private static void bulkActions(McpResource.Builder builder, Map<String, Object> bodySchema, List<String> rules) {
         builder.action("update_many", a -> {
@@ -190,7 +195,7 @@ public final class CollectionMcpResourceBuilder {
             a.description("Applies this change to every document matching the filter, in one request."
                     + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
             a.param("filter", new McpResource.Param("object",
-                    "Which documents to change. Required: without it this would change all of them.",
+                    "Which documents to change. The API requires it: a bulk write without a filter answers 400.",
                     true, null, null));
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
@@ -201,7 +206,7 @@ public final class CollectionMcpResourceBuilder {
             a.method("DELETE").pathTemplate("/*").requires("mongo.allowBulkDelete");
             a.description("Deletes every document matching the filter, in one request. Not reversible.");
             a.param("filter", new McpResource.Param("object",
-                    "Which documents to delete. Required: without it this would delete all of them.",
+                    "Which documents to delete. The API requires it: a bulk write without a filter answers 400.",
                     true, null, null));
         });
     }
@@ -266,6 +271,25 @@ public final class CollectionMcpResourceBuilder {
     }
 
     private static final String DUPLICATE_ID = "409 Conflict means a document with this _id already exists.";
+
+    /**
+     * What {@code PATCH /<coll>/<id>} does, which is the thing an agent is most likely to assume
+     * wrongly: it updates an existing document and does not create one. RESTHeart's default write
+     * mode for {@code PUT} and {@code PATCH} on a document is {@code update}, so a document that is
+     * not there is not written; creating one is what {@code create} is for.
+     *
+     * <p>The other half is what the body may hold, which is more than a set of fields:
+     * <a href="https://restheart.org/docs/mongodb-rest/write-docs">MongoDB's update operators</a>
+     * and, since RESTHeart 7.3, an aggregation pipeline.
+     *
+     * <p>Nothing here mentions the {@code wm} query parameter, and deliberately: changing the write
+     * mode needs {@code mongo.allowWriteMode} on the permission, and a write that upserts where the
+     * author expected an update is how a rule meant to protect existing data stops protecting it.
+     */
+    private static final String UPDATE_ONLY_UPDATES =
+            "Updates an existing document: a document that does not exist is not created, and the answer "
+                    + "says so. Use 'create' for a new one. The body sets the given fields, or uses MongoDB "
+                    + "update operators ($inc, $push, $unset, $currentDate, ...), or is an aggregation pipeline.";
 
     /**
      * What a write's {@code 409} means here — the one thing an agent cannot work out from the
