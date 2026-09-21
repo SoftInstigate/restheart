@@ -859,6 +859,13 @@ mongo:
   # See https://restheart.org/docs/ai/mcp
   mcp: true
 
+  # The URL the Location header of a created document, file or session starts with, including
+  # the mount of this service (e.g. https://api.example.com/mongo). Unset: the scheme comes from
+  # X-Forwarded-Proto and the host from X-Forwarded-Host, each when present, else from the
+  # request. A multi-tenant deployment overrides it per request by attaching the tenant's own
+  # value as override-mongo-instance-base-url.
+  instance-base-url: null
+
   # Expose MongoDB resources at specific URIs.
   # 'what': MongoDB resource (/db[/coll[/docid]]) or '*' for all databases
   # 'where': URI binding (absolute path or template like /{foo}/bar/*)

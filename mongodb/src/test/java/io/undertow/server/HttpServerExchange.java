@@ -183,6 +183,32 @@ public class HttpServerExchange extends AbstractAttachable {
      *
      * @return
      */
+    private String requestScheme = "http";
+    private String requestURI;
+
+    public String getRequestScheme() {
+        return requestScheme;
+    }
+
+    public HttpServerExchange setRequestScheme(String requestScheme) {
+        this.requestScheme = requestScheme;
+        return this;
+    }
+
+    public String getRequestURI() {
+        return requestURI;
+    }
+
+    public HttpServerExchange setRequestURI(String requestURI) {
+        this.requestURI = requestURI;
+        return this;
+    }
+
+    /** What the real exchange answers from the connection when the request carries no Host. */
+    public String getRequestURL() {
+        return requestScheme + "://connection-address" + requestURI;
+    }
+
     public SecurityContext getSecurityContext() {
         return null;
     }

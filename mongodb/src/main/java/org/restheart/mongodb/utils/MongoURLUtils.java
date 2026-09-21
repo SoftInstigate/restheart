@@ -25,6 +25,7 @@ import static org.restheart.exchange.ExchangeKeys.MAX_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.MIN_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.TRUE_KEY_ID;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.INSTANCE_BASE_URL_OVERRIDE;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -33,8 +34,10 @@ import org.bson.*;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.Request;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
+import org.restheart.mongodb.MongoServiceConfigurationKeys;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
 
@@ -137,21 +140,56 @@ public class MongoURLUtils extends URLUtils {
     }
 
     /**
-     * returns the request URL taking into account the instance-base-url
-     * configuration option. When RESTHeart is exposed via a reverse-proxy or an
-     * API gateway it allows mapping the Location header correctly.
+     * The URL a client reaches this request at, for a {@code Location} header: see
+     * {@link #remappedRequestURL(String, HttpServerExchange)}.
      *
-     * @param exchange
-     * @return
+     * @param exchange the request being served
+     * @return the request URL as a client outside the proxy would write it
      */
     public static String getRemappedRequestURL(final HttpServerExchange exchange) {
-        final var ibu = MongoServiceConfiguration.get().getInstanceBaseURL();
+        return remappedRequestURL(MongoServiceConfiguration.get().getInstanceBaseURL(), exchange);
+    }
 
-        if (ibu == null) {
-            return exchange.getRequestURL();
-        } else {
+    /**
+     * The URL a client reaches this request at, for a {@code Location} header.
+     *
+     * <p>Not the exchange's own URL: behind a proxy that terminates TLS the exchange is plain
+     * {@code http}, and a {@code Location} saying so sends the client to a scheme the service is
+     * not published on — found in production, on the URI an MCP agent is told to read a created
+     * document back from (#749). In order:
+     * <ol>
+     *   <li>{@code instance-base-url} as attached to this request under
+     *       {@link MongoServiceConfigurationKeys#INSTANCE_BASE_URL_OVERRIDE}, by a multi-tenant
+     *       deployment that knows which tenant the request is for — no configured value can be
+     *       right for every tenant of a shared node;</li>
+     *   <li>{@code instance-base-url} as configured;</li>
+     *   <li>the forwarded scheme and host, each when present, else the request's own — the same
+     *       resolution the OAuth metadata and the MCP catalogue use, through
+     *       {@link URLUtils#externalBaseUrl(String, HttpServerExchange)}.</li>
+     * </ol>
+     *
+     * <p>An {@code instance-base-url}, attached or configured, names this service's own mount, so
+     * the path relative to it follows; otherwise the whole request path does.
+     *
+     * @param instanceBaseUrl the configured {@code instance-base-url}, or {@code null}
+     * @param exchange the request being served
+     * @return the request URL as a client outside the proxy would write it, without the query
+     */
+    public static String remappedRequestURL(final String instanceBaseUrl, final HttpServerExchange exchange) {
+        var attached = exchange.getAttachment(Request.ATTACHED_PARAMS_KEY);
+
+        var ibu = attached != null && attached.get(INSTANCE_BASE_URL_OVERRIDE) instanceof String override && !override.isBlank()
+                ? override
+                : instanceBaseUrl;
+
+        if (ibu != null) {
             return removeTrailingSlashes(ibu).concat(exchange.getRelativePath());
         }
+
+        var base = externalBaseUrl(null, exchange);
+
+        // no Host at all: the exchange still knows the address it was reached on
+        return base.isEmpty() ? exchange.getRequestURL() : base.concat(exchange.getRequestURI());
     }
 
     /**

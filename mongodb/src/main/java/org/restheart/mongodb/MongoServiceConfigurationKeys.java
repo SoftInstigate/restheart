@@ -167,6 +167,15 @@ public interface MongoServiceConfigurationKeys {
     public static final String INSTANCE_BASE_URL_KEY = "instance-base-url";
 
     /**
+     * The attached parameter that overrides {@code instance-base-url} for one request.
+     *
+     * <p>{@code instance-base-url} is one value for the node, and a node that serves many tenants,
+     * one per host, needs one per tenant: the deployment attaches it to each request, as it does
+     * {@code override-acl-db} and the other per-tenant settings.
+     */
+    public static final String INSTANCE_BASE_URL_OVERRIDE = "override-mongo-instance-base-url";
+
+    /**
      * the key for the instance-name property.
      */
     public static final String REPRESENTATION_FORMAT_KEY = "default-representation-format";
