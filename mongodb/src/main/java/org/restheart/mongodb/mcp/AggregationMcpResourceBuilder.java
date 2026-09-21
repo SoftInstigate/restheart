@@ -139,7 +139,7 @@ public final class AggregationMcpResourceBuilder {
             a.pathTemplate("");
             a.description(describeWithRefusal(description(mcp), refusal));
             a.readable(refusal == null);
-            a.param("jsonMode", "string", false);
+            a.param("jsonMode", CollectionMcpResourceBuilder.JSON_MODE);
 
             // A pipeline that pages itself with @skip/@limit answers to ?page and ?pagesize —
             // RESTHeart computes those variables from them. Declared here because they are the

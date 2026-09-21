@@ -154,10 +154,12 @@ public class McpService implements ByteArrayService {
             is not missing from the server: ask list_apis, or call resources/templates/list \
             yourself.
 
-            To read a resource, use resources/read. To do anything else — create, update, delete, \
-            invoke, or read something that takes parameters — call call_api with the resource, the \
-            action name from list_apis, and its arguments: it runs on the server with your \
-            session's identity, so there is no request for you to send and no token to fetch.
+            Everything, reads included, goes through call_api: the resource, the action name from \
+            list_apis, and its arguments. It runs on the server with your session's identity, so \
+            there is no request for you to send and no token to fetch. A read is the resource's \
+            read action — query for a collection, get for a document, execute for an aggregation. \
+            If your client also exposes resources/read, it returns the same data; many clients, \
+            and the subagents of most of them, have tools only.
 
             The catalog shows what your session may use. A resource you cannot see is one your \
             role has no permission for, and asking for it by URI will not get you further.\
@@ -1732,10 +1734,11 @@ public class McpService implements ByteArrayService {
                         call, so their resource list shows only part of what is here. Do not conclude from that \
                         list that a resource does not exist: ask this tool.
 
-                        To READ a resource, use resources/read — it returns the data directly. To do anything \
-                        else (create, update, delete, invoke), read the resource's actions here and then call \
-                        call_api: it executes the action for you, with your session's permissions, and returns \
-                        the result.\
+                        To use a resource — read it, or create, update, delete, invoke — read its actions here \
+                        and call call_api: it executes the action for you, with your session's permissions, and \
+                        returns the result. A read is the read action: query for a collection, get for a \
+                        document, execute for an aggregation. resources/read, where your client exposes it, \
+                        returns the same data.\
                         """)
                 .build();
     }
@@ -1767,11 +1770,11 @@ public class McpService implements ByteArrayService {
                         the stored data back — read the resource afterwards if you need to see the effect, and \
                         take the new id from `Location`, not from the (empty) body.
 
-                        For READS prefer resources/read, which returns the data directly — with one exception: \
-                        a read that takes parameters (an aggregation) is the action `execute`, whose params go \
-                        in `args`. Reading it through resources/read means filling its URI template by hand, and \
-                        that template is listed only under resources/templates/list, which many clients never \
-                        call; list_apis always has it.
+                        READS go through here too: the resource's read action — `query` for a collection, `get` \
+                        for a document, `execute` for an aggregation, with its params in `args`. This works in \
+                        every client. resources/read returns the same data where your client exposes it, but \
+                        many expose tools only — subagents in particular — and a parametric resource is there \
+                        only as a template, listed by resources/templates/list.
 
                         A change stream (SSE, \
                         WebSocket) is neither executable here nor subscribable: you cannot open it yourself. To \
@@ -1796,7 +1799,7 @@ public class McpService implements ByteArrayService {
         return McpSchema.Tool.builder("how_to_call", inputSchema(properties, List.of("resource", "action")))
                 .description("""
                         NOT FOR EXECUTING. To act on a resource yourself, use call_api: it runs the action on the \
-                        server with your session's permissions and returns the result. To read, use resources/read.
+                        server with your session's permissions and returns the result — reads included.
 
                         This tool DESCRIBES the request behind an action — transport, method, URL, headers, \
                         body — for code you are writing for the user: a frontend, a script, an integration in any \

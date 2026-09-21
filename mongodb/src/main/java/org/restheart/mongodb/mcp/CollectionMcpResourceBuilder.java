@@ -50,6 +50,20 @@ import org.restheart.plugins.mcp.McpResource;
  */
 public final class CollectionMcpResourceBuilder {
 
+    /**
+     * How BSON types are written in the answer. Declared with its values and what they are for,
+     * because an agent shown a bare optional string called {@code jsonMode} asks what it does —
+     * one did, in a debrief — and a parameter nobody can explain is noise in every read action.
+     * Lower case: the values are matched exactly here, and the REST docs spell them this way.
+     * Shared with {@link AggregationMcpResourceBuilder}.
+     */
+    static final McpResource.Param JSON_MODE = new McpResource.Param("string",
+            "How BSON types are written in the answer. Omit it for RESTHeart's standard form, which "
+            + "is what you want to read data. relaxed: MongoDB relaxed Extended JSON (dates as ISO "
+            + "strings); extended: canonical Extended JSON, every number typed; strict: the legacy "
+            + "strict form; shell: mongo shell syntax, not JSON.",
+            false, List.<Object>of("relaxed", "extended", "strict", "shell"), null);
+
     private CollectionMcpResourceBuilder() {
     }
 
@@ -99,13 +113,13 @@ public final class CollectionMcpResourceBuilder {
             a.param("keys", "object", false);
             a.param("page", "integer", false);
             a.param("pagesize", "integer", false);
-            a.param("jsonMode", "string", false);
+            a.param("jsonMode", JSON_MODE);
         });
 
         builder.action("get", a -> {
             a.method("GET").pathTemplate("/{id}").readable(true);
             a.param("id", "string", true);
-            a.param("jsonMode", "string", false);
+            a.param("jsonMode", JSON_MODE);
         });
 
         // The count is its own entry, exactly as it is its own endpoint in the REST API — not a

@@ -93,7 +93,7 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 > Everything goes through the service's MCP connector at **<SERVICE-URL>**.
 >
 > The public game needs nothing from you: the board, the prices, the items and the players are
-> read with `resources/read`, or with `list_apis` and `call_api` like any other resource.
+> read with `call_api`, like any other resource — `list_apis` names each one's read action.
 >
 > Two things are yours alone, and your secret is what proves they are: appending to the ledger, and
 > reading your own state. Both take the same two arguments, `"trader"` and `"secret"`, written the
@@ -106,10 +106,11 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 >
 > # the whole game in one read: holdings, open offers, settled trades, prices,
 > # the next offer id free for each player, and the winner
-> resources/read {"uri":"<SERVICE-URL>/market_events/_aggrs/board"}
+> call_api {"resource":"<SERVICE-URL>/market_events/_aggrs/board","action":"execute","args":{}}
 >
 > # every deal in one item, with the price of a single unit
-> resources/read {"uri":"<SERVICE-URL>/market_events/_aggrs/pricesFor?item=ore"}
+> call_api {"resource":"<SERVICE-URL>/market_events/_aggrs/pricesFor","action":"execute",
+>           "args":{"item":"ore"}}
 >
 > # a move
 > call_api {"resource":"<SERVICE-URL>/market_events","action":"create",

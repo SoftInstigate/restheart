@@ -302,7 +302,11 @@ const board = {
       '`pov` spells out whose side openOffers and settledTrades are told from. `prices` covers ' +
       'only trades where coin met a good; `unpricedTrades` counts the barter swaps that priced ' +
       'nothing, so an empty `prices` beside a non-zero count means the market has been trading ' +
-      'without setting a price. Takes no parameters. This is the resource to attach in a chat ' +
+      'without setting a price. In holdings, `qty` is what a player owns, `committed` the part ' +
+      'its open offers hold, and `available` = qty - committed, what it can still promise. ' +
+      '`over: true` is final: after a claim every move is refused, cancels included, so the ' +
+      'offers still open stay on the board and can no longer be taken; there is no new game ' +
+      'through the API, the operator starts one. Takes no parameters. This is the resource to attach in a chat ' +
       'to watch a game unfold — subscribe to the market_events collection to be told when it ' +
       'changes.',
     examples: [{ description: 'Read the board', action: 'execute', args: {} }],
@@ -513,6 +517,9 @@ const myState = {
       'missing, and canClaim — true when the board already says you have won and nobody has ' +
       'claimed before you. When it is false, `whyNot` says why in one line: the requirements ' +
       'you are short of, or that the game is over — `over` and `winner` carry the same fact. ' +
+      'In goods, `qty` is what you own, `committed` the part your open offers hold and ' +
+      '`available` what you can still promise. The objective counts `qty`: goods held by an ' +
+      'open offer still count toward it and toward a claim. ' +
       'Read it after your moves as well as before them, or you will win a round before you ' +
       'notice. Send the same trader and secret you sign a write with; a wrong pair returns ' +
       'nothing. The objective\'s opening hint is not here on purpose: it was written for the ' +
@@ -560,7 +567,9 @@ export const LEDGER_META = {
       'endowment; offer = a public proposal to swap goods; trade = the acceptance that settles ' +
       'an offer; cancel = the author withdrawing an offer nobody took, which frees the goods it ' +
       'held; claim = a player declaring victory. Nothing here is ever updated or deleted — ' +
-      'holdings, standings and the board are derived from this log by the aggregations.',
+      'holdings, standings and the board are derived from this log by the aggregations. ' +
+      'Every write carries `trader` and `secret` as arguments beside `body`: they prove who you ' +
+      'are, the server stamps `actor` from them, and a write without them is refused.',
     examples: [
       {
         description: 'The offers nobody has accepted yet',
@@ -573,6 +582,8 @@ export const LEDGER_META = {
           'your player name. Do not send actor or ts: the server sets both.',
         action: 'create',
         args: {
+          trader: 'trader1',
+          secret: '<your secret>',
           body: {
             _id: 'offer:trader1:1',
             offerId: 'offer:trader1:1',
@@ -586,9 +597,11 @@ export const LEDGER_META = {
         description:
           'Accept offer:trader1:1. The _id is derived from the offer id, so the FIRST ' +
           'acceptance wins and every later one gets 409 Conflict. You do not restate the terms ' +
-          '— they are read from the offer — nor who you are: the server sets actor.',
+          '— they are read from the offer — nor who you are: the server sets actor. You must ' +
+          'hold what the offer wants: a trade that would leave you below zero, or holding less ' +
+          'than your own open offers promise, is refused.',
         action: 'create',
-        args: { body: { _id: 'accept:offer:trader1:1', offerId: 'offer:trader1:1', type: 'trade' } },
+        args: { trader: 'trader2', secret: '<your secret>', body: { _id: 'accept:offer:trader1:1', offerId: 'offer:trader1:1', type: 'trade' } },
       },
       {
         description:
@@ -596,12 +609,12 @@ export const LEDGER_META = {
           'holding become available again. Only the player who published it may withdraw it, ' +
           'and an offer already accepted cannot be withdrawn.',
         action: 'create',
-        args: { body: { _id: 'cancel:offer:trader1:1', offerId: 'offer:trader1:1', type: 'cancel' } },
+        args: { trader: 'trader1', secret: '<your secret>', body: { _id: 'cancel:offer:trader1:1', offerId: 'offer:trader1:1', type: 'cancel' } },
       },
       {
         description: 'Claim victory. _id is the constant "win", so only one claim can ever exist.',
         action: 'create',
-        args: { body: { _id: 'win', offerId: 'win', type: 'claim' } },
+        args: { trader: 'trader1', secret: '<your secret>', body: { _id: 'win', offerId: 'win', type: 'claim' } },
       },
     ],
   },

@@ -153,7 +153,9 @@ public class McpServiceTest {
 
         assertTrue(description.contains("status"), "must name the field carrying the HTTP status");
         assertTrue(description.contains("403"), "must say a refusal comes back as a status to read, not a tool error");
-        assertTrue(description.contains("resources/read"), "must still point reads at the direct channel");
+        // reads too: many clients, and their subagents, have tools and no resources primitive
+        assertTrue(description.contains("`query`") && description.contains("`execute`"),
+                "must name the read actions, since call_api is the only road every client has");
     }
 
     @Test
@@ -172,6 +174,8 @@ public class McpServiceTest {
         assertTrue(McpService.INSTRUCTIONS.contains("resources/templates/list"),
                 "must name the method that lists what resources/list leaves out — naming the concept is not enough");
         assertTrue(McpService.INSTRUCTIONS.contains("call_api"), "must name the one executable road");
+        assertTrue(McpService.INSTRUCTIONS.contains("reads included"),
+                "must not send reads to resources/read, which a tools-only client does not have");
     }
 
     @Test
