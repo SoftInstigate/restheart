@@ -306,8 +306,8 @@ public class McpCatalogVisibilityIT extends AbstactIT {
         }
 
         // and the transports do not name what the description withheld
-        assertFalse(described.getArray("transports").toJson().contains("drop"),
-                "the transports must agree with the actions: " + described.getArray("transports").toJson());
+        var transports = described.getArray("transports").toString();
+        assertFalse(transports.contains("drop"), "the transports must agree with the actions: " + transports);
     }
 
     /**
