@@ -110,6 +110,16 @@ public interface MongoServiceConfigurationKeys {
     public static final String AGGREGATION_CHECK_OPERATORS = "aggregation-check-operators";
 
     /**
+     * The key for the interval between the comments sent to keep an idle change stream alive.
+     */
+    public static final String CHANGE_STREAMS_KEEP_ALIVE_MS = "change-streams-keep-alive-ms";
+
+    /**
+     * The default interval between keep-alive comments on a change stream, in milliseconds.
+     */
+    public static final long DEFAULT_CHANGE_STREAMS_KEEP_ALIVE_MS = 20_000;
+
+    /**
      * Name of the collection holding the guard documents that serialize writes to collections
      * declaring constraints.
      */
