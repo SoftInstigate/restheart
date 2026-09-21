@@ -231,13 +231,22 @@ const board = {
           },
         ],
         // The number to use next, so nobody has to scan the ledger for the ids they have burned.
-        // A player who has published nothing is absent: their first offer is `offer:<player>:1`.
+        // Every player is here, including one who has published nothing: a reader that had to
+        // notice an absence and infer `offer:<player>:1` from the format was being asked to
+        // reconstruct a rule the board already knows. The genesis event is what makes a player
+        // exist, so it is the roll call.
         nextOfferId: [
-          { $match: { offer: { $ne: null } } },
+          { $match: { $or: [{ offer: { $ne: null } }, { genesis: { $ne: null } }] } },
           {
             $project: {
-              player: '$offer.actor',
-              n: { $convert: { input: { $last: { $split: ['$_id', ':'] } }, to: 'int', onError: 0, onNull: 0 } },
+              player: { $ifNull: ['$offer.actor', '$genesis.actor'] },
+              n: {
+                $cond: [
+                  isObject('$offer'),
+                  { $convert: { input: { $last: { $split: ['$_id', ':'] } }, to: 'int', onError: 0, onNull: 0 } },
+                  0,
+                ],
+              },
             },
           },
           { $group: { _id: '$player', last: { $max: '$n' } } },
@@ -252,6 +261,13 @@ const board = {
         ],
         // What a unit has actually gone for, per good: the last price and the average of them all.
         prices: [...PRICED_TRADES, ...PRICE_SUMMARY],
+        // Counted, because an empty `prices` beside a busy market reads as a broken aggregation.
+        // A swap of grain for silk prices neither good, so it is in no price row — and that is a
+        // fact about the trade, not a gap in the board.
+        unpricedTrades: [
+          { $match: { trade: { $ne: null }, 'offer.give.item': { $ne: 'coin' }, 'offer.want.item': { $ne: 'coin' } } },
+          { $count: 'trades' },
+        ],
         winner: [
           { $match: { claim: { $ne: null } } },
           { $replaceRoot: { newRoot: '$claim' } },
@@ -265,6 +281,13 @@ const board = {
     {
       $addFields: {
         over: { $gt: [{ $size: '$winner' }, 0] },
+        unpricedTrades: { $ifNull: [{ $first: '$unpricedTrades.trades' }, 0] },
+        // In the payload rather than only in the description: the description is read once, when
+        // the catalogue is listed, and the rows are read for the rest of the game. A reader that
+        // has to guess whose side `gave` is on gets it right half the time.
+        pov: 'openOffers and settledTrades are told from the point of view of `from`, the player '
+          + 'who published the offer: `give` and `gave` are what that player hands over, `want` '
+          + 'and `got` what they receive. In settledTrades `to` is the player who accepted.',
         asOf: iso('$$NOW'),
       },
     },
@@ -273,13 +296,15 @@ const board = {
     enabled: true,
     description:
       'The whole game in one read: who holds what, which offers are still open, the last ' +
-      'settled trades, what things have sold for, the next free offer id of each player, and ' +
+      'settled trades, what things have sold for, the next free offer id of every player, and ' +
       'the winner if anyone has claimed victory. `over` says the game is finished and `asOf` ' +
-      'says when this was read, because an empty winner only means nobody had won by then. In ' +
-      'settledTrades the point of view is the player who published the offer: `from` is that ' +
-      'player, `gave` is what they handed over and `got` is what they received. Takes no ' +
-      'parameters. This is the resource to attach in a chat to watch a game unfold — subscribe ' +
-      'to the market_events collection to be told when it changes.',
+      'says when this was read, because an empty winner only means nobody had won by then. ' +
+      '`pov` spells out whose side openOffers and settledTrades are told from. `prices` covers ' +
+      'only trades where coin met a good; `unpricedTrades` counts the barter swaps that priced ' +
+      'nothing, so an empty `prices` beside a non-zero count means the market has been trading ' +
+      'without setting a price. Takes no parameters. This is the resource to attach in a chat ' +
+      'to watch a game unfold — subscribe to the market_events collection to be told when it ' +
+      'changes.',
     examples: [{ description: 'Read the board', action: 'execute', args: {} }],
   },
 };
@@ -371,59 +396,127 @@ const myState = {
   uri: 'myState',
   type: 'pipeline',
   stages: [
-    ...HOLDINGS,
-    { $match: { '_id.player': { $var: 'trader' } } },
-    ...BY_PLAYER,
-    { $addFields: { objective: { $switch: { branches: OBJECTIVE_TABLE, default: null } } } },
-    { $match: { objective: { $ne: null } } },
+    // Two readings of the same ledger, because `canClaim` depends on both: where this player
+    // stands, and whether anyone has already won. A player told only `canClaim: false` went
+    // looking for the requirement it was short of and found none — the game was over.
     {
-      $addFields: {
-        progress: {
-          $map: {
-            input: '$objective.requires',
-            as: 'r',
-            in: {
-              item: '$$r.item',
-              need: '$$r.qty',
-              have: {
-                $let: {
-                  vars: { g: { $first: { $filter: { input: '$goods', as: 'g', cond: { $eq: ['$$g.item', '$$r.item'] } } } } },
-                  in: { $ifNull: ['$$g.qty', 0] },
+      $facet: {
+        me: [
+          ...HOLDINGS,
+          { $match: { '_id.player': { $var: 'trader' } } },
+          ...BY_PLAYER,
+          { $addFields: { objective: { $switch: { branches: OBJECTIVE_TABLE, default: null } } } },
+          { $match: { objective: { $ne: null } } },
+          {
+            $addFields: {
+              progress: {
+                $map: {
+                  input: '$objective.requires',
+                  as: 'r',
+                  in: {
+                    item: '$$r.item',
+                    need: '$$r.qty',
+                    have: {
+                      $let: {
+                        vars: { g: { $first: { $filter: { input: '$goods', as: 'g', cond: { $eq: ['$$g.item', '$$r.item'] } } } } },
+                        in: { $ifNull: ['$$g.qty', 0] },
+                      },
+                    },
+                  },
                 },
               },
             },
           },
+          {
+            $addFields: {
+              progress: {
+                $map: {
+                  input: '$progress',
+                  as: 'p',
+                  in: {
+                    item: '$$p.item',
+                    need: '$$p.need',
+                    have: '$$p.have',
+                    short: { $max: [0, { $subtract: ['$$p.need', '$$p.have'] }] },
+                    met: { $gte: ['$$p.have', '$$p.need'] },
+                  },
+                },
+              },
+            },
+          },
+          { $addFields: { objectiveMet: { $allElementsTrue: { $map: { input: '$progress', as: 'p', in: '$$p.met' } } } } },
+          { $project: { _id: 0, player: '$_id', goal: '$objective.goal', goods: 1, progress: 1, objectiveMet: 1 } },
+        ],
+        claims: [
+          ...GROUPED_BY_OFFER,
+          { $match: { claim: { $ne: null } } },
+          { $replaceRoot: { newRoot: '$claim' } },
+          { $sort: { ts: 1 } },
+        ],
+      },
+    },
+    { $addFields: { over: { $gt: [{ $size: '$claims' }, 0] }, winner: { $first: '$claims.actor' } } },
+    // An empty `me` — a wrong trader/secret pair — still returns nothing at all.
+    { $unwind: '$me' },
+    {
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: ['$me', { over: '$over', winner: { $ifNull: ['$winner', null] }, asOf: iso('$$NOW') }],
         },
       },
     },
     {
       $addFields: {
-        progress: {
-          $map: {
-            input: '$progress',
-            as: 'p',
-            in: {
-              item: '$$p.item',
-              need: '$$p.need',
-              have: '$$p.have',
-              short: { $max: [0, { $subtract: ['$$p.need', '$$p.have'] }] },
-              met: { $gte: ['$$p.have', '$$p.need'] },
+        canClaim: { $and: ['$objectiveMet', { $not: ['$over'] }] },
+        // Null when you can claim. Otherwise the reason, in the words of the rule that would
+        // refuse the claim — the requirements you are short of, or the fact that it is over.
+        whyNot: {
+          $cond: [
+            '$over',
+            { $concat: ['the game is over: ', { $ifNull: ['$winner', 'another player'] }, ' has claimed victory'] },
+            {
+              $cond: [
+                '$objectiveMet',
+                null,
+                {
+                  $concat: [
+                    'still short of ',
+                    {
+                      $reduce: {
+                        input: { $filter: { input: '$progress', as: 'p', cond: { $not: ['$$p.met'] } } },
+                        initialValue: '',
+                        in: {
+                          $concat: [
+                            '$$value',
+                            { $cond: [{ $eq: ['$$value', ''] }, '', ', '] },
+                            { $toString: '$$this.short' },
+                            ' ',
+                            '$$this.item',
+                          ],
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
             },
-          },
+          ],
         },
       },
     },
-    { $addFields: { canClaim: { $allElementsTrue: { $map: { input: '$progress', as: 'p', in: '$$p.met' } } } } },
-    { $project: { _id: 0, player: '$_id', goal: '$objective.goal', goods: 1, progress: 1, canClaim: 1 } },
+    { $project: { objectiveMet: 0 } },
   ],
   mcp: {
     enabled: true,
     description:
       'Where you stand: what you hold, your objective, how much of each requirement is still ' +
-      'missing, and canClaim — true when the board already says you have won. Read it after ' +
-      'your moves as well as before them, or you will win a round before you notice. Send the ' +
-      'same trader and secret you sign a write with; a wrong pair returns nothing. The objective\'s opening hint ' +
-      'is not here on purpose: it was written for the first move and says nothing true later.',
+      'missing, and canClaim — true when the board already says you have won and nobody has ' +
+      'claimed before you. When it is false, `whyNot` says why in one line: the requirements ' +
+      'you are short of, or that the game is over — `over` and `winner` carry the same fact. ' +
+      'Read it after your moves as well as before them, or you will win a round before you ' +
+      'notice. Send the same trader and secret you sign a write with; a wrong pair returns ' +
+      'nothing. The objective\'s opening hint is not here on purpose: it was written for the ' +
+      'first move and says nothing true later.',
     params: {
       trader: { type: 'string', description: 'Your player id, e.g. trader1' },
       secret: { type: 'string', description: 'The secret that proves you are that player' },

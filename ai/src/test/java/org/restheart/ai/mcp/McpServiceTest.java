@@ -157,6 +157,24 @@ public class McpServiceTest {
     }
 
     @Test
+    public void callApiToolDefinition_saysAWriteAnswersWithNoBody() {
+        var description = McpService.callApiToolDefinition().description();
+
+        assertTrue(description.contains("Location"), "the id of what was created comes from the header, not the body");
+        assertTrue(description.contains("201"), "must name the status a create answers with");
+    }
+
+    @Test
+    public void instructions_sendTheAgentToTheOnlyCompleteCatalog() {
+        // a client that lists resources without also calling resources/templates/list shows a
+        // partial catalog, and nothing in the protocol tells the agent that
+        assertTrue(McpService.INSTRUCTIONS.contains("list_apis"), "must name the complete catalog");
+        assertTrue(McpService.INSTRUCTIONS.contains("resources/templates/list"),
+                "must name the method that lists what resources/list leaves out — naming the concept is not enough");
+        assertTrue(McpService.INSTRUCTIONS.contains("call_api"), "must name the one executable road");
+    }
+
+    @Test
     public void resourceName_isTheLastPathSegment() {
         var resource = McpResource.builder().uri("https://host/warehouse/inventory").build();
         assertEquals("inventory", McpService.resourceName(resource));

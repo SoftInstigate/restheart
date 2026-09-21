@@ -130,6 +130,39 @@ public class McpService implements ByteArrayService {
 
     private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
 
+    /**
+     * What the client is told at initialize, before it asks anything.
+     *
+     * <p>It says where the catalog is, because the client's own view of it is partial and the
+     * agent has no way to know that: a resource that takes parameters is published as a resource
+     * template, and a client that lists resources without also calling
+     * {@code resources/templates/list} — most of them — simply does not see it. An agent that
+     * read the short list concluded the resource did not exist and played around its absence.
+     *
+     * <p>Kept to what cannot be worked out from the tools themselves. Everything else an agent
+     * needs is in the tool descriptions and in the catalog entries, which is where it stays
+     * accurate; this text is written once, for every deployment, and cannot know any of it.
+     */
+    static final String INSTRUCTIONS = """
+            This server exposes a RESTHeart deployment: its APIs are MCP resources, each with its \
+            own actions.
+
+            Start from list_apis. It is the complete catalog, and it is the only complete one: a \
+            resource that takes parameters is published as a resource template, and a template is \
+            listed by resources/templates/list, never by resources/list — so a client that calls \
+            only the latter shows you part of the catalog. An API missing from your resource list \
+            is not missing from the server: ask list_apis, or call resources/templates/list \
+            yourself.
+
+            To read a resource, use resources/read. To do anything else — create, update, delete, \
+            invoke, or read something that takes parameters — call call_api with the resource, the \
+            action name from list_apis, and its arguments: it runs on the server with your \
+            session's identity, so there is no request for you to send and no token to fetch.
+
+            The catalog shows what your session may use. A resource you cannot see is one your \
+            role has no permission for, and asking for it by URI will not get you further.\
+            """;
+
     @Inject("registry")
     private PluginsRegistry pluginsRegistry;
 
@@ -430,6 +463,7 @@ public class McpService implements ByteArrayService {
                 // Keeps handlers on the caller's virtual thread: without it the SDK wraps every one in subscribeOn(Schedulers.boundedElastic()), a pool of up to 10x CPU platform threads — a default meant for event-loop callers, and the opposite of RESTHeart's threading model
                 .immediateExecution(true)
                 .serverInfo("restheart-mcp", "1.0.0")
+                .instructions(INSTRUCTIONS)
                 .jsonMapper(jsonMapper)
                 .jsonSchemaValidator(schemaValidator)
                 .capabilities(capabilities())
@@ -1693,6 +1727,11 @@ public class McpService implements ByteArrayService {
                         transports, actions with parameter types, auth requirements, examples. On a deployment \
                         with many resources, prefer a filtered call over an unfiltered one.
 
+                        THIS IS THE COMPLETE CATALOG. A resource that takes parameters is published to MCP as a \
+                        resource template, listed under resources/templates/list — a method many clients never \
+                        call, so their resource list shows only part of what is here. Do not conclude from that \
+                        list that a resource does not exist: ask this tool.
+
                         To READ a resource, use resources/read — it returns the data directly. To do anything \
                         else (create, update, delete, invoke), read the resource's actions here and then call \
                         call_api: it executes the action for you, with your session's permissions, and returns \
@@ -1723,7 +1762,18 @@ public class McpService implements ByteArrayService {
                         means your session's role may not do this; a 409 means a constraint of the resource \
                         rejected the write, see the action's notes in list_apis before retrying).
 
-                        For READS prefer resources/read, which returns the data directly. A change stream (SSE, \
+                        A SUCCESSFUL WRITE ANSWERS WITH NO BODY. A create is a 201 whose `headers.Location` is \
+                        the URI of what was created; an update or a delete is a 200 or a 204. None of them echo \
+                        the stored data back — read the resource afterwards if you need to see the effect, and \
+                        take the new id from `Location`, not from the (empty) body.
+
+                        For READS prefer resources/read, which returns the data directly — with one exception: \
+                        a read that takes parameters (an aggregation) is the action `execute`, whose params go \
+                        in `args`. Reading it through resources/read means filling its URI template by hand, and \
+                        that template is listed only under resources/templates/list, which many clients never \
+                        call; list_apis always has it.
+
+                        A change stream (SSE, \
                         WebSocket) is neither executable here nor subscribable: you cannot open it yourself. To \
                         follow changes, subscribe to the collection it watches (or an aggregation over it) with \
                         resources/subscribe and re-read on notifications/resources/updated. how_to_call describes \
