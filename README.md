@@ -1,6 +1,6 @@
 # <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
-**A backend for web, mobile and AI apps.**
+**A backend for web, mobile, AI and IoT apps.**
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -15,9 +15,7 @@
 
 ## What RESTHeart is
 
-RESTHeart is a backend for web, mobile and AI apps. It turns a MongoDB database into a REST, GraphQL, WebSocket, and SSE API, with authentication, authorization, and real-time change streams already wired in.
-
-Point it at a MongoDB instance and the API is there: no routes to write, no permission checks to hand-code, no pagination or filtering logic to duplicate across endpoints. Permissions and behavior are configured declaratively. Custom logic goes into plugins, written in Java, Kotlin, JavaScript, or TypeScript, only for what a data API cannot express.
+RESTHeart is a backend for web, mobile, AI and IoT apps. It gives an application the backend it would otherwise have to write — AI agents and RAG, accounts, permissions, data APIs, live data, email, payments — as configuration, not code. What an application needs beyond it goes into plugins, in Java, Kotlin, JavaScript or TypeScript.
 
 ![RESTHeart logical architecture](docs/restheart_logic_architecture.png)
 
@@ -31,11 +29,16 @@ No route was written for `/messages`. It is a MongoDB collection, and the query 
 
 ### Core capabilities
 
-- [**REST API**](https://restheart.org/docs/mongodb-rest/): full CRUD, aggregations, filtering, sorting, pagination, generated from the database schema
+- [**AI agents**](https://restheart.org/docs/ai/mcp): an MCP server, so agents use the application's APIs under the same permissions as its users
+- [**RAG and vector search**](https://restheart.org/docs/ai/vector-search): embeddings computed on write (Voyage AI, any OpenAI-compatible endpoint, Ollama), uploaded documents chunked for retrieval, results re-ranked
+- [**Accounts**](https://restheart.org/docs/accounts/overview): sign-up, login, email verification, password reset, team invitations, Google sign-in, tokens and API keys
+- [**Authentication and Authorization**](https://restheart.org/docs/security/overview): JWT, OAuth2, LDAP, MongoDB-based users, ACL rules per role, down to the documents a user may read or change, defined as data, not code
+- [**REST API**](https://restheart.org/docs/mongodb-rest/): full CRUD, aggregations, filtering, sorting, pagination, JSON Schema validation, generated from the database schema
 - [**GraphQL**](https://restheart.org/docs/graphql/): schema-driven mapping to MongoDB queries
 - [**WebSocket**](https://restheart.org/docs/websocket/): change streams exposed as real-time data sync
 - [**SSE**](https://restheart.org/docs/sse/): Server-Sent Events for dashboards, IoT feeds, and event streams
-- [**Authentication and Authorization**](https://restheart.org/docs/security/overview): JWT, OAuth2, LDAP, MongoDB-based users, ACL rules defined as data, not code
+- [**Email**](https://restheart.org/docs/framework/emails): transactional messages from templates, over your own SMTP
+- [**Payments**](https://restheart.org/docs/stripe/overview): Stripe plans, seats and products
 - [**Plugin framework**](https://restheart.org/docs/framework/overview): custom services, interceptors, and initializers in Java, Kotlin, JavaScript, or TypeScript, for the logic a declarative API cannot cover
 - [**Metrics and monitoring**](https://restheart.org/docs/deployment/monitoring): a Prometheus-compatible endpoint plus a browser dashboard at `/metrics-ui`, tracking request rates, latency percentiles, and HTTP status distribution
 - **IoT / MQTT**: ingest device telemetry directly into MongoDB *(coming soon)*
