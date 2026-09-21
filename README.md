@@ -1,5 +1,7 @@
 # <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
+**A backend for web, mobile and AI apps.**
+
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
@@ -13,7 +15,7 @@
 
 ## What RESTHeart is
 
-RESTHeart turns a MongoDB database into a REST, GraphQL, WebSocket, and SSE API, with authentication, authorization, and real-time change streams already wired in.
+RESTHeart is a backend for web, mobile and AI apps. It turns a MongoDB database into a REST, GraphQL, WebSocket, and SSE API, with authentication, authorization, and real-time change streams already wired in.
 
 Point it at a MongoDB instance and the API is there: no routes to write, no permission checks to hand-code, no pagination or filtering logic to duplicate across endpoints. Permissions and behavior are configured declaratively. Custom logic goes into plugins, written in Java, Kotlin, JavaScript, or TypeScript, only for what a data API cannot express.
 
