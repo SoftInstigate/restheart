@@ -92,6 +92,10 @@ Fetch the raw text of https://raw.githubusercontent.com/SoftInstigate/restheart/
 Claude becomes the commentator and runs the match in rounds: each round it starts three subagents,
 one per player, they make their moves and stop, and Claude tells you what happened.
 
+The prompt teaches the rules of the game and nothing about the API: no URLs, no calls, no shapes.
+Every agent finds the board, the ledger and how to write to it by asking the service, which is the
+point — the catalogue is the only documentation they get.
+
 ### 4. Watch it
 
 Open [`watch.html`](watch.html) from disk. Nothing to install, and nothing to fill in but your
@@ -142,7 +146,7 @@ when a client can hold a credential of its own, give it an account of its own.
 | `game/acl.ts` | the permissions, and the trader/secret pairs |
 | `game/graphql.ts` | the GraphQL app |
 | `game/service.ts` | comparing what a service holds with what is meant |
-| `agents/game.md` | the prompt: a commentator that runs rounds of three subagents |
+| `agents/game.md` | the prompt: a commentator that runs rounds of three subagents, none of them told how to call the API |
 | `watch.html` | the spectator page: open it from disk, no build, no dependencies |
 | `agents/mcp.sh` | a minimal MCP client, for checking from a terminal |
 | `agents/smoke.sh` | every rule exercised as the three players, each answer checked |
