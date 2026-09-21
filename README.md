@@ -1,5 +1,7 @@
 # <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
+**A backend for web, mobile and AI apps.**
+
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
@@ -12,6 +14,8 @@
 ---
 
 ## What RESTHeart is
+
+RESTHeart is a backend for web, mobile and AI apps.
 
 Every application built on MongoDB ends up with the same backend layer: routes that map to collections, permission checks on each endpoint, pagination and filtering logic, a way to push updates to clients in real time. That layer is largely mechanical, and writing it by hand for each project is where a lot of backend code goes.
 
