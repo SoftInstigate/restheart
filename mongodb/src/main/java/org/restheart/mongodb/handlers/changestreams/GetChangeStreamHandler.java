@@ -217,6 +217,15 @@ public class GetChangeStreamHandler extends PipelinedHandler {
      */
     private static HttpHandler sseHandlerFor(HttpServerExchange exchange) {
         return new ServerSentEventHandler((connection, lastEventId) -> {
+            // A stream with nothing to report sends nothing at all, and a proxy or load balancer
+            // closes a connection idle for its timeout - often a minute. Undertow sends a comment
+            // line at this interval, which keeps the connection in use and lets the server notice
+            // a peer that went away without saying so.
+            var keepAliveMs = MongoServiceConfiguration.get().getChangeStreamsKeepAliveMs();
+            if (keepAliveMs > 0) {
+                connection.setKeepAliveTime(keepAliveMs);
+            }
+
             // Attach bound vars so the worker can evaluate notify_when per-connection
             var boundVars = exchange.getAttachment(BOUND_VARS_EXCHANGE_KEY);
             connection.putAttachment(ChangeStreamWorker.BOUND_VARS_KEY, boundVars != null ? boundVars : Map.of());

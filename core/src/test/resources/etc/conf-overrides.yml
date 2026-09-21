@@ -518,6 +518,9 @@
 
 /mongo/default-representation-format: HAL
 
+# ChangeStreamSseIT.idleStreamIsKeptAlive — 20s by default, which no test can wait for
+/mongo/change-streams-keep-alive-ms: 1000
+
 /graphql/db: test-graphql
 /graphql/verbose: true
 

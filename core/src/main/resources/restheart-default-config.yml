@@ -893,6 +893,11 @@ mongo:
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
 
+  # How often a comment is sent on an idle change stream (SSE) to keep the connection in use.
+  # A stream with nothing to report sends nothing at all, and a proxy in front of RESTHeart
+  # closes a connection idle for its own timeout. Set to 0 to send none.
+  change-streams-keep-alive-ms: 20_000
+
   # default-pagesize is the number of documents returned when the pagesize query
   # parameter is not specified
   # See https://restheart.org/docs/read-docs#paging

@@ -104,11 +104,23 @@ public class ChangeStreamSseIT extends AbstactIT {
     }
 
     /**
-     * Opens an SSE connection and collects non-blank lines until {@code count}
-     * lines have been read or the {@code timeoutSec} deadline is reached.
+     * Opens an SSE connection and collects the lines of the events it carries, until
+     * {@code count} of them have been read or the {@code timeoutSec} deadline is reached.
      * Returns whatever was collected so far if the deadline expires.
+     *
+     * <p>Comment lines — the ones starting with {@code :}, which keep an idle connection in use —
+     * are skipped, as a client reading events would skip them. {@link #readSseLinesRaw} keeps
+     * them, for the one test that is about them.</p>
      */
     private List<String> readSseLines(HttpRequest req, int count, int timeoutSec) throws Exception {
+        return readSseLinesRaw(req, count, timeoutSec, false);
+    }
+
+    /**
+     * @param keepComments whether keep-alive comment lines are collected too
+     */
+    private List<String> readSseLinesRaw(HttpRequest req, int count, int timeoutSec, boolean keepComments)
+            throws Exception {
         var resp = SSE_CLIENT.send(req, BodyHandlers.ofInputStream());
         InputStream is = resp.body();
 
@@ -119,7 +131,9 @@ public class ChangeStreamSseIT extends AbstactIT {
             try (var reader = new BufferedReader(new InputStreamReader(is))) {
                 String line;
                 while ((line = reader.readLine()) != null && lines.size() < count) {
-                    if (!line.isBlank()) lines.add(line);
+                    if (!line.isBlank() && (keepComments || !line.startsWith(":"))) {
+                        lines.add(line);
+                    }
                 }
                 future.complete(lines);
             } catch (Exception e) {
@@ -372,5 +386,24 @@ public class ChangeStreamSseIT extends AbstactIT {
                 "Resumed SSE connection must receive new events; got: " + lines2);
         assertTrue(lines2.stream().noneMatch(l -> l.contains("\"seq\":1")),
                 "Resumed stream must NOT replay seq:1 (already seen); got: " + lines2);
+    }
+
+    @Test
+    void idleStreamIsKeptAlive() throws Exception {
+        // A stream with nothing to report used to send nothing at all after its headers, and a
+        // proxy closes a connection idle for its own timeout. Undertow sends a comment line -
+        // ":\n" - at the configured interval, which keeps the connection in use. The overrides
+        // set it to a second for this test; the default is 20s.
+        var lines = CompletableFuture.supplyAsync(() -> {
+            try {
+                // nothing is published: everything read here is keep-alive
+                return readSseLinesRaw(sseRequest(), 2, 8, true);
+            } catch (Exception e) {
+                return List.<String>of();
+            }
+        }).get(12, TimeUnit.SECONDS);
+
+        assertTrue(lines.stream().anyMatch(l -> l.startsWith(":")),
+                "an idle SSE stream must carry keep-alive comments; got: " + lines);
     }
 }

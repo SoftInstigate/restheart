@@ -82,6 +82,7 @@ public class MongoServiceConfiguration {
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
     private final boolean aggregationCheckOperators;
+    private final long changeStreamsKeepAliveMs;
 
     private final String constraintsGuardCollection;
     private final int cursorBatchSize;
@@ -172,6 +173,7 @@ public class MongoServiceConfiguration {
         queryTimeLimit = asLong(conf, QUERY_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationTimeLimit = asLong(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationCheckOperators = asBoolean(conf, AGGREGATION_CHECK_OPERATORS, true, silent);
+        changeStreamsKeepAliveMs = asLong(conf, CHANGE_STREAMS_KEEP_ALIVE_MS, DEFAULT_CHANGE_STREAMS_KEEP_ALIVE_MS, silent);
 
         constraintsGuardCollection = asString(conf, CONSTRAINTS_GUARD_COLLECTION_KEY,
                 DEFAULT_CONSTRAINTS_GUARD_COLLECTION, silent);
@@ -311,6 +313,22 @@ public class MongoServiceConfiguration {
      */
     public boolean getAggregationCheckOperators() {
         return aggregationCheckOperators;
+    }
+
+    /**
+     * How often a comment is sent on an idle change stream to keep it open, in milliseconds;
+     * {@code 0} or less sends none.
+     *
+     * <p>A stream that has nothing to report sends nothing at all, and a proxy or a load balancer
+     * in front of RESTHeart closes a connection that has been silent for its idle timeout — often
+     * a minute. The client then sees a stream that simply ends, and reconnects; a busy stream
+     * never hits this, which is why it surfaces on exactly the streams that matter least until
+     * they matter most.</p>
+     *
+     * @return the keep-alive interval in milliseconds
+     */
+    public long getChangeStreamsKeepAliveMs() {
+        return changeStreamsKeepAliveMs;
     }
 
     /**
