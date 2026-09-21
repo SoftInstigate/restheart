@@ -30,6 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -88,6 +90,71 @@ public class URLUtilsTest {
         String expResult = "/a/b/c";
         String result = URLUtils.getParentPath(path);
         assertEquals(expResult, result);
+    }
+
+    /** An exchange as a proxy leaves it: the headers it set, and the scheme it spoke to us over. */
+    private static HttpServerExchange behindProxy(String proto, String forwardedHost, String host, String scheme) {
+        var exchange = new HttpServerExchange();
+        exchange.setRequestScheme(scheme);
+        if (proto != null) {
+            exchange.getRequestHeaders().put(HttpString.tryFromString("X-Forwarded-Proto"), proto);
+        }
+        if (forwardedHost != null) {
+            exchange.getRequestHeaders().put(HttpString.tryFromString("X-Forwarded-Host"), forwardedHost);
+        }
+        if (host != null) {
+            exchange.getRequestHeaders().put(Headers.HOST, host);
+        }
+        return exchange;
+    }
+
+    @Test
+    public void externalBaseUrlPrefersWhatTheOperatorConfigured() {
+        var exchange = behindProxy("https", "public.example.com", "internal:8080", "http");
+        assertEquals("https://configured.example.com",
+                URLUtils.externalBaseUrl("https://configured.example.com", exchange));
+    }
+
+    @Test
+    public void externalBaseUrlTakesTheSchemeFromTheProxyWithoutAForwardedHost() {
+        // An ALB terminates TLS, forwards to the container over plain HTTP on 8080 and preserves
+        // the client's Host — it sends no X-Forwarded-Host at all. Reading the two headers only
+        // as a pair named the instance http:// at the right host: a URL an HTTPS-only client
+        // cannot use, which is what a customer saw in both well-known documents.
+        var exchange = behindProxy("https", null, "srv.example.com", "http");
+        assertEquals("https://srv.example.com", URLUtils.externalBaseUrl(null, exchange));
+    }
+
+    @Test
+    public void externalBaseUrlTakesTheHostFromTheProxyWithoutAForwardedProto() {
+        // A CDN in front of another origin does the opposite: Host is rewritten to the origin and
+        // the real name travels in X-Forwarded-Host.
+        var exchange = behindProxy(null, "srv.example.com", "origin.internal", "https");
+        assertEquals("https://srv.example.com", URLUtils.externalBaseUrl(null, exchange));
+    }
+
+    @Test
+    public void externalBaseUrlUsesBothWhenBothAreThere() {
+        var exchange = behindProxy("https", "srv.example.com", "origin.internal", "http");
+        assertEquals("https://srv.example.com", URLUtils.externalBaseUrl(null, exchange));
+    }
+
+    @Test
+    public void externalBaseUrlKeepsTheFirstHopOfAForwardedProtoList() {
+        var exchange = behindProxy("https, http", "srv.example.com", null, "http");
+        assertEquals("https://srv.example.com", URLUtils.externalBaseUrl(null, exchange));
+    }
+
+    @Test
+    public void externalBaseUrlFallsBackToTheExchangeWhenNoProxySpoke() {
+        var exchange = behindProxy(null, null, "localhost:8080", "http");
+        assertEquals("http://localhost:8080", URLUtils.externalBaseUrl(null, exchange));
+    }
+
+    @Test
+    public void externalBaseUrlIsEmptyWithNoHostToBeHad() {
+        var exchange = behindProxy("https", null, null, "http");
+        assertEquals("", URLUtils.externalBaseUrl(null, exchange));
     }
 
     @Test

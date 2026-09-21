@@ -57,10 +57,15 @@ public class URLUtils {
      * operator set one, else what the request says it came in on.
      *
      * <p>Order, and each step is there for a deployment that exists: the configured value first,
-     * because behind a proxy only the operator knows the public name; then
-     * {@code X-Forwarded-Proto} and {@code X-Forwarded-Host} together, which is what a proxy that
-     * terminates TLS leaves behind; then the exchange's own scheme and {@code Host}. An empty
-     * string when even that is missing, which is not a URL and is meant to be noticed.
+     * because behind a proxy only the operator knows the public name; then each half of the answer
+     * on its own, because the two headers do not travel together. An ALB terminates TLS, sends
+     * {@code X-Forwarded-Proto: https} and forwards the client's {@code Host} untouched, with no
+     * {@code X-Forwarded-Host} at all — requiring both would name the instance {@code http://} at
+     * the right host, which is exactly the URL an HTTPS-only client cannot use. A CDN in front of
+     * another origin does the opposite: it rewrites {@code Host} to the origin and puts the real
+     * one in {@code X-Forwarded-Host}. So the scheme comes from {@code X-Forwarded-Proto} or else
+     * from the exchange, the host from {@code X-Forwarded-Host} or else from {@code Host}, and an
+     * empty string when there is no host to be had, which is not a URL and is meant to be noticed.
      *
      * <p>Shared because more than one service has to answer the same question — what to call
      * myself in something I hand out — and two answers that drift produce a document naming a
@@ -78,13 +83,20 @@ public class URLUtils {
         var forwardedProto = headers.getFirst("X-Forwarded-Proto");
         var forwardedHost = headers.getFirst("X-Forwarded-Host");
 
-        if (forwardedProto != null && forwardedHost != null) {
-            return forwardedProto + "://" + forwardedHost;
+        var host = forwardedHost != null && !forwardedHost.isBlank()
+                ? forwardedHost
+                : headers.getFirst("Host");
+
+        if (host == null || host.isBlank()) {
+            return "";
         }
 
-        var host = headers.getFirst("Host");
+        // a proxy that passed through several hops leaves a list: the first entry is the client's
+        var scheme = forwardedProto != null && !forwardedProto.isBlank()
+                ? forwardedProto.split(",")[0].strip()
+                : exchange.getRequestScheme();
 
-        return host != null ? exchange.getRequestScheme() + "://" + host : "";
+        return scheme + "://" + host;
     }
 
     public static String removeTrailingSlashes(String s) {
