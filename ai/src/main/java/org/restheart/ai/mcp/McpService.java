@@ -144,25 +144,14 @@ public class McpService implements ByteArrayService {
      * accurate; this text is written once, for every deployment, and cannot know any of it.
      */
     static final String INSTRUCTIONS = """
-            This server exposes a RESTHeart deployment: its APIs are MCP resources, each with its \
-            own actions.
+            A RESTHeart deployment. Each API is a resource; each resource has actions.
 
-            Start from list_apis. It is the complete catalog, and it is the only complete one: a \
-            resource that takes parameters is published as a resource template, and a template is \
-            listed by resources/templates/list, never by resources/list — so a client that calls \
-            only the latter shows you part of the catalog. An API missing from your resource list \
-            is not missing from the server: ask list_apis, or call resources/templates/list \
-            yourself.
-
-            Everything, reads included, goes through call_api: the resource, the action name from \
-            list_apis, and its arguments. It runs on the server with your session's identity, so \
-            there is no request for you to send and no token to fetch. A read is the resource's \
-            read action — query for a collection, get for a document, execute for an aggregation. \
-            If your client also exposes resources/read, it returns the same data; many clients, \
-            and the subagents of most of them, have tools only.
-
-            The catalog shows what your session may use. A resource you cannot see is one your \
-            role has no permission for, and asking for it by URI will not get you further.\
+            1. Catalog: list_apis. It is complete. resources/list is not: a resource that takes \
+            parameters is a template, listed only by resources/templates/list.
+            2. Execution: call_api(resource, action, args), for every action, reads included. It \
+            runs on the server with this session's identity and permissions.
+            3. The catalog lists what this session's permissions could allow; the call is \
+            authorized when it is made.\
             """;
 
     @Inject("registry")
@@ -1712,7 +1701,7 @@ public class McpService implements ByteArrayService {
 
     static McpSchema.Tool listApisToolDefinition() {
         var properties = new LinkedHashMap<String, Object>();
-        properties.put("resource", schemaProp("string", "Optional. Omit for the catalog."));
+        properties.put("resource", schemaProp("string", "A resource uri, to describe it in full. Omit for the catalog."));
         properties.put("query", schemaProp("string",
                 "Optional. Case-insensitive substring match against each resource's uri/kind/description. Ignored if `resource` is given."));
         properties.put("kind", schemaProp("string",
@@ -1723,24 +1712,22 @@ public class McpService implements ByteArrayService {
 
         return McpSchema.Tool.builder("list_apis", inputSchema(properties, null))
                 .description("""
-                        Lists or describes MCP-enabled APIs exposed by RESTHeart. Without arguments, returns the \
-                        catalog — each resource's URI, kind, description, and the actions you may call on it with \
-                        the params each one requires — optionally narrowed with `query`/`kind` and paged with \
-                        `limit`/`cursor`. With a resource URI, returns full context: kind, supported \
-                        transports, actions with parameter types, auth requirements, examples. On a deployment \
-                        with many resources, prefer a filtered call over an unfiltered one. An action's \
-                        `server_sets` names body fields the server writes itself: do not send them.
+                        The catalog of the APIs this session may use.
 
-                        THIS IS THE COMPLETE CATALOG. A resource that takes parameters is published to MCP as a \
-                        resource template, listed under resources/templates/list — a method many clients never \
-                        call, so their resource list shows only part of what is here. Do not conclude from that \
-                        list that a resource does not exist: ask this tool.
+                        list_apis() → every resource: uri, kind, description, actions.
+                          actions = {name: [arguments the action requires]}.
+                        list_apis(resource=<uri>) → that resource in full: each action with its \
+                        params, body_schema, notes and examples.
+                        query, kind filter the catalog; limit, cursor page it.
 
-                        To use a resource — read it, or create, update, delete, invoke — read its actions here \
-                        and call call_api: it executes the action for you, with your session's permissions, and \
-                        returns the result. A read is the read action: query for a collection, get for a \
-                        document, execute for an aggregation. resources/read, where your client exposes it, \
-                        returns the same data.\
+                        In a resource's actions:
+                          depends_on: arguments the permission reads from the call; without them the \
+                        call is refused.
+                          server_sets: body fields the server writes; do not send them.
+                          note: what the action depends on, or how it behaves.
+
+                        The catalog is complete. A client's resource list is not: it omits resources \
+                        listed only by resources/templates/list. Execute any action with call_api.\
                         """)
                 .build();
     }
@@ -1749,40 +1736,30 @@ public class McpService implements ByteArrayService {
         var properties = new LinkedHashMap<String, Object>();
         properties.put("resource", schemaProp("string", "Resource URI, as listed by list_apis."));
         properties.put("action", schemaProp("string", "Action name as declared in the resource's actions map."));
-        properties.put("args", schemaProp("object", "Action arguments — values for params and body declared by the resource."));
+        properties.put("args", schemaProp("object", "Each argument by name; the request body as `body`."));
 
         return McpSchema.Tool.builder("call_api", inputSchema(properties, List.of("resource", "action")))
                 .outputSchema(callApiOutputSchema())
                 .description("""
-                        Executes an action of a known MCP resource — create, update, delete, invoke — and returns \
-                        what the API answered: `status` (the HTTP status code), `headers` and `body` (parsed JSON \
-                        when the API returned JSON). The call runs on the server with your session's own identity \
-                        and permissions: there is no request for you to send and no token to fetch.
+                        Executes an action of a resource, on the server, with this session's identity \
+                        and permissions.
 
-                        Dispatch by action — the set of valid actions for a given resource, with their params and \
-                        body_schema, is in the resource's list_apis output. Validate args against them before \
-                        calling.
+                        Input: resource (uri from list_apis), action (name from list_apis), args.
+                          args = each argument by name, the request body as `body`. Validate `body` \
+                        against the action's body_schema.
+                        Output: status (the HTTP status code), headers, body (parsed when JSON).
 
-                        A non-2xx status is a normal result, not a tool error: read `body` for the reason (a 403 \
-                        means your session's role may not do this; a 409 means a constraint of the resource \
-                        rejected the write, see the action's notes in list_apis before retrying).
-
-                        A SUCCESSFUL WRITE ANSWERS WITH NO BODY. A create is a 201 whose `headers.Location` is \
-                        the URI of what was created; an update or a delete is a 200 or a 204. None of them echo \
-                        the stored data back — read the resource afterwards if you need to see the effect, and \
-                        take the new id from `Location`, not from the (empty) body.
-
-                        READS go through here too: the resource's read action — `query` for a collection, `get` \
-                        for a document, `execute` for an aggregation, with its params in `args`. This works in \
-                        every client. resources/read returns the same data where your client exposes it, but \
-                        many expose tools only — subagents in particular — and a parametric resource is there \
-                        only as a template, listed by resources/templates/list.
-
-                        A change stream (SSE, \
-                        WebSocket) is neither executable here nor subscribable: you cannot open it yourself. To \
-                        follow changes, subscribe to the collection it watches (or an aggregation over it) with \
-                        resources/subscribe and re-read on notifications/resources/updated. how_to_call describes \
-                        the stream for an external client the user runs (websocat, curl -N, a browser script).\
+                        Reads: `query` (collection), `get` (document), `execute` \
+                        (aggregation), with their params in args.
+                        Writes: create → 201, headers.Location = URI of the new document, no body. \
+                        update, delete → 200 or 204, no body. A write never returns the stored data: \
+                        read it afterwards.
+                        A non-2xx status is a result, not a tool error; body states the reason. \
+                        403: not permitted to this session. 409: a rule of the resource refused the \
+                        write; the action's note says which 409s to retry.
+                        Change streams (SSE, WebSocket) cannot be opened here: subscribe to the \
+                        collection with resources/subscribe and re-read on \
+                        notifications/resources/updated, or describe the stream with how_to_call.\
                         """)
                 // one tool for every action, so the annotations state the worst case: a host that asks the
                 // user before a destructive tool call asks before every call_api, which is the point
@@ -1794,29 +1771,20 @@ public class McpService implements ByteArrayService {
         var properties = new LinkedHashMap<String, Object>();
         properties.put("resource", schemaProp("string", "Resource URI."));
         properties.put("action", schemaProp("string", "Action name as declared in the resource's actions map."));
-        properties.put("args", schemaProp("object", "Action arguments — values for params and body declared by the resource."));
+        properties.put("args", schemaProp("object", "Each argument by name; the request body as `body`."));
         properties.put("transport", schemaProp("string",
                 "Optional transport preference (e.g. websocket vs sse for streams). If omitted, the resource's default transport is used."));
 
         return McpSchema.Tool.builder("how_to_call", inputSchema(properties, List.of("resource", "action")))
                 .description("""
-                        NOT FOR EXECUTING. To act on a resource yourself, use call_api: it runs the action on the \
-                        server with your session's permissions and returns the result — reads included.
+                        Describes the HTTP request behind an action; does not execute it. To act, use \
+                        call_api.
 
-                        This tool DESCRIBES the request behind an action — transport, method, URL, headers, \
-                        body — for code you are writing for the user: a frontend, a script, an integration in any \
-                        language. It composes the request and does NOT execute it. For a change stream it is the \
-                        only thing MCP offers: the stream is neither executable nor subscribable, and the \
-                        descriptor is what the user opens with an external client (websocat, curl -N, a browser \
-                        script).
-
-                        The descriptor carries no credential: its Authorization header holds the placeholder `%s`, \
-                        to be replaced in the user's code by the user's own credential (an API key, or a token \
-                        their application obtains). It is stable and safe to keep: the descriptor for, say, \
-                        creating a document in a collection is the same every time apart from the body.
-
-                        Dispatch by action — the set of valid actions for a given resource is declared in the \
-                        resource's list_apis output.\
+                        Output: transport, method, URL, headers, body — for code the user runs outside \
+                        MCP. The only way MCP offers to open a change stream (websocat, curl -N, a \
+                        browser).
+                        Authorization holds the placeholder `%s`; the user's code replaces it with \
+                        their own credential. No credential is ever included.\
                         """.formatted(DescriptorRenderer.CREDENTIAL_PLACEHOLDER))
                 .build();
     }

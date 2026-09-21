@@ -203,7 +203,8 @@ class CatalogVisibilityTest {
 
         assertEquals("unknown", v.get("permitted"));
         // named, so an agent knows what to send rather than guessing it from prose (market game)
-        assertTrue(String.valueOf(v.get("note")).contains("the query parameter `ticket`"), v.toString());
+        assertEquals(List.of("ticket"), v.get("depends_on"));
+        assertTrue(String.valueOf(v.get("note")).contains("`ticket`"), v.toString());
     }
 
     /**
@@ -246,12 +247,12 @@ class CatalogVisibilityTest {
 
     @Test
     void theNoteNamesEveryParameterAndTheBodyTheUndecidedRulesRead() {
-        assertEquals(List.of("the query parameter `trader`", "the query parameter `secret`"),
+        assertEquals(List.of("trader", "secret"),
                 CatalogVisibility.callInputsOf("path('/ledger') and method(POST) and equals(%{q,trader}, 'trader1') "
                         + "and equals(%{q,secret}, 'x')"));
-        assertEquals(List.of("the query parameter `plan`"),
+        assertEquals(List.of("plan"),
                 CatalogVisibility.callInputsOf("equals(@qparams['plan'], 'gold')"));
-        assertEquals(List.of("the query parameter `export`", "the request body"),
+        assertEquals(List.of("export", "body"),
                 CatalogVisibility.callInputsOf("qparams-contain(export) and bson-request-contains(status)"));
         assertEquals(List.of(), CatalogVisibility.callInputsOf("path('/todos') and method(GET)"));
     }

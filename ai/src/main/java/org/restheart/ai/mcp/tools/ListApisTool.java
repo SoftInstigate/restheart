@@ -23,6 +23,7 @@ package org.restheart.ai.mcp.tools;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -217,17 +218,45 @@ public final class ListApisTool {
 
         var actions = new LinkedHashMap<String, Object>();
         resource.actions().forEach((name, action) -> {
-            if (verdicts != null && Verdicts.REFUSED.equals(verdicts.of(resource, name).get("permitted"))) {
+            var verdict = verdicts == null ? Map.<String, Object>of() : verdicts.of(resource, name);
+
+            if (Verdicts.REFUSED.equals(verdict.get("permitted"))) {
                 return;
             }
-            actions.put(name, action.params().entrySet().stream()
-                    .filter(p -> p.getValue().required())
-                    .map(Map.Entry::getKey)
-                    .toList());
+
+            actions.put(name, argumentsOf(action, verdict));
         });
         entry.put("actions", actions);
 
         return entry;
+    }
+
+    /**
+     * The {@code call_api} arguments an action cannot do without: its required params, those the
+     * caller's rules decide on ({@code depends_on}: the permission reads them from the call, so
+     * without them the call is refused), and {@code body} when the action writes one.
+     *
+     * <p>Only the declared params made {@code create} read as {@code []} — taking nothing — on a
+     * ledger where every write had to carry {@code trader}, {@code secret} and a body.
+     */
+    static List<String> argumentsOf(McpResource.Action action, Map<String, Object> verdict) {
+        var names = new LinkedHashSet<String>();
+
+        action.params().forEach((name, param) -> {
+            if (param.required()) {
+                names.add(name);
+            }
+        });
+
+        if (verdict.get("depends_on") instanceof List<?> inputs) {
+            inputs.forEach(input -> names.add(String.valueOf(input)));
+        }
+
+        if (action.bodySchema() != null || List.of("POST", "PUT", "PATCH").contains(action.method())) {
+            names.add("body");
+        }
+
+        return List.copyOf(names);
     }
 
     private static boolean matches(McpResource resource, String query) {

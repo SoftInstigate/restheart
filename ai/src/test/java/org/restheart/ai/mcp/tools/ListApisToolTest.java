@@ -182,6 +182,25 @@ public class ListApisToolTest {
     }
 
     @Test
+    public void catalog_aWriteNeedsWhatItsRuleReadsAndABody() {
+        // 11 players of 12 read "create": [] as "takes nothing" on a ledger that needed trader,
+        // secret and a body for every write
+        var resource = McpResource.builder()
+                .uri("https://host/ledger")
+                .kind("collection")
+                .action("create", a -> a.method("POST"))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+        ListApisTool.Verdicts signed = (r, name) -> Map.of("permitted", "unknown", "depends_on", List.of("trader", "secret"));
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, signed);
+
+        @SuppressWarnings("unchecked")
+        var entry = ((List<Map<String, Object>>) result.get("resources")).get(0);
+        assertEquals(Map.of("create", List.of("trader", "secret", "body")), entry.get("actions"));
+    }
+
+    @Test
     public void catalog_leavesOutWhatTheCallersRulesRefuse_asTheResourceDoes() {
         var resource = McpResource.builder()
                 .uri("https://host/ledger")

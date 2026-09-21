@@ -237,8 +237,8 @@ final class CatalogVisibility {
         var asked = askedOf(action);
 
         if (rules.isEmpty()) {
-            return undecided("no rule that applies to you could be read, so this was not decided here: "
-                    + "try it, and read the status");
+            return undecided("decided when the call is made, not here: no permission of this session "
+                    + "could be read. Call it and read the status");
         }
 
         var best = Truth.FALSE;
@@ -270,14 +270,13 @@ final class CatalogVisibility {
 
         var verdict = new LinkedHashMap<String, Object>(switch (best) {
             case TRUE -> Map.of("permitted", "yes");
-            case UNDETERMINED -> undecided(decidingInputs.isEmpty()
-                    ? "whether this is permitted depends on what the call carries, which a catalogue does not "
-                            + "have: try it, and read the status"
-                    : "whether this is permitted depends on " + String.join(" and ", decidingInputs)
-                            + ", which the call carries and a catalogue does not have: send "
-                            + (decidingInputs.size() == 1 ? "it" : "them") + " with the call, and read the status");
+            case UNDETERMINED -> undecided(noteOn(decidingInputs));
             case FALSE -> refused(action, bestIgnoringSwitches, path);
         });
+
+        if (best == Truth.UNDETERMINED && !decidingInputs.isEmpty()) {
+            verdict.put("depends_on", List.copyOf(decidingInputs));
+        }
 
         if (best.mayBeTrue() && serverSets != null && !serverSets.isEmpty() && carriesABody(action)) {
             verdict.put("server_sets", List.copyOf(serverSets));
@@ -310,11 +309,14 @@ final class CatalogVisibility {
     private static final Pattern Q_VARIABLE = Pattern.compile("@qparams\\[\\s*'([^']+)'\\s*]");
     private static final Pattern Q_CONTAINS = Pattern.compile("qparams-contain\\(([^)]*)\\)");
 
+    /** The name {@link #callInputsOf} gives the request body, as {@code call_api} does. */
+    static final String BODY = "body";
+
     /**
-     * What of the call a permission's predicate reads, named for the agent: the query parameters,
-     * and the body. Read off the predicate's text rather than its analysis, because the point is
-     * only to tell an agent what to send — a name too many costs nothing, a missing one leaves it
-     * guessing, as it did with {@code trader} and {@code secret} before this.
+     * What of the call a permission's predicate reads, as {@code call_api} argument names: each
+     * query parameter by its name, the request body as {@value #BODY}. Read off the predicate's
+     * text rather than its analysis: the point is to tell an agent what to send, and a name too
+     * many costs nothing where a missing one leaves it guessing.
      */
     static List<String> callInputsOf(String predicate) {
         var names = new LinkedHashSet<String>();
@@ -322,7 +324,7 @@ final class CatalogVisibility {
         for (var pattern : List.of(Q_ATTRIBUTE, Q_VARIABLE)) {
             var m = pattern.matcher(predicate);
             while (m.find()) {
-                names.add("the query parameter `" + m.group(1) + "`");
+                names.add(m.group(1));
             }
         }
 
@@ -330,16 +332,25 @@ final class CatalogVisibility {
         while (contains.find()) {
             for (var name : contains.group(1).replaceAll("[{}'\"\\s]|value=", "").split(",")) {
                 if (!name.isBlank()) {
-                    names.add("the query parameter `" + name + "`");
+                    names.add(name);
                 }
             }
         }
 
         if (predicate.contains("bson-request-")) {
-            names.add("the request body");
+            names.add(BODY);
         }
 
         return List.copyOf(names);
+    }
+
+    private static String noteOn(Collection<String> inputs) {
+        if (inputs.isEmpty()) {
+            return "decided when the call is made, not here: call it and read the status";
+        }
+
+        return "decided by the arguments " + String.join(", ", inputs.stream().map(n -> "`" + n + "`").toList())
+                + " when the call is made: pass them, then read the status";
     }
 
     private static Map<String, Object> undecided(String why) {
