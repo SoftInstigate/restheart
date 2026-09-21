@@ -150,6 +150,7 @@ public final class CollectionMcpResourceBuilder {
                     + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
         });
 
+        bulkActions(builder, bodySchema, rules);
         managementActions(builder);
 
         examples(mcp).forEach(ex -> {
@@ -171,6 +172,38 @@ public final class CollectionMcpResourceBuilder {
         }
 
         return Optional.of(builder.build());
+    }
+
+    /**
+     * Writing many documents at once: {@code PATCH} and {@code DELETE} on {@code /<coll>/*} with a
+     * filter, which the REST API answers and the ACL decides like any other request.
+     *
+     * <p>They take two conditions, both necessary, exactly as the management ones do: a permission
+     * matching the method and the path — an exact {@code path('/<coll>')} does not, a
+     * {@code path-prefix} does — and the switch of that permission's {@code mongo} block, off
+     * unless written. The filter is required here and not optional: a bulk write without one is a
+     * write to every document in the collection.
+     */
+    private static void bulkActions(McpResource.Builder builder, Map<String, Object> bodySchema, List<String> rules) {
+        builder.action("update_many", a -> {
+            a.method("PATCH").pathTemplate("/*").requires("mongo.allowBulkPatch");
+            a.description("Applies this change to every document matching the filter, in one request."
+                    + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
+            a.param("filter", new McpResource.Param("object",
+                    "Which documents to change. Required: without it this would change all of them.",
+                    true, null, null));
+            if (bodySchema != null) {
+                a.bodySchema(bodySchema);
+            }
+        });
+
+        builder.action("delete_many", a -> {
+            a.method("DELETE").pathTemplate("/*").requires("mongo.allowBulkDelete");
+            a.description("Deletes every document matching the filter, in one request. Not reversible.");
+            a.param("filter", new McpResource.Param("object",
+                    "Which documents to delete. Required: without it this would delete all of them.",
+                    true, null, null));
+        });
     }
 
     /**

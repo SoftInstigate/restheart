@@ -91,6 +91,19 @@ class ListingEvaluatorTest {
         assertEquals(Truth.FALSE, evaluate("path-prefix('/orders')", "/invoices", "GET"));
     }
 
+    /**
+     * The sub-resources of a collection — {@code _meta}, {@code _indexes}, and the {@code *} a bulk
+     * write addresses — are ordinary paths, selected by a prefix and missed by an exact path. The
+     * switches that gate them are a separate condition, on the permission and not in its predicate.
+     */
+    @Test
+    void aPrefixReachesTheSubResourcesOfACollection_anExactPathDoesNot() {
+        for (var path : new String[] { "/coll/_meta", "/coll/_indexes", "/coll/_indexes/byQty", "/coll/*" }) {
+            assertEquals(Truth.TRUE, evaluate("path-prefix('/coll')", path, "GET"), path);
+            assertEquals(Truth.FALSE, evaluate("path('/coll')", path, "GET"), path);
+        }
+    }
+
     /** The prefix an owner writes to mean "everything" reaches every resource. */
     @Test
     void theRootPrefixMatchesEverything() {

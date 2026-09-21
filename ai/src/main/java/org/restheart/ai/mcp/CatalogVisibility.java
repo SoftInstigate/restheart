@@ -273,11 +273,18 @@ final class CatalogVisibility {
                 "note", "no rule that applies to you covers " + methodOf(action) + " on " + path);
     }
 
-    /** What the action asks of MongoDB, as far as the switches of a permission are concerned. */
+    /**
+     * What the action asks of MongoDB, as far as the switches of a permission are concerned — read
+     * from what the action itself declares, so a plugin that publishes one of these says which
+     * switch it needs rather than this having to recognise its name.
+     */
     private static MongoGates.Action askedOf(McpResource.Action action) {
-        return action.requires().contains("mongo.allowManagementRequests")
-                ? MongoGates.Action.managementRequest()
-                : MongoGates.Action.ORDINARY;
+        var requires = action.requires();
+
+        return new MongoGates.Action(
+                requires.contains("mongo.allowManagementRequests"),
+                requires.contains("mongo.allowBulkPatch"),
+                requires.contains("mongo.allowBulkDelete"));
     }
 
     /**

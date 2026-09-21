@@ -239,6 +239,25 @@ public class CollectionMcpResourceBuilderTest {
         }
     }
 
+    /** Writing many documents at once is published too, gated by its own switch and needing a filter. */
+    @Test
+    public void theBulkWritesArePublished_withTheFilterRequired() {
+        var mcp = BsonDocument.parse("{\"description\": \"Orders.\"}");
+
+        var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, null, null, null).orElseThrow();
+
+        for (var entry : java.util.Map.of("update_many", "mongo.allowBulkPatch",
+                "delete_many", "mongo.allowBulkDelete").entrySet()) {
+            var action = resource.actions().get(entry.getKey());
+
+            assertNotNull(action, entry.getKey() + " is not published");
+            assertEquals("/*", action.pathTemplate());
+            assertTrue(action.requires().contains(entry.getValue()), action.requires().toString());
+            assertTrue(action.params().get("filter").required(),
+                    "without a filter this writes every document in the collection");
+        }
+    }
+
     /**
      * Dropping a collection needs its current ETag in {@code If-Match}; as a query parameter it
      * would be a request missing a condition, answered with a 409 the agent cannot interpret.
