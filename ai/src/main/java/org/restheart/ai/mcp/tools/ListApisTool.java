@@ -109,13 +109,38 @@ public final class ListApisTool {
             return described;
         }
 
-        actions.forEach((name, action) -> {
-            if (action instanceof Map<?, ?> fields) {
+        @SuppressWarnings("unchecked")
+        var mutable = (Map<String, Object>) actions;
+        var withheld = new ArrayList<String>();
+
+        for (var name : List.copyOf(mutable.keySet())) {
+            var verdict = verdicts.of(resource, name);
+
+            if (Verdicts.REFUSED.equals(verdict.get("permitted"))) {
+                withheld.add(name);
+                mutable.remove(name);
+            } else if (mutable.get(name) instanceof Map<?, ?> fields) {
                 @SuppressWarnings("unchecked")
-                var mutable = (Map<String, Object>) fields;
-                mutable.putAll(verdicts.of(resource, String.valueOf(name)));
+                var action = (Map<String, Object>) fields;
+                verdict.forEach((key, value) -> {
+                    if (!"permitted".equals(key)) {
+                        action.put(key, value);
+                    }
+                });
             }
-        });
+        }
+
+        // The transports name the actions they carry: leaving a withheld one there would make the
+        // two halves of the same description disagree about what this resource offers.
+        if (!withheld.isEmpty() && described.get("transports") instanceof List<?> transports) {
+            transports.forEach(t -> {
+                if (t instanceof Map<?, ?> transport && transport.get("actions") instanceof List<?> names) {
+                    @SuppressWarnings("unchecked")
+                    var mutableTransport = (Map<String, Object>) transport;
+                    mutableTransport.put("actions", names.stream().filter(n -> !withheld.contains(n)).toList());
+                }
+            });
+        }
 
         return described;
     }
@@ -123,16 +148,22 @@ public final class ListApisTool {
     /**
      * What a listing can say about this caller performing one action of one resource.
      *
-     * <p>Marking, never omitting. An action left out cannot be told from an action the kind does
-     * not have, and an agent that reads a collection without {@code create} concludes the service
-     * is read-only — that happened, and cost three matches of {@code examples/market-game}. A
-     * marked action still describes the resource truthfully and still says what not to try; and it
-     * remains callable, because a catalog decides what is announced and never what is allowed.
+     * <p>The same rule the resource itself is listed by, one level down: an action the caller's
+     * rules refuse is not offered, and one they might allow is. There is no middle, and no
+     * marking of what is not there — a catalogue says what can be asked for.
+     *
+     * <p>This does not bring back the defect that filtering actions once caused (#743). That was a
+     * two-valued probe, which answered "refused" to a rule deciding on an argument it did not
+     * have, and dropped {@code create} for the very caller entitled to it. The analysis answers
+     * "undetermined" there, and undetermined is offered.
      */
     @FunctionalInterface
     public interface Verdicts {
 
-        /** Fields to add to the action's description — empty when there is nothing to say. */
+        /** The verdict of {@link #REFUSED} withholds the action; anything else describes it. */
+        String REFUSED = "no";
+
+        /** What this caller may do with one action: {@code permitted}, and whatever explains it. */
         Map<String, Object> of(McpResource resource, String actionName);
 
         /** Says nothing, for a caller there is nothing to say about. */

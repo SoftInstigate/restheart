@@ -204,10 +204,14 @@ final class CatalogVisibility {
     /**
      * What a listing can say about this caller performing one action.
      *
-     * <p>Three answers, and the third is not a hedge: a rule may decide on something the call
-     * carries, which a listing does not have, and saying so is more use to an agent than guessing.
-     * Whatever the answer, the action stays in the description and stays callable — the catalog
-     * announces, the pipeline decides.
+     * <p>Three answers. {@code yes} and {@code unknown} are both offered — never hide what could be
+     * allowed — and only {@code no} withholds it, which is the same rule by which the resource
+     * itself is listed or not. The third answer is not a hedge: a rule may decide on something the
+     * call carries, which a listing does not have, and an action that might work is one worth
+     * offering.
+     *
+     * <p>Withholding is not blocking. A caller who knows the action can still ask for it, and the
+     * ACL refuses it then, exactly as it refuses a resource that never appeared in a listing.
      */
     static Map<String, Object> verdict(AclPermissions permissions, Request<?> request, McpResource resource,
             String actionName) {
@@ -228,7 +232,8 @@ final class CatalogVisibility {
         var asked = askedOf(action);
 
         if (rules.isEmpty()) {
-            return undecided("no rule that applies to you could be read, so this was not decided here");
+            return undecided("no rule that applies to you could be read, so this was not decided here: "
+                    + "try it, and read the status");
         }
 
         var best = Truth.FALSE;
@@ -243,8 +248,8 @@ final class CatalogVisibility {
 
         return switch (best) {
             case TRUE -> Map.of("permitted", "yes");
-            case UNDETERMINED -> undecided("a rule that could permit it decides on what the call carries, "
-                    + "which a catalogue does not have");
+            case UNDETERMINED -> undecided("whether this is permitted depends on what the call carries, "
+                    + "which a catalogue does not have: try it, and read the status");
             case FALSE -> refused(action, bestIgnoringSwitches, path);
         };
     }

@@ -120,10 +120,9 @@ player's secret, and `<SERVICE-URL>` with the service URL you found.
 > the exact shape of an offer, an acceptance and a victory claim. A non-2xx status is a result,
 > not an error of the tool: read the body.
 >
-> One thing the catalogue gets wrong: it may not list `create` among the actions of
-> `market_events`, because it decides what you can do without seeing your `trader` and `secret`.
-> Call it anyway, exactly as shown above. The server authorizes the call itself, and answers 403
-> if it really refuses.
+> The catalogue offers the actions your role could perform, and `create` on `market_events` is
+> among them with a note: whether it goes through depends on the `trader` and `secret` you send,
+> which a catalogue cannot know. Call it as shown above and read the status.
 >
 > ## Your round, in order
 >

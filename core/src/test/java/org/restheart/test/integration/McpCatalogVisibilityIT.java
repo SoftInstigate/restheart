@@ -288,18 +288,40 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     // ------------------------------------------------------------------------
 
     /**
-     * The data management API is published like any other action, and an action that acts on the
-     * collection itself says so — the one thing an agent cannot work out from a name, where the
-     * mistake does not undo.
+     * The collection is published; the operations on the collection itself are not offered to a
+     * caller whose rules refuse them. The resource and its actions are decided by the same rule,
+     * one level apart.
      */
     @Test
-    public void aCollectionPublishesTheOperationsOnItself_andSaysTheyAreOnIt() throws Exception {
+    public void theOperationsOnTheCollectionItselfAreNotOfferedToWhoCannotPerformThem() throws Exception {
         var described = reader.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}");
+        var actions = described.getDocument("actions");
+
+        assertTrue(actions.containsKey("query"), "the collection is published and readable: " + actions.keySet());
+
+        for (var withheld : java.util.List.of("drop", "set_properties", "create_index", "delete_index",
+                "properties", "indexes")) {
+            assertFalse(actions.containsKey(withheld),
+                    withheld + " needs allowManagementRequests, which no rule of this role grants: " + actions.keySet());
+        }
+
+        // and the transports do not name what the description withheld
+        assertFalse(described.getArray("transports").toJson().contains("drop"),
+                "the transports must agree with the actions: " + described.getArray("transports").toJson());
+    }
+
+    /**
+     * The positive control, and the proof that they are published at all: the administrator's
+     * permission grants management requests, so the same collection offers them.
+     */
+    @Test
+    public void theyAreOfferedToWhoCanPerformThem_andSayTheyActOnTheCollection() throws Exception {
+        var described = admin.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}");
         var actions = described.getDocument("actions");
 
         assertTrue(actions.keySet().containsAll(java.util.List.of(
                 "properties", "set_properties", "drop", "indexes", "create_index", "delete_index")),
-                "the data management API is not published: " + actions.keySet());
+                "admin grants allowManagementRequests, so the data management API is offered: " + actions.keySet());
 
         assertEquals("resource", actions.getDocument("drop").getString("target").getValue(),
                 "drop acts on the collection, and must say so: " + actions.getDocument("drop").toJson());
@@ -311,7 +333,7 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     /** The drop needs the collection's ETag, and an action that needs one declares where it goes. */
     @Test
     public void theDropDeclaresTheEtagItNeeds_asAHeader() throws Exception {
-        var described = reader.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}");
+        var described = admin.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}");
         var etag = described.getDocument("actions").getDocument("drop").getDocument("params").getDocument("etag");
 
         assertEquals("If-Match", etag.getString("header").getValue(),
@@ -319,32 +341,18 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     }
 
     /**
-     * Marked, never omitted. The reader may read this collection and may not drop it; both actions
-     * are described, and each says which it is.
+     * An action whose rule decides on a query parameter is offered, because a listing cannot know
+     * what the call will carry. This is the defect that filtering actions once caused (#743), and
+     * the reason the answer has three values and not two.
      */
     @Test
-    public void everyActionSaysWhetherThisCallerCanPerformIt() throws Exception {
-        var actions = reader.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}").getDocument("actions");
-
-        assertEquals("yes", actions.getDocument("query").getString("permitted").getValue(),
-                "the reader may read it: " + actions.getDocument("query").toJson());
-
-        var drop = actions.getDocument("drop");
-        assertEquals("no", drop.getString("permitted").getValue(),
-                "no permission of this role grants management requests: " + drop.toJson());
-        assertTrue(drop.getString("note").getValue().contains("allowManagementRequests")
-                        || drop.getString("note").getValue().contains("DELETE"),
-                "the note must say what is missing: " + drop.toJson());
-    }
-
-    /** A rule that decides on a query parameter is not decided by a catalogue, and says so. */
-    @Test
-    public void anActionWhoseRuleReadsAQueryParameterIsLeftUndecided() throws Exception {
+    public void anActionWhoseRuleReadsAQueryParameterIsStillOffered() throws Exception {
         var actions = reader.callTool("list_apis", "{\"resource\":\"" + TICKET_COLL + "\"}").getDocument("actions");
-        var create = actions.getDocument("create");
 
-        assertEquals("unknown", create.getString("permitted").getValue(),
-                "the ticket is an argument of the call, which a listing does not have: " + create.toJson());
+        assertTrue(actions.containsKey("create"),
+                "the ticket is an argument of the call, which a listing does not have: " + actions.keySet());
+        assertTrue(actions.getDocument("create").containsKey("note"),
+                "and the catalogue says why it could not decide: " + actions.getDocument("create").toJson());
     }
 
     // ------------------------------------------------------------------------

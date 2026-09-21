@@ -58,6 +58,45 @@ public class ListApisToolTest {
         };
     }
 
+    /**
+     * An action the caller's rules refuse is not offered — the same rule the resource itself is
+     * listed by — while one they might allow is, with what the catalogue knows about it.
+     */
+    @Test
+    public void refusedActionsAreWithheld_andTheTransportsAgree() {
+        var resource = McpResource.builder()
+                .uri("https://host/ledger").kind("collection").description("A ledger.")
+                .action("query", a -> a.method("GET").pathTemplate("").readable(true))
+                .action("create", a -> a.method("POST"))
+                .action("drop", a -> a.method("DELETE").pathTemplate(""))
+                .transport(McpResource.Transport.HTTP)
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/ledger", Map.of()));
+
+        var described = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/ledger",
+                null, null, null, null, VISIBLE,
+                (r, action) -> switch (action) {
+                    case "drop" -> Map.of("permitted", "no", "note", "no rule of yours covers it");
+                    case "create" -> Map.of("permitted", "unknown", "note", "depends on what the call carries");
+                    default -> Map.of("permitted", "yes");
+                });
+
+        @SuppressWarnings("unchecked")
+        var actions = (Map<String, Object>) described.get("actions");
+        assertEquals(Set.of("query", "create"), actions.keySet(), "a refused action must not be offered");
+
+        @SuppressWarnings("unchecked")
+        var create = (Map<String, Object>) actions.get("create");
+        assertEquals("depends on what the call carries", create.get("note"),
+                "an undetermined action is offered with what is known about it");
+        assertFalse(create.containsKey("permitted"), "being offered is the answer; repeating it is noise");
+
+        @SuppressWarnings("unchecked")
+        var transports = (List<Map<String, Object>>) described.get("transports");
+        assertFalse(transports.get(0).get("actions").toString().contains("drop"),
+                "the transports must not name an action the description withheld: " + transports);
+    }
+
     private static McpResource resource(String uri, String kind, String description) {
         return McpResource.builder().uri(uri).kind(kind).description(description).build();
     }
