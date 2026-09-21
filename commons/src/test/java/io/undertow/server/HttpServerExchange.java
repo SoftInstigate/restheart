@@ -49,6 +49,15 @@ public class HttpServerExchange extends AbstractAttachable {
     private String relativePath;
     private HttpString requestMethod;
     private Map<String, Deque<String>> queryParameters;
+    private String requestScheme = "http";
+
+    // One map for the life of the exchange, as the real one has: it used to be built on every
+    // call, so a header put on the exchange was gone by the time anything read it.
+    private final HeaderMap requestHeaders = new HeaderMap();
+
+    {
+        requestHeaders.put(HttpString.tryFromString("header"), "value");
+    }
 
     public HttpServerExchange() {
     }
@@ -156,9 +165,16 @@ public class HttpServerExchange extends AbstractAttachable {
     }
 
     public HeaderMap getRequestHeaders() {
-        var ret = new HeaderMap();
-        ret.put(HttpString.tryFromString("header"), "value");
-        return ret;
+        return requestHeaders;
+    }
+
+    public String getRequestScheme() {
+        return requestScheme;
+    }
+
+    public HttpServerExchange setRequestScheme(String requestScheme) {
+        this.requestScheme = requestScheme;
+        return this;
     }
 
     public SecurityContext getSecurityContext() {

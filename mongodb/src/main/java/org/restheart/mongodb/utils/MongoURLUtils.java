@@ -137,21 +137,34 @@ public class MongoURLUtils extends URLUtils {
     }
 
     /**
-     * returns the request URL taking into account the instance-base-url
-     * configuration option. When RESTHeart is exposed via a reverse-proxy or an
-     * API gateway it allows mapping the Location header correctly.
+     * The URL of this request as the caller reached it, which is what a {@code Location} header
+     * has to name.
      *
-     * @param exchange
-     * @return
+     * <p>Not {@link HttpServerExchange#getRequestURL()}: behind a TLS-terminating proxy the
+     * listener speaks plain HTTP, so that answer says {@code http://} for a service reachable only
+     * over {@code https}, and names the internal host. The configured {@code instance-base-url}
+     * wins when there is one; otherwise the {@code X-Forwarded-Proto} and {@code X-Forwarded-Host}
+     * headers the proxy sets are used, and the request's own scheme and {@code Host} last.</p>
+     *
+     * @param exchange the request being served
+     * @return the URL to build a {@code Location} header from
      */
     public static String getRemappedRequestURL(final HttpServerExchange exchange) {
         final var ibu = MongoServiceConfiguration.get().getInstanceBaseURL();
 
-        if (ibu == null) {
-            return exchange.getRequestURL();
-        } else {
+        // instance-base-url names where the service is exposed, prefix included, so the path
+        // under it is the relative one
+        if (ibu != null) {
             return removeTrailingSlashes(ibu).concat(exchange.getRelativePath());
         }
+
+        // no configured base: same URL the caller used, with the request's own path, only the
+        // scheme and host taken from the proxy's headers when it set them
+        final var base = URLUtils.externalBaseUrl(null, exchange);
+
+        return base.isEmpty()
+                ? exchange.getRequestURL()
+                : removeTrailingSlashes(base).concat(exchange.getRequestURI());
     }
 
     /**

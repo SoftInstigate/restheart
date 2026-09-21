@@ -32,6 +32,7 @@ import org.restheart.security.ACLRegistry;
 import static org.restheart.utils.GsonUtils.array;
 import static org.restheart.utils.GsonUtils.object;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.URLUtils;
 
 /**
  * OAuth 2.0 Authorization Server Metadata endpoint per RFC 8414.
@@ -113,21 +114,9 @@ public class OAuthAuthorizationServerMetadataService implements JsonService {
     }
 
     /**
-     * Resolves the base URL from config or from the request Host header.
+     * @see URLUtils#externalBaseUrl(String, io.undertow.server.HttpServerExchange)
      */
     private String resolveBaseUrl(JsonRequest request) {
-        if (baseUrl != null && !baseUrl.isBlank()) {
-            return baseUrl;
-        }
-
-        // Fall back to request Host header
-        var exchange = request.getExchange();
-        var host = exchange.getRequestHeaders().getFirst("Host");
-        if (host != null) {
-            var scheme = exchange.getRequestScheme();
-            return scheme + "://" + host;
-        }
-
-        return "";
+        return URLUtils.externalBaseUrl(baseUrl, request.getExchange());
     }
 }
