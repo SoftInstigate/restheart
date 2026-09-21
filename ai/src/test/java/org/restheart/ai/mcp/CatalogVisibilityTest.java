@@ -245,6 +245,30 @@ class CatalogVisibilityTest {
         assertNull(v.get("server_sets"));
     }
 
+    /**
+     * The permission allows the read whatever the arguments are, so the verdict is yes; the filter it
+     * adds reads them, so without them nothing matches. The market game's objectives were listed as
+     * {@code "query": []}, and a call without arguments read as "no objective".
+     */
+    @Test
+    void aReadSaysWhichArgumentsItsFilterReads() {
+        var query = action(a -> a.method("GET").pathTemplate(""));
+        var filtered = "{mongo: {readFilter: {player: \"@qparams['trader']\", secret: \"@qparams['secret']\"}}}";
+
+        var v = CatalogVisibility.verdict(List.of(permission("path('/objectives') and method(GET)", filtered)),
+                listing("/objectives", "GET", Map.of()), query, "/objectives");
+
+        assertEquals("yes", v.get("permitted"));
+        assertEquals(List.of("trader", "secret"), v.get("filtered_by"));
+
+        // a write is filtered by the writeFilter, not by the readFilter
+        var update = action(a -> a.method("PATCH").pathTemplate("/{id}"));
+        var w = CatalogVisibility.verdict(List.of(permission("path-prefix('/objectives') and method(PATCH)", filtered)),
+                listing("/objectives/{id}", "PATCH", Map.of()), update, "/objectives/{id}");
+
+        assertNull(w.get("filtered_by"));
+    }
+
     @Test
     void theNoteNamesEveryParameterAndTheBodyTheUndecidedRulesRead() {
         assertEquals(List.of("trader", "secret"),

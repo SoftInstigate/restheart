@@ -20,13 +20,17 @@
  */
 package org.restheart.mongodb.utils;
 
+import java.util.regex.Pattern;
+
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 
+import com.mongodb.MongoCommandException;
 import com.mongodb.MongoException;
+import com.mongodb.MongoWriteException;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -205,8 +209,31 @@ public class ResponseHelper {
                     yield msg;
                 }
             }
+            case 11000 -> duplicateKeyMessage(me);
             default -> getMessageFromErrorCode(code);
         };
+    }
+
+    private static final Pattern DUP_KEY = Pattern.compile("index: (\\S+) dup key: (\\{.*})\\s*$");
+
+    /**
+     * The duplicate key error with the index and the key MongoDB reports, e.g. {@code Duplicate key:
+     * index _id_, key { _id: "accept:o1" }: a document with this key already exists}. The fixed text
+     * listed three possible causes, and a client that lost a race to write the same {@code _id} could
+     * not tell which one it had hit.
+     */
+    private static String duplicateKeyMessage(MongoException me) {
+        var raw = switch (me) {
+            case MongoWriteException mwe -> mwe.getError().getMessage();
+            case MongoCommandException mce -> mce.getErrorMessage();
+            default -> me.getMessage();
+        };
+
+        var m = raw == null ? null : DUP_KEY.matcher(raw);
+
+        return m != null && m.find()
+            ? "Duplicate key: index " + m.group(1) + ", key " + m.group(2) + ": a document with this key already exists"
+            : getMessageFromErrorCode(11000);
     }
 
     /**

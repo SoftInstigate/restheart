@@ -1723,6 +1723,8 @@ public class McpService implements ByteArrayService {
                         In a resource's actions:
                           depends_on: arguments the permission reads from the call; without them the \
                         call is refused.
+                          filtered_by: arguments the server's filter reads from the call; without them \
+                        nothing matches.
                           server_sets: body fields the server writes; do not send them.
                           note: what the action depends on, or how it behaves.
 
@@ -1752,6 +1754,8 @@ public class McpService implements ByteArrayService {
                         Reads: `query` (collection), `get` (document), `execute` \
                         (aggregation), with their params in args.
                         Writes: create → 201, headers.Location = URI of the new document, no body. \
+                        create with an array body → 200, body = {inserted, links: [URI of each new \
+                        document]}. \
                         update, delete → 200 or 204, no body. A write never returns the stored data: \
                         read it afterwards.
                         A non-2xx status is a result, not a tool error; body states the reason. \

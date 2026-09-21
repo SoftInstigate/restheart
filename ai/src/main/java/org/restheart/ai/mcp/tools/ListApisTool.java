@@ -234,7 +234,8 @@ public final class ListApisTool {
     /**
      * The {@code call_api} arguments an action cannot do without: its required params, those the
      * caller's rules decide on ({@code depends_on}: the permission reads them from the call, so
-     * without them the call is refused), and {@code body} when the action writes one.
+     * without them the call is refused), those its filters read ({@code filtered_by}: without them
+     * nothing matches), and {@code body} when the action writes one.
      *
      * <p>Only the declared params made {@code create} read as {@code []} — taking nothing — on a
      * ledger where every write had to carry {@code trader}, {@code secret} and a body.
@@ -248,8 +249,10 @@ public final class ListApisTool {
             }
         });
 
-        if (verdict.get("depends_on") instanceof List<?> inputs) {
-            inputs.forEach(input -> names.add(String.valueOf(input)));
+        for (var key : List.of("depends_on", "filtered_by")) {
+            if (verdict.get(key) instanceof List<?> inputs) {
+                inputs.forEach(input -> names.add(String.valueOf(input)));
+            }
         }
 
         if (action.bodySchema() != null || List.of("POST", "PUT", "PATCH").contains(action.method())) {

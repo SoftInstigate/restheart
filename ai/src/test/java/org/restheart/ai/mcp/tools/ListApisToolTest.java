@@ -201,6 +201,23 @@ public class ListApisToolTest {
     }
 
     @Test
+    public void catalog_namesTheArgumentsTheFilterReads() {
+        var resource = McpResource.builder()
+                .uri("https://host/objectives")
+                .kind("collection")
+                .action("query", a -> a.method("GET").readable(true))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+        ListApisTool.Verdicts filtered = (r, name) -> Map.of("permitted", "yes", "filtered_by", List.of("trader", "secret"));
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, filtered);
+
+        @SuppressWarnings("unchecked")
+        var entry = ((List<Map<String, Object>>) result.get("resources")).get(0);
+        assertEquals(Map.of("query", List.of("trader", "secret")), entry.get("actions"));
+    }
+
+    @Test
     public void catalog_leavesOutWhatTheCallersRulesRefuse_asTheResourceDoes() {
         var resource = McpResource.builder()
                 .uri("https://host/ledger")

@@ -244,6 +244,7 @@ final class CatalogVisibility {
         var best = Truth.FALSE;
         var bestIgnoringSwitches = Truth.FALSE;
         var decidingInputs = new LinkedHashSet<String>();
+        var filterInputs = new LinkedHashSet<String>();
         Set<String> serverSets = null;
 
         for (var permission : rules) {
@@ -259,6 +260,8 @@ final class CatalogVisibility {
 
             // the fields every rule that could apply sets itself: whichever one does, they are the server's
             if (truth.mayBeTrue()) {
+                filterInputs.addAll(filterInputsOf(permission, methodOf(action)));
+
                 var merged = mergedFieldsOf(permission);
                 if (serverSets == null) {
                     serverSets = new LinkedHashSet<>(merged);
@@ -276,6 +279,10 @@ final class CatalogVisibility {
 
         if (best == Truth.UNDETERMINED && !decidingInputs.isEmpty()) {
             verdict.put("depends_on", List.copyOf(decidingInputs));
+        }
+
+        if (best.mayBeTrue() && !filterInputs.isEmpty()) {
+            verdict.put("filtered_by", List.copyOf(filterInputs));
         }
 
         if (best.mayBeTrue() && serverSets != null && !serverSets.isEmpty() && carriesABody(action)) {
@@ -298,6 +305,23 @@ final class CatalogVisibility {
             return merge == null ? Set.of() : merge.keySet();
         } catch (Exception e) {
             return Set.of();
+        }
+    }
+
+    /**
+     * The {@code call_api} arguments the filter a permission adds to the request reads from the
+     * call: the {@code readFilter} for a read, the {@code writeFilter} for a write. The verdict does
+     * not see them — the permission allows the call whatever they are — yet without them the filter
+     * matches nothing: an objectives collection filtered by {@code @qparams['trader']} was listed as
+     * {@code "query": []}, and a call without arguments read an empty result as "no objective".
+     */
+    private static List<String> filterInputsOf(BaseAclPermission permission, String method) {
+        try {
+            var permissions = MongoPermissions.from(permission);
+            var filter = "GET".equals(method) ? permissions.getReadFilter() : permissions.getWriteFilter();
+            return filter == null ? List.of() : callInputsOf(filter.toJson());
+        } catch (Exception e) {
+            return List.of();
         }
     }
 
