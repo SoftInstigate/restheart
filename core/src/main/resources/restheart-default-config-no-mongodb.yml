@@ -687,6 +687,15 @@ requestsMetricsCollector:
 jvmMetricsCollector:
   enabled: false
 
+# Logs a thread dump, virtual threads included, when blocking requests stop being served: every
+# interval-seconds a platform thread hands the request executor an empty task, and if it has not
+# started threshold-seconds later the dump goes to the log, once per episode. For containers with
+# no shell to run jcmd from, where the log is the only thing left to read.
+workersWatchdog:
+  enabled: false
+  interval-seconds: 10
+  threshold-seconds: 30
+
 # Base configuration for core module
 core:
   # The name of this instance. Displayed in log, also allows to implement instance specific custom code
