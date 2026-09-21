@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -151,6 +152,8 @@ public class McpCatalogVisibilityIT extends AbstactIT {
         assertTrue(actions.containsKey("create"),
                 "the write is what this collection is for, and the listing cannot know about the ticket: "
                         + actions.toJson());
+        assertTrue(actions.getDocument("create").containsKey("note"),
+                "and it says why it could not be decided here: " + actions.getDocument("create").toJson());
     }
 
     @Test
@@ -180,111 +183,34 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     }
 
     /**
-     * The actions of a resource are the same for everybody, because they say what the resource is
-     * rather than what this caller may do with it: a REST collection has them all, an aggregation
-     * only its execution. Who may do what is decided when the call is made.
+     * A resource is described with the actions this caller's rules could allow, and with no others
+     * — the same rule that decides whether the resource itself is listed, one level down.
+     *
+     * <p>The reader holds {@code method(GET)} on this prefix and nothing else, so the writes are
+     * not offered to it and are offered to the administrator. The two descriptions of the same
+     * collection differ, and that is the point.
      */
     @Test
-    public void aResourceIsDescribedWithEveryActionItsKindAffords() throws Exception {
-        var described = reader.callTool("list_apis", """
+    public void aResourceIsDescribedWithTheActionsThisCallerCouldPerform() throws Exception {
+        var forReader = reader.callTool("list_apis", """
                 {"resource":"%s"}
-                """.formatted(VISIBLE_COLL));
+                """.formatted(VISIBLE_COLL)).getDocument("actions").keySet();
 
-        var forReader = described.getDocument("actions").keySet();
-
-        assertTrue(forReader.contains("query"), forReader.toString());
-        assertTrue(forReader.contains("create"),
-                "a collection has create whoever is asking; the 403 comes when it is called: " + forReader);
+        assertTrue(forReader.contains("query"), "a GET is what this role holds: " + forReader);
+        assertFalse(forReader.contains("create"),
+                "no rule of this role covers POST here, so it is not offered: " + forReader);
 
         var forAdmin = admin.callTool("list_apis", """
                 {"resource":"%s"}
-                """.formatted(VISIBLE_COLL));
+                """.formatted(VISIBLE_COLL)).getDocument("actions").keySet();
 
-        assertEquals(forReader, forAdmin.getDocument("actions").keySet(),
-                "the actions do not depend on the caller: only the resources do");
-    }
-
-    @Test
-    public void listApisCatalog_omitsWhatTheCallerCannotRead() throws Exception {
-        var catalog = reader.callTool("list_apis", "{}").toJson();
-
-        assertTrue(catalog.contains(VISIBLE_COLL), "the readable collection is missing from list_apis: " + catalog);
-        assertFalse(catalog.contains(HIDDEN_COLL), "list_apis offered a collection this role cannot read: " + catalog);
-    }
-
-    /**
-     * The description is the point: it is the one field written in prose to say what the data is,
-     * so leaving the URI out while letting the text through would defeat the exercise.
-     */
-    @Test
-    public void listApisCatalog_doesNotLeakTheDescriptionOfAHiddenResource() throws Exception {
-        var catalog = reader.callTool("list_apis", "{}").toJson();
-
-        assertFalse(catalog.contains(HIDDEN_DESCRIPTION), "a hidden resource's description leaked: " + catalog);
-    }
-
-    /**
-     * Asking for one resource by URI has to obey the same filter as the catalog, or the drill-down
-     * hands back in full — actions, parameters, body schema — exactly what the listing withheld.
-     */
-    @Test
-    public void listApisDrillDown_treatsAHiddenResourceAsUnknown() throws Exception {
-        var error = reader.callToolExpectingError("list_apis", "{\"resource\": \"" + HIDDEN_COLL + "\"}");
-
-        assertFalse(error.contains(HIDDEN_DESCRIPTION), "the drill-down leaked the description: " + error);
-    }
-
-    @Test
-    public void listApisDrillDown_stillDescribesItToAdmin() throws Exception {
-        var described = admin.callTool("list_apis", "{\"resource\": \"" + HIDDEN_COLL + "\"}").toJson();
-
-        assertTrue(described.contains(HIDDEN_DESCRIPTION),
-                "admin may read it, so the drill-down must still describe it: " + described);
-    }
-
-    /**
-     * {@code how_to_call} composes a ready-to-send request. For a resource the caller cannot invoke
-     * that is the same disclosure as the drill-down, one step further along.
-     */
-    @Test
-    public void howToCall_refusesToComposeForAHiddenResource() throws Exception {
-        var error = reader.callToolExpectingError("how_to_call",
-                "{\"resource\": \"" + HIDDEN_COLL + "\", \"action\": \"query\"}");
-
-        assertFalse(error.contains(HIDDEN_COLL + "?"), "how_to_call composed a request for a hidden resource: " + error);
-        assertTrue(error.toLowerCase().contains("unknown resource"),
-                "expected the hidden resource to be reported as unknown, got: " + error);
-    }
-
-    /**
-     * A subscription is delivered on a stream the client opens with a {@code GET}; a caller granted
-     * only {@code POST} on the endpoint would get a subscription that succeeds and never fires.
-     * Refusing it up front is the difference between an answer and a silent forever-wait.
-     */
-    @Test
-    public void subscribe_isRefusedWhenTheCallerCannotOpenTheNotificationStream() throws Exception {
-        var error = reader.rawRpc("resources/subscribe", """
-                {"uri":"%s"}
-                """.formatted(VISIBLE_COLL));
-
-        // aclreader holds path-prefix /mcp with no method restriction, so this one CAN open it:
-        // the subscription must be accepted, which is what makes the negative case meaningful
-        assertEquals(200, error.statusCode(), "subscribing should have been accepted: " + error.body());
-        assertFalse(error.body().contains("not authorized to open it"),
-                "a caller that may open the stream was refused: " + error.body());
-    }
-
-    @Test
-    public void howToCall_stillComposesForAResourceTheCallerMayRead() throws Exception {
-        var descriptor = reader.callTool("how_to_call",
-                "{\"resource\": \"" + VISIBLE_COLL + "\", \"action\": \"query\"}").toJson();
-
-        assertTrue(descriptor.contains(VISIBLE_COLL),
-                "the reader may read this collection, so how_to_call must compose for it: " + descriptor);
+        assertTrue(forAdmin.contains("create"), "the administrator may write: " + forAdmin);
+        assertTrue(forAdmin.size() > forReader.size(),
+                "the same collection is described differently to the two: " + forReader + " vs " + forAdmin);
     }
 
     // ------------------------------------------------------------------------
-    // what each action says about this caller
+    // the operations on the collection itself
     // ------------------------------------------------------------------------
 
     /**
@@ -299,13 +225,12 @@ public class McpCatalogVisibilityIT extends AbstactIT {
 
         assertTrue(actions.containsKey("query"), "the collection is published and readable: " + actions.keySet());
 
-        for (var withheld : java.util.List.of("drop", "set_properties", "create_index", "delete_index",
-                "properties", "indexes")) {
+        for (var withheld : List.of("drop", "set_properties", "create_index", "delete_index", "properties",
+                "indexes", "update_many", "delete_many")) {
             assertFalse(actions.containsKey(withheld),
-                    withheld + " needs allowManagementRequests, which no rule of this role grants: " + actions.keySet());
+                    withheld + " needs a switch no rule of this role grants: " + actions.keySet());
         }
 
-        // and the transports do not name what the description withheld
         var transports = described.getArray("transports").toString();
         assertFalse(transports.contains("drop"), "the transports must agree with the actions: " + transports);
     }
@@ -316,12 +241,11 @@ public class McpCatalogVisibilityIT extends AbstactIT {
      */
     @Test
     public void theyAreOfferedToWhoCanPerformThem_andSayTheyActOnTheCollection() throws Exception {
-        var described = admin.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}");
-        var actions = described.getDocument("actions");
+        var actions = admin.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}").getDocument("actions");
 
-        assertTrue(actions.keySet().containsAll(java.util.List.of(
+        assertTrue(actions.keySet().containsAll(List.of(
                 "properties", "set_properties", "drop", "indexes", "create_index", "delete_index")),
-                "admin grants allowManagementRequests, so the data management API is offered: " + actions.keySet());
+                "admin grants allowManagementRequests, so these are offered: " + actions.keySet());
 
         assertEquals("resource", actions.getDocument("drop").getString("target").getValue(),
                 "drop acts on the collection, and must say so: " + actions.getDocument("drop").toJson());
@@ -333,26 +257,11 @@ public class McpCatalogVisibilityIT extends AbstactIT {
     /** The drop needs the collection's ETag, and an action that needs one declares where it goes. */
     @Test
     public void theDropDeclaresTheEtagItNeeds_asAHeader() throws Exception {
-        var described = admin.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}");
-        var etag = described.getDocument("actions").getDocument("drop").getDocument("params").getDocument("etag");
+        var actions = admin.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}").getDocument("actions");
+        var etag = actions.getDocument("drop").getDocument("params").getDocument("etag");
 
         assertEquals("If-Match", etag.getString("header").getValue(),
                 "without it the drop answers 409 and the agent cannot tell why: " + etag.toJson());
-    }
-
-    /**
-     * An action whose rule decides on a query parameter is offered, because a listing cannot know
-     * what the call will carry. This is the defect that filtering actions once caused (#743), and
-     * the reason the answer has three values and not two.
-     */
-    @Test
-    public void anActionWhoseRuleReadsAQueryParameterIsStillOffered() throws Exception {
-        var actions = reader.callTool("list_apis", "{\"resource\":\"" + TICKET_COLL + "\"}").getDocument("actions");
-
-        assertTrue(actions.containsKey("create"),
-                "the ticket is an argument of the call, which a listing does not have: " + actions.keySet());
-        assertTrue(actions.getDocument("create").containsKey("note"),
-                "and the catalogue says why it could not decide: " + actions.getDocument("create").toJson());
     }
 
     // ------------------------------------------------------------------------

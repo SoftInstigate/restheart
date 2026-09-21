@@ -106,15 +106,13 @@ public class ListApisToolTest {
     }
 
     /**
-     * Every action the kind affords, whatever the ACL would say about it.
+     * With nothing known about the caller, every action the kind affords is described.
      *
-     * <p>A REST collection has them all, an aggregation only its execution: the set says what the
-     * resource is, not what this caller may do, and hiding part of it dropped actions whose rule
-     * reads a request argument — invisible to a listing, which carries none. What a call is
-     * allowed to do is decided when it is made.
+     * <p>Withholding needs a reason, and the only reason is a rule of that caller's that refuses
+     * the action. No verdicts means no rules were read, and nothing is taken away on a hunch.
      */
     @Test
-    public void aResourceIsDescribedWithEveryActionItsKindAffords() {
+    public void withNothingKnownAboutTheCallerEveryActionIsDescribed() {
         var resource = McpResource.builder()
                 .uri("https://host/ledger")
                 .action("query", a -> a.method("GET").readable(true))
