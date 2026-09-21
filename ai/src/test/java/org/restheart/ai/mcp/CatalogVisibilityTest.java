@@ -22,6 +22,7 @@ package org.restheart.ai.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -40,7 +41,12 @@ class CatalogVisibilityTest {
 
     /** A permission that is nothing but its predicate, which is all the catalog reads. */
     private static BaseAclPermission permission(String predicate) {
-        return new BaseAclPermission(request -> true, Set.of("user"), 100, null) {
+        return permission(predicate, null);
+    }
+
+    /** With the permission's whole document, for what its mongo block says. */
+    private static BaseAclPermission permission(String predicate, String raw) {
+        return new BaseAclPermission(request -> true, Set.of("user"), 100, raw == null ? null : org.bson.BsonDocument.parse(raw)) {
             @Override
             public Optional<String> predicateSource() {
                 return Optional.ofNullable(predicate);
@@ -196,6 +202,58 @@ class CatalogVisibilityTest {
         var v = verdict("path('/todos') and method(POST) and equals(%{q,ticket}, 'golden')", create, "/todos");
 
         assertEquals("unknown", v.get("permitted"));
+        // named, so an agent knows what to send rather than guessing it from prose (market game)
+        assertTrue(String.valueOf(v.get("note")).contains("the query parameter `ticket`"), v.toString());
+    }
+
+    /**
+     * The collection's schema describes the stored document and requires what a mergeRequest
+     * writes; told to validate against it, agents sent {@code actor} the example said not to send.
+     */
+    @Test
+    void aWriteSaysWhichFieldsTheServerSets_whicheverRuleApplies() {
+        var create = action(a -> a.method("POST").pathTemplate(""));
+        var both = "{mongo: {mergeRequest: {actor: 'trader1', ts: '@now'}}}";
+        var actorOnly = "{mongo: {mergeRequest: {actor: 'trader2'}}}";
+
+        var one = CatalogVisibility.verdict(List.of(permission("path('/ledger') and method(POST)", both)),
+                listing("/ledger", "POST", Map.of()), create, "/ledger");
+        assertEquals(List.of("actor", "ts"), one.get("server_sets"));
+
+        // two rules could apply: only what both set is surely the server's
+        var two = CatalogVisibility.verdict(List.of(
+                permission("path('/ledger') and method(POST) and equals(%{q,trader}, 'trader1')", both),
+                permission("path('/ledger') and method(POST) and equals(%{q,trader}, 'trader2')", actorOnly)),
+                listing("/ledger", "POST", Map.of()), create, "/ledger");
+        assertEquals(List.of("actor"), two.get("server_sets"));
+
+        // a rule that cannot apply says nothing about this request
+        var other = CatalogVisibility.verdict(List.of(
+                permission("path('/ledger') and method(POST)", actorOnly),
+                permission("path('/elsewhere') and method(POST)", both)),
+                listing("/ledger", "POST", Map.of()), create, "/ledger");
+        assertEquals(List.of("actor"), other.get("server_sets"));
+    }
+
+    @Test
+    void aReadHasNoFieldsTheServerSets() {
+        var read = action(a -> a.method("GET").pathTemplate(""));
+        var v = CatalogVisibility.verdict(List.of(permission("path('/ledger') and method(GET)", "{mongo: {mergeRequest: {actor: 'x'}}}")),
+                listing("/ledger", "GET", Map.of()), read, "/ledger");
+
+        assertNull(v.get("server_sets"));
+    }
+
+    @Test
+    void theNoteNamesEveryParameterAndTheBodyTheUndecidedRulesRead() {
+        assertEquals(List.of("the query parameter `trader`", "the query parameter `secret`"),
+                CatalogVisibility.callInputsOf("path('/ledger') and method(POST) and equals(%{q,trader}, 'trader1') "
+                        + "and equals(%{q,secret}, 'x')"));
+        assertEquals(List.of("the query parameter `plan`"),
+                CatalogVisibility.callInputsOf("equals(@qparams['plan'], 'gold')"));
+        assertEquals(List.of("the query parameter `export`", "the request body"),
+                CatalogVisibility.callInputsOf("qparams-contain(export) and bson-request-contains(status)"));
+        assertEquals(List.of(), CatalogVisibility.callInputsOf("path('/todos') and method(GET)"));
     }
 
     @Test

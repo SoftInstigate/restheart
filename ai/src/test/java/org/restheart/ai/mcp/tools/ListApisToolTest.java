@@ -163,6 +163,70 @@ public class ListApisToolTest {
     }
 
     @Test
+    public void catalog_namesEachActionWithTheParamsItCannotDoWithout() {
+        // from the catalogue to call_api in one step: which action, and what it needs
+        var resource = McpResource.builder()
+                .uri("https://host/ledger/_aggrs/myState")
+                .kind("aggregation")
+                .description("where you stand")
+                .action("execute", a -> a.method("GET").param("trader", "string", true).param("secret", "string", true)
+                        .param("jsonMode", "string", false))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
+
+        @SuppressWarnings("unchecked")
+        var entry = ((List<Map<String, Object>>) result.get("resources")).get(0);
+        assertEquals(Map.of("execute", List.of("trader", "secret")), entry.get("actions"));
+    }
+
+    @Test
+    public void catalog_leavesOutWhatTheCallersRulesRefuse_asTheResourceDoes() {
+        var resource = McpResource.builder()
+                .uri("https://host/ledger")
+                .kind("collection")
+                .action("query", a -> a.method("GET").readable(true))
+                .action("drop", a -> a.method("DELETE"))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+        ListApisTool.Verdicts refuseDrop = (r, name) -> "drop".equals(name) ? Map.of("permitted", "no") : Map.of("permitted", "yes");
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, refuseDrop);
+
+        @SuppressWarnings("unchecked")
+        var entry = ((List<Map<String, Object>>) result.get("resources")).get(0);
+        assertEquals(Map.of("query", List.of()), entry.get("actions"));
+    }
+
+    @Test
+    public void describe_takesWhatTheServerSetsOutOfTheRequiredFields_inEveryBranch() {
+        // the collection's schema is the stored document's: it requires what a mergeRequest writes
+        var schema = Map.<String, Object>of("oneOf", List.of(
+                Map.of("properties", Map.of("type", Map.of("const", "offer")), "required", List.of("_id", "type", "actor", "give")),
+                Map.of("properties", Map.of("type", Map.of("const", "claim")), "required", List.of("_id", "type", "actor"))));
+        var resource = McpResource.builder()
+                .uri("https://host/ledger")
+                .kind("collection")
+                .action("create", a -> a.method("POST").bodySchema(schema))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+        ListApisTool.Verdicts serverSetsActor = (r, name) -> Map.of("permitted", "yes", "server_sets", List.of("actor", "ts"));
+
+        var described = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/ledger",
+                null, null, null, null, VISIBLE, serverSetsActor);
+
+        @SuppressWarnings("unchecked")
+        var create = (Map<String, Object>) ((Map<String, Object>) described.get("actions")).get("create");
+        assertEquals(List.of("actor", "ts"), create.get("server_sets"), "said, so the agent knows why they are not required");
+
+        @SuppressWarnings("unchecked")
+        var branches = (List<Map<String, Object>>) ((Map<String, Object>) create.get("body_schema")).get("oneOf");
+        assertEquals(List.of("_id", "type", "give"), branches.get(0).get("required"));
+        assertEquals(List.of("_id", "type"), branches.get(1).get("required"));
+    }
+
+    @Test
     public void resourceMode_returnsFullContext_ignoresOtherFilters() {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/a", "collection", "A")), "p1", "/a", Map.of()));
 

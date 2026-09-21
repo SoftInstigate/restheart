@@ -1724,10 +1724,12 @@ public class McpService implements ByteArrayService {
         return McpSchema.Tool.builder("list_apis", inputSchema(properties, null))
                 .description("""
                         Lists or describes MCP-enabled APIs exposed by RESTHeart. Without arguments, returns the \
-                        catalog (URIs, kinds, short descriptions) — optionally narrowed with `query`/`kind` and \
-                        paged with `limit`/`cursor`. With a resource URI, returns full context: kind, supported \
+                        catalog — each resource's URI, kind, description, and the actions you may call on it with \
+                        the params each one requires — optionally narrowed with `query`/`kind` and paged with \
+                        `limit`/`cursor`. With a resource URI, returns full context: kind, supported \
                         transports, actions with parameter types, auth requirements, examples. On a deployment \
-                        with many resources, prefer a filtered call over an unfiltered one.
+                        with many resources, prefer a filtered call over an unfiltered one. An action's \
+                        `server_sets` names body fields the server writes itself: do not send them.
 
                         THIS IS THE COMPLETE CATALOG. A resource that takes parameters is published to MCP as a \
                         resource template, listed under resources/templates/list — a method many clients never \

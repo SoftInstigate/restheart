@@ -22,8 +22,13 @@ package org.restheart.ai.mcp;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.restheart.exchange.Request;
 import org.restheart.plugins.mcp.CatalogCondition;
@@ -238,20 +243,103 @@ final class CatalogVisibility {
 
         var best = Truth.FALSE;
         var bestIgnoringSwitches = Truth.FALSE;
+        var decidingInputs = new LinkedHashSet<String>();
+        Set<String> serverSets = null;
 
         for (var permission : rules) {
             var predicate = predicateTruth(permission, context);
+            var truth = predicate.and(gates(permission, asked));
 
             bestIgnoringSwitches = bestIgnoringSwitches.or(predicate);
-            best = best.or(predicate.and(gates(permission, asked)));
+            best = best.or(truth);
+
+            if (truth == Truth.UNDETERMINED) {
+                permission.predicateSource().ifPresent(source -> decidingInputs.addAll(callInputsOf(source)));
+            }
+
+            // the fields every rule that could apply sets itself: whichever one does, they are the server's
+            if (truth.mayBeTrue()) {
+                var merged = mergedFieldsOf(permission);
+                if (serverSets == null) {
+                    serverSets = new LinkedHashSet<>(merged);
+                } else {
+                    serverSets.retainAll(merged);
+                }
+            }
         }
 
-        return switch (best) {
+        var verdict = new LinkedHashMap<String, Object>(switch (best) {
             case TRUE -> Map.of("permitted", "yes");
-            case UNDETERMINED -> undecided("whether this is permitted depends on what the call carries, "
-                    + "which a catalogue does not have: try it, and read the status");
+            case UNDETERMINED -> undecided(decidingInputs.isEmpty()
+                    ? "whether this is permitted depends on what the call carries, which a catalogue does not "
+                            + "have: try it, and read the status"
+                    : "whether this is permitted depends on " + String.join(" and ", decidingInputs)
+                            + ", which the call carries and a catalogue does not have: send "
+                            + (decidingInputs.size() == 1 ? "it" : "them") + " with the call, and read the status");
             case FALSE -> refused(action, bestIgnoringSwitches, path);
-        };
+        });
+
+        if (best.mayBeTrue() && serverSets != null && !serverSets.isEmpty() && carriesABody(action)) {
+            verdict.put("server_sets", List.copyOf(serverSets));
+        }
+
+        return verdict;
+    }
+
+    /**
+     * The top-level fields a permission's {@code mergeRequest} writes into the request body: the
+     * server sets them, so a body that sends them is overwritten and one that omits them is fine.
+     * The collection's schema describes the stored document and requires them anyway — which told
+     * agents, validating against it as they are asked to, to send {@code actor} where the example
+     * said not to.
+     */
+    private static Set<String> mergedFieldsOf(BaseAclPermission permission) {
+        try {
+            var merge = MongoPermissions.from(permission).getMergeRequest();
+            return merge == null ? Set.of() : merge.keySet();
+        } catch (Exception e) {
+            return Set.of();
+        }
+    }
+
+    private static boolean carriesABody(McpResource.Action action) {
+        return Set.of("POST", "PUT", "PATCH").contains(methodOf(action));
+    }
+
+    private static final Pattern Q_ATTRIBUTE = Pattern.compile("%\\{q,\\s*([^}\\s]+)\\s*}");
+    private static final Pattern Q_VARIABLE = Pattern.compile("@qparams\\[\\s*'([^']+)'\\s*]");
+    private static final Pattern Q_CONTAINS = Pattern.compile("qparams-contain\\(([^)]*)\\)");
+
+    /**
+     * What of the call a permission's predicate reads, named for the agent: the query parameters,
+     * and the body. Read off the predicate's text rather than its analysis, because the point is
+     * only to tell an agent what to send — a name too many costs nothing, a missing one leaves it
+     * guessing, as it did with {@code trader} and {@code secret} before this.
+     */
+    static List<String> callInputsOf(String predicate) {
+        var names = new LinkedHashSet<String>();
+
+        for (var pattern : List.of(Q_ATTRIBUTE, Q_VARIABLE)) {
+            var m = pattern.matcher(predicate);
+            while (m.find()) {
+                names.add("the query parameter `" + m.group(1) + "`");
+            }
+        }
+
+        var contains = Q_CONTAINS.matcher(predicate);
+        while (contains.find()) {
+            for (var name : contains.group(1).replaceAll("[{}'\"\\s]|value=", "").split(",")) {
+                if (!name.isBlank()) {
+                    names.add("the query parameter `" + name + "`");
+                }
+            }
+        }
+
+        if (predicate.contains("bson-request-")) {
+            names.add("the request body");
+        }
+
+        return List.copyOf(names);
     }
 
     private static Map<String, Object> undecided(String why) {

@@ -61,11 +61,11 @@ public final class ListApisTool {
                     .orElseThrow(() -> new UnknownResourceException(resourceUri));
         }
 
-        return catalog(principal, baseUrl, scope, query, kind, limit, cursor, visible);
+        return catalog(principal, baseUrl, scope, query, kind, limit, cursor, visible, verdicts);
     }
 
     private Map<String, Object> catalog(BaseAccount principal, String baseUrl, String scope, String query, String kind,
-                                        Integer limit, String cursor, Predicate<McpResource> visible) {
+                                        Integer limit, String cursor, Predicate<McpResource> visible, Verdicts verdicts) {
         var resources = new ArrayList<>(lookup.all(principal, baseUrl, scope));
         resources.sort(Comparator.comparing(McpResource::uri));
 
@@ -81,7 +81,7 @@ public final class ListApisTool {
         var nextCursor = start + page.size() < filtered.size() ? String.valueOf(start + page.size()) : null;
 
         var result = new LinkedHashMap<String, Object>();
-        result.put("resources", page.stream().map(ListApisTool::catalogEntry).toList());
+        result.put("resources", page.stream().map(r -> catalogEntry(r, verdicts)).toList());
         result.put("next_cursor", nextCursor);
         return result;
     }
@@ -127,6 +127,11 @@ public final class ListApisTool {
                         action.put(key, value);
                     }
                 });
+
+                // What the server sets is not the caller's to send: out of the schema's required
+                if (verdict.get("server_sets") instanceof List<?> set && action.get("body_schema") instanceof Map<?, ?> schema) {
+                    action.put("body_schema", withoutRequired(schema, set));
+                }
             }
         }
 
@@ -170,13 +175,58 @@ public final class ListApisTool {
         Verdicts NONE = (resource, actionName) -> Map.of();
     }
 
-    private static Map<String, Object> catalogEntry(McpResource resource) {
+    /**
+     * A copy of a JSON Schema whose {@code required} lists, at every level — the branches of a
+     * {@code oneOf} included, one per kind of document — no longer name {@code fields}.
+     */
+    static Object withoutRequired(Object schema, List<?> fields) {
+        if (schema instanceof Map<?, ?> map) {
+            var copy = new LinkedHashMap<String, Object>();
+            map.forEach((k, v) -> copy.put(String.valueOf(k), "required".equals(k) && v instanceof List<?> required
+                    ? required.stream().filter(name -> !fields.contains(name)).toList()
+                    : withoutRequired(v, fields)));
+            return copy;
+        }
+
+        if (schema instanceof List<?> list) {
+            return list.stream().map(item -> withoutRequired(item, fields)).toList();
+        }
+
+        return schema;
+    }
+
+    /**
+     * One resource in the catalogue: what it is, and what can be asked of it.
+     *
+     * <p>The actions are here by name, each with the parameters it cannot do without, so that an
+     * agent can go from the catalogue to {@code call_api} in one step. Without them the listing
+     * said what each resource was and nothing about how to use it: an agent read one resource in
+     * full just to learn that an aggregation is called with {@code execute}, and guessed it for the
+     * next. The rest — types, bodies, notes, examples — stays in the resource's own description.
+     *
+     * <p>An action this caller's rules refuse is left out here as it is there: the two views of a
+     * resource must not disagree about what it offers.
+     */
+    static Map<String, Object> catalogEntry(McpResource resource, Verdicts verdicts) {
         var entry = new LinkedHashMap<String, Object>();
         entry.put("uri", resource.uri());
         entry.put("kind", resource.kind());
         if (resource.description() != null) {
             entry.put("description", resource.description());
         }
+
+        var actions = new LinkedHashMap<String, Object>();
+        resource.actions().forEach((name, action) -> {
+            if (verdicts != null && Verdicts.REFUSED.equals(verdicts.of(resource, name).get("permitted"))) {
+                return;
+            }
+            actions.put(name, action.params().entrySet().stream()
+                    .filter(p -> p.getValue().required())
+                    .map(Map.Entry::getKey)
+                    .toList());
+        });
+        entry.put("actions", actions);
+
         return entry;
     }
 
