@@ -96,12 +96,17 @@ jobs:
     # integration tests passed against the core built alongside it — a guarantee the core's
     # own snapshot image does not have.
     needs: integration-tests
-    # Only on a real push to master. The event check is not redundant with the ref check: a
-    # workflow_dispatch (and any scheduled run, should one ever be added back) also reports
-    # github.ref as the default branch, and would republish the archive with no new commit
-    # behind it, rewriting the build date in the release notes to say something happened when
-    # nothing did.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # A push to master, or a manual run from it. The event check is not redundant with the ref
+    # check: a scheduled run, should one ever be added, reports github.ref as the default branch
+    # too, and would republish the archive with no new commit behind it - rewriting the build
+    # date in the release notes to say something happened when nothing did. A workflow_dispatch
+    # is the opposite case and is deliberately allowed: somebody went and asked for it, which is
+    # the whole point of a manual republish - recovering a release whose commit was rewritten,
+    # or reissuing an archive after the tag was damaged. The ref check still stands, so a
+    # dispatch from a branch other than master builds and tests but does not publish.
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
       contents: write
