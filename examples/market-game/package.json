@@ -4,6 +4,6 @@
   "type": "module",
   "description": "A trading game three agents play through a RESTHeart Cloud service's MCP server",
   "devDependencies": {
-    "@restheart-cloud/cli": "^0.10.0"
+    "@restheart-cloud/cli": "^0.11.0"
   }
 }

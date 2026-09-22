@@ -89,7 +89,7 @@ const everything = encodeURIComponent(json({ _id: { $exists: true } }));
 
 export default defineSetup('Market game', [
   step('marketEvent schema stored', {
-    check: ({ service }) => holds(service, `/_schemas/${SCHEMA_ID}`, MARKET_EVENT_SCHEMA),
+    check: ({ service }) => holds(service, `/schemas/${SCHEMA_ID}`, MARKET_EVENT_SCHEMA),
     apply: ({ service }) => service.putSchema(SCHEMA_ID, MARKET_EVENT_SCHEMA),
   }),
 
