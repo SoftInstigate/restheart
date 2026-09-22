@@ -1,0 +1,8 @@
+{
+    "rh:services": [
+        "service.py"
+    ],
+    "rh:python-options": {
+        "python.IsolateNativeModules": "true"
+    }
+}

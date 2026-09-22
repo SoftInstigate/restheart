@@ -20,6 +20,7 @@
  */
 package org.restheart.polyglot.python;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -27,6 +28,9 @@ import java.util.Map;
 
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Helpers shared by Python services and interceptors.
@@ -61,19 +65,31 @@ public final class PyPlugins {
     /**
      * Context options for a Python plugin. If the plugin root contains a
      * virtual environment ({@code .venv} or {@code venv}), the Context uses it,
-     * so each plugin has its own isolated set of packages.
+     * so each plugin has its own isolated set of packages. Extra GraalPy
+     * options can be set in package.json under {@code rh:python-options}.
      */
     public static Map<String, String> contextOptions(Path pluginRoot) {
         var opts = new HashMap<String, String>();
         opts.put("python.PythonPath", pluginRoot.toAbsolutePath().toString());
 
         for (var name : new String[] { ".venv", "venv" }) {
-            var venvPython = pluginRoot.resolve(name).resolve("bin").resolve("python");
-            if (Files.exists(venvPython)) {
-                opts.put("python.Executable", venvPython.toAbsolutePath().toString());
+            var venv = pluginRoot.resolve(name);
+            // bin/python is a symlink to the interpreter that created the venv, which
+            // may not exist at runtime; GraalPy only needs the path to find pyvenv.cfg
+            if (Files.isRegularFile(venv.resolve("pyvenv.cfg"))) {
+                opts.put("python.Executable", venv.resolve("bin").resolve("python").toAbsolutePath().toString());
                 opts.put("python.ForceImportSite", "true");
                 break;
             }
+        }
+
+        try (var r = Files.newBufferedReader(pluginRoot.resolve("package.json"))) {
+            var p = JsonParser.parseReader(r);
+            if (p.isJsonObject() && p.getAsJsonObject().get("rh:python-options") instanceof JsonObject extra) {
+                extra.entrySet().forEach(e -> opts.put(e.getKey(), e.getValue().getAsString()));
+            }
+        } catch (IOException | RuntimeException e) {
+            throw new IllegalArgumentException("cannot read " + pluginRoot.resolve("package.json"), e);
         }
 
         return opts;

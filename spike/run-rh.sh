@@ -12,7 +12,7 @@ docker run -d --name "$NAME" --network rhspike -p 8080:8080 \
   -v "$PWD/../cache-linux:/cache" \
   -e RHO="${RHO:-/http-listener/host->\"0.0.0.0\"}" \
   ${DOCKER_EXTRA:-} \
-  softinstigate/graalvm:25.1.3-graalce \
+  ${IMAGE:-softinstigate/graalvm:25.1.3-graalce} ${JAVA_CMD:-} \
   -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow \
   -XX:MaxRAMPercentage=70.0 -XX:InitialRAMPercentage=60.0 -XX:+DisableExplicitGC \
   -XX:+ExitOnOutOfMemoryError -XX:+UseCompactObjectHeaders \
