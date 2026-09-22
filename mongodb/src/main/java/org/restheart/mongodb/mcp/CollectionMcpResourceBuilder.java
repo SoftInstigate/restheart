@@ -87,6 +87,14 @@ public final class CollectionMcpResourceBuilder {
      *                    say so, since an agent cannot tell the two apart from the status alone.
      */
     public static Optional<McpResource> build(String collectionUri, BsonDocument mcp, BsonValue jsonSchema, BsonArray aggrs, BsonArray streams, BsonArray constraints) {
+        return build(collectionUri, mcp, jsonSchema, aggrs, streams, constraints, false);
+    }
+
+    /**
+     * @param schemaStore whether the collection is the schema store: its documents are JSON Schemas,
+     *                    written whole (it answers PATCH with 405) and with BSON types escaped
+     */
+    public static Optional<McpResource> build(String collectionUri, BsonDocument mcp, BsonValue jsonSchema, BsonArray aggrs, BsonArray streams, BsonArray constraints, boolean schemaStore) {
         if (mcp == null || isExplicitlyDisabled(mcp) || description(mcp) == null) {
             return Optional.empty();
         }
@@ -137,11 +145,14 @@ public final class CollectionMcpResourceBuilder {
 
         var rules = ruleNames(constraints);
 
-        var documentBody = DOCUMENT_BODY + " " + EXTENDED_JSON + (bodySchema == null ? " " + NO_SCHEMA : "");
+        var documentBody = schemaStore
+                ? SCHEMA_BODY
+                : DOCUMENT_BODY + " " + EXTENDED_JSON + " " + (bodySchema == null ? NO_SCHEMA : SCHEMA_TYPES_PREVAIL);
 
         builder.action("create", a -> {
             a.method("POST");
-            a.description("Creates one document, or several at once when the body is an array of them. "
+            a.description((schemaStore ? "Creates one JSON Schema, or several at once when the body is an array of them. "
+                    : "Creates one document, or several at once when the body is an array of them. ")
                     + documentBody + " " + (rules.isEmpty() ? DUPLICATE_ID : writeGuidance(rules)));
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
@@ -151,7 +162,9 @@ public final class CollectionMcpResourceBuilder {
         builder.action("replace", a -> {
             a.method("PUT").pathTemplate("/{id}");
             a.param("id", "string", true);
-            a.description(REPLACE_ONLY_REPLACES + " " + documentBody
+            a.description((schemaStore ? "Replaces the JSON Schema with this _id: the body is the whole schema, "
+                    + "and there is no partial update." : REPLACE_ONLY_REPLACES)
+                    + " " + documentBody
                     + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
@@ -159,14 +172,17 @@ public final class CollectionMcpResourceBuilder {
         });
 
         // no body_schema: the schema describes a whole document, and a partial one or an update
-        // document validated against it fails on what it rightly leaves out
-        builder.action("update", a -> {
-            a.method("PATCH").pathTemplate("/{id}");
-            a.param("id", "string", true);
-            a.description(UPDATE_ONLY_UPDATES + " " + UPDATE_BODY + " " + EXTENDED_JSON
-                    + (bodySchema == null ? " " + NO_SCHEMA : "")
-                    + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
-        });
+        // document validated against it fails on what it rightly leaves out. Not on the schema
+        // store, which takes a schema whole and answers PATCH with 405.
+        if (!schemaStore) {
+            builder.action("update", a -> {
+                a.method("PATCH").pathTemplate("/{id}");
+                a.param("id", "string", true);
+                a.description(UPDATE_ONLY_UPDATES + " " + UPDATE_BODY + " " + EXTENDED_JSON
+                        + (bodySchema == null ? " " + NO_SCHEMA : "")
+                        + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
+            });
+        }
 
         builder.action("delete", a -> {
             a.method("DELETE").pathTemplate("/{id}");
@@ -176,7 +192,9 @@ public final class CollectionMcpResourceBuilder {
                     + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
         });
 
-        bulkActions(builder, bodySchema, rules);
+        if (!schemaStore) {
+            bulkActions(builder, bodySchema, rules);
+        }
         managementActions(builder);
 
         examples(mcp).forEach(ex -> {
@@ -330,6 +348,25 @@ public final class CollectionMcpResourceBuilder {
                     + "does not exist is not created, and the answer says so. Use 'update' to change some fields.";
 
     private static final String DOCUMENT_BODY = "Body: the whole document.";
+
+    /**
+     * With a body_schema, the schema is checked on the Extended JSON form of the body: a field it
+     * types as a string refuses {"$date": ...} with 400, and the sentence above alone sent an agent
+     * straight into it.
+     */
+    private static final String SCHEMA_TYPES_PREVAIL =
+            "The body_schema is checked on this form: follow its types (a date is an object with $date, a string is a string).";
+
+    /**
+     * The body of a write to the schema store. Its keys are escaped on the way in: a {@code $date}
+     * inside a schema would be read as a date value, and the write fails with 400.
+     */
+    private static final String SCHEMA_BODY =
+            "Body: a JSON Schema (draft-04); its _id is the schemaId that a collection names in its jsonSchema "
+                    + "metadata. In a schema, a BSON type is written with a leading underscore, because $date and "
+                    + "$oid would be read as values: a date field is {\"type\": \"object\", \"properties\": "
+                    + "{\"_$date\": {\"type\": \"number\"}}}, an ObjectId one uses _$oid. They read back as $date "
+                    + "and $oid, and a document then carries a date as {\"$date\": <epoch millis>}.";
 
     /**
      * The body is parsed as MongoDB Extended JSON: a plain JSON string stays a string, so a date or

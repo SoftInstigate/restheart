@@ -158,6 +158,20 @@ public class AggregationMcpResourceBuilderTest {
         assertNull(resource.extra().get("warnings"));
     }
 
+    /** A BSON type is published as the JSON object it is sent as, with its Extended JSON shape. */
+    @Test
+    public void aParamDeclaredWithABsonType_saysItsExtendedJsonShape() {
+        var mcp = BsonDocument.parse("""
+                {"description": "x", "params": {"status": {"type": "date", "description": "Due before this."}}}
+                """);
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
+        var param = resource.actions().get("execute").params().get("status");
+
+        assertEquals("object", param.type());
+        assertEquals("A date: {\"$date\": <epoch millis>}. Due before this.", param.description());
+    }
+
     @Test
     public void referencedVarWithNoDeclaredParam_defaultsToStringRequiredByPipelineShape() {
         // STAGES references "status" as a bare {"$var": "status"} (no default, not inside

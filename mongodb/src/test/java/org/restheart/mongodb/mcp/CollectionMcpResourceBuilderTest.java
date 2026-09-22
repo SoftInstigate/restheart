@@ -127,6 +127,38 @@ public class CollectionMcpResourceBuilderTest {
         }
     }
 
+    /**
+     * The schema store takes a schema whole — PATCH answers 405 — and its writes say how a BSON
+     * type is declared, since $date inside a schema is read as a date value and refused.
+     */
+    @Test
+    public void theSchemaStore_hasNoPatchActions_andSaysHowToDeclareBsonTypes() {
+        var mcp = BsonDocument.parse("{\"description\": \"The schemas.\"}");
+        var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, null, null, null, true).orElseThrow();
+
+        assertNull(resource.actions().get("update"));
+        assertNull(resource.actions().get("update_many"));
+        assertNull(resource.actions().get("delete_many"));
+
+        for (var name : List.of("create", "replace")) {
+            var description = resource.actions().get(name).description();
+            assertTrue(description.contains("JSON Schema"), name);
+            assertTrue(description.contains("_$date"), name);
+            assertFalse(description.contains("read some existing documents first"), name);
+        }
+    }
+
+    /** With a schema, the Extended JSON sentence defers to its types. */
+    @Test
+    public void withASchema_theWritesDeferToItsTypes() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var jsonSchema = BsonDocument.parse("{ \"type\": \"object\" }");
+        var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, jsonSchema, null, null).orElseThrow();
+
+        assertTrue(resource.actions().get("create").description().contains("follow its types"));
+        assertTrue(resource.actions().get("replace").description().contains("follow its types"));
+    }
+
     /** Each write says what its body is, and that its values are Extended JSON. */
     @Test
     public void writesSayWhatTheBodyIs() {

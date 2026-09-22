@@ -1755,7 +1755,7 @@ public class McpService implements ByteArrayService {
                         Reads: `query` (collection), `get` (document), `execute` \
                         (aggregation), with their params in args.
                         Writes: create → 201, headers.Location = URI of the new document, no body. \
-                        create with an array body → 200, body = {inserted, links: [URI of each new \
+                        create with an array body → 200, body = {inserted, links: [path of each new \
                         document]}; not atomic: each document is written or refused on its own, a \
                         partial failure → 207. \
                         update, delete → 200 or 204, no body. A write never returns the stored data: \

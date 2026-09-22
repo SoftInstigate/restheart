@@ -244,10 +244,28 @@ public final class AggregationMcpResourceBuilder {
         return v != null && v.isString() ? v.asString().getValue() : null;
     }
 
+    /**
+     * The BSON types a parameter can be declared with, by MongoDB's own {@code $type} aliases, and
+     * the Extended JSON an agent sends for each. JSON has no date: declared as a plain type, a
+     * {@code $var} compared with a date field was a string, and the pipeline matched nothing.
+     * Published as {@code object}, the JSON type the value has, with its shape in the description.
+     */
+    static final Map<String, String> BSON_TYPES = Map.of(
+            "date", "A date: {\"$date\": <epoch millis>}.",
+            "objectId", "An ObjectId: {\"$oid\": \"<24 hex digits>\"}.",
+            "long", "A 64-bit integer: {\"$numberLong\": \"<digits>\"}.",
+            "decimal", "A decimal: {\"$numberDecimal\": \"<digits>\"}.");
+
     /** @param defaultRequired required-ness derived from the pipeline's own shape (see {@link PipelineParamScanner}), used unless {@code def} explicitly overrides it with its own {@code required} field */
     private static McpResource.Param toParam(BsonDocument def, boolean defaultRequired) {
         var type = stringOrNull(def, "type");
         var description = stringOrNull(def, "description");
+
+        if (type != null && BSON_TYPES.containsKey(type)) {
+            description = BSON_TYPES.get(type) + (description == null ? "" : " " + description);
+            type = "object";
+        }
+
         var required = def.get("required") instanceof BsonBoolean b ? b.getValue() : defaultRequired;
         List<Object> enumValues = def.get("enum") instanceof BsonArray arr
                 ? arr.stream().map(BsonJava::toJava).toList()

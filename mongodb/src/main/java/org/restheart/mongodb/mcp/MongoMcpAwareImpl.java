@@ -180,7 +180,8 @@ public final class MongoMcpAwareImpl {
                     continue;
                 }
 
-                describeCollection(dbName, collUri, collProps, resources, enabledCollectionUris);
+                describeCollection(dbName, collUri, collProps, resources, enabledCollectionUris,
+                        MongoRequest.schemaStore().equals(collName));
             }
 
             mountResolver.databasePath(dbName, scope).ifPresent(dbPath -> {
@@ -315,14 +316,14 @@ public final class MongoMcpAwareImpl {
         }
     }
 
-    private void describeCollection(String dbName, String collUri, BsonDocument collProps, List<McpResource> resources, List<String> enabledCollectionUris) {
+    private void describeCollection(String dbName, String collUri, BsonDocument collProps, List<McpResource> resources, List<String> enabledCollectionUris, boolean schemaStore) {
         var mcp = asDocument(collProps.get("mcp"));
         var jsonSchema = metadata.resolveJsonSchema(dbName, collProps.get("jsonSchema"));
         var aggrs = collProps.get("aggrs") instanceof BsonArray a ? a : null;
         var streams = collProps.get("streams") instanceof BsonArray s ? s : null;
         var constraints = collProps.get("constraints") instanceof BsonArray c ? c : null;
 
-        CollectionMcpResourceBuilder.build(collUri, mcp, jsonSchema, aggrs, streams, constraints).ifPresent(resource -> {
+        CollectionMcpResourceBuilder.build(collUri, mcp, jsonSchema, aggrs, streams, constraints, schemaStore).ifPresent(resource -> {
             resources.add(resource);
             enabledCollectionUris.add(collUri);
         });
