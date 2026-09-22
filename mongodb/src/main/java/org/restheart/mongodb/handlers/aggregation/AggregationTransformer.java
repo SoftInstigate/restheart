@@ -78,7 +78,12 @@ public class AggregationTransformer extends PipelinedHandler {
 
         BsonDocument _contentToTransform = contentToTransform.asDocument();
 
-        if (request.isCollection() || request.isCollectionMeta()) {
+        // A db listing carries each collection's properties, aggregations included, so its
+        // response needs the same unescaping as the collection's own: a client reading the
+        // pipelines from GET /db would otherwise see the stored form, `_$match` for `$match`.
+        var listsCollections = request.isDb() && request.isGet();
+
+        if (request.isCollection() || request.isCollectionMeta() || listsCollections) {
             BsonArray aggrs = getAggregationMetadata(_contentToTransform);
 
             if (aggrs == null) {
