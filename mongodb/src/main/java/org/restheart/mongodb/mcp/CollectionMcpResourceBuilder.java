@@ -362,7 +362,7 @@ public final class CollectionMcpResourceBuilder {
      * inside a schema would be read as a date value, and the write fails with 400.
      */
     private static final String SCHEMA_BODY =
-            "Body: a JSON Schema (draft-04); its _id is the schemaId that a collection names in its jsonSchema "
+            "Body: a JSON Schema, draft-04, -06 or -07 by its $schema, draft-07 without one; its _id is the schemaId that a collection names in its jsonSchema "
                     + "metadata. In a schema, a BSON type is written with a leading underscore, because $date and "
                     + "$oid would be read as values: a date field is {\"type\": \"object\", \"properties\": "
                     + "{\"_$date\": {\"type\": \"number\"}}}, an ObjectId one uses _$oid. They read back as $date "

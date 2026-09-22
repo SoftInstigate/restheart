@@ -43,13 +43,14 @@ public final class SchemaContextBuilder {
         if (jsonSchema == null || !jsonSchema.isDocument()) {
             return null;
         }
-        // the schema store's own fields: _id is the schemaId, _etag its version, id the URI RESTHeart
-        // resolves $refs against. None says anything about the document to write, and an agent read
+        // the schema store's own fields: _id is the schemaId, _etag its version, id (draft-04) and
+        // $id (draft-06, -07) the URI RESTHeart resolves $refs against. None says anything about the document to write, and an agent read
         // "_id": "todo" as a rule on it; _etag came out as the Java toString of an ObjectId.
         var schema = jsonSchema.asDocument().clone();
         schema.remove("_id");
         schema.remove("_etag");
         schema.remove("id");
+        schema.remove("$id");
 
         return BsonJava.toMap(schema);
     }

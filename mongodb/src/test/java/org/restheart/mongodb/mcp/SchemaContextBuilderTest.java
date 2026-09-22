@@ -62,7 +62,7 @@ public class SchemaContextBuilderTest {
     public void theSchemaStoresOwnFieldsAreLeftOut() {
         var schema = BsonDocument.parse("""
                 { "_id": "todo", "_etag": { "$oid": "6aaaa64d42d5f6540d253abb" },
-                  "id": "http://schema-store/db/todo#", "$schema": "http://json-schema.org/draft-04/schema#",
+                  "id": "http://schema-store/db/todo#", "$id": "http://schema-store/db/todo#", "$schema": "http://json-schema.org/draft-04/schema#",
                   "type": "object" }
                 """);
 
