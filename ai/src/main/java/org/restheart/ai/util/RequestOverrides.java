@@ -55,12 +55,14 @@ public final class RequestOverrides {
     public static final String OPENAI_API_KEY = "override-ai-openai-api-key";
     public static final String OPENAI_MODEL = "override-ai-openai-model";
     public static final String OPENAI_BASE_URL = "override-ai-openai-base-url";
+    public static final String OPENAI_DIMENSIONS = "override-ai-openai-dimensions";
 
     // ── voyageEmbeddingProvider overrides ────────────────────────────────────
     public static final String VOYAGE_API_KEY = "override-ai-voyage-api-key";
     public static final String VOYAGE_MODEL = "override-ai-voyage-model";
     public static final String VOYAGE_BASE_URL = "override-ai-voyage-base-url";
     public static final String VOYAGE_INPUT_TYPE = "override-ai-voyage-input-type";
+    public static final String VOYAGE_OUTPUT_DIMENSION = "override-ai-voyage-output-dimension";
 
     // ── voyageContextualEmbeddingProvider overrides ──────────────────────────
     // (kept distinct from VOYAGE_API_KEY etc. above — a tenant may use a different

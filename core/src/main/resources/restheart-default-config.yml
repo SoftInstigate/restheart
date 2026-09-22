@@ -801,12 +801,14 @@ openAIEmbeddingProvider:
   api-key: $(OPENAI_API_KEY)
   model: text-embedding-3-small
   base-url: https://api.openai.com/v1
+  # dimensions: 512          # a shorter vector (text-embedding-3 models); the model's default when omitted
 
 voyageEmbeddingProvider:
   enabled: false
   api-key: $(VOYAGE_API_KEY)
   model: voyage-4
   base-url: https://api.voyageai.com/v1
+  # output-dimension: 1024   # 256, 512, 1024 or 2048 where the model allows it; the model's default when omitted
   # Optional: "query" or "document" - omitted entirely (not sent as "") when blank.
   # input-type: document
 

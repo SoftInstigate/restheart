@@ -20,6 +20,7 @@
  */
 package org.restheart.ai.embeddings.providers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -60,5 +61,14 @@ public class VoyageEmbeddingProviderTest {
         var payload = VoyageEmbeddingProvider.buildPayload("voyage-3.5", List.of("a", "b", "c"), null);
         var parsed = BsonDocument.parse(payload);
         assertTrue(parsed.getArray("input").size() == 3);
+    }
+
+    @Test
+    public void outputDimension_sentOnlyWhenSet() {
+        var withIt = BsonDocument.parse(VoyageEmbeddingProvider.buildPayload("voyage-4", List.of("a"), "document", 512));
+        var without = BsonDocument.parse(VoyageEmbeddingProvider.buildPayload("voyage-4", List.of("a"), "document", 0));
+
+        assertEquals(512, withIt.getInt32("output_dimension").getValue());
+        assertFalse(without.containsKey("output_dimension"));
     }
 }

@@ -54,13 +54,18 @@ import org.slf4j.LoggerFactory;
  *   api-key: <key>
  *   model: voyage-4          # optional, this is the default
  *   input-type: document     # optional: "query" or "document"; omitted by default
+ *   output-dimension: 1024   # optional: 256, 512, 1024 or 2048 where the model allows it; omitted by default
  * }</pre>
+ *
+ * <p>{@code output_dimension} is sent only when set: without it the model answers with its own
+ * default length (1024 for {@code voyage-4}). A shorter vector takes less room in the collection
+ * and in the index, at a small cost in precision.
  *
  * <h2>Multi-tenant</h2>
  * <p>Per request, a deployment's tenant-config interceptor may attach
  * {@link RequestOverrides#VOYAGE_API_KEY}, {@link RequestOverrides#VOYAGE_MODEL},
- * {@link RequestOverrides#VOYAGE_BASE_URL}, {@link RequestOverrides#VOYAGE_INPUT_TYPE}
- * to use different values for that tenant.
+ * {@link RequestOverrides#VOYAGE_BASE_URL}, {@link RequestOverrides#VOYAGE_INPUT_TYPE},
+ * {@link RequestOverrides#VOYAGE_OUTPUT_DIMENSION} to use different values for that tenant.
  */
 @RegisterPlugin(
         name = "voyageEmbeddingProvider",
@@ -81,6 +86,7 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
     private String defaultModel;
     private String defaultBaseUrl;
     private String defaultInputType;
+    private int defaultOutputDimension;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private EmbeddingModel instance;
@@ -91,6 +97,7 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
         this.defaultModel = argOrDefault(config, "model", DEFAULT_MODEL);
         this.defaultBaseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
         this.defaultInputType = argOrDefault(config, "input-type", "");
+        this.defaultOutputDimension = argOrDefault(config, "output-dimension", 0);
 
         if (defaultApiKey == null || defaultApiKey.isBlank()) {
             LOGGER.warn("voyageEmbeddingProvider: no api-key configured, embedding calls will fail "
@@ -114,8 +121,9 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
         var model = RequestOverrides.str(request, RequestOverrides.VOYAGE_MODEL, defaultModel);
         var baseUrl = RequestOverrides.str(request, RequestOverrides.VOYAGE_BASE_URL, defaultBaseUrl);
         var inputType = RequestOverrides.str(request, RequestOverrides.VOYAGE_INPUT_TYPE, defaultInputType);
+        var outputDimension = RequestOverrides.intVal(request, RequestOverrides.VOYAGE_OUTPUT_DIMENSION, defaultOutputDimension);
 
-        var payload = buildPayload(model, texts, inputType);
+        var payload = buildPayload(model, texts, inputType, outputDimension);
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "embeddings";
 
         var httpReq = HttpRequest.newBuilder()
@@ -150,6 +158,11 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
      * OpenAI-wire-format providers) can be unit-tested without an HTTP round-trip.
      */
     static String buildPayload(String model, List<String> texts, String inputType) {
+        return buildPayload(model, texts, inputType, 0);
+    }
+
+    /** As {@link #buildPayload(String, List, String)}, with {@code output_dimension} when positive. */
+    static String buildPayload(String model, List<String> texts, String inputType, int outputDimension) {
         var inputJson = new StringBuilder("[");
         for (int i = 0;i < texts.size();i++) {
             inputJson.append("\"").append(OpenAiWireEmbeddings.escape(texts.get(i))).append("\"");
@@ -166,6 +179,10 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
 
         if (inputType != null && !inputType.isBlank()) {
             payload.append(",\"input_type\":\"").append(OpenAiWireEmbeddings.escape(inputType)).append("\"");
+        }
+
+        if (outputDimension > 0) {
+            payload.append(",\"output_dimension\":").append(outputDimension);
         }
 
         payload.append("}");

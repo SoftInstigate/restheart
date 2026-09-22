@@ -56,13 +56,19 @@ import org.slf4j.LoggerFactory;
  *   api-key: <key>
  *   model: text-embedding-3-small           # or e.g. openai/text-embedding-3-small on OpenRouter
  *   base-url: https://api.openai.com/v1     # optional; e.g. https://openrouter.ai/api/v1
+ *   dimensions: 512                         # optional: a shorter vector; omitted by default
  * }</pre>
+ *
+ * <p>{@code dimensions} is sent only when set: without it the model answers with its own default
+ * length (1536 for {@code text-embedding-3-small}, 3072 for {@code -large}). The
+ * {@code text-embedding-3} models accept a shorter one; an OpenAI-compatible gateway may refuse it.
  *
  * <h2>Multi-tenant</h2>
  * <p>{@code api-key}/{@code model}/{@code base-url} above are the single-tenant
  * defaults. Per request, a deployment's tenant-config interceptor may attach
  * {@link RequestOverrides#OPENAI_API_KEY}, {@link RequestOverrides#OPENAI_MODEL},
- * {@link RequestOverrides#OPENAI_BASE_URL} to use different values for that tenant —
+ * {@link RequestOverrides#OPENAI_BASE_URL}, {@link RequestOverrides#OPENAI_DIMENSIONS} to use
+ * different values for that tenant —
  * nothing is cached across requests, so there is no risk of one tenant's key leaking
  * into another tenant's call.
  */
@@ -84,6 +90,7 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
     private String defaultApiKey;
     private String defaultModel;
     private String defaultBaseUrl;
+    private int defaultDimensions;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private EmbeddingModel instance;
@@ -93,6 +100,7 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
         this.defaultApiKey = argOrDefault(config, "api-key", "");
         this.defaultModel = argOrDefault(config, "model", DEFAULT_MODEL);
         this.defaultBaseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
+        this.defaultDimensions = argOrDefault(config, "dimensions", 0);
 
         if (defaultApiKey == null || defaultApiKey.isBlank()) {
             LOGGER.warn("openAIEmbeddingProvider: no api-key configured, embedding calls will fail "
@@ -115,17 +123,9 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
         var apiKey = RequestOverrides.str(request, RequestOverrides.OPENAI_API_KEY, defaultApiKey);
         var model = RequestOverrides.str(request, RequestOverrides.OPENAI_MODEL, defaultModel);
         var baseUrl = RequestOverrides.str(request, RequestOverrides.OPENAI_BASE_URL, defaultBaseUrl);
+        var dimensions = RequestOverrides.intVal(request, RequestOverrides.OPENAI_DIMENSIONS, defaultDimensions);
 
-        var inputJson = new StringBuilder("[");
-        for (int i = 0;i < texts.size();i++) {
-            inputJson.append("\"").append(OpenAiWireEmbeddings.escape(texts.get(i))).append("\"");
-            if (i < texts.size() - 1) {
-                inputJson.append(",");
-            }
-        }
-        inputJson.append("]");
-
-        var payload = "{\"model\":\"" + OpenAiWireEmbeddings.escape(model) + "\",\"input\":" + inputJson + "}";
+        var payload = buildPayload(model, texts, dimensions);
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "embeddings";
 
         var httpReq = HttpRequest.newBuilder()
@@ -159,5 +159,32 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
      */
     static List<float[]> parseEmbeddings(String responseBody) {
         return OpenAiWireEmbeddings.parse(responseBody);
+    }
+
+    /**
+     * The request body: {@code model}, {@code input}, and {@code dimensions} only when positive, so
+     * a gateway that does not know the field never receives it. Package-private and pure, to be
+     * unit-tested without an HTTP round-trip.
+     */
+    static String buildPayload(String model, List<String> texts, int dimensions) {
+        var inputJson = new StringBuilder("[");
+        for (int i = 0;i < texts.size();i++) {
+            inputJson.append("\"").append(OpenAiWireEmbeddings.escape(texts.get(i))).append("\"");
+            if (i < texts.size() - 1) {
+                inputJson.append(",");
+            }
+        }
+        inputJson.append("]");
+
+        var payload = new StringBuilder("{\"model\":\"")
+                .append(OpenAiWireEmbeddings.escape(model))
+                .append("\",\"input\":")
+                .append(inputJson);
+
+        if (dimensions > 0) {
+            payload.append(",\"dimensions\":").append(dimensions);
+        }
+
+        return payload.append("}").toString();
     }
 }
