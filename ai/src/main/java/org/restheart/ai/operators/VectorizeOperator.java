@@ -28,7 +28,9 @@ import org.bson.BsonArray;
 import org.bson.BsonDouble;
 import org.bson.BsonValue;
 import org.restheart.ai.util.PluginModelResolver;
+import org.restheart.ai.util.CollectionEmbeddingConfig;
 import org.restheart.ai.util.RequestOverrides;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
 import org.restheart.mongodb.utils.CustomOperator;
 import org.restheart.plugins.PluginsRegistry;
@@ -94,6 +96,12 @@ public class VectorizeOperator implements CustomOperator {
             throw new IllegalArgumentException("$vectorize requires a string argument, got: " + arg);
         }
         var text = arg.asString().getValue();
+
+        // the question is embedded with the model of the collection it is searched in, when the
+        // collection names one: the same overrides autoEmbeddingInterceptor attaches on a write
+        if (request instanceof MongoRequest mongoRequest) {
+            CollectionEmbeddingConfig.attach(mongoRequest, mongoRequest.getCollectionProps(), defaultProviderName);
+        }
 
         var providerName = RequestOverrides.str(request, RequestOverrides.EMBEDDING_PROVIDER, defaultProviderName);
         if (providerName.isBlank()) {

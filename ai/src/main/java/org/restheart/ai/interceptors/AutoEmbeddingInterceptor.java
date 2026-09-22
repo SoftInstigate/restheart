@@ -30,6 +30,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonValue;
 import org.restheart.ai.util.PluginModelResolver;
+import org.restheart.ai.util.CollectionEmbeddingConfig;
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -126,11 +127,16 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return request.isHandledBy("mongo")
-                && request.isWriteDocument()
-                && !response.isInError()
-                && !effectiveProviderName(request).isBlank()
-                && findVectorSearchConfig(request.getCollectionProps()) != null;
+        if (!request.isHandledBy("mongo") || !request.isWriteDocument() || response.isInError()) {
+            return false;
+        }
+        if (findVectorSearchConfig(request.getCollectionProps()) == null) {
+            return false;
+        }
+        // the collection may name its own provider, model and vector length: attached as the
+        // request overrides the providers read, before the provider in force is decided
+        CollectionEmbeddingConfig.attach(request, request.getCollectionProps(), defaultProviderName);
+        return !effectiveProviderName(request).isBlank();
     }
 
     @Override
