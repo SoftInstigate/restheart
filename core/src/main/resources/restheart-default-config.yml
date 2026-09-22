@@ -960,6 +960,10 @@ mongo:
   # through unchecked.
   constraints-guard-collection: _constraints
 
+  # The schema store: the collection of each database holding its JSON schemas, which collections
+  # name in their jsonSchema metadata. See https://restheart.org/docs/mongodb-rest/json-schema-validation
+  schema-store: _schemas
+
 # MongoDB GraphQL API
 # See https://restheart.org/docs/mongodb-graphql/
 graphql:

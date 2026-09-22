@@ -137,22 +137,35 @@ public final class CollectionMcpResourceBuilder {
 
         var rules = ruleNames(constraints);
 
+        var documentBody = DOCUMENT_BODY + " " + EXTENDED_JSON + (bodySchema == null ? " " + NO_SCHEMA : "");
+
         builder.action("create", a -> {
             a.method("POST");
             a.description("Creates one document, or several at once when the body is an array of them. "
-                    + (rules.isEmpty() ? DUPLICATE_ID : writeGuidance(rules)));
+                    + documentBody + " " + (rules.isEmpty() ? DUPLICATE_ID : writeGuidance(rules)));
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
             }
         });
 
-        builder.action("update", a -> {
-            a.method("PATCH").pathTemplate("/{id}");
+        builder.action("replace", a -> {
+            a.method("PUT").pathTemplate("/{id}");
             a.param("id", "string", true);
-            a.description(UPDATE_ONLY_UPDATES + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
+            a.description(REPLACE_ONLY_REPLACES + " " + documentBody
+                    + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
             if (bodySchema != null) {
                 a.bodySchema(bodySchema);
             }
+        });
+
+        // no body_schema: the schema describes a whole document, and a partial one or an update
+        // document validated against it fails on what it rightly leaves out
+        builder.action("update", a -> {
+            a.method("PATCH").pathTemplate("/{id}");
+            a.param("id", "string", true);
+            a.description(UPDATE_ONLY_UPDATES + " " + UPDATE_BODY + " " + EXTENDED_JSON
+                    + (bodySchema == null ? " " + NO_SCHEMA : "")
+                    + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
         });
 
         builder.action("delete", a -> {
@@ -206,14 +219,12 @@ public final class CollectionMcpResourceBuilder {
     private static void bulkActions(McpResource.Builder builder, Map<String, Object> bodySchema, List<String> rules) {
         builder.action("update_many", a -> {
             a.method("PATCH").pathTemplate("/*").requires("mongo.allowBulkPatch");
-            a.description("Applies this change to every document matching the filter, in one request."
+            a.description("Applies this change to every document matching the filter, in one request. "
+                    + UPDATE_BODY + " " + EXTENDED_JSON
                     + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
             a.param("filter", new McpResource.Param("object",
                     "Which documents to change. The API requires it: a bulk write without a filter answers 400.",
                     true, null, null));
-            if (bodySchema != null) {
-                a.bodySchema(bodySchema);
-            }
         });
 
         builder.action("delete_many", a -> {
@@ -302,8 +313,34 @@ public final class CollectionMcpResourceBuilder {
      */
     private static final String UPDATE_ONLY_UPDATES =
             "Updates an existing document: a document that does not exist is not created, and the answer "
-                    + "says so. Use 'create' for a new one. The body sets the given fields, or uses MongoDB "
-                    + "update operators ($inc, $push, $unset, $currentDate, ...), or is an aggregation pipeline.";
+                    + "says so. Use 'create' for a new one, 'replace' to rewrite one whole.";
+
+    /**
+     * The body of a {@code PATCH}, one or many: never a whole document, which is what tells it from
+     * {@code create} and {@code replace}, and what an agent reading a document schema would assume.
+     */
+    private static final String UPDATE_BODY =
+            "Body: a partial document, whose fields are set and the others left as they are ({\"qty\": 5}, "
+                    + "{\"size.h\": 2}: a $set); or an update document of MongoDB update operators "
+                    + "({\"$inc\": {\"qty\": 1}}, $push, $unset, $currentDate, ...); or an aggregation pipeline (an array).";
+
+    /** What {@code PUT /<coll>/<id>} does with RESTHeart's default write mode: findOneAndReplace, no upsert. */
+    private static final String REPLACE_ONLY_REPLACES =
+            "Replaces an existing document with the body: fields the body omits are removed. A document that "
+                    + "does not exist is not created, and the answer says so. Use 'update' to change some fields.";
+
+    private static final String DOCUMENT_BODY = "Body: the whole document.";
+
+    /**
+     * The body is parsed as MongoDB Extended JSON: a plain JSON string stays a string, so a date or
+     * an ObjectId written as one is stored as text, and nothing reports it.
+     */
+    private static final String EXTENDED_JSON =
+            "Values are MongoDB Extended JSON: a date is {\"$date\": <epoch millis>}, an ObjectId "
+                    + "{\"$oid\": \"<24 hex digits>\"}; a plain string is stored as a string.";
+
+    private static final String NO_SCHEMA =
+            "The collection declares no schema: read some existing documents first to learn their fields and types.";
 
     /**
      * What a write's {@code 409} means here — the one thing an agent cannot work out from the

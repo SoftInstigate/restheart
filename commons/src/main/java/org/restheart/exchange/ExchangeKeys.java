@@ -194,7 +194,10 @@ public interface ExchangeKeys {
     /** Special resource name for index operations. */
     public static final String _INDEXES = "_indexes";
 
-    /** Special resource name for schema operations. */
+    /**
+     * Default name of the schema store, the collection holding the JSON schemas. The name in use
+     * is {@link MongoRequest#schemaStore()}, set from the MongoDB service's {@code schema-store}.
+     */
     public static final String _SCHEMAS = "_schemas";
 
     /** Special resource name for aggregation operations. */

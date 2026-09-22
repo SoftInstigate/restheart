@@ -1748,19 +1748,21 @@ public class McpService implements ByteArrayService {
 
                         Input: resource (uri from list_apis), action (name from list_apis), args.
                           args = each argument by name, the request body as `body`. Validate `body` \
-                        against the action's body_schema.
+                        against the action's body_schema, when it has one; the action's description \
+                        says what the body is.
                         Output: status (the HTTP status code), headers, body (parsed when JSON).
 
                         Reads: `query` (collection), `get` (document), `execute` \
                         (aggregation), with their params in args.
                         Writes: create → 201, headers.Location = URI of the new document, no body. \
                         create with an array body → 200, body = {inserted, links: [URI of each new \
-                        document]}. \
+                        document]}; not atomic: each document is written or refused on its own, a \
+                        partial failure → 207. \
                         update, delete → 200 or 204, no body. A write never returns the stored data: \
                         read it afterwards.
                         A non-2xx status is a result, not a tool error; body states the reason. \
                         403: not permitted to this session. 409: a rule of the resource refused the \
-                        write; the action's note says which 409s to retry.
+                        write; the action's description or note says which 409s to retry.
                         Change streams (SSE, WebSocket) cannot be opened here: subscribe to the \
                         collection with resources/subscribe and re-read on \
                         notifications/resources/updated, or describe the stream with how_to_call.\

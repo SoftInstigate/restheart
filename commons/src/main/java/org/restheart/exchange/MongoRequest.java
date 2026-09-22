@@ -448,6 +448,25 @@ public class MongoRequest extends BsonRequest {
         return type;
     }
 
+    private static volatile String schemaStore = _SCHEMAS;
+
+    /**
+     * Sets the name of the schema store, the collection holding the JSON schemas. Called once,
+     * from the MongoDB service's {@code schema-store} configuration.
+     *
+     * @param name the collection name
+     */
+    public static void setSchemaStore(String name) {
+        schemaStore = name;
+    }
+
+    /**
+     * @return the name of the schema store, the collection holding the JSON schemas
+     */
+    public static String schemaStore() {
+        return schemaStore;
+    }
+
     static TYPE selectRequestType(String[] pathTokens) {
         TYPE type;
 
@@ -458,7 +477,7 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.DB_SIZE;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
                 type = TYPE.FILES_BUCKET_SIZE;
-            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
+            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(schemaStore)) {
                 type = TYPE.SCHEMA_STORE_SIZE;
             } else if (pathTokens.length == 4) {
                 type = TYPE.COLLECTION_SIZE;
@@ -470,7 +489,7 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.DB_META;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
                 type = TYPE.FILES_BUCKET_META;
-            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
+            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(schemaStore)) {
                 type = TYPE.SCHEMA_STORE_META;
             } else if (pathTokens.length == 4) {
                 type = TYPE.COLLECTION_META;
@@ -514,7 +533,7 @@ public class MongoRequest extends BsonRequest {
             } else {
                 type = TYPE.DOCUMENT;
             }
-        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
+        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(schemaStore)) {
             if (pathTokens.length == 3) {
                 type = TYPE.SCHEMA_STORE;
             } else if (pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {

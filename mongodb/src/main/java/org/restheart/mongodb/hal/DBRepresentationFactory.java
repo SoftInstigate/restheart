@@ -30,7 +30,6 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.MongoURLUtils;
@@ -210,7 +209,7 @@ class DBRepresentationFactory extends AbstractRepresentationFactory {
                             }
 
                             rep.addChild("rh:bucket", nrep);
-                        } else if (_SCHEMAS.equals(id.getValue())) {
+                        } else if (MongoRequest.schemaStore().equals(id.getValue())) {
                             if (request.isFullHalMode()) {
                                 CollectionRepresentationFactory.addSpecialProperties(
                                         nrep, TYPE.SCHEMA_STORE, d);

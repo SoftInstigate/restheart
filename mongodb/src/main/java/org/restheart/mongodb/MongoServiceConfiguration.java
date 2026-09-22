@@ -37,6 +37,7 @@ import java.util.Map;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import org.restheart.exchange.MongoRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,6 +86,7 @@ public class MongoServiceConfiguration {
     private final long changeStreamsKeepAliveMs;
 
     private final String constraintsGuardCollection;
+    private final String schemaStore;
     private final int cursorBatchSize;
     private final int defaultPagesize;
     private final int maxPagesize;
@@ -100,6 +102,7 @@ public class MongoServiceConfiguration {
 
     public static MongoServiceConfiguration init(final Map<String, Object> confs, final boolean silent) {
         INSTANCE = new MongoServiceConfiguration(confs, silent);
+        MongoRequest.setSchemaStore(INSTANCE.getSchemaStore());
         return INSTANCE;
     }
 
@@ -177,6 +180,8 @@ public class MongoServiceConfiguration {
 
         constraintsGuardCollection = asString(conf, CONSTRAINTS_GUARD_COLLECTION_KEY,
                 DEFAULT_CONSTRAINTS_GUARD_COLLECTION, silent);
+
+        schemaStore = asString(conf, SCHEMA_STORE_KEY, DEFAULT_SCHEMA_STORE, silent);
 
         localCacheEnabled = asBoolean(conf, LOCAL_CACHE_ENABLED_KEY, true, silent);
         localCacheTtl = asLong(conf, LOCAL_CACHE_TTL_KEY, (long) 1000, silent);
@@ -341,6 +346,15 @@ public class MongoServiceConfiguration {
      */
     public String getConstraintsGuardCollection() {
         return constraintsGuardCollection;
+    }
+
+    /**
+     * The name of the schema store, the collection of each database holding its JSON schemas.
+     *
+     * @return the schemaStore
+     */
+    public String getSchemaStore() {
+        return schemaStore;
     }
 
     /**

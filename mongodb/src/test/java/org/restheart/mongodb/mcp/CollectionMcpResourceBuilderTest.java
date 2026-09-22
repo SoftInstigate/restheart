@@ -71,6 +71,8 @@ public class CollectionMcpResourceBuilderTest {
         assertEquals("POST", actions.get("create").method());
         assertEquals("PATCH", actions.get("update").method());
         assertEquals("/{id}", actions.get("update").pathTemplate());
+        assertEquals("PUT", actions.get("replace").method());
+        assertEquals("/{id}", actions.get("replace").pathTemplate());
         assertEquals("DELETE", actions.get("delete").method());
         assertEquals("/{id}", actions.get("delete").pathTemplate());
     }
@@ -94,7 +96,7 @@ public class CollectionMcpResourceBuilderTest {
     }
 
     @Test
-    public void jsonSchemaPresent_usedAsBodySchemaForCreateAndUpdate() {
+    public void jsonSchemaPresent_usedAsBodySchemaForTheWholeDocumentWritesOnly() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
         var jsonSchema = BsonDocument.parse("""
                 { "type": "object", "properties": { "sku": { "type": "string" } } }
@@ -103,7 +105,12 @@ public class CollectionMcpResourceBuilderTest {
         var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, jsonSchema, null, null).orElseThrow();
 
         assertEquals("object", resource.actions().get("create").bodySchema().get("type"));
-        assertEquals("object", resource.actions().get("update").bodySchema().get("type"));
+        assertEquals("object", resource.actions().get("replace").bodySchema().get("type"));
+        // a PATCH body is a partial document or an update document: validated against the schema
+        // of a whole one, it fails on what it rightly leaves out
+        assertNull(resource.actions().get("update").bodySchema());
+        assertNull(resource.actions().get("update_many").bodySchema());
+        assertFalse(resource.actions().get("create").description().contains("no schema"));
     }
 
     @Test
@@ -113,6 +120,30 @@ public class CollectionMcpResourceBuilderTest {
 
         assertNull(resource.actions().get("create").bodySchema());
         assertNull(resource.actions().get("update").bodySchema());
+
+        // without a schema the agent is sent to the data before writing
+        for (var name : List.of("create", "replace", "update")) {
+            assertTrue(resource.actions().get(name).description().contains("read some existing documents first"), name);
+        }
+    }
+
+    /** Each write says what its body is, and that its values are Extended JSON. */
+    @Test
+    public void writesSayWhatTheBodyIs() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, null, null).orElseThrow();
+
+        assertTrue(resource.actions().get("create").description().contains("the whole document"));
+        assertTrue(resource.actions().get("replace").description().contains("the whole document"));
+        assertTrue(resource.actions().get("replace").description().contains("fields the body omits are removed"));
+        assertTrue(resource.actions().get("update").description().contains("a partial document"));
+        assertTrue(resource.actions().get("update_many").description().contains("a partial document"));
+
+        for (var name : List.of("create", "replace", "update", "update_many")) {
+            var description = resource.actions().get(name).description();
+            assertTrue(description.contains("{\"$date\": <epoch millis>}"), name);
+            assertTrue(description.contains("{\"$oid\": \"<24 hex digits>\"}"), name);
+        }
     }
 
     @Test
@@ -185,7 +216,7 @@ public class CollectionMcpResourceBuilderTest {
 
         var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, null, null, constraints).orElseThrow();
 
-        for (var action : List.of("create", "update", "delete")) {
+        for (var action : List.of("create", "replace", "update", "delete")) {
             var guidance = resource.actions().get(action).description();
             assertTrue(guidance.contains("\"retryable\": true"), action + " must say what retryable means");
             assertTrue(guidance.contains("\"constraint\""), action + " must say what a violated rule looks like");
@@ -238,7 +269,7 @@ public class CollectionMcpResourceBuilderTest {
         }
 
         // and the ones on documents stay as they are
-        for (var name : List.of("query", "get", "create", "update", "delete")) {
+        for (var name : List.of("query", "get", "create", "replace", "update", "delete")) {
             assertEquals(McpResource.Target.ELEMENT, resource.actions().get(name).target(), name);
         }
     }

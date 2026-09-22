@@ -138,6 +138,47 @@ public class McpCallApiIT extends AbstactIT {
         assertEquals(404, viaRest.getStatus(), "the document is still there after delete");
     }
 
+    /**
+     * The three bodies a document write takes: {@code replace} a whole document, whose omitted
+     * fields go; {@code update} a partial one or an update document, which leaves the rest; and
+     * Extended JSON values, so that a date is stored as a date and not as text.
+     */
+    @Test
+    public void replaceRewritesTheDocument_updateChangesWhatItNames_andValuesAreExtendedJson() throws Exception {
+        var created = mcp.callTool("call_api", """
+                {"resource":"%s","action":"create","args":{"body":{"title":"water plants","done":false,"qty":1,"note":"x"}}}
+                """.formatted(TEST_COLL));
+        var id = idFromLocation(created.getDocument("headers").getString("Location").getValue());
+
+        var replaced = mcp.callTool("call_api", """
+                {"resource":"%s","action":"replace","args":{"id":"%s","body":{"title":"water plants","done":false,"qty":1}}}
+                """.formatted(TEST_COLL, id));
+        assertEquals(200, replaced.getInt32("status").getValue(), "replace failed: " + replaced.toJson());
+
+        var read = BsonDocument.parse(mcp.readResource(TEST_COLL + "/" + id));
+        assertFalse(read.containsKey("note"), "replace keeps a field its body omitted: " + read.toJson());
+
+        var updated = mcp.callTool("call_api", """
+                {"resource":"%s","action":"update","args":{"id":"%s","body":{"$inc":{"qty":2},"$set":{"due":{"$date":1790000000000}}}}}
+                """.formatted(TEST_COLL, id));
+        assertEquals(200, updated.getInt32("status").getValue(), "update failed: " + updated.toJson());
+
+        read = BsonDocument.parse(mcp.readResource(TEST_COLL + "/" + id));
+        assertEquals(3, read.getNumber("qty").intValue(), "the $inc did not land: " + read.toJson());
+        assertEquals("water plants", read.getString("title").getValue(), "update touched a field it did not name");
+
+        var dates = Unirest.get(TEST_COLL + "/_size").basicAuth("admin", "secret")
+                .queryString("filter", "{\"_id\": {\"$oid\": \"" + id + "\"}, \"due\": {\"$type\": \"date\"}}")
+                .asString();
+        assertEquals(1, BsonDocument.parse(dates.getBody()).getNumber("_size").intValue(),
+                "{\"$date\": <millis>} must be stored as a date: " + dates.getBody());
+
+        var missing = mcp.callTool("call_api", """
+                {"resource":"%s","action":"replace","args":{"id":"%s","body":{"title":"ghost"}}}
+                """.formatted(TEST_COLL, "000000000000000000000000"));
+        assertEquals(404, missing.getInt32("status").getValue(), "replace must not create: " + missing.toJson());
+    }
+
     @Test
     public void aNon2xxStatus_isAResultTheAgentReads_notAToolError() throws Exception {
         // a duplicate _id is a 409 from the API: the agent must see it, with the body, to decide

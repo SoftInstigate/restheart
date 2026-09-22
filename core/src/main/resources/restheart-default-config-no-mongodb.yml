@@ -373,6 +373,9 @@ mongo:
   #
   #   - what: /db
   #     where: /database
+
+  # The schema store: the collection of each database holding its JSON schemas.
+  schema-store: _schemas
   #
   # The following binds the URI /api to the collection 'db.coll'
   # In this case the URI of a document is /api/docid

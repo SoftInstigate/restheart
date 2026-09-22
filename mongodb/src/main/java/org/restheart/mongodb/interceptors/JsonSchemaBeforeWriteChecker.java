@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
@@ -167,7 +166,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         } catch (JsonSchemaNotFoundException ex) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': schema "
-                            + schemaStoreDb + "/" + _SCHEMAS + "/"
+                            + schemaStoreDb + "/" + MongoRequest.schemaStore() + "/"
                             + BsonUtils.getIdAsString(schemaId, false)
                             + " not found");
         } catch (SchemaValidationException sve) {

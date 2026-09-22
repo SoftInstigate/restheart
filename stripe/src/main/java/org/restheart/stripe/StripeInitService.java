@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
@@ -269,12 +270,12 @@ public class StripeInitService implements Provider<StripeInitService> {
     }
 
     /**
-     * Installs the order JSON schema into the {@code _schemas} collection and sets the
+     * Installs the order JSON schema into the schema store and sets the
      * {@code jsonSchema} metadata on the orders collection. Idempotent: create-if-absent for the
      * schema document, upsert for the collection metadata.
      */
     private void installOrderSchema(MongoDatabase db, ProductsConfig products) {
-        var schemasCol = db.getCollection("_schemas", BsonDocument.class);
+        var schemasCol = db.getCollection(MongoRequest.schemaStore(), BsonDocument.class);
 
         var existing = schemasCol.find(Filters.eq("_id", OrderSchema.SCHEMA_ID)).first();
         if (existing == null) {
@@ -282,7 +283,7 @@ public class StripeInitService implements Provider<StripeInitService> {
                 var schemaDoc = OrderSchema.schema();
                 schemaDoc.append("_id", new BsonString(OrderSchema.SCHEMA_ID));
                 schemasCol.insertOne(schemaDoc);
-                LOGGER.info("[stripe] installed schema '{}' into _schemas on '{}'", OrderSchema.SCHEMA_ID, db.getName());
+                LOGGER.info("[stripe] installed schema '{}' into {} on '{}'", OrderSchema.SCHEMA_ID, MongoRequest.schemaStore(), db.getName());
             } catch (MongoException e) {
                 if (e.getCode() == 11000) {
                     LOGGER.debug("[stripe] schema '{}' already exists on '{}'", OrderSchema.SCHEMA_ID, db.getName());

@@ -23,7 +23,6 @@ package org.restheart.mongodb.handlers.collection;
 import java.util.Optional;
 
 import org.bson.BsonValue;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -78,7 +77,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        if (request.getCollectionName().isEmpty() || (request.getCollectionName().startsWith("_") && !request.getCollectionName().equals(_SCHEMAS))) {
+        if (request.getCollectionName().isEmpty() || (request.getCollectionName().startsWith("_") && !request.getCollectionName().equals(MongoRequest.schemaStore()))) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, collection name cannot be empty or start with _");
             next(exchange);
             return;

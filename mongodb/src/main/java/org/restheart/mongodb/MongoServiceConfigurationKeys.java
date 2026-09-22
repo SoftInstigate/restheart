@@ -131,6 +131,16 @@ public interface MongoServiceConfigurationKeys {
     public static final String DEFAULT_CONSTRAINTS_GUARD_COLLECTION = "_constraints";
 
     /**
+     * Name of the schema store, the collection of each database holding its JSON schemas.
+     */
+    public static final String SCHEMA_STORE_KEY = "schema-store";
+
+    /**
+     * Default value of schema-store.
+     */
+    public static final String DEFAULT_SCHEMA_STORE = "_schemas";
+
+    /**
      * the key for the mongo-uri property.
      */
     public static final String MONGO_URI_KEY = "mongo-uri";
