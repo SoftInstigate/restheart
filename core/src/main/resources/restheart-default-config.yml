@@ -805,7 +805,7 @@ openAIEmbeddingProvider:
 voyageEmbeddingProvider:
   enabled: false
   api-key: $(VOYAGE_API_KEY)
-  model: voyage-3.5
+  model: voyage-4
   base-url: https://api.voyageai.com/v1
   # Optional: "query" or "document" - omitted entirely (not sent as "") when blank.
   # input-type: document

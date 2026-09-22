@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * <p>Only one model currently supports this endpoint: {@code voyage-context-4}
  * (32k-token per-chunk context window). Kept as a separate provider from
  * {@link VoyageEmbeddingProvider} (plain {@code /v1/embeddings}, default
- * {@code voyage-3.5}) rather than a mode switch on it, since the two speak
+ * {@code voyage-4}) rather than a mode switch on it, since the two speak
  * different wire formats end to end (request shape, response shape, endpoint).
  *
  * <p>Implements both {@link EmbeddingModel} — each input text sent as its own

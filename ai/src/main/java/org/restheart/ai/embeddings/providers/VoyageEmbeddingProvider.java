@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * voyageEmbeddingProvider:
  *   enabled: true
  *   api-key: <key>
- *   model: voyage-3.5        # optional, this is the default
+ *   model: voyage-4          # optional, this is the default
  *   input-type: document     # optional: "query" or "document"; omitted by default
  * }</pre>
  *
@@ -71,7 +71,7 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(VoyageEmbeddingProvider.class);
 
     private static final String DEFAULT_BASE_URL = "https://api.voyageai.com/v1";
-    private static final String DEFAULT_MODEL = "voyage-3.5";
+    private static final String DEFAULT_MODEL = "voyage-4";
 
     @Inject("config")
     private Map<String, Object> config;
