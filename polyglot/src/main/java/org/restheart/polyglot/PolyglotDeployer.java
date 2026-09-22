@@ -57,6 +57,8 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.polyglot.interceptors.JSInterceptor;
 import org.restheart.polyglot.interceptors.JSInterceptorFactory;
+import org.restheart.polyglot.python.PyInterceptorFactory;
+import org.restheart.polyglot.python.PyStringService;
 import org.restheart.polyglot.services.JSService;
 import org.restheart.polyglot.services.JSStringService;
 import org.restheart.polyglot.services.NodeService;
@@ -85,6 +87,7 @@ public class PolyglotDeployer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
     private static final Map<Path, JSPlugin> DEPLOYEES = new HashMap<>();
     private JSInterceptorFactory jsInterceptorFactory;
+    private PyInterceptorFactory pyInterceptorFactory;
 
     @Inject("registry")
     private PluginsRegistry registry;
@@ -111,6 +114,7 @@ public class PolyglotDeployer implements Initializer {
         this.mclient = Optional.ofNullable(mclientInjected);
 
         this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.config);
+        this.pyInterceptorFactory = new PyInterceptorFactory(this.mclient, this.config);
         deployAll(pluginsDirectory);
         watch(pluginsDirectory);
     }
@@ -171,8 +175,8 @@ public class PolyglotDeployer implements Initializer {
                         return;
                     }
 
-                    // Handle .mjs file events
-                    if (path.toString().endsWith(".mjs")) {
+                    // Handle .mjs and .py file events
+                    if (path.toString().endsWith(".mjs") || isPython(path)) {
                         switch (kind.name()) {
                             case "ENTRY_CREATE", "ENTRY_MODIFY" -> {
                                 undeploy(path);
@@ -392,7 +396,9 @@ public class PolyglotDeployer implements Initializer {
         }
 
         try {
-            final var srv = new JSStringService(pluginPath, this.mclient, this.config);
+            final JSService srv = isPython(pluginPath)
+                    ? new PyStringService(pluginPath, this.mclient, this.config)
+                    : new JSStringService(pluginPath, this.mclient, this.config);
 
             final var pluginRecord = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(
                     srv.name(),
@@ -400,7 +406,7 @@ public class PolyglotDeployer implements Initializer {
                     srv.secured(),
                     true,
                     srv.getClass().getName(),
-                    srv,
+                    (Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>) srv,
                     new HashMap<>());
 
             registry.plugService(pluginRecord, srv.uri(), srv.matchPolicy(), srv.secured());
@@ -459,7 +465,9 @@ public class PolyglotDeployer implements Initializer {
             throw new IllegalStateException("Cannot deploy a CommonJs interceptor, RESTHeart is running on Node");
         }
 
-        final var interceptorRecord = this.jsInterceptorFactory.create(pluginPath);
+        final var interceptorRecord = isPython(pluginPath)
+                ? this.pyInterceptorFactory.create(pluginPath)
+                : this.jsInterceptorFactory.create(pluginPath);
 
         registry.addInterceptor(interceptorRecord);
 
@@ -510,6 +518,10 @@ public class PolyglotDeployer implements Initializer {
                 LOGGER.warn("Interceptor {} was not undeployed", toUndeploy.name());
             }
         }
+    }
+
+    private static boolean isPython(final Path path) {
+        return path.toString().endsWith(".py");
     }
 
     private boolean isRunningOnNode() {

@@ -501,6 +501,16 @@
                 <scope>compile</scope>
             </dependency>
             <dependency>
+                <groupId>org.graalvm.python</groupId>
+                <artifactId>python-language</artifactId>
+                <version>${truffle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.python</groupId>
+                <artifactId>python-resources</artifactId>
+                <version>${truffle.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.graphql-java</groupId>
                 <artifactId>graphql-java</artifactId>
                 <version>26.0</version>

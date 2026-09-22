@@ -46,6 +46,16 @@
         <groupId>org.graalvm.js</groupId>
         <artifactId>js-language</artifactId>
     </dependency>
+    <!-- spike/graalpy: GraalPy, added directly (not via the python-community pom)
+         mirroring how js-language is declared -->
+    <dependency>
+        <groupId>org.graalvm.python</groupId>
+        <artifactId>python-language</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.python</groupId>
+        <artifactId>python-resources</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>

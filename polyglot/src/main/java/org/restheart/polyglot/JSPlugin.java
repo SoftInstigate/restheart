@@ -97,7 +97,7 @@ public abstract class JSPlugin {
         this.mclient = mclient;
         this.configuration = configuration;
         this.modulesReplacements = modulesReplacements;
-        this.contextQueue = new ContextQueue(engine, name, configuration, LOGGER, mclient, modulesReplacements, opts);
+        this.contextQueue = new ContextQueue(engine, name, configuration, LOGGER, mclient, modulesReplacements, opts, languageOf(handleSource));
     }
 
     /**
@@ -111,7 +111,11 @@ public abstract class JSPlugin {
         this.mclient = args.mclient();
         this.configuration = args.configuration();
         this.modulesReplacements = args.modulesReplacements();
-        this.contextQueue = new ContextQueue(engine, name, configuration, LOGGER, mclient, modulesReplacements, args.contextOptions());
+        this.contextQueue = new ContextQueue(engine, name, configuration, LOGGER, mclient, modulesReplacements, args.contextOptions(), languageOf(handleSource));
+    }
+
+    private static String languageOf(Source handleSource) {
+        return handleSource == null ? "js" : handleSource.getLanguage();
     }
 
     public String name() {

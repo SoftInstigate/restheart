@@ -72,8 +72,14 @@ public class ContextQueue {
     private final Optional<MongoClient> mclient;
     private final String modulesReplacements;
     private final Map<String, String> OPTS;
+    private final String language;
 
     public ContextQueue(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
+        this(engine, name, conf, logger, mclient, modulesReplacements, OPTS, "js");
+    }
+
+    public ContextQueue(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS, String language) {
+        this.language = language;
         this.engine = engine;
         this.name = name;
         this.conf = conf;
@@ -109,7 +115,7 @@ public class ContextQueue {
             var ctx = newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS);
             ctx.enter();
             try {
-                addBindings(ctx, name, conf, logger, mclient);
+                addBindings(ctx, name, conf, logger, mclient, language);
             } finally {
                 ctx.leave();
             }
@@ -230,7 +236,7 @@ public class ContextQueue {
      * @return the cached Value that can be executed
      */
     public static Value cacheHandleFunction(Context ctx, Source handleSource) {
-        var bindings = ctx.getBindings("js");
+        var bindings = ctx.getBindings(handleSource.getLanguage());
         if (!bindings.hasMember(CACHED_HANDLE_KEY)) {
             var handleValue = ctx.eval(handleSource);
             bindings.putMember(CACHED_HANDLE_KEY, handleValue);
@@ -249,7 +255,7 @@ public class ContextQueue {
      * @return the cached Value that can be executed
      */
     public static Value cacheResolveFunction(Context ctx, Source resolveSource) {
-        var bindings = ctx.getBindings("js");
+        var bindings = ctx.getBindings(resolveSource.getLanguage());
         if (!bindings.hasMember(CACHED_RESOLVE_KEY)) {
             var resolveValue = ctx.eval(resolveSource);
             bindings.putMember(CACHED_RESOLVE_KEY, resolveValue);
@@ -295,16 +301,42 @@ public class ContextQueue {
                                    Configuration conf,
                                    Logger logger,
                                    Optional<MongoClient> mclient) {
-        ctx.getBindings("js").putMember("LOGGER", logger);
+        addBindings(ctx, pluginName, conf, logger, mclient, "js");
+    }
+
+    /**
+     * Language-aware variant. For "python" the values are also published as
+     * builtins, so that plugin modules see LOGGER, mclient and pluginArgs as
+     * globals exactly like JS modules do (Python module globals are per-module,
+     * the "python" bindings are only the __main__ module globals).
+     */
+    public static void addBindings(Context ctx,
+                                   String pluginName,
+                                   Configuration conf,
+                                   Logger logger,
+                                   Optional<MongoClient> mclient,
+                                   String language) {
+        var bindings = ctx.getBindings(language);
+        bindings.putMember("LOGGER", logger);
 
         if (mclient.isPresent()) {
-            ctx.getBindings("js").putMember("mclient", mclient.get());
+            bindings.putMember("mclient", mclient.get());
         }
 
         var args = conf != null
                 ? conf.getOrDefault(pluginName, new HashMap<>())
                 : new HashMap<String, Object>();
 
-        ctx.getBindings("js").putMember("pluginArgs", args);
+        bindings.putMember("pluginArgs", args);
+
+        if ("python".equals(language)) {
+            ctx.eval("python", """
+                    import builtins
+                    builtins.LOGGER = LOGGER
+                    builtins.pluginArgs = pluginArgs
+                    if 'mclient' in globals():
+                        builtins.mclient = mclient
+                    """);
+        }
     }
 }

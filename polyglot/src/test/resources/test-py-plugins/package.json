@@ -1,0 +1,4 @@
+{
+    "rh:services": ["hello.py"],
+    "rh:interceptors": ["hello_interceptor.py"]
+}
