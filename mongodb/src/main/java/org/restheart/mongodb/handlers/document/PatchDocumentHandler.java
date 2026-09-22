@@ -27,6 +27,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.RequestHelper;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 
 import io.undertow.server.HttpServerExchange;
@@ -109,6 +110,15 @@ public class PatchDocumentHandler extends PipelinedHandler {
         // handle the case of error result with exception
         if (result.getCause() != null) {
             response.setInError(result.getHttpCode(), result.getCause().getMessage());
+            next(exchange);
+            return;
+        }
+
+        // a write mode that does not create answers 404 for a missing document; say which one, as a
+        // GET does, rather than an empty body an agent reads as nothing at all
+        if (result.getHttpCode() == HttpStatus.SC_NOT_FOUND) {
+            response.setInError(HttpStatus.SC_NOT_FOUND,
+                    "document " + BsonUtils.getIdAsString(request.getDocumentId(), true) + " does not exist");
             next(exchange);
             return;
         }

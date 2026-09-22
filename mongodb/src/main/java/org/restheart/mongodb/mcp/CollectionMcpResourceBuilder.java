@@ -151,7 +151,7 @@ public final class CollectionMcpResourceBuilder {
 
         builder.action("create", a -> {
             a.method("POST");
-            a.description((schemaStore ? "Creates one JSON Schema, or several at once when the body is an array of them. "
+            a.description((schemaStore ? "Creates one JSON Schema; the schema store takes one per request. "
                     : "Creates one document, or several at once when the body is an array of them. ")
                     + documentBody + " " + (rules.isEmpty() ? DUPLICATE_ID : writeGuidance(rules)));
             if (bodySchema != null) {
@@ -192,9 +192,7 @@ public final class CollectionMcpResourceBuilder {
                     + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
         });
 
-        if (!schemaStore) {
-            bulkActions(builder, bodySchema, rules);
-        }
+        bulkActions(builder, bodySchema, rules, schemaStore);
         managementActions(builder);
 
         examples(mcp).forEach(ex -> {
@@ -234,16 +232,19 @@ public final class CollectionMcpResourceBuilder {
      * <p>Bulk <em>inserts</em> are not among these: posting an array to the collection is what
      * creates many documents at once, so it is the {@code create} action, and no switch gates it.
      */
-    private static void bulkActions(McpResource.Builder builder, Map<String, Object> bodySchema, List<String> rules) {
-        builder.action("update_many", a -> {
-            a.method("PATCH").pathTemplate("/*").requires("mongo.allowBulkPatch");
-            a.description("Applies this change to every document matching the filter, in one request. "
-                    + UPDATE_BODY + " " + EXTENDED_JSON
-                    + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
-            a.param("filter", new McpResource.Param("object",
-                    "Which documents to change. The API requires it: a bulk write without a filter answers 400.",
-                    true, null, null));
-        });
+    private static void bulkActions(McpResource.Builder builder, Map<String, Object> bodySchema, List<String> rules, boolean schemaStore) {
+        // the schema store takes a schema whole: a PATCH, bulk or not, answers 405
+        if (!schemaStore) {
+            builder.action("update_many", a -> {
+                a.method("PATCH").pathTemplate("/*").requires("mongo.allowBulkPatch");
+                a.description("Applies this change to every document matching the filter, in one request. "
+                        + UPDATE_BODY + " " + EXTENDED_JSON
+                        + (rules.isEmpty() ? "" : " " + writeGuidance(rules)));
+                a.param("filter", new McpResource.Param("object",
+                        "Which documents to change. The API requires it: a bulk write without a filter answers 400.",
+                        true, null, null));
+            });
+        }
 
         builder.action("delete_many", a -> {
             a.method("DELETE").pathTemplate("/*").requires("mongo.allowBulkDelete");

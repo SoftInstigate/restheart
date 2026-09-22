@@ -105,3 +105,30 @@ Feature: JSON Schema drafts in the schema store
     And request { "_id": "bad7", "$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "properties": { "n": { "maximum": 10, "exclusiveMaximum": true } } }
     When method POST
     Then status 400
+
+  Scenario: a bulk delete works on the schema store
+    # the schema store takes one schema per request
+    * header Authorization = authHeader
+    Given path schemas
+    And request { "_id": "bulk-a", "type": "object" }
+    When method POST
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = authHeader
+    Given path schemas
+    And request { "_id": "bulk-b", "type": "object" }
+    When method POST
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = authHeader
+    Given path schemas, '*'
+    And param filter = '{"_id": {"$in": ["bulk-a", "bulk-b"]}}'
+    And param rep = 's'
+    When method DELETE
+    Then status 200
+    And match response.deleted == 2
+
+    * header Authorization = authHeader
+    Given path schemas, 'bulk-a'
+    When method GET
+    Then status 404

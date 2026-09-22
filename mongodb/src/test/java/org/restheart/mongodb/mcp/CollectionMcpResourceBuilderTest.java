@@ -138,13 +138,14 @@ public class CollectionMcpResourceBuilderTest {
 
         assertNull(resource.actions().get("update"));
         assertNull(resource.actions().get("update_many"));
-        assertNull(resource.actions().get("delete_many"));
+        assertNotNull(resource.actions().get("delete_many"), "a bulk DELETE works on the schema store");
 
         for (var name : List.of("create", "replace")) {
             var description = resource.actions().get(name).description();
             assertTrue(description.contains("JSON Schema"), name);
             assertTrue(description.contains("_$date"), name);
             assertFalse(description.contains("read some existing documents first"), name);
+            assertFalse(description.contains("array"), name + ": the schema store takes one schema per request");
         }
     }
 
