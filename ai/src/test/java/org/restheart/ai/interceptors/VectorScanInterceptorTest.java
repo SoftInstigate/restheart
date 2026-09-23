@@ -35,6 +35,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
+import org.restheart.ai.util.RequestOverrides;
 import org.restheart.ai.vectorscan.VectorSimilarity;
 import org.restheart.exchange.MongoRequest;
 
@@ -203,6 +204,58 @@ public class VectorScanInterceptorTest {
         VectorScanInterceptor.scoreAndRank(List.of(doc), "embedding", new float[]{1.0f, 0.0f}, VectorSimilarity.COSINE, 10);
 
         assertFalse(doc.containsKey("score"), "the input document must not be mutated -- scoreAndRank must clone before appending 'score'");
+    }
+
+    // -- the caps the stage cannot exceed (#755) ----------------------------------------
+
+    @Test
+    public void capped_noCap_returnsWhatWasRequested() {
+        assertEquals(500000, VectorScanInterceptor.capped(500000, 0));
+        assertEquals(500000, VectorScanInterceptor.capped(500000, -1));
+    }
+
+    @Test
+    public void capped_requestAboveTheCap_isBoundToIt() {
+        assertEquals(2000, VectorScanInterceptor.capped(10000, 2000));
+    }
+
+    @Test
+    public void capped_requestWithinTheCap_isUntouched() {
+        assertEquals(1500, VectorScanInterceptor.capped(1500, 2000));
+        assertEquals(2000, VectorScanInterceptor.capped(2000, 2000));
+    }
+
+    @Test
+    public void capOrNone_readsAPositiveNumberAndNothingElse() {
+        assertEquals(2000, VectorScanInterceptor.capOrNone(java.util.Map.of("max-candidates-cap", 2000), "max-candidates-cap"));
+        assertEquals(0, VectorScanInterceptor.capOrNone(java.util.Map.of(), "max-candidates-cap"));
+        assertEquals(0, VectorScanInterceptor.capOrNone(java.util.Map.of("max-candidates-cap", 0), "max-candidates-cap"));
+        assertEquals(0, VectorScanInterceptor.capOrNone(java.util.Map.of("max-candidates-cap", "2000"), "max-candidates-cap"));
+        assertEquals(0, VectorScanInterceptor.capOrNone(null, "max-candidates-cap"));
+    }
+
+    @Test
+    public void thePerRequestCapWinsOverTheConfiguredOne_andZeroLiftsIt() {
+        // the resolution handle() performs: RequestOverrides.intVal(request, key, configured) then capped()
+        var configured = 2000;
+
+        var perPlan = mock(MongoRequest.class);
+        when(perPlan.attachedParam(RequestOverrides.MAX_CANDIDATES_CAP)).thenReturn(500);
+        assertEquals(500, VectorScanInterceptor.capped(10000, RequestOverrides.intVal(perPlan, RequestOverrides.MAX_CANDIDATES_CAP, configured)));
+
+        var lifted = mock(MongoRequest.class);
+        when(lifted.attachedParam(RequestOverrides.MAX_CANDIDATES_CAP)).thenReturn(0);
+        assertEquals(10000, VectorScanInterceptor.capped(10000, RequestOverrides.intVal(lifted, RequestOverrides.MAX_CANDIDATES_CAP, configured)));
+
+        var none = mock(MongoRequest.class);
+        when(none.attachedParam(RequestOverrides.MAX_CANDIDATES_CAP)).thenReturn(null);
+        assertEquals(2000, VectorScanInterceptor.capped(10000, RequestOverrides.intVal(none, RequestOverrides.MAX_CANDIDATES_CAP, configured)));
+    }
+
+    @Test
+    public void cappedMessage_namesTheOptionTheRequestAndTheEffectiveValue() {
+        assertEquals("$vectorScan maxCandidates 10000 exceeds the cap of this deployment, capped to 2000",
+                VectorScanInterceptor.cappedMessage("maxCandidates", 10000, 2000));
     }
 
     @Test

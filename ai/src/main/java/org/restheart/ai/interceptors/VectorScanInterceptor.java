@@ -28,6 +28,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonInt32;
+import org.restheart.ai.util.RequestOverrides;
 import org.restheart.ai.vectorscan.VectorSimilarity;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -45,6 +46,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
+
+import io.undertow.util.Headers;
 
 /**
  * Executes {@code $vectorScan}: brute-force (exact, unindexed) vector similarity
@@ -85,6 +88,25 @@ import com.mongodb.client.MongoClient;
  *   <li>{@code limit} — top-K results returned (default configurable via
  *       {@code default-limit}, itself defaulting to 10).</li>
  * </ul>
+ *
+ * <h2>Caps the stage cannot exceed</h2>
+ * <p>The stage belongs to the collection owner; the node belongs to its operator. Scoring
+ * happens here, not in MongoDB, so on a shared node one aggregation asking for
+ * {@code maxCandidates: 500000} pulls half a million vectors into memory that every
+ * tenant shares. {@code max-candidates-cap} and {@code max-limit-cap} bound what any
+ * stage may ask for: the effective value is {@code min(requested, cap)}, where
+ * {@code requested} is the stage's value or the default. Unset (the default) means no
+ * cap, so nothing changes for existing deployments. A multi-tenant deployment attaches
+ * {@link RequestOverrides#MAX_CANDIDATES_CAP} and {@link RequestOverrides#MAX_LIMIT_CAP}
+ * per request to make the cap a property of the plan; an attached value wins over the
+ * configured one, and {@code 0} lifts it. See restheart/#755.
+ *
+ * <p>A capped request is told so: the response carries a {@code Warning: 299} header
+ * naming the requested and the effective value (the body of an aggregation is a plain
+ * array, so there is no {@code _warnings} field to put it in), the same text is added to
+ * the response's warnings for the representations that render them, and it is logged at
+ * {@code debug}. An owner comparing results with and without the cap should not have to
+ * guess why they differ.
  *
  * <h2>Filtering: real MongoDB stages, not a restricted sub-object</h2>
  * <p>Unlike {@code $vectorSearch}'s own {@code filter} (a limited operator subset),
@@ -130,6 +152,8 @@ import com.mongodb.client.MongoClient;
  *   enabled: false                 # must be explicitly enabled
  *   default-max-candidates: 10000  # used when a stage omits maxCandidates
  *   default-limit: 10              # used when a stage omits limit
+ *   # max-candidates-cap: 2000     # no stage may score more than this; unset = no cap
+ *   # max-limit-cap: 100           # no stage may return more than this; unset = no cap
  * }</pre>
  */
 @RegisterPlugin(
@@ -153,11 +177,25 @@ public class VectorScanInterceptor implements MongoInterceptor {
 
     private int defaultMaxCandidates;
     private int defaultLimit;
+    // 0 means no cap; see class javadoc, "Caps the stage cannot exceed"
+    private int maxCandidatesCap;
+    private int maxLimitCap;
 
     @OnInit
     public void setup() {
         this.defaultMaxCandidates = argOrDefault(config, "default-max-candidates", 10000);
         this.defaultLimit = argOrDefault(config, "default-limit", 10);
+        this.maxCandidatesCap = capOrNone(config, "max-candidates-cap");
+        this.maxLimitCap = capOrNone(config, "max-limit-cap");
+    }
+
+    /**
+     * A cap from the configuration: {@code 0} (no cap) when the key is absent, blank or not a
+     * positive number, so a commented-out or emptied key behaves like a missing one.
+     */
+    static int capOrNone(Map<String, Object> config, String key) {
+        var v = config == null ? null : config.get(key);
+        return v instanceof Number n && n.intValue() > 0 ? n.intValue() : 0;
     }
 
     @Override
@@ -229,13 +267,19 @@ public class VectorScanInterceptor implements MongoInterceptor {
                 ? scanArgs.getString("similarity").getValue()
                 : VectorSimilarity.COSINE;
 
-        var maxCandidates = scanArgs.containsKey("maxCandidates") && scanArgs.get("maxCandidates").isNumber()
+        var requestedMaxCandidates = scanArgs.containsKey("maxCandidates") && scanArgs.get("maxCandidates").isNumber()
                 ? scanArgs.get("maxCandidates").asNumber().intValue()
                 : defaultMaxCandidates;
 
-        var limit = scanArgs.containsKey("limit") && scanArgs.get("limit").isNumber()
+        var requestedLimit = scanArgs.containsKey("limit") && scanArgs.get("limit").isNumber()
                 ? scanArgs.get("limit").asNumber().intValue()
                 : defaultLimit;
+
+        // the caps are the operator's, per node or per request (plan), and the stage cannot exceed them
+        var maxCandidates = bound(request, response, "maxCandidates", requestedMaxCandidates,
+                RequestOverrides.intVal(request, RequestOverrides.MAX_CANDIDATES_CAP, maxCandidatesCap));
+        var limit = bound(request, response, "limit", requestedLimit,
+                RequestOverrides.intVal(request, RequestOverrides.MAX_LIMIT_CAP, maxLimitCap));
 
         var beforeStages = new ArrayList<>(stages.subList(0, scanIndex));
         beforeStages.add(new BsonDocument("$limit", new BsonInt32(maxCandidates)));
@@ -285,6 +329,31 @@ public class VectorScanInterceptor implements MongoInterceptor {
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * The value the scan runs with: {@code requested} unless a cap is set and it is above it.
+     * When it is, the response says so in a {@code Warning: 299} header and in its warnings,
+     * and the debug log records it.
+     */
+    private static int bound(MongoRequest request, MongoResponse response, String option, int requested, int cap) {
+        var effective = capped(requested, cap);
+        if (effective != requested) {
+            var message = cappedMessage(option, requested, effective);
+            response.addWarning(message);
+            response.getHeaders().add(Headers.WARNING, "299 - \"" + message + "\"");
+            LOGGER.debug("vectorScanInterceptor: {} for {}/{}", message, request.getDBName(), request.getCollectionName());
+        }
+        return effective;
+    }
+
+    /** {@code min(requested, cap)}; a cap of zero or less is no cap. */
+    static int capped(int requested, int cap) {
+        return cap > 0 && requested > cap ? cap : requested;
+    }
+
+    static String cappedMessage(String option, int requested, int effective) {
+        return "$vectorScan " + option + " " + requested + " exceeds the cap of this deployment, capped to " + effective;
+    }
 
     static BsonArray scoreAndRank(List<BsonDocument> candidates, String path, float[] queryVector, String similarity, int limit) {
         record Scored(BsonDocument doc, double score) {

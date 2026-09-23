@@ -395,6 +395,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     }
 
     private final static String LOCATION_ETAG = LOCATION_STRING + ", " + ETAG_STRING;
+    // an aggregation may answer with Warning: 299 when a plugin bounded what its stage asked for
+    // ($vectorScan's max-candidates-cap, restheart/#755); a browser reads it only if exposed
+    private final static String ETAG_WARNING = ETAG_STRING + ", Warning";
 
     // Optimized: only non-CORS-safelisted headers
     // Note: Content-Type is safelisted only for form values, not for application/json
@@ -433,6 +436,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
 
             case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS ->
                 mr.isPost() ? LOCATION_ETAG : ETAG_STRING;
+
+            case AGGREGATION -> ETAG_WARNING;
 
             default -> ETAG_STRING;
         };

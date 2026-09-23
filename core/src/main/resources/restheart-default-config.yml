@@ -791,9 +791,19 @@ rerankingInterceptor:
 # no vector search index of any kind. See https://github.com/SoftInstigate/restheart/issues/712
 vectorScanInterceptor:
   enabled: false
-  # Caps how many documents get scored per query, enforced via an injected $limit.
+  # Used when the stage omits maxCandidates: how many documents get scored per query,
+  # enforced via an injected $limit.
   default-max-candidates: 10000
+  # Used when the stage omits limit: how many results come back.
   default-limit: 10
+  # Hard caps no stage can exceed: the effective value is min(what the stage asks for, cap).
+  # Scoring runs in RESTHeart, not in MongoDB, so on a shared node they bound how many vectors
+  # one query may pull into memory. Unset means no cap. A capped response carries a
+  # "Warning: 299" header saying so. Per request, a multi-tenant deployment attaches
+  # override-ai-max-candidates-cap and override-ai-max-limit-cap instead (0 lifts the cap).
+  # See https://github.com/SoftInstigate/restheart/issues/755
+  # max-candidates-cap: 2000
+  # max-limit-cap: 100
 
 # Embedding providers (Provider<EmbeddingModel>) - enable the ones you use.
 openAIEmbeddingProvider:

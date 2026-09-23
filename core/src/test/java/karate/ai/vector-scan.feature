@@ -124,6 +124,55 @@ Scenario: stages after $vectorScan run for real, via the $documents bridge
     And match response[0].vector == '#notpresent'
     And match response[0]._id == '#notpresent'
 
+# The caps (#755) come from the node's operator, not from the stage: on a shared node they bound
+# how many vectors one query pulls into memory. The suite's static config sets none, so the
+# scenarios above run uncapped; these attach a per-request cap through test-plugins'
+# aiVectorScanCapOverrideInterceptor (?_ai-max-candidates-cap-override, ?_ai-max-limit-cap-override),
+# as the Cloud deployment layer does from the tenant's plan. A capped response says so in a
+# "Warning: 299" header: an aggregation's body is a plain array, with no room for _warnings.
+
+Scenario: a maxCandidates cap the stage exceeds bounds the scan, and the response says so
+    # 4 documents, no maxCandidates in the stage so the default 10000 is asked for; a cap of 3 means
+    # only 3 documents reach the scorer, whatever the limit (k=10) would allow
+    * header Authorization = adminAuth
+    Given path coll + '/_aggrs/scanAll'
+    And param avars = '{"q": [1, 0], "k": 10}'
+    And param rep = 's'
+    And param _ai-max-candidates-cap-override = '3'
+    When method GET
+    Then status 200
+    And assert response.length == 3
+    And match responseHeaders['Warning'][0] contains '$vectorScan maxCandidates 10000'
+    And match responseHeaders['Warning'][0] contains 'capped to 3'
+    # a browser on another origin reads Warning only if the service exposes it
+    And match responseHeaders['Access-Control-Expose-Headers'][0] contains 'Warning'
+
+Scenario: a limit cap the stage exceeds truncates the results, and the response says so
+    * header Authorization = adminAuth
+    Given path coll + '/_aggrs/scanAll'
+    And param avars = '{"q": [1, 0], "k": 10}'
+    And param rep = 's'
+    And param _ai-max-limit-cap-override = '2'
+    When method GET
+    Then status 200
+    And assert response.length == 2
+    And match response[0]._id == 'docA'
+    And match response[1]._id == 'docD'
+    And match responseHeaders['Warning'][0] contains '$vectorScan limit 10'
+    And match responseHeaders['Warning'][0] contains 'capped to 2'
+
+Scenario: a cap the stage stays within changes nothing, and there is no warning
+    * header Authorization = adminAuth
+    Given path coll + '/_aggrs/scanAll'
+    And param avars = '{"q": [1, 0], "k": 2}'
+    And param rep = 's'
+    And param _ai-max-candidates-cap-override = '10000'
+    And param _ai-max-limit-cap-override = '2'
+    When method GET
+    Then status 200
+    And assert response.length == 2
+    And match responseHeaders['Warning'] == '#notpresent'
+
 Scenario: a $vectorScan stage missing the required 'path' is rejected with 400
     * header Authorization = adminAuth
     Given path coll + '/_aggrs/scanMissingPath'

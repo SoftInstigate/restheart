@@ -122,6 +122,17 @@ public final class RequestOverrides {
 
     public static final String RERANK_PROVIDER = "override-ai-rerank-provider";
 
+    // ── vectorScanInterceptor overrides ──────────────────────────────────────
+    /**
+     * A hard cap on {@code $vectorScan}'s {@code maxCandidates} for this request, whatever the
+     * stage asks for. Wins over the static {@code max-candidates-cap}; {@code 0} or a negative
+     * value means no cap. The stage is the collection owner's, the cap is the node operator's:
+     * on a shared node a plan decides how many vectors one query may pull in memory (#755).
+     */
+    public static final String MAX_CANDIDATES_CAP = "override-ai-max-candidates-cap";
+    /** Same as {@link #MAX_CANDIDATES_CAP}, for the stage's {@code limit}; static key {@code max-limit-cap}. */
+    public static final String MAX_LIMIT_CAP = "override-ai-max-limit-cap";
+
     private RequestOverrides() {
     }
 
