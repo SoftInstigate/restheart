@@ -80,6 +80,50 @@ class VarsInterpolatorCustomOperatorTest {
     }
 
     @Test
+    void anOperatorLearnsWhichStageAndKeyItIsUsedUnder() throws Exception {
+        var opName = uniqueName();
+        var seen = new CustomOperator.Placement[1];
+        CustomOperatorRegistryImpl.getInstance().register(new CustomOperator() {
+            @Override
+            public String name() {
+                return opName;
+            }
+
+            @Override
+            public BsonValue resolve(Request<?> request, BsonValue arg) {
+                return new BsonString("without placement");
+            }
+
+            @Override
+            public BsonValue resolve(Request<?> request, BsonValue arg, Placement placement) {
+                seen[0] = placement;
+                return new BsonString("placed");
+            }
+        });
+
+        // {"$vectorScan": {"path": "bodyVector", "queryVector": {"$op": {"$var": "q"}}}}
+        var stage = new BsonDocument("$vectorScan", new BsonDocument("path", new BsonString("bodyVector"))
+                .append("queryVector", new BsonDocument("$" + opName, new BsonDocument("$var", new BsonString("q")))));
+        var values = new BsonDocument("q", new BsonString("hello"));
+
+        var result = VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, values);
+
+        assertEquals(new BsonString("placed"), result.asDocument().getDocument("$vectorScan").get("queryVector"));
+        assertEquals("$vectorScan", seen[0].operator());
+        assertEquals("queryVector", seen[0].key());
+        assertEquals("bodyVector", seen[0].argString("path"));
+
+        // deeper under the same key, the key is kept; at the top level there is no placement
+        var nested = new BsonDocument("$vectorScan", new BsonDocument("path", new BsonString("v"))
+                .append("queryVector", new BsonDocument("inner", new BsonDocument("$" + opName, new BsonString("x")))));
+        VarsInterpolator.interpolate(VAR_OPERATOR.$var, nested, values);
+        assertEquals("queryVector", seen[0].key());
+
+        VarsInterpolator.interpolate(VAR_OPERATOR.$var, new BsonDocument("$" + opName, new BsonString("x")), values);
+        assertEquals(null, seen[0]);
+    }
+
+    @Test
     void requestIsPassedThroughToTheOperator() throws Exception {
         var opName = uniqueName();
         var req = mock(Request.class);

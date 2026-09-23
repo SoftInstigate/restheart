@@ -173,6 +173,15 @@ public class VarsInterpolator {
     }
 
     public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {
+        return interpolate(operator, bson, values, request, null);
+    }
+
+    /**
+     * The walk itself, carrying where in the structure it is: the nearest enclosing single-key
+     * {@code $operator} document and the key under it, handed to a {@link CustomOperator} as its
+     * {@link CustomOperator.Placement} so it can read its surroundings (restheart#753).
+     */
+    private static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request, CustomOperator.Placement placement) throws InvalidMetadataException, QueryVariableNotBoundException {
         if (bson == null) {
             return null;
         }
@@ -209,8 +218,8 @@ public class VarsInterpolator {
                 if (custom.isPresent()) {
                     var op = custom.get();
                     var rawArg = _obj.get("$" + op.name());
-                    var resolvedArg = interpolate(operator, rawArg, values, request);
-                    return op.resolve(request, resolvedArg);
+                    var resolvedArg = interpolate(operator, rawArg, values, request, placement);
+                    return op.resolve(request, resolvedArg, placement);
                 }
             }
 
@@ -220,7 +229,7 @@ public class VarsInterpolator {
             var ret = new BsonDocument();
 
             for (var key : _obj.keySet()) {
-                ret.put(key, interpolate(operator, _obj.get(key), values, request));
+                ret.put(key, interpolate(operator, _obj.get(key), values, request, placementOf(_obj, key, placement)));
             }
 
             return ret;
@@ -229,9 +238,9 @@ public class VarsInterpolator {
 
             for (var el : bson.asArray().getValues()) {
                 if (el.isDocument()) {
-                    ret.add(interpolate(operator, el, values, request));
+                    ret.add(interpolate(operator, el, values, request, placement));
                 } else if (el.isArray()) {
-                    ret.add(interpolate(operator, el, values, request));
+                    ret.add(interpolate(operator, el, values, request, placement));
                 } else {
                     ret.add(el);
                 }
@@ -241,6 +250,21 @@ public class VarsInterpolator {
         } else {
             return bson;
         }
+    }
+
+    /**
+     * The placement of what sits under {@code key} in {@code obj}: a new one when {@code obj} is a
+     * single-key {@code $operator} document with a document value, its argument's key when
+     * {@code obj} is the args document of the current placement, else the current one unchanged.
+     */
+    private static CustomOperator.Placement placementOf(BsonDocument obj, String key, CustomOperator.Placement current) {
+        if (obj.size() == 1 && key.startsWith("$") && obj.get(key).isDocument()) {
+            return new CustomOperator.Placement(key, obj.get(key).asDocument(), null);
+        }
+        if (current != null && current.key() == null && current.args() == obj) {
+            return new CustomOperator.Placement(current.operator(), current.args(), key);
+        }
+        return current;
     }
 
     /**
