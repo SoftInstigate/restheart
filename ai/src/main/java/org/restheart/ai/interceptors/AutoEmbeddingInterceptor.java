@@ -45,11 +45,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Automatically generates an embedding vector for documents written to collections
- * that declare {@code vectorSearch.textField} / {@code vectorSearch.embeddingField}
- * metadata, using whichever {@code Provider<EmbeddingModel>} is named in this
- * interceptor's own {@code embedding-provider} configuration (e.g.
- * {@code openAIEmbeddingProvider}, {@code voyageEmbeddingProvider},
+ * Automatically generates the embedding vectors of documents written to collections
+ * that declare embedding rules in their {@code vectorSearch} metadata (see
+ * {@link CollectionEmbeddingConfig}), using the {@code Provider<EmbeddingModel>} each rule
+ * names, or the one in this interceptor's own {@code embedding-provider} configuration
+ * (e.g. {@code openAIEmbeddingProvider}, {@code voyageEmbeddingProvider},
  * {@code ollamaEmbeddingProvider}).
  *
  * <p>This is the write-side counterpart to Phase 1's MongoDB {@code autoEmbed}
@@ -69,13 +69,22 @@ import org.slf4j.LoggerFactory;
  * <pre>{@code
  * PATCH /mydb/articles
  * { "vectorSearch": { "textField": "description", "embeddingField": "embedding" } }
+ *
+ * PATCH /mydb/legal
+ * { "vectorSearch": [
+ *     { "textField": "summary", "embeddingField": "summaryVector", "model": "voyage-law-2" },
+ *     { "textField": "body", "embeddingField": "bodyVector",
+ *       "provider": "voyageContextualEmbeddingProvider", "model": "voyage-context-4" }
+ * ] }
  * }</pre>
  *
  * <p>Documents written with {@code POST}/{@code PUT}/{@code PATCH} (single document
- * or a bulk array) that have a string value in {@code textField} get an
- * {@code embeddingField} array appended before the write reaches MongoDB. Documents
- * without a string {@code textField} value are left untouched. Multiple documents in
- * one request are embedded in a single batched call to the provider.
+ * or a bulk array) get, for every rule whose {@code textField} they carry as a string,
+ * that rule's {@code embeddingField} array appended before the write reaches MongoDB.
+ * A document without a rule's text field is left as it is for that rule: a {@code PATCH}
+ * that carries only {@code summary} re-embeds {@code summaryVector} and leaves
+ * {@code bodyVector} untouched. One provider call per rule per request, with every
+ * document that has the rule's text field batched in it.
  *
  * <h2>Multi-tenant</h2>
  * <p>Per request, a deployment's tenant-config interceptor may attach
@@ -98,8 +107,6 @@ import org.slf4j.LoggerFactory;
 public class AutoEmbeddingInterceptor implements MongoInterceptor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutoEmbeddingInterceptor.class);
-
-    static final String VECTOR_SEARCH_ELEMENT_NAME = "vectorSearch";
 
     @Inject("config")
     private Map<String, Object> config;
@@ -130,43 +137,51 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
         if (!request.isHandledBy("mongo") || !request.isWriteDocument() || response.isInError()) {
             return false;
         }
-        if (findVectorSearchConfig(request.getCollectionProps()) == null) {
-            return false;
-        }
-        // the collection may name its own provider, model and vector length: attached as the
-        // request overrides the providers read, before the provider in force is decided
-        CollectionEmbeddingConfig.attach(request, request.getCollectionProps(), defaultProviderName);
-        return !effectiveProviderName(request).isBlank();
+        return !CollectionEmbeddingConfig.rules(request.getCollectionProps()).isEmpty();
     }
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var vsConfig = findVectorSearchConfig(request.getCollectionProps());
-        if (vsConfig == null) {
-            return;
-        }
-
-        var content = request.getContent();
-        var docs = asDocumentList(content);
+        var docs = asDocumentList(request.getContent());
         if (docs.isEmpty()) {
             return;
         }
 
-        // findVectorSearchConfig() already validated both fields are present and are strings
-        var textField = vsConfig.get("textField").asString().getValue();
-        var embeddingField = vsConfig.get("embeddingField").asString().getValue();
+        for (var rule : CollectionEmbeddingConfig.rules(request.getCollectionProps())) {
+            var targets = new ArrayList<BsonDocument>();
+            var texts = new ArrayList<String>();
+            collectEmbeddableTexts(docs, rule.textField(), targets, texts);
+            if (texts.isEmpty()) {
+                continue;
+            }
 
-        var targets = new ArrayList<BsonDocument>();
-        var texts = new ArrayList<String>();
-        collectEmbeddableTexts(docs, textField, targets, texts);
+            // the rule may name its own provider, model and vector length: attached as the request
+            // overrides the providers read, for this rule only, and put back for the next
+            var previous = CollectionEmbeddingConfig.attach(request, rule, defaultProviderName);
+            try {
+                embed(request, response, rule, targets, texts);
+            } finally {
+                CollectionEmbeddingConfig.restore(request, previous);
+            }
+        }
+    }
 
-        if (texts.isEmpty()) {
+    /** Embeds the texts of one rule and writes the vectors to its field; a failure is a warning, not a refused write. */
+    private void embed(MongoRequest request, MongoResponse response, CollectionEmbeddingConfig.EmbeddingRule rule,
+            List<BsonDocument> targets, List<String> texts) {
+        var providerName = effectiveProviderName(request);
+        if (providerName.isBlank()) {
+            LOGGER.debug("autoEmbeddingInterceptor: no embedding provider for '{}', neither on the rule nor configured nor overridden", rule.embeddingField());
             return;
         }
 
-        var providerName = effectiveProviderName(request);
         var model = resolveEmbeddingModel(providerName);
         if (model == null) {
+            // the write goes through, as it does when the provider fails: without the vector, and
+            // the response says why, since a collection that looks configured and embeds nothing
+            // would otherwise surface only as a search that finds nothing
+            response.addWarning("auto-embedding of '" + rule.embeddingField() + "' skipped: embedding provider '"
+                    + providerName + "' not found, not enabled, or does not supply an EmbeddingModel");
             return;
         }
 
@@ -174,13 +189,13 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
         try {
             vectors = model.embed(texts, request);
         } catch (Exception e) {
-            LOGGER.error("autoEmbeddingInterceptor: failed to generate embeddings via '{}': {}",
-                    providerName, e.getMessage(), e);
-            response.addWarning("auto-embedding failed: " + e.getMessage());
+            LOGGER.error("autoEmbeddingInterceptor: failed to generate embeddings for '{}' via '{}': {}",
+                    rule.embeddingField(), providerName, e.getMessage(), e);
+            response.addWarning("auto-embedding of '" + rule.embeddingField() + "' failed: " + e.getMessage());
             return;
         }
 
-        applyEmbeddings(targets, vectors, embeddingField);
+        applyEmbeddings(targets, vectors, rule.embeddingField());
     }
 
     /**
@@ -198,31 +213,6 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
     // -------------------------------------------------------------------------
     // Pure helpers below take already-extracted BSON values (not MongoRequest/
     // MongoResponse) so they can be unit-tested without constructing an exchange.
-
-    /**
-     * Extracts the {@code vectorSearch} block from collection metadata, or
-     * {@code null} if the collection doesn't declare a valid one (must have both
-     * {@code textField} and {@code embeddingField} as strings).
-     */
-    static BsonDocument findVectorSearchConfig(BsonDocument collProps) {
-        if (collProps == null) {
-            return null;
-        }
-
-        var vs = collProps.get(VECTOR_SEARCH_ELEMENT_NAME);
-        if (vs == null || !vs.isDocument()) {
-            return null;
-        }
-
-        var doc = vs.asDocument();
-        var textField = doc.get("textField");
-        var embeddingField = doc.get("embeddingField");
-        if (textField == null || !textField.isString() || embeddingField == null || !embeddingField.isString()) {
-            return null;
-        }
-
-        return doc;
-    }
 
     /**
      * Normalizes a request body into a list of documents: a single document

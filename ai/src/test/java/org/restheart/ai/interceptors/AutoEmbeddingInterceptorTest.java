@@ -22,7 +22,6 @@ package org.restheart.ai.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -36,37 +35,7 @@ import org.junit.jupiter.api.Test;
 
 public class AutoEmbeddingInterceptorTest {
 
-    // -- findVectorSearchConfig --------------------------------------------
-
-    @Test
-    public void nullCollectionProps_returnsNull() {
-        assertNull(AutoEmbeddingInterceptor.findVectorSearchConfig(null));
-    }
-
-    @Test
-    public void noVectorSearchBlock_returnsNull() {
-        var collProps = new BsonDocument("someOtherField", new BsonString("x"));
-        assertNull(AutoEmbeddingInterceptor.findVectorSearchConfig(collProps));
-    }
-
-    @Test
-    public void vectorSearchMissingEmbeddingField_returnsNull() {
-        var vs = new BsonDocument("textField", new BsonString("description"));
-        var collProps = new BsonDocument("vectorSearch", vs);
-        assertNull(AutoEmbeddingInterceptor.findVectorSearchConfig(collProps));
-    }
-
-    @Test
-    public void validVectorSearchBlock_isReturned() {
-        var vs = new BsonDocument("textField", new BsonString("description"))
-                .append("embeddingField", new BsonString("embedding"));
-        var collProps = new BsonDocument("vectorSearch", vs);
-
-        var found = AutoEmbeddingInterceptor.findVectorSearchConfig(collProps);
-
-        assertEquals("description", found.getString("textField").getValue());
-        assertEquals("embedding", found.getString("embeddingField").getValue());
-    }
+    // the vectorSearch metadata is read by CollectionEmbeddingConfig, tested in its own class
 
     // -- asDocumentList ------------------------------------------------------
 

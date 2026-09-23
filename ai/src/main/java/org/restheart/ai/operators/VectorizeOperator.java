@@ -97,10 +97,19 @@ public class VectorizeOperator implements CustomOperator {
         }
         var text = arg.asString().getValue();
 
-        // the question is embedded with the model of the collection it is searched in, when the
+        // the question is embedded with the model of the vectors it is searched against, when the
         // collection names one: the same overrides autoEmbeddingInterceptor attaches on a write
         if (request instanceof MongoRequest mongoRequest) {
-            CollectionEmbeddingConfig.attach(mongoRequest, mongoRequest.getCollectionProps(), defaultProviderName);
+            var rules = CollectionEmbeddingConfig.rules(mongoRequest.getCollectionProps());
+            if (rules.size() == 1) {
+                CollectionEmbeddingConfig.attach(mongoRequest, rules.get(0), defaultProviderName);
+            } else if (rules.size() > 1) {
+                // which of the collection's vector fields this question is for is not said, and
+                // guessing would embed it with a model its vectors may not match
+                var fields = rules.stream().map(CollectionEmbeddingConfig.EmbeddingRule::embeddingField).toList();
+                throw new IllegalArgumentException("$vectorize: the collection has " + rules.size()
+                        + " embedding rules, on " + fields + ", and this $vectorize does not say which vector field it is for");
+            }
         }
 
         var providerName = RequestOverrides.str(request, RequestOverrides.EMBEDDING_PROVIDER, defaultProviderName);

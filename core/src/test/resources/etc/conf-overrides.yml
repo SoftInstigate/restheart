@@ -810,3 +810,12 @@
 # in for a multi-tenant deployment that decides the caps per tenant (#755). Used
 # by karate/ai/vector-scan.feature only; every other request is untouched.
 /aiVectorScanCapOverrideInterceptor/enabled: true
+
+# Test embedding providers: deterministic vectors, 3 and 5 long, no network and no key. A
+# collection whose vectorSearch rules name them gets real-looking vectors on every CI leg, so
+# karate/ai/embedding-rules.feature can verify several rules on one collection (#752) without
+# the live provider that embedding-provider.feature needs. Nothing names them but that feature.
+/fakeEmbeddingProvider3d/enabled: true
+/fakeEmbeddingProvider5d/enabled: true
+# and one whose every call fails, to verify a write survives a failed embedding
+/fakeEmbeddingProviderFailing/enabled: true

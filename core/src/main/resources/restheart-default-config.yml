@@ -770,6 +770,12 @@ autoEmbeddingInterceptor:
   enabled: false
   embedding-provider: ""
 
+# Refuses malformed vectorSearch collection metadata (the embedding rules autoEmbeddingInterceptor
+# and $vectorize read) when it is written, with a 400 naming the rule: a rule without textField
+# or embeddingField, or two rules on the same embeddingField. No options.
+vectorSearchMetadataChecker:
+  enabled: true
+
 # Registers the $vectorize aggregation operator (embeds text to a vector inline, at
 # query time, anywhere in a pipeline).
 vectorizeOperator:
