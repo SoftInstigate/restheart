@@ -100,6 +100,20 @@ public class VectorScanInterceptorTest {
     }
 
     @Test
+    public void secondVectorScanStage_findsASecondOneAfterTheFirst_orNothing() {
+        List<BsonDocument> twice = List.of(
+                stage("$match", new BsonDocument()),
+                stage("$vectorScan", new BsonDocument()),
+                stage("$project", new BsonDocument()),
+                stage("$vectorScan", new BsonDocument()));
+        assertEquals(3, VectorScanInterceptor.secondVectorScanStage(twice, 1));
+
+        List<BsonDocument> once = List.of(stage("$vectorScan", new BsonDocument()), stage("$project", new BsonDocument()));
+        assertEquals(-1, VectorScanInterceptor.secondVectorScanStage(once, 0));
+        assertEquals(-1, VectorScanInterceptor.secondVectorScanStage(List.of(stage("$vectorScan", new BsonDocument())), 0));
+    }
+
+    @Test
     public void findStagesArray_returnsStagesForMatchingUri() {
         var request = mock(MongoRequest.class);
         var stagesArray = new BsonArray(List.of(stage("$vectorScan", new BsonDocument())));

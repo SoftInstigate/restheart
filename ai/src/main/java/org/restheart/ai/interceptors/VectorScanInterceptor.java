@@ -108,6 +108,10 @@ import io.undertow.util.Headers;
  * {@code debug}. An owner comparing results with and without the cap should not have to
  * guess why they differ.
  *
+ * <p>One {@code $vectorScan} per pipeline: the stages after it are bridged back to MongoDB,
+ * which does not know the stage, so a second one is refused with a {@code 400} up front
+ * rather than failing there with an error that names nothing.
+ *
  * <h2>Filtering: real MongoDB stages, not a restricted sub-object</h2>
  * <p>Unlike {@code $vectorSearch}'s own {@code filter} (a limited operator subset),
  * anything placed <em>before</em> {@code $vectorScan} in the pipeline — {@code $match},
@@ -233,6 +237,13 @@ public class VectorScanInterceptor implements MongoInterceptor {
             // e.g. $vectorScan was itself wrapped in an unbound $ifvar and interpolated
             // away — nothing to scan; let the (now vectorScan-free) pipeline run normally
             LOGGER.debug("vectorScanInterceptor: no $vectorScan stage after interpolation for {}/{}, letting standard handling proceed", dbName, collName);
+            return;
+        }
+
+        var second = secondVectorScanStage(stages, scanIndex);
+        if (second >= 0) {
+            // the stages after the first are bridged back to MongoDB, which does not know this one
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "$vectorScan: one per pipeline; a second one is at stage " + second);
             return;
         }
 
@@ -440,6 +451,12 @@ public class VectorScanInterceptor implements MongoInterceptor {
             }
         }
         return -1;
+    }
+
+    /** The index of a {@code $vectorScan} after the one at {@code first}, or -1: a pipeline gets one. */
+    static int secondVectorScanStage(List<BsonDocument> stages, int first) {
+        var after = indexOfVectorScanStage(stages.subList(first + 1, stages.size()));
+        return after < 0 ? -1 : first + 1 + after;
     }
 
     static int indexOfVectorScanStage(BsonArray stages) {

@@ -173,6 +173,15 @@ Scenario: a cap the stage stays within changes nothing, and there is no warning
     And assert response.length == 2
     And match responseHeaders['Warning'] == '#notpresent'
 
+Scenario: a pipeline with two $vectorScan stages is rejected with 400 naming the second
+    * header Authorization = adminAuth
+    Given path coll + '/_aggrs/scanTwice'
+    And param avars = '{"q": [1, 0]}'
+    When method GET
+    Then status 400
+    And match response.message contains 'one per pipeline'
+    And match response.message contains 'stage 2'
+
 Scenario: a $vectorScan stage missing the required 'path' is rejected with 400
     * header Authorization = adminAuth
     Given path coll + '/_aggrs/scanMissingPath'

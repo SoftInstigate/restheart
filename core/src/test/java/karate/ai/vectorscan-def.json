@@ -39,6 +39,15 @@
             ]
         },
         {
+            "uri": "scanTwice",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": { "path": "vector", "queryVector": { "$var": "q" } } },
+                { "$project": { "vector": 0 } },
+                { "$vectorScan": { "path": "vector", "queryVector": { "$var": "q" } } }
+            ]
+        },
+        {
             "uri": "scanMissingPath",
             "type": "pipeline",
             "stages": [
