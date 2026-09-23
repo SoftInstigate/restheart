@@ -807,6 +807,6 @@
 
 # Test interceptor: attaches override-ai-max-candidates-cap / override-ai-max-limit-cap when
 # ?_ai-max-candidates-cap-override=<n> / ?_ai-max-limit-cap-override=<n> is present, standing
-# in for the Cloud deployment layer that derives the caps from the tenant's plan (#755). Used
+# in for a multi-tenant deployment that decides the caps per tenant (#755). Used
 # by karate/ai/vector-scan.feature only; every other request is untouched.
 /aiVectorScanCapOverrideInterceptor/enabled: true

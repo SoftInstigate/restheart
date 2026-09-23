@@ -128,7 +128,7 @@ Scenario: stages after $vectorScan run for real, via the $documents bridge
 # how many vectors one query pulls into memory. The suite's static config sets none, so the
 # scenarios above run uncapped; these attach a per-request cap through test-plugins'
 # aiVectorScanCapOverrideInterceptor (?_ai-max-candidates-cap-override, ?_ai-max-limit-cap-override),
-# as the Cloud deployment layer does from the tenant's plan. A capped response says so in a
+# as a multi-tenant deployment does per tenant. A capped response says so in a
 # "Warning: 299" header: an aggregation's body is a plain array, with no room for _warnings.
 
 Scenario: a maxCandidates cap the stage exceeds bounds the scan, and the response says so

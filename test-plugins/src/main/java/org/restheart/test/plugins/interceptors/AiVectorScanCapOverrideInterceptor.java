@@ -27,8 +27,8 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
 
 /**
- * Test interceptor that stands in for the Cloud deployment layer, which caps what a
- * {@code $vectorScan} stage may ask for according to the tenant's plan (#755).
+ * Test interceptor that stands in for a multi-tenant deployment, which caps what a
+ * {@code $vectorScan} stage may ask for per tenant (#755).
  *
  * <p>Activates only when the request carries {@code _ai-max-candidates-cap-override=<n>} and/or
  * {@code _ai-max-limit-cap-override=<n>}, attaching {@code override-ai-max-candidates-cap} and/or
