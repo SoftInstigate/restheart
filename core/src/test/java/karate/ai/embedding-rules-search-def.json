@@ -1,0 +1,46 @@
+{
+    "vectorSearch": [
+        { "textField": "summary", "embeddingField": "summaryVector", "provider": "fakeEmbeddingProvider3d" },
+        { "textField": "body",    "embeddingField": "bodyVector",    "provider": "fakeEmbeddingProvider5d" }
+    ],
+    "aggrs": [
+        {
+            "uri": "scanBody",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": { "path": "bodyVector", "queryVector": { "$vectorize": { "$var": "q" } }, "limit": 10 } }
+            ]
+        },
+        {
+            "uri": "scanSummary",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": { "path": "summaryVector", "queryVector": { "$vectorize": { "$var": "q" } }, "limit": 10 } }
+            ]
+        },
+        {
+            "uri": "explicitField",
+            "type": "pipeline",
+            "stages": [
+                { "$limit": 1 },
+                { "$addFields": { "qv": { "$vectorize": { "text": { "$var": "q" }, "field": "bodyVector" } } } },
+                { "$project": { "_id": 0, "qv": 1 } }
+            ]
+        },
+        {
+            "uri": "scanUnknownField",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": { "path": "nope", "queryVector": { "$vectorize": { "$var": "q" } }, "limit": 10 } }
+            ]
+        },
+        {
+            "uri": "ambiguous",
+            "type": "pipeline",
+            "stages": [
+                { "$limit": 1 },
+                { "$addFields": { "qv": { "$vectorize": { "$var": "q" } } } }
+            ]
+        }
+    ]
+}

@@ -117,6 +117,17 @@ public final class CollectionEmbeddingConfig {
     }
 
     /**
+     * The rule that writes the given vector field.
+     *
+     * @param collectionProps the collection's properties, may be null
+     * @param embeddingField the vector field
+     * @return the rule; empty when no rule writes that field
+     */
+    public static Optional<EmbeddingRule> ruleFor(BsonDocument collectionProps, String embeddingField) {
+        return rules(collectionProps).stream().filter(r -> r.embeddingField().equals(embeddingField)).findFirst();
+    }
+
+    /**
      * Why a {@code vectorSearch} value cannot be stored: null when it can.
      *
      * <p>Refused, with the rule named: a value that is neither an object nor a list of objects; a

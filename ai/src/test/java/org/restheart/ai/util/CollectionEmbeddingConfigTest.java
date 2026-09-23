@@ -86,6 +86,14 @@ public class CollectionEmbeddingConfigTest {
         assertTrue(CollectionEmbeddingConfig.rules(props("{ \"textField\": \"description\" }")).isEmpty());
     }
 
+    @Test
+    public void ruleFor_findsTheRuleWritingAVectorField() {
+        var props = props("[ { \"textField\": \"a\", \"embeddingField\": \"av\" }, { \"textField\": \"b\", \"embeddingField\": \"bv\", \"model\": \"m\" } ]");
+        assertEquals("m", CollectionEmbeddingConfig.ruleFor(props, "bv").orElseThrow().model());
+        assertTrue(CollectionEmbeddingConfig.ruleFor(props, "cv").isEmpty());
+        assertTrue(CollectionEmbeddingConfig.ruleFor(null, "av").isEmpty());
+    }
+
     // -- invalidReason: refused when written, naming the rule --------------------------------
 
     @Test

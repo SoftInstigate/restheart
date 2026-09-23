@@ -191,6 +191,105 @@ Scenario: a rule naming a provider that does not exist does not refuse the write
     Then status 200
     And match response.vector == '#notpresent'
 
+# $vectorize embeds the question with the model of the vectors it is searched against (#753): as
+# the queryVector of a $vectorScan (or $vectorSearch) it reads the stage's path; elsewhere the long
+# form names the field. The fake providers answer vectors of 3 and 5: a question embedded with the
+# wrong rule has the wrong length, and $vectorScan then scores nothing, so a non-empty result proves
+# the rule was the right one.
+
+Scenario: as the queryVector of a $vectorScan, $vectorize embeds with the rule of the stage's path
+    * header Authorization = adminAuth
+    Given path db + '/search'
+    And request read('embedding-rules-search-def.json')
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    * header Authorization = adminAuth
+    Given path db + '/search/s1'
+    And param wm = 'upsert'
+    And request { "summary": "first summary", "body": "first body" }
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    * header Authorization = adminAuth
+    Given path db + '/search/s2'
+    And param wm = 'upsert'
+    And request { "summary": "second summary", "body": "second body" }
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    * header Authorization = adminAuth
+    Given path db + '/search/s3'
+    And param wm = 'upsert'
+    And request { "body": "a body with no summary" }
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    # bodyVector is 5 long: only a question embedded by the 5d rule scores the three documents
+    * header Authorization = adminAuth
+    Given path db + '/search/_aggrs/scanBody'
+    And param avars = '{"q": "a question"}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And assert response.length == 3
+    And match each response[*].score == '#number'
+
+    # summaryVector is 3 long, and only two documents have one
+    * header Authorization = adminAuth
+    Given path db + '/search/_aggrs/scanSummary'
+    And param avars = '{"q": "a question"}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And assert response.length == 2
+    And match each response[*].score == '#number'
+
+Scenario: outside a search stage, the long form names the vector field
+    * header Authorization = adminAuth
+    Given path db + '/search'
+    And request read('embedding-rules-search-def.json')
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    * header Authorization = adminAuth
+    Given path db + '/search/s1'
+    And param wm = 'upsert'
+    And request { "summary": "first summary", "body": "first body" }
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    * header Authorization = adminAuth
+    Given path db + '/search/_aggrs/explicitField'
+    And param avars = '{"q": "a question"}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response[0].qv == '#[5] #number'
+
+Scenario: a path no rule writes, or a $vectorize that cannot tell which rule, is refused with 400 naming the fields
+    * header Authorization = adminAuth
+    Given path db + '/search'
+    And request read('embedding-rules-search-def.json')
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    * header Authorization = adminAuth
+    Given path db + '/search/_aggrs/scanUnknownField'
+    And param avars = '{"q": "a question"}'
+    When method GET
+    Then status 400
+    And match response.message contains "'nope'"
+    And match response.message contains "bodyVector"
+
+    * header Authorization = adminAuth
+    Given path db + '/search/_aggrs/ambiguous'
+    And param avars = '{"q": "a question"}'
+    When method GET
+    Then status 400
+    And match response.message contains "does not say which vector field"
+    And match response.message contains "summaryVector"
+
 Scenario: the object form, one rule not wrapped in a list, behaves exactly as before
     * header Authorization = adminAuth
     Given path db + '/articles'
