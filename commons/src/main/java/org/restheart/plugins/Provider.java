@@ -101,6 +101,14 @@ import com.google.common.reflect.TypeToken;
  * being provided, enabling runtime type checking and proper dependency resolution.
  * </p>
  *
+ * <p>
+ * <strong>Discovery:</strong><br>
+ * The plugin scanner sees public classes only. A provider must be a public class that implements
+ * {@code Provider} itself, or through a public superclass: one that reaches it through a
+ * non-public superclass is not found at all, and no error says so. Share code between providers
+ * through a helper class, not through a package-private base class.
+ * </p>
+ *
  * @param <T> the type of object this provider supplies
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @see Inject
