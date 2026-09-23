@@ -811,6 +811,11 @@
 # by karate/ai/vector-scan.feature only; every other request is untouched.
 /aiVectorScanCapOverrideInterceptor/enabled: true
 
+# Test interceptor: attaches override-mongo-instance-base-url when ?_instance-base-url-override=<url>
+# is present, standing in for a multi-tenant deployment that gives each tenant its own public base
+# URL (#749). Used by karate/location-header.feature only.
+/instanceBaseUrlOverrideInterceptor/enabled: true
+
 # Test embedding providers: deterministic vectors, 3 and 5 long, no network and no key. A
 # collection whose vectorSearch rules name them gets real-looking vectors on every CI leg, so
 # karate/ai/embedding-rules.feature can verify several rules on one collection (#752) without
