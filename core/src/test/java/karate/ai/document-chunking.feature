@@ -33,9 +33,11 @@ Background:
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1
 
+    # one rule without a filter, to _chunks: every file of the bucket is chunked, as the node-wide
+    # configuration did before rules per bucket (#754); the suite sets apply-to-all to false
     * header Authorization = adminAuth
     Given path bucket
-    And request {}
+    And request { "chunking": [ { "name": "all", "target-collection": "_chunks" } ] }
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1
 

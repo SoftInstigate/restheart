@@ -171,6 +171,12 @@
         mergeRequest: >
           {"team": "@user.team._id"}
 
+    # #754: `test` may write to this bucket and nowhere near the chunks collections its rules
+    # fill; karate/ai/chunking-rules.feature proves the chunks are written anyway
+    - role: test
+      predicate: path-prefix[path="/ai-test-chunk-rules/docs.files"]
+      priority: 100
+
     - role: $unauthenticated
       predicate: path[path="/auth/invitation"] and method[value="GET"]
       priority: 100
@@ -822,5 +828,7 @@
 # the live provider that embedding-provider.feature needs. Nothing names them but that feature.
 /fakeEmbeddingProvider3d/enabled: true
 /fakeEmbeddingProvider5d/enabled: true
+# and a contextual one, whose vectors say how many chunks were embedded together (#754)
+/fakeContextualEmbeddingProvider/enabled: true
 # and one whose every call fails, to verify a write survives a failed embedding
 /fakeEmbeddingProviderFailing/enabled: true

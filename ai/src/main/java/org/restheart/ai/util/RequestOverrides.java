@@ -93,10 +93,9 @@ public final class RequestOverrides {
     /** Overrides which {@code Provider<EmbeddingModel>} plugin name to use for this request. */
     public static final String EMBEDDING_PROVIDER = "override-ai-embedding-provider";
 
-    // ── documentChunkingInterceptor overrides ────────────────────────────────
+    // ── documentChunkingInterceptor overrides: the defaults of a tenant, for a rule that sets none ──
     public static final String CHUNK_SIZE = "override-ai-chunk-size";
     public static final String CHUNK_OVERLAP = "override-ai-chunk-overlap";
-    public static final String TARGET_COLLECTION = "override-ai-target-collection";
 
     // ── rerankingInterceptor overrides ───────────────────────────────────────
     public static final String ATLAS_API_KEY = "override-ai-atlas-api-key";

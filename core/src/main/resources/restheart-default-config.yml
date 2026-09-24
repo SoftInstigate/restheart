@@ -751,18 +751,30 @@ vectorSearchIndexListInterceptor:
 vectorSearchIndexDeleteInterceptor:
   enabled: true
 
-# Extracts text (Apache Tika) from every file uploaded to any GridFS bucket, splits it
-# into overlapping chunks and stores them in target-collection. embedding-provider is
-# optional: leave blank to rely on MongoDB's own autoEmbed index type on the chunks
-# collection instead of restheart-ai embedding them itself. A filename with a recognized
-# source code extension (.java, .py, .go, ...) is chunked at function/class boundaries
-# instead, with no overlap between chunks -- see CodeAwareSplitter.
+# Splits the files uploaded to a GridFS bucket into text chunks (Apache Tika extracts the text) and
+# writes them to a collection, as the bucket's "chunking" metadata says: rules with a filter on the
+# file (contentType, extension, metadata), a target-collection, and optionally chunk-size,
+# chunk-overlap and splitter (auto, text, code); the first rule that matches is applied. A bucket
+# without "chunking" is never chunked. The chunker computes no vectors: the target collection embeds
+# the chunks with its own vectorSearch rules, e.g. { "textField": "text", "embeddingField": "vector",
+# "groupBy": "fileId" } to embed a file's chunks together with a contextual model. See
+# https://github.com/SoftInstigate/restheart/issues/754
 documentChunkingInterceptor:
   enabled: false
+  # defaults for a rule that sets none
   chunk-size: 1000
   chunk-overlap: 200
-  target-collection: _chunks
-  embedding-provider: ""
+
+# Refuses malformed "chunking" rules in a bucket's metadata when it is written, with a 400 naming
+# the rule: no target-collection, an unknown key, a filter value of the wrong kind, an embedding key
+# that belongs to the target collection's vectorSearch rules. No options.
+chunkingMetadataChecker:
+  enabled: true
+
+# Before a bulk delete of files in a bucket with chunking rules, notes which files it may remove, so
+# documentChunkingInterceptor deletes their chunks afterwards. Acts on nothing else. No options.
+chunkedFilesDeleteCollector:
+  enabled: true
 
 # Embeds a text field automatically on write. Also requires the target collection to
 # declare { "vectorSearch": { "textField": "...", "embeddingField": "..." } } metadata.

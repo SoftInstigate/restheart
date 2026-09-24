@@ -21,121 +21,13 @@
 package org.restheart.ai.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Set;
 
-import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
-import org.restheart.exchange.Request;
-import org.restheart.plugins.PluginRecord;
-import org.restheart.plugins.PluginsRegistry;
-import org.restheart.plugins.Provider;
-import org.restheart.plugins.ai.ContextualEmbeddingModel;
-import org.restheart.plugins.ai.EmbeddingModel;
 
-@SuppressWarnings("unchecked")
 public class DocumentChunkingInterceptorTest {
-
-    private static DocumentChunkingInterceptor newInterceptor(PluginsRegistry registry) throws Exception {
-        var interceptor = new DocumentChunkingInterceptor();
-        var registryField = DocumentChunkingInterceptor.class.getDeclaredField("registry");
-        registryField.setAccessible(true);
-        registryField.set(interceptor, registry);
-        return interceptor;
-    }
-
-    private static PluginsRegistry registryWithProvider(String name, boolean enabled, EmbeddingModel model) {
-        var provider = mock(Provider.class);
-        when(provider.get(null)).thenReturn(model);
-
-        var record = mock(PluginRecord.class);
-        when(record.getName()).thenReturn(name);
-        when(record.isEnabled()).thenReturn(enabled);
-        when(record.getInstance()).thenReturn(provider);
-
-        var registry = mock(PluginsRegistry.class);
-        when(registry.getProviders()).thenReturn((Set) Set.of(record));
-        return registry;
-    }
-
-    private static BsonDocument chunkDoc(String text) {
-        return new BsonDocument("text", new BsonString(text));
-    }
-
-    @Test
-    public void embedChunks_appendsVectorToEachDocumentInOrder() throws Exception {
-        EmbeddingModel model = (texts, request) -> List.of(
-                new float[]{0.1f, 0.2f}, new float[]{0.3f, 0.4f});
-        var interceptor = newInterceptor(registryWithProvider("openAIEmbeddingProvider", true, model));
-
-        var docs = List.of(chunkDoc("first"), chunkDoc("second"));
-        interceptor.embedChunks(docs, List.of("first", "second"), "openAIEmbeddingProvider", null, new BsonString("f1"), "db");
-
-        assertEquals(0.1, docs.get(0).getArray("vector").get(0).asDouble().getValue(), 1e-6);
-        assertEquals(0.3, docs.get(1).getArray("vector").get(0).asDouble().getValue(), 1e-6);
-    }
-
-    @Test
-    public void embedChunks_prefersContextualEmbeddingWhenAvailable() throws Exception {
-        class ContextualModel implements EmbeddingModel, ContextualEmbeddingModel {
-            boolean contextualCalled = false;
-            boolean plainCalled = false;
-
-            @Override
-            public List<float[]> embed(List<String> texts, Request<?> request) {
-                plainCalled = true;
-                return List.of(new float[]{9f}, new float[]{9f});
-            }
-
-            @Override
-            public List<float[]> embedChunks(List<String> chunksOfSameDocument, Request<?> request) {
-                contextualCalled = true;
-                return List.of(new float[]{0.1f}, new float[]{0.2f});
-            }
-        }
-
-        var model = new ContextualModel();
-        var interceptor = newInterceptor(registryWithProvider("voyageContextualEmbeddingProvider", true, model));
-
-        var docs = List.of(chunkDoc("first"), chunkDoc("second"));
-        interceptor.embedChunks(docs, List.of("first", "second"), "voyageContextualEmbeddingProvider", null, new BsonString("f1"), "db");
-
-        assertTrue(model.contextualCalled, "embedChunks (contextual) should have been called");
-        assertFalse(model.plainCalled, "embed (independent) should not have been called when contextual is available");
-        assertEquals(0.1, docs.get(0).getArray("vector").get(0).asDouble().getValue(), 1e-6);
-        assertEquals(0.2, docs.get(1).getArray("vector").get(0).asDouble().getValue(), 1e-6);
-    }
-
-    @Test
-    public void embedChunks_missingProvider_leavesDocumentsWithoutVector() throws Exception {
-        var registry = mock(PluginsRegistry.class);
-        when(registry.getProviders()).thenReturn((Set) Set.of());
-        var interceptor = newInterceptor(registry);
-
-        var docs = List.of(chunkDoc("first"));
-        interceptor.embedChunks(docs, List.of("first"), "missingProvider", null, new BsonString("f1"), "db");
-
-        assertFalse(docs.get(0).containsKey("vector"));
-    }
-
-    @Test
-    public void embedChunks_embeddingCallThrows_leavesDocumentsWithoutVector() throws Exception {
-        EmbeddingModel model = (texts, request) -> {
-            throw new RuntimeException("boom");
-        };
-        var interceptor = newInterceptor(registryWithProvider("p", true, model));
-
-        var docs = List.of(chunkDoc("first"));
-        interceptor.embedChunks(docs, List.of("first"), "p", null, new BsonString("f1"), "db");
-
-        assertFalse(docs.get(0).containsKey("vector"));
-    }
 
     @Test
     public void chunkText_codeFilename_usesCodeAwareSplitting() {
@@ -237,5 +129,50 @@ public class DocumentChunkingInterceptorTest {
     public void chunks_areStrippedOfLeadingAndTrailingWhitespace() {
         var chunks = DocumentChunkingInterceptor.splitIntoChunks("  padded text  ", 1000, 200);
         assertEquals(List.of("padded text"), chunks);
+    }
+
+    // -- the splitter a bucket's rule chooses (#754) ---------------------------------------
+
+    @Test
+    public void splitterText_cutsCodeInCharacterWindows_withTheOverlap() {
+        var code = "public class Foo {\n  void a() { int x = 1; }\n  void b() { int y = 2; }\n}\n";
+        var asText = DocumentChunkingInterceptor.chunkText(code, "Foo.java", 20, 5, "text", 0);
+        var asCode = DocumentChunkingInterceptor.chunkText(code, "Foo.java", 20, 5, "auto", 0);
+        assertEquals(DocumentChunkingInterceptor.splitIntoChunks(code, 20, 5), asText);
+        org.junit.jupiter.api.Assertions.assertNotEquals(asText, asCode);
+    }
+
+    @Test
+    public void splitterAutoOrCode_onProse_areCharacterWindows() {
+        var text = "one two three four five six seven eight nine ten";
+        assertEquals(DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3), DocumentChunkingInterceptor.chunkText(text, "notes.txt", 10, 3, "code", 0));
+        assertEquals(DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3), DocumentChunkingInterceptor.chunkText(text, "notes.txt", 10, 3, "auto", 0));
+    }
+
+    // -- where the chunks go and come from (#754) ------------------------------------------
+
+    @Test
+    public void sourceOf_namesTheDatabaseTheBucketAndTheFile() {
+        var oid = new org.bson.types.ObjectId("6ab3f24aa5aadbd6420c76a2");
+        assertEquals("mydb/docs.files/6ab3f24aa5aadbd6420c76a2", DocumentChunkingInterceptor.sourceOf("mydb", "docs.files", new org.bson.BsonObjectId(oid)));
+        assertEquals("mydb/docs.files/manual-1", DocumentChunkingInterceptor.sourceOf("mydb", "docs.files", new org.bson.BsonString("manual-1")));
+        assertEquals("mydb/docs.files/42", DocumentChunkingInterceptor.sourceOf("mydb", "docs.files", new org.bson.BsonInt32(42)));
+    }
+
+    @Test
+    public void pathOf_keepsTheMountTheRequestAddressedTheBucketWith() {
+        var req = org.mockito.Mockito.mock(org.restheart.exchange.MongoRequest.class);
+        org.mockito.Mockito.when(req.getCollectionName()).thenReturn("docs.files");
+        org.mockito.Mockito.when(req.getPath()).thenReturn("/mydb/docs.files");
+        assertEquals("/mydb/manuals_chunks", DocumentChunkingInterceptor.pathOf(req, "manuals_chunks"));
+        org.mockito.Mockito.when(req.getPath()).thenReturn("/docs.files/abc");
+        assertEquals("/manuals_chunks", DocumentChunkingInterceptor.pathOf(req, "manuals_chunks"));
+    }
+
+    @Test
+    public void targetsOf_eachCollectionOnce_inRuleOrder() {
+        var rules = org.restheart.ai.util.BucketChunkingConfig.rules(org.bson.BsonDocument.parse("""
+            { "chunking": [ { "target-collection": "a" }, { "target-collection": "b" }, { "target-collection": "a" } ] }"""));
+        assertEquals(List.of("a", "b"), DocumentChunkingInterceptor.targetsOf(rules));
     }
 }

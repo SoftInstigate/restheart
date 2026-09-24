@@ -61,7 +61,14 @@ Scenario: uploading a small text file produces a chunk with a real embedding vec
 
     * header Authorization = adminAuth
     Given path '/ai-test-embed-chunking/docs.files'
-    And request {}
+    And request { "chunking": [ { "name": "all", "target-collection": "_chunks" } ] }
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    # the chunker only splits: the chunks collection embeds them, with the provider the request overrides
+    * header Authorization = adminAuth
+    Given path '/ai-test-embed-chunking/_chunks'
+    And request { "vectorSearch": { "textField": "text", "embeddingField": "vector" } }
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1
 
@@ -140,7 +147,7 @@ Scenario: $vectorize resolves inline to a real embedding vector inside an aggreg
     And match vec == '#array'
     And assert vec.length > 0
 
-Scenario: documentChunkingInterceptor uses voyageContextualEmbeddingProvider via a per-request override
+Scenario: the chunks collection embeds a file's chunks together with voyageContextualEmbeddingProvider
     * header Authorization = adminAuth
     Given path '/ai-test-embed-contextual'
     And request {}
@@ -149,7 +156,14 @@ Scenario: documentChunkingInterceptor uses voyageContextualEmbeddingProvider via
 
     * header Authorization = adminAuth
     Given path '/ai-test-embed-contextual/docs.files'
-    And request {}
+    And request { "chunking": [ { "name": "all", "target-collection": "_chunks" } ] }
+    When method PUT
+    Then assert [200, 201].indexOf(responseStatus) != -1
+
+    # groupBy fileId: the chunks of a file, written in one request, are embedded as one document
+    * header Authorization = adminAuth
+    Given path '/ai-test-embed-contextual/_chunks'
+    And request { "vectorSearch": { "textField": "text", "embeddingField": "vector", "groupBy": "fileId" } }
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1
 
