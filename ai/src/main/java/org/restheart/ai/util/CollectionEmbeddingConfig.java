@@ -55,6 +55,11 @@ import org.restheart.exchange.Request;
  * <p>The object form, one rule not wrapped in a list, is what every deployment had before the list
  * existed and stays valid: it reads as a list of one.
  *
+ * <p>{@code groupBy} names a field whose value groups the documents of one write: those with the
+ * same value are embedded together by a contextual model, each vector aware of the others, as the
+ * chunks of a file are with {@code "groupBy": "fileId"}. Without it every document is embedded on
+ * its own, and a model that is not contextual ignores it.
+ *
  * <p>{@link #attach} turns a rule into the same request overrides the providers already read, so
  * nothing else changes: {@code autoEmbeddingInterceptor} attaches them before embedding a write,
  * {@code $vectorize} before embedding a question. The overrides live on the request, so a caller
@@ -67,6 +72,7 @@ public final class CollectionEmbeddingConfig {
     static final String PROVIDER = "provider";
     static final String MODEL = "model";
     static final String DIMENSIONS = "dimensions";
+    static final String GROUP_BY = "groupBy";
 
     /**
      * One embedding rule of a collection.
@@ -76,8 +82,13 @@ public final class CollectionEmbeddingConfig {
      * @param provider the {@code Provider<EmbeddingModel>} plugin name, or null for the default
      * @param model the model, or null for the provider's default
      * @param dimensions the vector length, or null for the model's default
+     * @param groupBy a field whose value groups the documents of one write, embedded together by a
+     *        contextual model, e.g. {@code fileId} on the chunks of a file; null for each on its own
      */
-    public record EmbeddingRule(String textField, String embeddingField, String provider, String model, Integer dimensions) {
+    public record EmbeddingRule(String textField, String embeddingField, String provider, String model, Integer dimensions, String groupBy) {
+        public EmbeddingRule(String textField, String embeddingField, String provider, String model, Integer dimensions) {
+            this(textField, embeddingField, provider, model, dimensions, null);
+        }
     }
 
     private CollectionEmbeddingConfig() {
@@ -175,7 +186,7 @@ public final class CollectionEmbeddingConfig {
                 return name + " needs a non-blank string " + required;
             }
         }
-        for (var optional : List.of(PROVIDER, MODEL)) {
+        for (var optional : List.of(PROVIDER, MODEL, GROUP_BY)) {
             var v = rule.get(optional);
             if (v != null && !v.isNull() && str(v) == null) {
                 return name + " (embeddingField '" + rule.getString(EMBEDDING_FIELD).getValue() + "'): " + optional + " must be a non-blank string";
@@ -300,7 +311,7 @@ public final class CollectionEmbeddingConfig {
         }
         var d = doc.get(DIMENSIONS);
         var dimensions = d != null && d.isNumber() && d.asNumber().intValue() > 0 ? Integer.valueOf(d.asNumber().intValue()) : null;
-        return new EmbeddingRule(textField, embeddingField, str(doc.get(PROVIDER)), str(doc.get(MODEL)), dimensions);
+        return new EmbeddingRule(textField, embeddingField, str(doc.get(PROVIDER)), str(doc.get(MODEL)), dimensions, str(doc.get(GROUP_BY)));
     }
 
     private static String str(BsonValue v) {

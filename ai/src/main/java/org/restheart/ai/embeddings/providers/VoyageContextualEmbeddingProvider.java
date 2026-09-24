@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -123,25 +124,116 @@ public class VoyageContextualEmbeddingProvider implements Provider<EmbeddingMode
         return instance;
     }
 
+    /*
+     * The limits of the contextualized embeddings endpoint (https://docs.voyageai.com, verified on
+     * 2026-09-24): 32,000 tokens per document with voyage-context-4, 120,000 tokens, 16,000 chunks and
+     * 1,000 documents per request. Tokens are estimated from characters, generously, since Voyage's
+     * tokenizer is not at hand here: kept below the limits by a margin.
+     */
+    static final int MAX_TOKENS_PER_DOCUMENT = 30_000;
+    static final int MAX_TOKENS_PER_REQUEST = 110_000;
+    static final int MAX_CHUNKS_PER_REQUEST = 16_000;
+    static final int MAX_DOCUMENTS_PER_REQUEST = 1_000;
+
+    /** A generous estimate: three characters a token, fewer than the usual four, so a window never overflows. */
+    static int estimatedTokens(String text) {
+        return text == null ? 1 : text.length() / 3 + 1;
+    }
+
+    /**
+     * The chunks of one document as consecutive windows under {@code maxTokens}: the document itself
+     * when it fits. Each chunk is embedded with the context of its window. A single chunk over the
+     * limit is a window of its own, which Voyage then refuses.
+     */
+    static List<List<String>> windows(List<String> chunks, int maxTokens) {
+        var windows = new ArrayList<List<String>>();
+        var current = new ArrayList<String>();
+        var tokens = 0;
+        for (var chunk : chunks) {
+            var t = estimatedTokens(chunk);
+            if (!current.isEmpty() && tokens + t > maxTokens) {
+                windows.add(current);
+                current = new ArrayList<>();
+                tokens = 0;
+            }
+            current.add(chunk);
+            tokens += t;
+        }
+        if (!current.isEmpty()) {
+            windows.add(current);
+        }
+        return windows;
+    }
+
+    /** The documents in requests, in order, each request under the endpoint's limits. */
+    static List<List<List<String>>> requests(List<List<String>> documents, int maxTokens, int maxChunks, int maxDocuments) {
+        var requests = new ArrayList<List<List<String>>>();
+        var current = new ArrayList<List<String>>();
+        int tokens = 0, chunks = 0;
+        for (var doc : documents) {
+            var t = doc.stream().mapToInt(VoyageContextualEmbeddingProvider::estimatedTokens).sum();
+            if (!current.isEmpty() && (tokens + t > maxTokens || chunks + doc.size() > maxChunks || current.size() + 1 > maxDocuments)) {
+                requests.add(current);
+                current = new ArrayList<>();
+                tokens = 0;
+                chunks = 0;
+            }
+            current.add(doc);
+            tokens += t;
+            chunks += doc.size();
+        }
+        if (!current.isEmpty()) {
+            requests.add(current);
+        }
+        return requests;
+    }
+
     private final class Model implements EmbeddingModel, ContextualEmbeddingModel {
         @Override
         public List<float[]> embed(List<String> texts, Request<?> request) {
             if (texts == null || texts.isEmpty()) {
                 return List.of();
             }
-            return call(texts.stream().map(List::of).toList(), request, false);
+            // each text its own document: independent vectors, in as many requests as the limits need
+            return callAll(texts.stream().map(List::of).toList(), request);
         }
 
+        /**
+         * One document's chunks, embedded together. A document over the endpoint's window is embedded
+         * in consecutive windows, each chunk with the context of its own; windows share requests up
+         * to the endpoint's limits. A failed request leaves its chunks without a vector, null in the
+         * result, and the others keep theirs; only when every request fails is the call a failure.
+         */
         @Override
         public List<float[]> embedChunks(List<String> chunksOfSameDocument, Request<?> request) {
             if (chunksOfSameDocument == null || chunksOfSameDocument.isEmpty()) {
                 return List.of();
             }
-            return call(List.of(chunksOfSameDocument), request, true);
+            return callAll(windows(chunksOfSameDocument, MAX_TOKENS_PER_DOCUMENT), request);
+        }
+
+        private List<float[]> callAll(List<List<String>> documents, Request<?> request) {
+            var result = new ArrayList<float[]>();
+            RuntimeException firstFailure = null;
+            var succeeded = 0;
+            for (var batch : requests(documents, MAX_TOKENS_PER_REQUEST, MAX_CHUNKS_PER_REQUEST, MAX_DOCUMENTS_PER_REQUEST)) {
+                try {
+                    result.addAll(call(batch, request));
+                    succeeded++;
+                } catch (RuntimeException e) {
+                    LOGGER.error("voyageContextualEmbeddingProvider: a request of {} documents failed: {}", batch.size(), e.getMessage());
+                    firstFailure = firstFailure == null ? e : firstFailure;
+                    batch.forEach(doc -> doc.forEach(chunk -> result.add(null)));
+                }
+            }
+            if (succeeded == 0 && firstFailure != null) {
+                throw firstFailure;
+            }
+            return result;
         }
     }
 
-    private List<float[]> call(List<List<String>> groups, Request<?> request, boolean grouped) {
+    private List<float[]> call(List<List<String>> groups, Request<?> request) {
         var apiKey = RequestOverrides.str(request, RequestOverrides.VOYAGE_CONTEXTUAL_API_KEY, defaultApiKey);
         var model = RequestOverrides.str(request, RequestOverrides.VOYAGE_CONTEXTUAL_MODEL, defaultModel);
         var baseUrl = RequestOverrides.str(request, RequestOverrides.VOYAGE_CONTEXTUAL_BASE_URL, defaultBaseUrl);
@@ -166,9 +258,7 @@ public class VoyageContextualEmbeddingProvider implements Provider<EmbeddingMode
                         + httpResp.statusCode() + ": " + httpResp.body());
             }
 
-            return grouped
-                    ? VoyageContextualWireEmbeddings.parseChunksOfOneDocument(httpResp.body())
-                    : VoyageContextualWireEmbeddings.parseIndependent(httpResp.body());
+            return VoyageContextualWireEmbeddings.parseDocuments(httpResp.body());
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

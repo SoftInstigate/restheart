@@ -123,6 +123,15 @@ public class CollectionEmbeddingConfigTest {
     }
 
     @Test
+    public void groupBy_isReadFromTheRule_andMustBeANonBlankString() {
+        var rule = CollectionEmbeddingConfig.rules(props("{ \"textField\": \"text\", \"embeddingField\": \"vector\", \"groupBy\": \"fileId\" }")).get(0);
+        assertEquals("fileId", rule.groupBy());
+        assertNull(CollectionEmbeddingConfig.rules(props("{ \"textField\": \"t\", \"embeddingField\": \"e\" }")).get(0).groupBy());
+        assertEquals("vectorSearch (embeddingField 'e'): groupBy must be a non-blank string",
+                reason("{ \"textField\": \"t\", \"embeddingField\": \"e\", \"groupBy\": 3 }"));
+    }
+
+    @Test
     public void invalidReason_optionalFieldsOfTheWrongKind() {
         assertEquals("vectorSearch (embeddingField 'e'): model must be a non-blank string", reason("{ \"textField\": \"t\", \"embeddingField\": \"e\", \"model\": 3 }"));
         assertEquals("vectorSearch (embeddingField 'e'): provider must be a non-blank string", reason("{ \"textField\": \"t\", \"embeddingField\": \"e\", \"provider\": \"\" }"));

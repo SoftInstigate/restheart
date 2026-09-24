@@ -112,4 +112,60 @@ public class VoyageContextualEmbeddingProviderTest {
         assertArrayEquals(new float[]{2.0f}, result.get(1));
         assertArrayEquals(new float[]{3.0f}, result.get(2));
     }
+
+    // -- windows and requests under the endpoint's limits (#754) ---------------------------
+
+    private static List<String> chunksOf(int count, int chars) {
+        return java.util.stream.IntStream.range(0, count).mapToObj(i -> "x".repeat(chars)).toList();
+    }
+
+    @Test
+    public void windows_aDocumentThatFits_isOneWindow() {
+        var chunks = chunksOf(10, 300);
+        assertEquals(List.of(chunks), VoyageContextualEmbeddingProvider.windows(chunks, 30_000));
+    }
+
+    @Test
+    public void windows_aLargeDocument_consecutiveWindowsUnderTheLimit_inOrder() {
+        // 600 chunks of 1,000 characters, about 334 tokens each: 89 fit in 30,000
+        var chunks = new java.util.ArrayList<String>();
+        for (int i = 0;i < 600;i++) {
+            chunks.add(i + ":" + "x".repeat(1000 - String.valueOf(i).length() - 1));
+        }
+        var windows = VoyageContextualEmbeddingProvider.windows(chunks, 30_000);
+        assertEquals(7, windows.size());
+        assertEquals(chunks, windows.stream().flatMap(List::stream).toList());
+        windows.forEach(w -> assertTrue(w.stream().mapToInt(VoyageContextualEmbeddingProvider::estimatedTokens).sum() <= 30_000));
+    }
+
+    @Test
+    public void windows_aSingleChunkOverTheLimit_isAWindowOfItsOwn() {
+        var chunks = List.of("small", "x".repeat(100_000), "small");
+        assertEquals(3, VoyageContextualEmbeddingProvider.windows(chunks, 30_000).size());
+    }
+
+    @Test
+    public void requests_underTheTokenChunkAndDocumentLimits() {
+        var windows = VoyageContextualEmbeddingProvider.windows(chunksOf(600, 1000), 30_000);
+        // 7 windows of about 29,700 tokens: 3 fit in 110,000, so 3 requests, of 3, 3 and 1
+        var requests = VoyageContextualEmbeddingProvider.requests(windows, 110_000, 16_000, 1_000);
+        assertEquals(3, requests.size());
+        assertEquals(windows, requests.stream().flatMap(List::stream).toList());
+
+        var singles = chunksOf(2_500, 10).stream().map(List::of).toList();
+        assertEquals(3, VoyageContextualEmbeddingProvider.requests(singles, 110_000, 16_000, 1_000).size());
+    }
+
+    @Test
+    public void parseDocuments_flattensDocumentsThenChunks_inTheirIndexOrder() {
+        var response = """
+            { "data": [
+                { "index": 1, "data": [ { "index": 1, "embedding": [4.0] }, { "index": 0, "embedding": [3.0] } ] },
+                { "index": 0, "data": [ { "index": 1, "embedding": [2.0] }, { "index": 0, "embedding": [1.0] } ] } ] }""";
+        var result = VoyageContextualWireEmbeddings.parseDocuments(response);
+        assertEquals(4, result.size());
+        for (int i = 0;i < 4;i++) {
+            assertEquals(i + 1f, result.get(i)[0]);
+        }
+    }
 }
