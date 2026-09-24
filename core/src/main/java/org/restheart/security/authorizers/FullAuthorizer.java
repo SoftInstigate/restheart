@@ -75,6 +75,7 @@ public class FullAuthorizer implements Authorizer, PermissionEnumerator {
     public boolean isAllowed(final Request request) {
         return true;
     }
+
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAuthenticationRequired(final Request request) {

@@ -30,14 +30,14 @@ public class FakeContextualEmbeddingProvider implements Provider<EmbeddingModel>
     private static final class Model implements EmbeddingModel, ContextualEmbeddingModel {
         @Override
         public List<float[]> embed(List<String> texts, Request<?> request) {
-            return texts.stream().map(t -> new float[] { 1f, 0f }).toList();
+            return texts.stream().map(t -> new float[]{1f, 0f}).toList();
         }
 
         @Override
         public List<float[]> embedChunks(List<String> chunks, Request<?> request) {
             var vectors = new ArrayList<float[]>(chunks.size());
             for (int i = 0;i < chunks.size();i++) {
-                vectors.add(new float[] { chunks.size(), i });
+                vectors.add(new float[]{chunks.size(), i});
             }
             return vectors;
         }

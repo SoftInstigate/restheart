@@ -407,7 +407,7 @@ public final class McpResource {
         }
 
         public Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue,
-                Map<String, Param> properties) {
+                     Map<String, Param> properties) {
             this(type, description, required, enumValues, defaultValue, properties, null);
         }
 

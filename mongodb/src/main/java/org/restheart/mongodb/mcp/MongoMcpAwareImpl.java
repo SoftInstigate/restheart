@@ -40,7 +40,6 @@ import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.mongodb.utils.MongoMountResolver;
 import org.restheart.mongodb.utils.MongoMountResolverImpl;
-import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
@@ -237,6 +236,7 @@ public final class MongoMcpAwareImpl {
                 + " A database that is in scope but not mounted is not reachable over HTTP, and cannot be advertised.",
                 ctx.scope());
     }
+
     // No describeTemplates() override: McpService.syncResourceRegistry() now derives a
     // resource-specific template directly from each readable action's own declared params
     // (generic across every McpAware implementation, not just Mongo's) — there's no longer a

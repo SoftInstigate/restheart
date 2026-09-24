@@ -85,7 +85,7 @@ public class OAuthResourceChallengeMechanismTest {
         exchange.setRequestPath(path);
 
         var map = new HeaderMap();
-        for (int i = 0; i < headers.length; i += 2) {
+        for (int i = 0;i < headers.length;i += 2) {
             map.put(HttpString.tryFromString(headers[i]), headers[i + 1]);
         }
         when(exchange.getRequestHeaders()).thenReturn(map);
@@ -145,7 +145,7 @@ public class OAuthResourceChallengeMechanismTest {
 
     @Test
     public void elsewhereItSaysNothing() throws Exception {
-        for (var path : new String[] { "/", "/coll", "/mcpx", "/.well-known/oauth-protected-resource/mcp" }) {
+        for (var path : new String[]{"/", "/coll", "/mcpx", "/.well-known/oauth-protected-resource/mcp"}) {
             var exchange = request(path, "Host", "t1.example.com");
             assertEquals(200, mechanism(true, true, Map.of()).sendChallenge(exchange, null).getDesiredResponseCode(), path);
             assertNull(exchange.getResponseHeaders().getFirst(Headers.WWW_AUTHENTICATE), path);

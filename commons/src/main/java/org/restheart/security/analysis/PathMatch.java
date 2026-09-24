@@ -22,7 +22,6 @@ package org.restheart.security.analysis;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -55,7 +54,7 @@ final class PathMatch {
 
         var result = Truth.TRUE;
 
-        for (var i = 0; i < p.length; i++) {
+        for (var i = 0;i < p.length;i++) {
             result = result.and(sameSegment(p[i], c[i]));
         }
 
@@ -77,7 +76,7 @@ final class PathMatch {
 
         var result = Truth.TRUE;
 
-        for (var i = 0; i < p.length; i++) {
+        for (var i = 0;i < p.length;i++) {
             result = result.and(sameSegment(p[i], c[i]));
         }
 
@@ -111,7 +110,7 @@ final class PathMatch {
 
         var result = Truth.TRUE;
 
-        for (var i = 0; i < p.length; i++) {
+        for (var i = 0;i < p.length;i++) {
             result = result.and(matchSegment(p[i], c[i], bindings));
         }
 
@@ -167,7 +166,7 @@ final class PathMatch {
             return Truth.FALSE;
         }
 
-        for (var i = 0; i < names.size(); i++) {
+        for (var i = 0;i < names.size();i++) {
             bindings.put(names.get(i), Optional.of(matcher.group(i + 1)));
         }
 

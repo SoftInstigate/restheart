@@ -126,7 +126,10 @@ public class WorkersWatchdog implements Initializer {
         }
 
         Consumer<String> report = mail
-                ? message -> { LOGGER.error(message); mail(notifyEmail.strip(), message, halt); }
+                ? message -> {
+            LOGGER.error(message);
+            mail(notifyEmail.strip(), message, halt);
+        }
                 : LOGGER::error;
 
         var watch = new Watch(ThreadsUtils.virtualThreadsExecutor(), System::nanoTime, Duration.ofSeconds(threshold),
@@ -167,7 +170,7 @@ public class WorkersWatchdog implements Initializer {
         var then = halt == null
                 ? "The process keeps running; it will not recover by itself."
                 : "Unless it recovers, the process halts " + halt.toSeconds()
-                        + "s after the stall began, with status " + HALT_STATUS + ", for its orchestrator to replace it.";
+                + "s after the stall began, with status " + HALT_STATUS + ", for its orchestrator to replace it.";
         var body = "<p>" + escape(subject) + ". " + escape(then) + "</p>"
                 + "<p>The virtual threads named <code>RH VRT WRK</code> that are RUNNABLE with a stack are the ones "
                 + "holding the carriers.</p><pre style=\"font-size:11px\">" + escape(report) + "</pre>";
@@ -217,7 +220,7 @@ public class WorkersWatchdog implements Initializer {
         private boolean reported = false;
 
         Watch(Executor probed, LongSupplier nanos, Duration threshold, Supplier<String> dump,
-                Consumer<String> report, Consumer<String> recovered, Duration halt, Runnable halter) {
+              Consumer<String> report, Consumer<String> recovered, Duration halt, Runnable halter) {
             this.probed = probed;
             this.nanos = nanos;
             this.thresholdNanos = threshold.toNanos();
@@ -285,8 +288,8 @@ public class WorkersWatchdog implements Initializer {
         } catch (Exception e) {
             return "(virtual threads unavailable: " + e + ")\n"
                     + Arrays.stream(ManagementFactory.getThreadMXBean().dumpAllThreads(true, true))
-                            .map(Object::toString)
-                            .collect(Collectors.joining());
+                    .map(Object::toString)
+                    .collect(Collectors.joining());
         }
     }
 }

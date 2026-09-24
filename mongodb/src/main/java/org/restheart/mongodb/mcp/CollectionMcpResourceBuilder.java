@@ -59,9 +59,9 @@ public final class CollectionMcpResourceBuilder {
      */
     static final McpResource.Param JSON_MODE = new McpResource.Param("string",
             "How BSON types are written in the answer. Omit it for RESTHeart's standard form, which "
-            + "is what you want to read data. relaxed: MongoDB relaxed Extended JSON (dates as ISO "
-            + "strings); extended: canonical Extended JSON, every number typed; strict: the legacy "
-            + "strict form; shell: mongo shell syntax, not JSON.",
+                    + "is what you want to read data. relaxed: MongoDB relaxed Extended JSON (dates as ISO "
+                    + "strings); extended: canonical Extended JSON, every number typed; strict: the legacy "
+                    + "strict form; shell: mongo shell syntax, not JSON.",
             false, List.<Object>of("relaxed", "extended", "strict", "shell"), null);
 
     private CollectionMcpResourceBuilder() {

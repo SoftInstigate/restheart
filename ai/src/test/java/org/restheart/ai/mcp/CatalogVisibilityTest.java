@@ -223,15 +223,15 @@ class CatalogVisibilityTest {
 
         // two rules could apply: only what both set is surely the server's
         var two = CatalogVisibility.verdict(List.of(
-                permission("path('/ledger') and method(POST) and equals(%{q,trader}, 'trader1')", both),
-                permission("path('/ledger') and method(POST) and equals(%{q,trader}, 'trader2')", actorOnly)),
+                        permission("path('/ledger') and method(POST) and equals(%{q,trader}, 'trader1')", both),
+                        permission("path('/ledger') and method(POST) and equals(%{q,trader}, 'trader2')", actorOnly)),
                 listing("/ledger", "POST", Map.of()), create, "/ledger");
         assertEquals(List.of("actor"), two.get("server_sets"));
 
         // a rule that cannot apply says nothing about this request
         var other = CatalogVisibility.verdict(List.of(
-                permission("path('/ledger') and method(POST)", actorOnly),
-                permission("path('/elsewhere') and method(POST)", both)),
+                        permission("path('/ledger') and method(POST)", actorOnly),
+                        permission("path('/elsewhere') and method(POST)", both)),
                 listing("/ledger", "POST", Map.of()), create, "/ledger");
         assertEquals(List.of("actor"), other.get("server_sets"));
     }

@@ -70,7 +70,7 @@ public class WorkersWatchdogTest {
     public void anExecutorThatServesIsNeverReported() {
         var watch = watch(Runnable::run);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0;i < 10;i++) {
             watch.check();
             advance(10);
         }

@@ -236,6 +236,7 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
             return true;
         }
     }
+
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAuthenticationRequired(Request request) {

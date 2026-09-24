@@ -72,7 +72,7 @@ public class RuleEmbedderTest {
         @Override
         public List<float[]> embed(List<String> texts, Request<?> request) {
             plain.add(texts);
-            return texts.stream().map(t -> new float[] { 1f, 0f }).toList();
+            return texts.stream().map(t -> new float[]{1f, 0f}).toList();
         }
 
         @Override
@@ -80,7 +80,7 @@ public class RuleEmbedderTest {
             groups.add(chunks);
             var out = new ArrayList<float[]>();
             for (int i = 0;i < chunks.size();i++) {
-                out.add(new float[] { chunks.size(), i });
+                out.add(new float[]{chunks.size(), i});
             }
             return out;
         }
@@ -119,7 +119,7 @@ public class RuleEmbedderTest {
         var calls = new ArrayList<List<String>>();
         EmbeddingModel model = (texts, request) -> {
             calls.add(texts);
-            return texts.stream().map(t -> new float[] { 0.5f }).toList();
+            return texts.stream().map(t -> new float[]{0.5f}).toList();
         };
         var embedder = new RuleEmbedder(registryWith("p", model), "p");
         var docs = List.of(doc("a1", "A"), doc("b1", "B"));
@@ -132,7 +132,7 @@ public class RuleEmbedderTest {
 
     @Test
     public void aDocumentWithoutTheTextField_isLeftAsItIs() {
-        EmbeddingModel model = (texts, request) -> texts.stream().map(t -> new float[] { 0.5f }).toList();
+        EmbeddingModel model = (texts, request) -> texts.stream().map(t -> new float[]{0.5f}).toList();
         var embedder = new RuleEmbedder(registryWith("p", model), "p");
         var without = new BsonDocument("title", new BsonString("no text"));
         var docs = List.of(without, doc("t", null));
@@ -164,7 +164,7 @@ public class RuleEmbedderTest {
             public List<float[]> embedChunks(List<String> chunks, Request<?> request) {
                 var out = new ArrayList<float[]>();
                 for (int i = 0;i < chunks.size();i++) {
-                    out.add(i == 0 ? null : new float[] { 1f });
+                    out.add(i == 0 ? null : new float[]{1f});
                 }
                 return out;
             }
@@ -194,7 +194,7 @@ public class RuleEmbedderTest {
     @Test
     public void apply_writesDoubles_andANullVectorLeavesTheDocument() {
         var d = new BsonDocument();
-        RuleEmbedder.apply(d, new float[] { 0.1f, 0.2f }, "v");
+        RuleEmbedder.apply(d, new float[]{0.1f, 0.2f}, "v");
         assertEquals(2, d.getArray("v").size());
         var e = new BsonDocument();
         RuleEmbedder.apply(e, null, "v");

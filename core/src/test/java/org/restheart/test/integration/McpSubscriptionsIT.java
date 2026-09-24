@@ -81,7 +81,7 @@ public class McpSubscriptionsIT extends AbstactIT {
     /** One request, many documents — a burst of change events with no HTTP round trips between them. */
     private static void writeMany(int count) {
         var docs = new StringBuilder("[");
-        for (var i = 0; i < count; i++) {
+        for (var i = 0;i < count;i++) {
             docs.append(i == 0 ? "" : ",").append("{\"item\":\"burst-").append(i).append("\"}");
         }
         docs.append("]");

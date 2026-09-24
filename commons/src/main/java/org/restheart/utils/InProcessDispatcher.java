@@ -478,7 +478,7 @@ public class InProcessDispatcher {
      * when the response says {@code Connection: close} without framing.
      */
     static final class ResponseParser {
-        private enum State { HEAD, BODY_LENGTH, CHUNK_SIZE, CHUNK_DATA, CHUNK_DATA_END, TRAILERS, BODY_UNTIL_CLOSE, DONE }
+        private enum State {HEAD, BODY_LENGTH, CHUNK_SIZE, CHUNK_DATA, CHUNK_DATA_END, TRAILERS, BODY_UNTIL_CLOSE, DONE}
 
         private final boolean headRequest;
         private final ByteArrayOutputStream head = new ByteArrayOutputStream(512);
@@ -622,7 +622,7 @@ public class InProcessDispatcher {
             var chunked = false;
             var contentLength = -1L;
 
-            for (var i = 1; i < lines.length; i++) {
+            for (var i = 1;i < lines.length;i++) {
                 var colon = lines[i].indexOf(':');
 
                 if (colon < 0) {
@@ -637,7 +637,8 @@ public class InProcessDispatcher {
                     case "transfer-encoding" -> chunked = value.toLowerCase(Locale.ROOT).contains("chunked");
                     case "content-length" -> contentLength = Long.parseLong(value);
                     case "connection" -> connectionClose = value.toLowerCase(Locale.ROOT).contains("close");
-                    default -> { }
+                    default -> {
+                    }
                 }
             }
 

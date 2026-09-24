@@ -140,7 +140,7 @@ public final class RuleEmbedder {
             // a provider that splits the work may lose part of it: the rest keeps its vectors
             return missing == 0 ? null
                     : "auto-embedding of '" + rule.embeddingField() + "' incomplete: " + missing + " of " + targets.size()
-                            + " documents without a vector, a request to '" + providerName + "' failed";
+                    + " documents without a vector, a request to '" + providerName + "' failed";
         } catch (Exception e) {
             LOGGER.error("failed to generate embeddings for '{}' via '{}': {}", rule.embeddingField(), providerName, e.getMessage(), e);
             return "auto-embedding of '" + rule.embeddingField() + "' failed: " + e.getMessage();

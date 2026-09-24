@@ -56,7 +56,7 @@ public class ResourceSubscriptionsTest {
 
     @Test
     public void aBurstCollapsesToTwo_theLeadingOneAndOneTrailing() throws Exception {
-        for (var i = 0; i < 1_000; i++) {
+        for (var i = 0;i < 1_000;i++) {
             subs.changed("uri");
         }
         settle();

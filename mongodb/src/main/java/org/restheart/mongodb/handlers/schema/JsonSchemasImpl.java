@@ -166,7 +166,7 @@ public class JsonSchemasImpl implements JsonSchemas {
             // belong to, using the subschema's own "title" when the schema author set one.
             var alternatives = List.copyOf(combined.getSubschemas());
 
-            for (var i = 0; i < causes.size(); i++) {
+            for (var i = 0;i < causes.size();i++) {
                 var branch = causes.get(i);
                 var reasons = new ArrayList<String>();
                 collectLeaves(branch, reasons, false);

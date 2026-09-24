@@ -159,9 +159,9 @@ public class VoyageContextualEmbeddingProviderTest {
     @Test
     public void parseDocuments_flattensDocumentsThenChunks_inTheirIndexOrder() {
         var response = """
-            { "data": [
-                { "index": 1, "data": [ { "index": 1, "embedding": [4.0] }, { "index": 0, "embedding": [3.0] } ] },
-                { "index": 0, "data": [ { "index": 1, "embedding": [2.0] }, { "index": 0, "embedding": [1.0] } ] } ] }""";
+                { "data": [
+                    { "index": 1, "data": [ { "index": 1, "embedding": [4.0] }, { "index": 0, "embedding": [3.0] } ] },
+                    { "index": 0, "data": [ { "index": 1, "embedding": [2.0] }, { "index": 0, "embedding": [1.0] } ] } ] }""";
         var result = VoyageContextualWireEmbeddings.parseDocuments(response);
         assertEquals(4, result.size());
         for (int i = 0;i < 4;i++) {

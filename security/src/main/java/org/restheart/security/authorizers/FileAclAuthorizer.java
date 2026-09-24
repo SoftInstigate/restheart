@@ -197,6 +197,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
             return true;
         }
     }
+
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
         // don't require authentication for OPTIONS requests

@@ -98,7 +98,7 @@ class ListingEvaluatorTest {
      */
     @Test
     void aPrefixReachesTheSubResourcesOfACollection_anExactPathDoesNot() {
-        for (var path : new String[] { "/coll/_meta", "/coll/_indexes", "/coll/_indexes/byQty", "/coll/*" }) {
+        for (var path : new String[]{"/coll/_meta", "/coll/_indexes", "/coll/_indexes/byQty", "/coll/*"}) {
             assertEquals(Truth.TRUE, evaluate("path-prefix('/coll')", path, "GET"), path);
             assertEquals(Truth.FALSE, evaluate("path('/coll')", path, "GET"), path);
         }
@@ -207,12 +207,12 @@ class ListingEvaluatorTest {
     @Test
     void theResultIsAnUpperBound() {
         // every shape that could be allowed by some call answers "may be true"
-        for (var predicate : new String[] {
+        for (var predicate : new String[]{
                 "path('/orders')",
                 "path('/orders') and equals(%{q,token}, 'x')",
                 "path('/orders') and not qparams-contain(export)",
                 "path('/orders') and is-whatever()",
-                "path('/orders') or path('/invoices')" }) {
+                "path('/orders') or path('/invoices')"}) {
             assertTrue(evaluate(predicate, "/orders", "GET").mayBeTrue(), predicate);
         }
     }

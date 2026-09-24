@@ -49,6 +49,7 @@ public class ACLRegistryVetoer implements Authorizer {
 
         return !vetoed;
     }
+
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
         return false;

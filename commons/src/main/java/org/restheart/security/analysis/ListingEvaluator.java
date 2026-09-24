@@ -272,7 +272,7 @@ public final class ListingEvaluator {
         var resolved = new ArrayList<String>();
 
         for (var arg : args) {
-            for (var i = 0; i < arg.values().size(); i++) {
+            for (var i = 0;i < arg.values().size();i++) {
                 var value = resolve(arg, i);
 
                 if (value == null) {

@@ -39,11 +39,11 @@ public class BucketChunkingConfigTest {
     }
 
     private static final String TWO_RULES = """
-        [ { "name": "manuals",
-            "filter": { "contentType": ["application/pdf", "application/vnd.openxmlformats-officedocument.*"] },
-            "target-collection": "manuals_chunks", "chunk-size": 1000, "chunk-overlap": 200 },
-          { "name": "code", "filter": { "extension": [".java", "ts", ".PY"] },
-            "target-collection": "code_chunks", "splitter": "text" } ]""";
+            [ { "name": "manuals",
+                "filter": { "contentType": ["application/pdf", "application/vnd.openxmlformats-officedocument.*"] },
+                "target-collection": "manuals_chunks", "chunk-size": 1000, "chunk-overlap": 200 },
+              { "name": "code", "filter": { "extension": [".java", "ts", ".PY"] },
+                "target-collection": "code_chunks", "splitter": "text" } ]""";
 
     // -- declares and rules ---------------------------------------------------------------
 
@@ -113,10 +113,10 @@ public class BucketChunkingConfigTest {
     @Test
     public void metadataQuery_putsEachFieldUnderMetadata_throughAndOrNor() {
         var q = BucketChunkingConfig.metadataQuery(BsonDocument.parse("""
-            { "kind": "manual", "size": { "$gt": 3 }, "$or": [ { "lang": "en" }, { "lang": { "$in": ["it"] } } ] }"""));
+                { "kind": "manual", "size": { "$gt": 3 }, "$or": [ { "lang": "en" }, { "lang": { "$in": ["it"] } } ] }"""));
         assertEquals(BsonDocument.parse("""
-            { "metadata.kind": "manual", "metadata.size": { "$gt": 3 },
-              "$or": [ { "metadata.lang": "en" }, { "metadata.lang": { "$in": ["it"] } } ] }"""), q);
+                { "metadata.kind": "manual", "metadata.size": { "$gt": 3 },
+                  "$or": [ { "metadata.lang": "en" }, { "metadata.lang": { "$in": ["it"] } } ] }"""), q);
     }
 
     // -- invalidReason --------------------------------------------------------------------
@@ -154,7 +154,7 @@ public class BucketChunkingConfigTest {
 
     @Test
     public void invalidReason_embeddingKeys_pointToTheTargetCollection() {
-        for (var key : new String[] { "provider", "model", "dimensions", "groupBy" }) {
+        for (var key : new String[]{"provider", "model", "dimensions", "groupBy"}) {
             var r = reason("{ \"target-collection\": \"c\", \"" + key + "\": \"x\" }");
             assertTrue(r.startsWith("chunking: '" + key + "' does not belong in a chunking rule"), r);
             assertTrue(r.contains("vectorSearch rules of the target collection"), r);

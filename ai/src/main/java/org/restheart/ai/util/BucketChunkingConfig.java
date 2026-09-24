@@ -97,7 +97,7 @@ public final class BucketChunkingConfig {
      * @param splitter {@code auto}, {@code text} or {@code code}, see {@link BucketChunkingConfig#SPLITTERS}
      */
     public record ChunkingRule(String name, List<String> contentTypes, List<String> extensions, BsonDocument metadata,
-            String targetCollection, Integer chunkSize, Integer chunkOverlap, String splitter) {
+                               String targetCollection, Integer chunkSize, Integer chunkOverlap, String splitter) {
 
         /** Whether the file's detected type and name pass the rule's filter; {@link #metadata} is checked by the caller, against the database. */
         public boolean matches(String contentType, String filename) {

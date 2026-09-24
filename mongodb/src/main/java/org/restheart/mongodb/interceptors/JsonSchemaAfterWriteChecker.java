@@ -96,8 +96,8 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
                 // isWriteDocument() is false for a bulk PATCH, whose resource type is
                 // BULK_DOCUMENTS; there what stands in for it is having the ids to re-read
                 && (request.isBulkDocuments()
-                        ? patchedIds(response) != null
-                        : request.isWriteDocument())
+                ? patchedIds(response) != null
+                : request.isWriteDocument())
                 && request.getCollectionProps().containsKey("jsonSchema")
                 && request.getCollectionProps().get("jsonSchema").isDocument()
                 && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300);

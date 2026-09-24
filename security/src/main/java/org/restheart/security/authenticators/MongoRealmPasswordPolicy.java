@@ -45,8 +45,8 @@ import com.nulabinc.zxcvbn.Zxcvbn;
  * that was never configured should do.
  */
 @RegisterPlugin(
-    name = "passwordPolicy",
-    description = "Password strength requirement and BCrypt cost, as configured on mongoRealmAuthenticator")
+        name = "passwordPolicy",
+        description = "Password strength requirement and BCrypt cost, as configured on mongoRealmAuthenticator")
 public class MongoRealmPasswordPolicy implements Provider<PasswordPolicy> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoRealmPasswordPolicy.class);

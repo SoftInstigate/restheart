@@ -67,7 +67,7 @@ class AclPermissionPredicateTest {
                 "path('/x') and equals(@request.body.amount, '10')",
                 "path('/x') and equals(@now, @rnd(32))",
                 "path-template('/users/{userid}/verify') and method(PATCH) and equals(@user._id, ${userid}) and equals(@user.otp, @qparams['otp'])")
-            .forEach(predicate -> assertNotNull(FileAclPermission.build(permission(predicate))));
+                .forEach(predicate -> assertNotNull(FileAclPermission.build(permission(predicate))));
     }
 
     @Test

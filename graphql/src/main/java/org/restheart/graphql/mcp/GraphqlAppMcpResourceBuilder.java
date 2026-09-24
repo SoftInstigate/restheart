@@ -113,9 +113,9 @@ public final class GraphqlAppMcpResourceBuilder {
      */
     private static final String RESOLVE_TYPES_WITH =
             "A GraphQL query must name the fields it selects. The 'return_type' above is only a type name; "
-            + "introspect this same endpoint to get its fields, e.g. "
-            + "{ __type(name: \"TypeName\") { fields { name type { name kind ofType { name } } } } }. "
-            + "The schema you introspect is the one your roles may see, so anything it lists you may select.";
+                    + "introspect this same endpoint to get its fields, e.g. "
+                    + "{ __type(name: \"TypeName\") { fields { name type { name kind ofType { name } } } } }. "
+                    + "The schema you introspect is the one your roles may see, so anything it lists you may select.";
 
     /** One example per introspection step: what this app answers, and what a type contains. */
     private static List<Example> introspectionExamples() {

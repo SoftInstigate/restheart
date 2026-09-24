@@ -130,7 +130,7 @@ public class OAuthResourceChallengeMechanism implements AuthMechanism {
         return t;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     static Optional<Target> resolve(PluginsRegistry registry) {
         var metadata = registry.getService(METADATA_SERVICE);
         var mcp = registry.getService(MCP_SERVICE);

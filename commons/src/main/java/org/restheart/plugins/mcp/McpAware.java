@@ -129,7 +129,7 @@ public interface McpAware {
     /**
      * Executes one action of one resource this plugin contributes, with the caller's identity,
      * and returns the outcome in HTTP terms. This is what the {@code call_api} tool runs, and what
- * {@code resources/read} runs for an action declared {@code readable}.
+     * {@code resources/read} runs for an action declared {@code readable}.
      *
      * <p><b>The default is the right implementation for nearly every plugin, and it is not in
      * this method.</b> {@link Optional#empty()} means "not mine, use the default": the MCP server

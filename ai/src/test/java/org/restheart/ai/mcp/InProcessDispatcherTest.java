@@ -143,7 +143,7 @@ public class InProcessDispatcherTest {
             exchange.startBlocking();
             exchange.setStatusCode(200);
             var out = exchange.getOutputStream();
-            for (var i = 0; i < 1_000; i++) {
+            for (var i = 0;i < 1_000;i++) {
                 out.write(("line " + i + "\n").getBytes(StandardCharsets.UTF_8));
             }
             out.close();
@@ -182,7 +182,7 @@ public class InProcessDispatcherTest {
     public void sequentialDispatchesReuseOneLane() throws Exception {
         var dispatcher = dispatcher(ECHO);
 
-        for (var i = 0; i < 50; i++) {
+        for (var i = 0;i < 50;i++) {
             var response = dispatcher.dispatch(Methods.GET, "/seq/" + i, new HeaderMap(), null);
             assertEquals(201, response.status());
             assertEquals("/seq/" + i, JsonParser.parseString(response.bodyAsString()).getAsJsonObject().get("path").getAsString());
@@ -211,7 +211,7 @@ public class InProcessDispatcherTest {
         var dispatcher = dispatcher(ECHO);
         var tasks = new ArrayList<Callable<String>>();
 
-        for (var i = 0; i < 200; i++) {
+        for (var i = 0;i < 200;i++) {
             var n = i;
             tasks.add(() -> {
                 var body = ("{\"n\":" + n + "}").getBytes(StandardCharsets.UTF_8);
@@ -226,7 +226,7 @@ public class InProcessDispatcherTest {
             for (var task : tasks) {
                 results.add(executor.submit(task));
             }
-            for (var i = 0; i < results.size(); i++) {
+            for (var i = 0;i < results.size();i++) {
                 assertEquals("/n/" + i + "=" + i, results.get(i).get());
             }
         }

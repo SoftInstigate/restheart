@@ -108,7 +108,7 @@ public final class DescriptorRenderer {
 
     /** The values of the action's header-carried parameters, by header name, marking them consumed. */
     private static Map<String, Object> headersFrom(McpResource.Action action, Map<String, Object> args,
-            Set<String> consumed) {
+                                                   Set<String> consumed) {
         var headers = new LinkedHashMap<String, Object>();
 
         action.params().forEach((name, param) -> {
@@ -129,7 +129,7 @@ public final class DescriptorRenderer {
     }
 
     private static Map<String, Object> renderHttp(McpResource.Action action, String url, Object body,
-            Map<String, Object> declaredHeaders) {
+                                                  Map<String, Object> declaredHeaders) {
         var descriptor = new LinkedHashMap<String, Object>();
         descriptor.put("transport", Transport.HTTP.wireName());
         if (action.method() != null) {

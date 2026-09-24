@@ -172,7 +172,7 @@ public class DocumentChunkingInterceptorTest {
     @Test
     public void targetsOf_eachCollectionOnce_inRuleOrder() {
         var rules = org.restheart.ai.util.BucketChunkingConfig.rules(org.bson.BsonDocument.parse("""
-            { "chunking": [ { "target-collection": "a" }, { "target-collection": "b" }, { "target-collection": "a" } ] }"""));
+                { "chunking": [ { "target-collection": "a" }, { "target-collection": "b" }, { "target-collection": "a" } ] }"""));
         assertEquals(List.of("a", "b"), DocumentChunkingInterceptor.targetsOf(rules));
     }
 }

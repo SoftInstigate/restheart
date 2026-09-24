@@ -49,6 +49,7 @@ public class ACLRegistryAllower implements Authorizer {
 
         return allowed;
     }
+
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
         return registry.authenticationRequirements().isEmpty() ||

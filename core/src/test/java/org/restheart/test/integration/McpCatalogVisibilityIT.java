@@ -244,7 +244,7 @@ public class McpCatalogVisibilityIT extends AbstactIT {
         var actions = admin.callTool("list_apis", "{\"resource\":\"" + VISIBLE_COLL + "\"}").getDocument("actions");
 
         assertTrue(actions.keySet().containsAll(List.of(
-                "properties", "set_properties", "drop", "indexes", "create_index", "delete_index")),
+                        "properties", "set_properties", "drop", "indexes", "create_index", "delete_index")),
                 "admin grants allowManagementRequests, so these are offered: " + actions.keySet());
 
         assertEquals("resource", actions.getDocument("drop").getString("target").getValue(),

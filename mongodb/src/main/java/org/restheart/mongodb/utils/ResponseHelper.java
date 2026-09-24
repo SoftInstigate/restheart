@@ -232,8 +232,8 @@ public class ResponseHelper {
         var m = raw == null ? null : DUP_KEY.matcher(raw);
 
         return m != null && m.find()
-            ? "Duplicate key: index " + m.group(1) + ", key " + m.group(2) + ": a document with this key already exists"
-            : getMessageFromErrorCode(11000);
+                ? "Duplicate key: index " + m.group(1) + ", key " + m.group(2) + ": a document with this key already exists"
+                : getMessageFromErrorCode(11000);
     }
 
     /**

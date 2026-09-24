@@ -115,7 +115,7 @@ public class URLUtilsTest {
         exchange.setRequestScheme(scheme);
 
         var map = new HeaderMap();
-        for (int i = 0; i < headers.length; i += 2) {
+        for (int i = 0;i < headers.length;i += 2) {
             map.put(HttpString.tryFromString(headers[i]), headers[i + 1]);
         }
         when(exchange.getRequestHeaders()).thenReturn(map);

@@ -93,9 +93,9 @@ public class VectorizeOperatorTest {
     }
 
     private static final BsonDocument TWO_RULES = BsonDocument.parse("""
-        { "vectorSearch": [
-            { "textField": "summary", "embeddingField": "summaryVector", "provider": "p3" },
-            { "textField": "body", "embeddingField": "bodyVector", "provider": "p5" } ] }""");
+            { "vectorSearch": [
+                { "textField": "summary", "embeddingField": "summaryVector", "provider": "p3" },
+                { "textField": "body", "embeddingField": "bodyVector", "provider": "p5" } ] }""");
 
     private static Placement queryVectorOf(String stage, String path) {
         return new Placement(stage, new BsonDocument("path", new BsonString(path)), "queryVector");
@@ -165,9 +165,9 @@ public class VectorizeOperatorTest {
         var state = new HashMap<String, Object>();
         state.put(RequestOverrides.VOYAGE_MODEL, "voyage-4");
         var rules = BsonDocument.parse("""
-            { "vectorSearch": [
-                { "textField": "s", "embeddingField": "sv", "provider": "voyageEmbeddingProvider", "model": "voyage-law-2" },
-                { "textField": "b", "embeddingField": "bv", "provider": "p5" } ] }""");
+                { "vectorSearch": [
+                    { "textField": "s", "embeddingField": "sv", "provider": "voyageEmbeddingProvider", "model": "voyage-law-2" },
+                    { "textField": "b", "embeddingField": "bv", "provider": "p5" } ] }""");
         var seenDuringEmbed = new HashMap<String, Object>();
         EmbeddingModel voyage = (texts, request) -> {
             seenDuringEmbed.put(RequestOverrides.VOYAGE_MODEL, request.attachedParam(RequestOverrides.VOYAGE_MODEL));

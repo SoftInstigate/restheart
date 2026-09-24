@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -583,10 +582,10 @@ public class McpService implements ByteArrayService {
         var reason = kind == null
                 ? "no such resource: %s".formatted(uri)
                 : """
-                        a resource of kind '%s' cannot be subscribed to: %s. Notifications come from a change \
-                        stream on a collection, and this resource has none to watch. Collections and aggregations \
-                        over them are subscribable — list_apis marks those with "subscribable": true.\
-                        """.formatted(kind, uri);
+                a resource of kind '%s' cannot be subscribed to: %s. Notifications come from a change \
+                stream on a collection, and this resource has none to watch. Collections and aggregations \
+                over them are subscribable — list_apis marks those with "subscribable": true.\
+                """.formatted(kind, uri);
 
         writeJsonRpcError(res, rpc, reason);
     }

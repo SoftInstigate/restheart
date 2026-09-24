@@ -98,7 +98,7 @@ final class CatalogVisibility {
      * @param owner the resource the entry belongs to, or {@code null} when the catalog has none
      */
     static boolean isEntryVisible(AclPermissions permissions, Request<?> request, McpResource owner,
-            String path, String method) {
+                                  String path, String method) {
         var context = new RequestListingContext(request, path, method);
         var declared = declaredVisibility(owner, request, context);
 
@@ -124,7 +124,7 @@ final class CatalogVisibility {
      * @return empty when the resource declares nothing and the permissions decide
      */
     private static Optional<Boolean> declaredVisibility(McpResource resource, Request<?> request,
-            ListingContext context) {
+                                                        ListingContext context) {
         if (resource == null) {
             return Optional.empty();
         }
@@ -219,7 +219,7 @@ final class CatalogVisibility {
      * ACL refuses it then, exactly as it refuses a resource that never appeared in a listing.
      */
     static Map<String, Object> verdict(AclPermissions permissions, Request<?> request, McpResource resource,
-            String actionName) {
+                                       String actionName) {
         var action = resource.actions().get(actionName);
 
         if (action == null) {
@@ -233,7 +233,7 @@ final class CatalogVisibility {
 
     /** The same question with the rules and the context already in hand. Visible for testing. */
     static Map<String, Object> verdict(Collection<BaseAclPermission> rules, ListingContext context,
-            McpResource.Action action, String path) {
+                                       McpResource.Action action, String path) {
         var asked = askedOf(action);
 
         if (rules.isEmpty()) {
@@ -389,7 +389,7 @@ final class CatalogVisibility {
         if (ignoringSwitches.mayBeTrue() && !action.requires().isEmpty()) {
             return Map.of("permitted", "no",
                     "note", "a rule of yours covers this request, but it does not grant "
-                            + String.join(" and ", action.requires()));
+                    + String.join(" and ", action.requires()));
         }
 
         return Map.of("permitted", "no",

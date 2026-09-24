@@ -98,7 +98,7 @@ class AgreesWithUndertowTest {
     void paths() {
         for (var request : Map.of("/orders", "GET", "/orders/42", "GET", "/invoices", "GET",
                 "/", "GET", "/orders/_size", "GET").entrySet()) {
-            for (var predicate : new String[] {
+            for (var predicate : new String[]{
                     "path('/orders')",
                     "path('/orders', '/invoices')",
                     "path-prefix('/orders')",
@@ -107,7 +107,7 @@ class AgreesWithUndertowTest {
                     "path-suffix('/_size')",
                     "path-template('/orders/{id}')",
                     "regex('/orders.*')",
-                    "regex(pattern='/orders', full-match=true)" }) {
+                    "regex(pattern='/orders', full-match=true)"}) {
                 agree(predicate, request.getKey(), request.getValue());
             }
         }
@@ -116,7 +116,7 @@ class AgreesWithUndertowTest {
     @Test
     @DisplayName("method and the predicates derived from it")
     void methods() {
-        for (var method : new String[] { "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS" }) {
+        for (var method : new String[]{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}) {
             agree("method(GET)", "/orders", method);
             agree("method(GET, POST)", "/orders", method);
             agree("idempotent", "/orders", method);
@@ -126,7 +126,7 @@ class AgreesWithUndertowTest {
     @Test
     @DisplayName("the boolean structure, precedence included")
     void structure() {
-        for (var predicate : new String[] {
+        for (var predicate : new String[]{
                 "path('/orders') and method(GET)",
                 "path('/orders') or path('/invoices')",
                 "not path('/orders')",
@@ -136,7 +136,7 @@ class AgreesWithUndertowTest {
                 "true",
                 "false",
                 "path('/orders') and true",
-                "path('/orders') and false" }) {
+                "path('/orders') and false"}) {
             agree(predicate, "/orders", "GET");
             agree(predicate, "/invoices", "POST");
         }

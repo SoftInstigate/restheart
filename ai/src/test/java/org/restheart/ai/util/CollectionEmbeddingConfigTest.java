@@ -70,8 +70,8 @@ public class CollectionEmbeddingConfigTest {
     @Test
     public void rules_listForm_inDeclaredOrder() {
         var rules = CollectionEmbeddingConfig.rules(props("""
-            [ { "textField": "summary", "embeddingField": "summaryVector", "provider": "voyageEmbeddingProvider", "model": "voyage-law-2" },
-              { "textField": "body", "embeddingField": "bodyVector", "provider": "voyageContextualEmbeddingProvider", "model": "voyage-context-4", "dimensions": 512 } ]"""));
+                [ { "textField": "summary", "embeddingField": "summaryVector", "provider": "voyageEmbeddingProvider", "model": "voyage-law-2" },
+                  { "textField": "body", "embeddingField": "bodyVector", "provider": "voyageContextualEmbeddingProvider", "model": "voyage-context-4", "dimensions": 512 } ]"""));
         assertEquals(2, rules.size());
         assertEquals(new EmbeddingRule("summary", "summaryVector", "voyageEmbeddingProvider", "voyage-law-2", null), rules.get(0));
         assertEquals(new EmbeddingRule("body", "bodyVector", "voyageContextualEmbeddingProvider", "voyage-context-4", 512), rules.get(1));
