@@ -20,7 +20,13 @@
  */
 package org.restheart.providers;
 
+import java.time.Duration;
+import java.util.Map;
+
 import org.restheart.Bootstrapper;
+import org.restheart.configuration.ConfigurationException;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
@@ -32,9 +38,26 @@ import org.restheart.utils.InProcessDispatcher;
  * Provides the {@link InProcessDispatcher} that runs a request through this server's
  * own handler chain without a socket. Inject it with
  * {@code @Inject("in-process-dispatcher")}.
+ *
+ * <p>Configuration: {@code timeout-seconds}, how long a dispatch waits for its response,
+ * default {@link InProcessDispatcher#DEFAULT_TIMEOUT}.</p>
  */
 @RegisterPlugin(name = "in-process-dispatcher", description = "provides the dispatcher that runs a request through the server's handler chain in-process, over an XNIO pipe")
 public class InProcessDispatcherProvider implements Provider<InProcessDispatcher> {
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() throws ConfigurationException {
+        int seconds = argOrDefault(config, "timeout-seconds", (int) InProcessDispatcher.DEFAULT_TIMEOUT.toSeconds());
+
+        if (seconds <= 0) {
+            throw new ConfigurationException("in-process-dispatcher: timeout-seconds must be positive, got " + seconds);
+        }
+
+        Bootstrapper.inProcessDispatcher().setTimeout(Duration.ofSeconds(seconds));
+    }
+
     @Override
     public InProcessDispatcher get(PluginRecord<?> caller) {
         return Bootstrapper.inProcessDispatcher();

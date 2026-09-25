@@ -32,6 +32,7 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Option;
+import org.xnio.OptionMap;
 import io.undertow.UndertowOptions;
 import io.undertow.Undertow.Builder;
 
@@ -687,12 +688,10 @@ public class Utils {
 
     /**
      * Configures Undertow server options from the configuration.
-     * 
-     * <p>This method applies connection options specified in the configuration to the
-     * Undertow server builder. It handles both standard options and long-valued options
-     * separately. The Date header is explicitly disabled as it's managed by a custom
-     * DateHeaderInjector for better virtual thread compatibility.</p>
-     * 
+     *
+     * <p>This method applies the options of {@link #connectionOptions(Configuration)} to the
+     * Undertow server builder.</p>
+     *
      * <h3>Configuration Example</h3>
      * <pre>{@code
      * connection-options:
@@ -701,20 +700,43 @@ public class Utils {
      *   MAX_ENTITY_SIZE: 10485760
      *   IDLE_TIMEOUT: 60000
      * }</pre>
-     * 
+     *
      * @param builder the Undertow server builder to configure
      * @param configuration the configuration containing connection options
      */
-    @SuppressWarnings("unchecked")
     public static void setConnectionOptions(Builder builder, Configuration configuration) {
+        var options = connectionOptions(configuration);
+
+        for (var option : options) {
+            setServerOption(builder, option, options);
+        }
+    }
+
+    /**
+     * The Undertow options of the {@code connection-options} configuration section.
+     *
+     * <p>Standard and long-valued options are read separately. The Date header is explicitly
+     * disabled as it's managed by a custom DateHeaderInjector for better virtual thread
+     * compatibility.</p>
+     *
+     * <p>The listeners get these options, and so does every connection that does not come from
+     * a listener, such as the in-process dispatcher's: a request has the same limits, like
+     * {@code MAX_ENTITY_SIZE}, whichever way it enters the server.</p>
+     *
+     * @param configuration the configuration containing connection options
+     * @return the options
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static OptionMap connectionOptions(Configuration configuration) {
         Map<String, Object> options = configuration.getConnectionOptions();
+        var builder = OptionMap.builder();
 
         UNDERTOW_OPTIONS.stream().forEach(option -> {
             if (options.containsKey(option.getName())) {
                 Object value = options.get(option.getName());
 
                 if (value != null) {
-                    builder.setServerOption(option, value);
+                    builder.set((Option) option, value);
                     LOGGER.trace("Connection option {}={}", option.getName(), value);
                 }
             }
@@ -724,10 +746,9 @@ public class Utils {
             if (options.containsKey(option.getName())) {
                 Object value = options.get(option.getName());
 
-                if (value != null) {
-                    Long lvalue = 0l + (Integer) value;
-                    builder.setServerOption(option, lvalue);
-                    LOGGER.trace("Connection option {}={}", option.getName(), lvalue);
+                if (value instanceof Number n) {
+                    builder.set(option, n.longValue());
+                    LOGGER.trace("Connection option {}={}", option.getName(), n.longValue());
                 }
             }
         });
@@ -735,7 +756,13 @@ public class Utils {
         // In Undertow, the `Date` header is added via {@code ThreadLocal<SimpleDateFormat>}.
         // * However, this approach is not optimal for virtual threads
         // we disable it and add the header with DateHeaderInjector
-        builder.setServerOption(UndertowOptions.ALWAYS_SET_DATE, false);
+        builder.set(UndertowOptions.ALWAYS_SET_DATE, false);
+
+        return builder.getMap();
+    }
+
+    private static <T> void setServerOption(Builder builder, Option<T> option, OptionMap options) {
+        builder.setServerOption(option, options.get(option));
     }
 
     /**

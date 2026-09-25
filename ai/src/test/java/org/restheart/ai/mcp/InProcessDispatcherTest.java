@@ -21,9 +21,12 @@
 package org.restheart.ai.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ import org.xnio.XnioWorker;
 
 import com.google.gson.JsonParser;
 
+import io.undertow.UndertowOptions;
 import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HttpHandler;
 import io.undertow.util.HeaderMap;
@@ -233,5 +237,46 @@ public class InProcessDispatcherTest {
 
         assertTrue(dispatcher.openLanes() <= 200, "no more lanes than dispatches, got " + dispatcher.openLanes());
         assertEquals(dispatcher.openLanes(), dispatcher.idleLanes(), "every lane must be back in the pool");
+    }
+
+    /** a JSON string of {@code n} characters, as the body the echo handler embeds */
+    private static byte[] jsonStringOf(int n) {
+        return ("\"" + "x".repeat(n) + "\"").getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Test
+    public void aBodyOverMaxEntitySizeDoesNotReachTheHandlerWhole() throws Exception {
+        var options = OptionMap.create(UndertowOptions.MAX_ENTITY_SIZE, 1024L);
+        var dispatcher = new InProcessDispatcher(worker, pool, options, ECHO, Duration.ofSeconds(5));
+
+        try {
+            var response = dispatcher.dispatch(Methods.POST, "/big", new HeaderMap(), jsonStringOf(4096));
+            assertNotEquals(201, response.status(), "a body over MAX_ENTITY_SIZE must be refused in-process as from the network");
+        } catch (IOException terminated) {
+            // Undertow may terminate the connection instead of answering: refused all the same
+        }
+    }
+
+    @Test
+    public void aBodyWithinMaxEntitySizePasses() throws Exception {
+        var options = OptionMap.create(UndertowOptions.MAX_ENTITY_SIZE, 1024L);
+        var dispatcher = new InProcessDispatcher(worker, pool, options, ECHO, Duration.ofSeconds(5));
+
+        var response = dispatcher.dispatch(Methods.POST, "/small", new HeaderMap(), jsonStringOf(512));
+
+        assertEquals(201, response.status());
+    }
+
+    @Test
+    public void theTimeoutIsLongByDefaultAndMustBePositive() {
+        assertEquals(Duration.ofMinutes(10), InProcessDispatcher.DEFAULT_TIMEOUT);
+
+        var dispatcher = dispatcher(ECHO);
+        dispatcher.setTimeout(Duration.ofSeconds(90));
+        assertEquals(Duration.ofSeconds(90), dispatcher.timeout());
+
+        assertThrows(IllegalArgumentException.class, () -> dispatcher.setTimeout(Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> dispatcher.setTimeout(Duration.ofSeconds(-1)));
+        assertThrows(IllegalArgumentException.class, () -> dispatcher.setTimeout(null));
     }
 }

@@ -704,6 +704,14 @@ workersWatchdog:
   halt-after-seconds: 0
   notify-email: null
 
+# Runs a request through this server's handler chain in-process, without a socket, for plugins
+# such as the MCP service. An in-process request gets the same connection-options as a request
+# from the network, MAX_ENTITY_SIZE and the timeouts included.
+# timeout-seconds: how long a caller waits for the whole response. The caller parks a virtual
+# thread, so waiting costs nothing; the timeout only drops a connection whose response never comes.
+in-process-dispatcher:
+  timeout-seconds: 600
+
 # Base configuration for core module
 core:
   # The name of this instance. Displayed in log, also allows to implement instance specific custom code

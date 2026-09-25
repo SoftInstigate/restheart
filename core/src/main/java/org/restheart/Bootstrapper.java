@@ -63,7 +63,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -160,7 +159,7 @@ public final class Bootstrapper {
             () -> BYTE_BUFFER_POOL,
             () -> UNDERTOW_OPTIONS,
             () -> HANDLERS,
-            Duration.ofSeconds(30));
+            InProcessDispatcher.DEFAULT_TIMEOUT);
 
     private static final String EXITING = ", exiting...";
     private static final String RESTHEART = "RESTHeart";
@@ -761,14 +760,19 @@ public final class Bootstrapper {
 
         // starting from undertow 1.4.23 URL checks become much stricter
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
-        // allow unescaped chars in URL (otherwise not allowed by default)
+        // allow unescaped chars in URL (otherwise not allowed by default);
+        // the connection-options, applied after, can still set it
         builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
-                configuration.coreModule().allowUnescapedCharsInUrl());
-        // the in-process dispatcher opens its own server connections and needs the same options
-        UNDERTOW_OPTIONS = OptionMap.create(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
                 configuration.coreModule().allowUnescapedCharsInUrl());
 
         Utils.setConnectionOptions(builder, configuration);
+
+        // the in-process dispatcher opens its own server connections, with the same options:
+        // an in-process request has the limits of a request from the network, MAX_ENTITY_SIZE included
+        UNDERTOW_OPTIONS = OptionMap.builder()
+                .set(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, configuration.coreModule().allowUnescapedCharsInUrl())
+                .addAll(Utils.connectionOptions(configuration))
+                .getMap();
 
         undertowServer = builder.build();
         undertowServer.start();

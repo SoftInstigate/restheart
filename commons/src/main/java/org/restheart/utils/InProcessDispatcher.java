@@ -133,6 +133,14 @@ public class InProcessDispatcher {
      */
     public static final AttachmentKey<Account> PRINCIPAL = AttachmentKey.create(Account.class);
 
+    /**
+     * How long a dispatch waits for its response unless configured otherwise. Long on purpose:
+     * the caller parks a virtual thread, so waiting costs nothing, and a dispatch may run a
+     * write that calls an external service, such as an embedding provider, for every document.
+     * The timeout only drops a lane whose response never comes.
+     */
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(10);
+
     private static final InetSocketAddress LOOPBACK = new InetSocketAddress(InetAddress.getLoopbackAddress(), 0);
     private static final int READ_BUFFER_SIZE = 16 * 1024;
 
@@ -140,7 +148,7 @@ public class InProcessDispatcher {
     private final Supplier<ByteBufferPool> bufferPool;
     private final Supplier<HttpHandler> rootHandler;
     private final Supplier<OptionMap> undertowOptions;
-    private final Duration timeout;
+    private volatile Duration timeout;
 
     private volatile HttpOpenListener openListener;
 
@@ -164,6 +172,24 @@ public class InProcessDispatcher {
 
     public InProcessDispatcher(XnioWorker worker, ByteBufferPool bufferPool, OptionMap undertowOptions, HttpHandler rootHandler, Duration timeout) {
         this(() -> worker, () -> bufferPool, () -> undertowOptions, () -> rootHandler, timeout);
+    }
+
+    /** @return how long a dispatch waits for its response */
+    public Duration timeout() {
+        return timeout;
+    }
+
+    /**
+     * Sets how long a dispatch waits for its response, from the next dispatch on.
+     *
+     * @param timeout a positive duration
+     * @throws IllegalArgumentException if {@code timeout} is null, zero or negative
+     */
+    public void setTimeout(Duration timeout) {
+        if (timeout == null || timeout.isZero() || timeout.isNegative()) {
+            throw new IllegalArgumentException("the in-process dispatch timeout must be positive, got " + timeout);
+        }
+        this.timeout = timeout;
     }
 
     /**
