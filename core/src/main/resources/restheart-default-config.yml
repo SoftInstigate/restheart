@@ -767,6 +767,17 @@ documentChunkingInterceptor:
   # defaults for a rule that sets none
   chunk-size: 1000
   chunk-overlap: 200
+  # true: the upload answers once the file is stored, and the file is chunked afterwards; what
+  # the chunker did is written on the file's document as "chunking": { status, rule, chunks,
+  # warnings, at }, pending first. Overridable per request: override-ai-chunking-async (#758)
+  async: false
+  # files chunked at once on this node, when async; a request may also cap its own database with
+  # override-ai-chunking-max-concurrent
+  max-concurrent: 2
+  # a file still pending or running after resume-after-minutes lost its job, when a node stopped:
+  # every resume-scan-minutes (0: never) such files are claimed, one node each, and chunked again
+  resume-after-minutes: 15
+  resume-scan-minutes: 5
 
 # Refuses malformed "chunking" rules in a bucket's metadata when it is written, with a 400 naming
 # the rule: no target-collection, an unknown key, a filter value of the wrong kind, an embedding key

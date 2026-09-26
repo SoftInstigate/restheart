@@ -20,7 +20,6 @@
  */
 package org.restheart.ai.interceptors;
 
-import java.io.ByteArrayInputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -28,19 +27,24 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.apache.tika.Tika;
+import org.apache.tika.io.TikaInputStream;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
 import org.bson.BsonArray;
+import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.ai.chunking.ChunkingGate;
 import org.restheart.ai.chunking.CodeAwareSplitter;
 import org.restheart.ai.chunking.CodeLanguage;
 import org.restheart.ai.util.BucketChunkingConfig;
@@ -58,12 +62,16 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.InProcessDispatcher;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+
+import io.undertow.security.idm.Account;
 
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
@@ -113,16 +121,42 @@ import io.undertow.util.Methods;
  * by one or in bulk, has its chunks deleted. They are looked for in every target collection the
  * bucket's rules name, by {@code source}, which is the database, the bucket and the file id.
  *
+ * <h2>In the background (#758)</h2>
+ * <p>With {@code async}, the upload answers once the file is stored, and the file is chunked on a
+ * virtual thread afterwards: extraction and embedding can take seconds on a large PDF. What the
+ * chunker did is written on the file's own document, beside {@code metadata}:
+ * <pre>{@code
+ * "chunking": { "status": "pending" | "done" | "failed" | "skipped", "job": ObjectId,
+ *               "rule": "manuals", "chunks": 423, "warnings": [ … ], "at": Date }
+ * }</pre>
+ * {@code pending} is written before the upload answers, {@code running} when the job starts. A job this
+ * node, or another, lost by stopping is resumed: every {@code resume-scan-minutes} the buckets with
+ * rules are scanned for files still {@code pending} or {@code running} after
+ * {@code resume-after-minutes}, and each is claimed atomically with a new job id and chunked again.
+ * The pending status keeps what that needs, never a secret: the uploader's name and roles, the host
+ * and mount, the sizes; a resumed job's requests get the tenant's overrides from the deployment's
+ * own interceptors, by host, as any request does. Without {@code async} the upload waits as
+ * before, its response carries the warnings, and the status is written too. At most
+ * {@code max-concurrent} files are chunked at once on the node, and at most the per-request
+ * {@link RequestOverrides#CHUNKING_MAX_CONCURRENT} of one database, see {@link ChunkingGate}. A file
+ * replaced or deleted while its chunking runs supersedes it: the late job writes nothing, or takes
+ * back what it wrote.
+ *
  * <h2>Configuration</h2>
  * <pre>{@code
  * documentChunkingInterceptor:
  *   enabled: false      # must be explicitly enabled
  *   chunk-size: 1000    # default for a rule that sets none
  *   chunk-overlap: 200  # default for a rule that sets none
+ *   async: false        # chunk after the upload has answered
+ *   max-concurrent: 2   # files chunked at once on the node, when async
+ *   resume-after-minutes: 15  # a job pending or running longer than this was lost, and is resumed
+ *   resume-scan-minutes: 5    # how often lost jobs are looked for; 0 turns it off
  * }</pre>
  *
- * <p>A multi-tenant deployment may attach {@link RequestOverrides#CHUNK_SIZE} and
- * {@link RequestOverrides#CHUNK_OVERLAP} per request, as the defaults of that tenant.
+ * <p>A multi-tenant deployment may attach {@link RequestOverrides#CHUNK_SIZE},
+ * {@link RequestOverrides#CHUNK_OVERLAP}, {@link RequestOverrides#CHUNKING_ASYNC} and
+ * {@link RequestOverrides#CHUNKING_MAX_CONCURRENT} per request, as the settings of that tenant.
  *
  * <h2>A chunk</h2>
  * <pre>{@code
@@ -152,6 +186,14 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     // defaults for a rule that sets none; overridden per request via RequestOverrides
     private int defaultChunkSize = 1000;
     private int defaultChunkOverlap = 200;
+    private boolean defaultAsync = false;
+    private int maxConcurrent = 2;
+    private ChunkingGate gate = new ChunkingGate(2);
+    private int resumeAfterMinutes = 15;
+    private int resumeScanMinutes = 5;
+
+    /** The field of a GridFS files document that says what the chunker did with the file. */
+    static final String STATUS_FIELD = "chunking";
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -169,6 +211,14 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     public void setup() {
         this.defaultChunkSize = argOrDefault(config, "chunk-size", 1000);
         this.defaultChunkOverlap = argOrDefault(config, "chunk-overlap", 200);
+        this.defaultAsync = argOrDefault(config, "async", false);
+        this.maxConcurrent = Math.max(1, argOrDefault(config, "max-concurrent", 2));
+        this.gate = new ChunkingGate(maxConcurrent);
+        this.resumeAfterMinutes = Math.max(1, argOrDefault(config, "resume-after-minutes", 15));
+        this.resumeScanMinutes = argOrDefault(config, "resume-scan-minutes", 5);
+        if (resumeScanMinutes > 0) {
+            ThreadsUtils.virtualThreadsExecutor().execute(this::resumeLoop);
+        }
         // the chunker's writes go through whatever the uploader may do on the chunks collection
         aclRegistry.registerAllow(r -> Boolean.TRUE.equals(r.getExchange().getAttachment(CHUNKER_WRITE))
                 && Boolean.TRUE.equals(r.getExchange().getAttachment(InProcessDispatcher.IN_PROCESS)));
@@ -186,13 +236,243 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var rules = BucketChunkingConfig.rules(request.getCollectionProps());
         var targets = targetsOf(rules);
+        Consumer<String> warn = message -> warn(response, message);
         if (isFileDelete(request)) {
-            deleteChunks(request, response, targets, List.of(request.getDocumentId()));
+            deleteChunks(Caller.of(request), request.getDBName(), request.getCollectionName(), targets, List.of(request.getDocumentId()), warn);
         } else if (isBulkFilesDelete(request)) {
-            deleteChunks(request, response, targets, deletedOf(request));
+            deleteChunks(Caller.of(request), request.getDBName(), request.getCollectionName(), targets, deletedOf(request), warn);
         } else {
-            chunk(request, response, rules, targets);
+            var fileId = resolveFileId(request, response);
+            if (fileId == null) {
+                LOGGER.warn("documentChunkingInterceptor: could not determine file id for {}/{}", request.getDBName(), request.getCollectionName());
+                return;
+            }
+            var async = RequestOverrides.boolVal(request, RequestOverrides.CHUNKING_ASYNC, defaultAsync);
+            var upload = new Upload(Caller.of(request), request.getDBName(), request.getCollectionName(), fileId, request.isPut(), rules, targets,
+                    RequestOverrides.intVal(request, RequestOverrides.CHUNK_SIZE, defaultChunkSize),
+                    RequestOverrides.intVal(request, RequestOverrides.CHUNK_OVERLAP, defaultChunkOverlap),
+                    async ? new ObjectId() : null);
+            if (async) {
+                var dbLimit = Math.max(1, RequestOverrides.intVal(request, RequestOverrides.CHUNKING_MAX_CONCURRENT, maxConcurrent));
+                // pending before the upload answers, so whoever reads the file right after sees it; with what a
+                // resumed job needs if this node stops before the job is done (no secret: the overrides are not kept)
+                writeStatus(upload, new Outcome("pending", null, null), List.of(), resumeOf(upload, dbLimit));
+                ThreadsUtils.virtualThreadsExecutor().execute(() -> chunkInBackground(upload, dbLimit));
+            } else {
+                var warnings = new ArrayList<String>();
+                var outcome = chunk(upload, warnings::add);
+                warnings.forEach(w -> response.addWarning(w));
+                writeStatus(upload, outcome, warnings, null);
+            }
         }
+    }
+
+    /** Who uploaded, and where: what the chunker's own requests carry, captured while the exchange is there. */
+    record Caller(String host, Account principal, Map<String, Object> attached, String base) {
+        static Caller of(MongoRequest request) {
+            Map<String, Object> attached = request.getExchange().getAttachment(Request.ATTACHED_PARAMS_KEY);
+            return new Caller(request.getExchange().getRequestHeaders().getFirst(Headers.HOST), request.getAuthenticatedAccount(),
+                    attached == null ? Map.of() : java.util.Collections.unmodifiableMap(new HashMap<>(attached)), baseOf(request));
+        }
+    }
+
+    /** The part of the request's path before the bucket: the mount the other collections of its database are under. */
+    static String baseOf(MongoRequest request) {
+        var path = request.getPath();
+        var at = path.lastIndexOf("/" + request.getCollectionName());
+        return at >= 0 ? path.substring(0, at) : "";
+    }
+
+    /** A file to chunk, with all it needs once the upload has answered; {@code job} only when in the background. */
+    record Upload(Caller caller, String db, String filesColl, BsonValue fileId, boolean replaced, List<ChunkingRule> rules,
+            List<String> targets, int chunkSize, int chunkOverlap, ObjectId job) {
+        String bucket() {
+            return filesColl.endsWith(".files") ? filesColl.substring(0, filesColl.length() - 6) : filesColl;
+        }
+    }
+
+    /** What the chunker did with a file: the status written on it, the rule applied, how many chunks. */
+    record Outcome(String status, String rule, Integer chunks) {
+    }
+
+    /** Waits for a slot of its database and of the node, chunks, and writes the outcome on the file. */
+    private void chunkInBackground(Upload upload, int dbLimit) {
+        var warnings = new ArrayList<String>();
+        Outcome outcome;
+        try {
+            gate.acquire(upload.db(), dbLimit);
+            try {
+                // superseded while it waited: a newer upload, a deletion, or another node that resumed it
+                if (!current(upload)) {
+                    return;
+                }
+                writeStatus(upload, new Outcome("running", null, null), List.of(), null);
+                outcome = chunk(upload, warnings::add);
+            } finally {
+                gate.release(upload.db());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            warnings.add("chunking interrupted");
+            outcome = new Outcome("failed", null, null);
+        } catch (Throwable t) {
+            LOGGER.error("documentChunkingInterceptor: chunking file {} in {}/{} failed", idString(upload.fileId()), upload.db(), upload.filesColl(), t);
+            warnings.add("chunking failed: " + t.getMessage());
+            outcome = new Outcome("failed", null, null);
+        }
+        warnings.forEach(w -> LOGGER.warn("documentChunkingInterceptor: {}", w));
+        writeStatus(upload, outcome, warnings, null);
+    }
+
+    /**
+     * Writes what the chunker did on the file's own document. In the background, only while the job
+     * is still the file's: a newer upload of the same file owns the field from its own pending on.
+     */
+    private void writeStatus(Upload upload, Outcome outcome, List<String> warnings, BsonDocument resume) {
+        var status = new BsonDocument("status", new BsonString(outcome.status()));
+        if (upload.job() != null) {
+            status.append("job", new BsonObjectId(upload.job()));
+        }
+        if (outcome.rule() != null) {
+            status.append("rule", new BsonString(outcome.rule()));
+        }
+        if (outcome.chunks() != null) {
+            status.append("chunks", new BsonInt32(outcome.chunks()));
+        }
+        var ws = new BsonArray();
+        warnings.forEach(w -> ws.add(new BsonString(w)));
+        status.append("warnings", ws).append("at", new BsonDateTime(System.currentTimeMillis()));
+        if (resume != null) {
+            status.append("resume", resume);
+        }
+        var filter = "pending".equals(outcome.status()) || upload.job() == null
+                ? Filters.eq("_id", upload.fileId())
+                : Filters.and(Filters.eq("_id", upload.fileId()), Filters.eq(STATUS_FIELD + ".job", upload.job()));
+        // running keeps the pending status's resume data: a job that dies running is resumed like a queued one
+        var update = "running".equals(outcome.status())
+                ? Updates.combine(Updates.set(STATUS_FIELD + ".status", "running"), Updates.set(STATUS_FIELD + ".at", new BsonDateTime(System.currentTimeMillis())))
+                : Updates.set(STATUS_FIELD, status);
+        try {
+            mclient.getDatabase(upload.db()).getCollection(upload.filesColl(), BsonDocument.class)
+                    .updateOne(filter, update);
+        } catch (Exception e) {
+            LOGGER.warn("documentChunkingInterceptor: could not write the chunking status of file {} in {}/{}: {}",
+                    idString(upload.fileId()), upload.db(), upload.filesColl(), e.getMessage());
+        }
+    }
+
+    /** What a job needs to be resumed by any node: who uploaded, where, and the sizes the request resolved; never a secret. */
+    static BsonDocument resumeOf(Upload upload, int dbLimit) {
+        var resume = new BsonDocument("base", new BsonString(upload.caller().base()))
+                .append("chunkSize", new BsonInt32(upload.chunkSize()))
+                .append("chunkOverlap", new BsonInt32(upload.chunkOverlap()))
+                .append("dbLimit", new BsonInt32(dbLimit));
+        if (upload.caller().host() != null) {
+            resume.append("host", new BsonString(upload.caller().host()));
+        }
+        var principal = upload.caller().principal();
+        if (principal != null && principal.getPrincipal() != null) {
+            var roles = new BsonArray();
+            if (principal.getRoles() != null) {
+                principal.getRoles().forEach(r -> roles.add(new BsonString(r)));
+            }
+            resume.append("user", new BsonString(principal.getPrincipal().getName())).append("roles", roles);
+        }
+        return resume;
+    }
+
+    /**
+     * Every {@code resume-scan-minutes}, resumes the jobs a node lost: a file still {@code pending} or
+     * {@code running} after {@code resume-after-minutes} is not being worked on anywhere, since this
+     * node stopped, or another did, with it queued or halfway. The scan looks at the buckets with
+     * chunking rules of every database the client sees.
+     */
+    private void resumeLoop() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                Thread.sleep(java.time.Duration.ofMinutes(resumeScanMinutes));
+                resumeLost();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            } catch (Throwable t) {
+                LOGGER.warn("documentChunkingInterceptor: resuming lost chunking jobs failed: {}", t.getMessage());
+            }
+        }
+    }
+
+    private static final java.util.Set<String> SYSTEM_DBS = java.util.Set.of("admin", "local", "config");
+
+    /** Finds the files whose chunking was lost, claims each one and chunks it again. */
+    void resumeLost() {
+        var before = new BsonDateTime(System.currentTimeMillis() - java.time.Duration.ofMinutes(resumeAfterMinutes).toMillis());
+        for (var db : mclient.listDatabaseNames()) {
+            if (SYSTEM_DBS.contains(db)) {
+                continue;
+            }
+            var props = mclient.getDatabase(db).getCollection(org.restheart.exchange.ExchangeKeys.META_COLLNAME, BsonDocument.class);
+            var buckets = props.find(Filters.and(Filters.regex("_id", "^_properties\\..*\\.files$"), Filters.exists(BucketChunkingConfig.CHUNKING)));
+            for (var bucketProps : buckets) {
+                var filesColl = bucketProps.getString("_id").getValue().substring("_properties.".length());
+                var rules = BucketChunkingConfig.rules(bucketProps);
+                if (rules.isEmpty()) {
+                    continue;
+                }
+                var files = mclient.getDatabase(db).getCollection(filesColl, BsonDocument.class);
+                var lost = files.find(Filters.and(Filters.in(STATUS_FIELD + ".status", "pending", "running"), Filters.lt(STATUS_FIELD + ".at", before)))
+                        .projection(new BsonDocument(STATUS_FIELD, new BsonInt32(1)));
+                for (var file : lost) {
+                    resume(db, filesColl, rules, file);
+                }
+            }
+        }
+    }
+
+    /**
+     * Claims one lost job with a new job id, atomically, so two nodes never resume the same file, and
+     * runs it. The old job, if it is somewhere after all, finds itself superseded and writes nothing.
+     */
+    private void resume(String db, String filesColl, List<ChunkingRule> rules, BsonDocument file) {
+        if (!(file.get(STATUS_FIELD) instanceof BsonDocument st) || !(st.get("resume") instanceof BsonDocument resume) || !st.containsKey("job")) {
+            return;
+        }
+        var job = new ObjectId();
+        var claimed = mclient.getDatabase(db).getCollection(filesColl, BsonDocument.class).updateOne(
+                Filters.and(Filters.eq("_id", file.get("_id")), Filters.eq(STATUS_FIELD + ".job", st.get("job"))),
+                Updates.combine(Updates.set(STATUS_FIELD + ".job", new BsonObjectId(job)), Updates.set(STATUS_FIELD + ".status", "pending"),
+                        Updates.set(STATUS_FIELD + ".at", new BsonDateTime(System.currentTimeMillis()))));
+        if (claimed.getModifiedCount() == 0) {
+            return; // another node claimed it, or the file moved on
+        }
+        Account principal = null;
+        if (resume.get("user") instanceof BsonString user) {
+            var roles = new java.util.HashSet<String>();
+            if (resume.get("roles") instanceof BsonArray rs) {
+                rs.forEach(r -> roles.add(r.isString() ? r.asString().getValue() : r.toString()));
+            }
+            principal = new org.restheart.security.BaseAccount(user.getValue(), roles);
+        }
+        var caller = new Caller(resume.get("host") instanceof BsonString h ? h.getValue() : null, principal, Map.of(),
+                resume.get("base") instanceof BsonString b ? b.getValue() : "");
+        // replaced: whatever a job stopped halfway wrote for this file goes first
+        var upload = new Upload(caller, db, filesColl, file.get("_id"), true, rules, targetsOf(rules),
+                intOf(resume, "chunkSize", defaultChunkSize), intOf(resume, "chunkOverlap", defaultChunkOverlap), job);
+        LOGGER.info("documentChunkingInterceptor: resuming the lost chunking of file {} in {}/{}", idString(upload.fileId()), db, filesColl);
+        ThreadsUtils.virtualThreadsExecutor().execute(() -> chunkInBackground(upload, intOf(resume, "dbLimit", maxConcurrent)));
+    }
+
+    private static int intOf(BsonDocument doc, String key, int defaultValue) {
+        return doc.get(key) != null && doc.get(key).isNumber() ? doc.get(key).asNumber().intValue() : defaultValue;
+    }
+
+    /** Whether the job is still the file's: the file is there, and no newer upload replaced it. Always true when not in the background. */
+    private boolean current(Upload upload) {
+        if (upload.job() == null) {
+            return true;
+        }
+        var file = mclient.getDatabase(upload.db()).getCollection(upload.filesColl(), BsonDocument.class)
+                .find(Filters.eq("_id", upload.fileId())).projection(new BsonDocument(STATUS_FIELD + ".job", new BsonInt32(1))).first();
+        return file != null && file.get(STATUS_FIELD) instanceof BsonDocument st && new BsonObjectId(upload.job()).equals(st.get("job"));
     }
 
     static boolean isUpload(MongoRequest request) {
@@ -209,66 +489,69 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
     // -------------------------------------------------------------------------
 
-    private void chunk(MongoRequest request, MongoResponse response, List<ChunkingRule> rules, List<String> targets) {
-        var dbName = request.getDBName();
-        var collName = request.getCollectionName(); // e.g. "docs.files"
-        var bucketName = collName.endsWith(".files") ? collName.substring(0, collName.length() - 6) : collName;
-
-        var fileId = resolveFileId(request, response);
-        if (fileId == null) {
-            LOGGER.warn("documentChunkingInterceptor: could not determine file id for {}/{}", dbName, collName);
-            return;
-        }
-
-        byte[] fileBytes;
-        String filename;
-        BsonDocument fileMetadata;
-        try {
-            var bucket = GridFSBuckets.create(mclient.getDatabase(dbName), bucketName);
-            try (var in = bucket.openDownloadStream(fileId)) {
-                filename = in.getGridFSFile().getFilename();
-                var md = in.getGridFSFile().getMetadata();
-                fileMetadata = md == null ? null : BsonDocument.parse(md.toJson());
-                fileBytes = in.readAllBytes();
-            }
-        } catch (Exception e) {
-            LOGGER.warn("documentChunkingInterceptor: could not download file {} from {}/{}: {}", fileId, dbName, bucketName, e.getMessage());
-            return;
-        }
+    /** Chunks one file as its bucket's rules say; the warnings go to {@code warn}. */
+    private Outcome chunk(Upload upload, Consumer<String> warn) {
+        var dbName = upload.db();
+        var collName = upload.filesColl(); // e.g. "docs.files"
+        var bucketName = upload.bucket();
+        var fileId = upload.fileId();
 
         // a replaced file's chunks of before go first, wherever its rule of then sent them
-        if (request.isPut()) {
-            deleteChunks(request, response, targets, List.of(fileId));
+        if (upload.replaced()) {
+            deleteChunks(upload.caller(), dbName, collName, upload.targets(), List.of(fileId), warn);
         }
 
-        var contentType = detect(fileBytes, filename);
-        var rule = ruleFor(rules, contentType, filename, dbName, collName, fileId);
-        if (rule == null) {
-            LOGGER.debug("documentChunkingInterceptor: file {} in {}/{} matches no chunking rule, not chunked", fileId, dbName, bucketName);
-            return;
-        }
-
+        // the file is streamed from the bucket, never held whole: TikaInputStream marks and resets for the
+        // detection, and spools to a temporary file only for a parser that needs random access, as PDF's does
+        String filename;
+        BsonDocument fileMetadata;
+        String contentType;
+        ChunkingRule rule;
         String text;
-        try {
-            var handler = new BodyContentHandler(-1);
-            new AutoDetectParser().parse(new ByteArrayInputStream(fileBytes), handler, new Metadata(), new ParseContext());
-            text = handler.toString();
+        try (var in = GridFSBuckets.create(mclient.getDatabase(dbName), bucketName).openDownloadStream(fileId);
+                var tis = TikaInputStream.get(in)) {
+            filename = in.getGridFSFile().getFilename();
+            var md = in.getGridFSFile().getMetadata();
+            fileMetadata = md == null ? null : BsonDocument.parse(md.toJson());
+
+            contentType = detect(tis, filename);
+            rule = ruleFor(upload.rules(), contentType, filename, dbName, collName, fileId);
+            if (rule == null) {
+                // only the first bytes were read, for the detection
+                LOGGER.debug("documentChunkingInterceptor: file {} in {}/{} matches no chunking rule, not chunked", fileId, dbName, bucketName);
+                return new Outcome("skipped", null, null);
+            }
+
+            try {
+                var handler = new BodyContentHandler(-1);
+                var tikaMetadata = new Metadata();
+                if (filename != null) {
+                    tikaMetadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
+                }
+                new AutoDetectParser().parse(tis, handler, tikaMetadata, new ParseContext());
+                text = handler.toString();
+            } catch (Exception e) {
+                LOGGER.warn("documentChunkingInterceptor: Tika could not extract text from file {} in {}/{}: {}", fileId, dbName, bucketName, e.getMessage());
+                warn.accept("no text could be extracted from file " + idString(fileId) + ": " + e.getMessage());
+                return new Outcome("failed", rule.name(), null);
+            }
         } catch (Exception e) {
-            LOGGER.warn("documentChunkingInterceptor: Tika could not extract text from file {} in {}/{}: {}", fileId, dbName, bucketName, e.getMessage());
-            return;
+            LOGGER.warn("documentChunkingInterceptor: could not read file {} from {}/{}: {}", fileId, dbName, bucketName, e.getMessage());
+            warn.accept("file " + idString(fileId) + " not chunked: it could not be read (" + e.getMessage() + ")");
+            return new Outcome("failed", null, null);
         }
         if (text == null || text.isBlank()) {
             LOGGER.debug("documentChunkingInterceptor: no text extracted from file {} in {}/{}", fileId, dbName, bucketName);
-            return;
+            return new Outcome("done", rule.name(), 0);
         }
 
-        var chunkSize = rule.chunkSize() != null ? rule.chunkSize() : RequestOverrides.intVal(request, RequestOverrides.CHUNK_SIZE, defaultChunkSize);
-        var chunkOverlap = rule.chunkOverlap() != null ? rule.chunkOverlap() : RequestOverrides.intVal(request, RequestOverrides.CHUNK_OVERLAP, defaultChunkOverlap);
+        var chunkSize = rule.chunkSize() != null ? rule.chunkSize() : upload.chunkSize();
+        var chunkOverlap = rule.chunkOverlap() != null ? rule.chunkOverlap() : upload.chunkOverlap();
         // code keeps its zero overlap unless the rule asks for one
         var codeOverlap = rule.chunkOverlap() != null ? rule.chunkOverlap() : 0;
         var chunks = chunkText(text.strip(), filename, chunkSize, chunkOverlap, rule.splitter(), codeOverlap);
         if (chunks.isEmpty()) {
-            return;
+            return new Outcome("done", rule.name(), 0);
         }
 
         var source = sourceOf(dbName, collName, fileId);
@@ -296,7 +579,28 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
             documents.add(chunk);
         }
 
-        write(request, response, rule.targetCollection(), fileId, documents);
+        // a newer upload of the file, or its deletion, supersedes this job: nothing to write
+        if (!current(upload)) {
+            return new Outcome("superseded", rule.name(), 0);
+        }
+        var written = write(upload, rule.targetCollection(), documents, warn);
+        // superseded while writing: what this job wrote goes back
+        if (written && !current(upload)) {
+            takeBack(upload, rule.targetCollection(), documents);
+            return new Outcome("superseded", rule.name(), 0);
+        }
+        return written ? new Outcome("done", rule.name(), documents.size()) : new Outcome("failed", rule.name(), 0);
+    }
+
+    /** Removes the chunks a superseded job wrote, by their ids. */
+    private void takeBack(Upload upload, String targetCollection, List<BsonDocument> documents) {
+        try {
+            var ids = new BsonArray();
+            documents.forEach(d -> ids.add(d.get("_id")));
+            mclient.getDatabase(upload.db()).getCollection(targetCollection, BsonDocument.class).deleteMany(Filters.in("_id", ids));
+        } catch (Exception e) {
+            LOGGER.warn("documentChunkingInterceptor: could not take back the chunks of superseded file {} from {}: {}", idString(upload.fileId()), targetCollection, e.getMessage());
+        }
     }
 
     /**
@@ -304,45 +608,48 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
      * collection's embedding rules see them together. A collection that does not exist is created
      * empty. A refused write, or the warnings of the embedding rules, reach the upload's response.
      */
-    private void write(MongoRequest request, MongoResponse response, String targetCollection, BsonValue fileId, List<BsonDocument> documents) {
-        var target = pathOf(request, targetCollection);
+    private boolean write(Upload upload, String targetCollection, List<BsonDocument> documents, Consumer<String> warn) {
+        var fileId = upload.fileId();
+        var target = pathOf(upload.caller().base(), targetCollection);
         try {
             var body = new BsonArray(documents);
-            var answer = dispatch(request, Methods.POST, target, body);
+            var answer = dispatch(upload.caller(), Methods.POST, target, body);
             if (answer.status() == 404) {
-                dispatch(request, Methods.PUT, target, new BsonDocument());
-                answer = dispatch(request, Methods.POST, target, body);
+                dispatch(upload.caller(), Methods.PUT, target, new BsonDocument());
+                answer = dispatch(upload.caller(), Methods.POST, target, body);
             }
             if (answer.status() >= 400) {
-                warn(response, "chunks of file " + idString(fileId) + " not written to '" + targetCollection + "': HTTP " + answer.status() + " " + answer.bodyAsString());
-                return;
+                warn.accept("chunks of file " + idString(fileId) + " not written to '" + targetCollection + "': HTTP " + answer.status() + " " + answer.bodyAsString());
+                return false;
             }
-            copyWarnings(answer, response);
+            copyWarnings(answer, warn);
             LOGGER.info("documentChunkingInterceptor: wrote {} chunks of file {} to {}", documents.size(), idString(fileId), target);
+            return true;
         } catch (Exception e) {
             LOGGER.error("documentChunkingInterceptor: could not write the chunks of file {} to {}", idString(fileId), target, e);
-            warn(response, "chunks of file " + idString(fileId) + " not written to '" + targetCollection + "': " + e.getMessage());
+            warn.accept("chunks of file " + idString(fileId) + " not written to '" + targetCollection + "': " + e.getMessage());
+            return false;
         }
     }
 
     /** Deletes the chunks of the given files from every target collection of the bucket. */
-    private void deleteChunks(MongoRequest request, MongoResponse response, List<String> targets, List<BsonValue> fileIds) {
+    private void deleteChunks(Caller caller, String db, String filesColl, List<String> targets, List<BsonValue> fileIds, Consumer<String> warn) {
         if (fileIds.isEmpty()) {
             return;
         }
         var sources = new BsonArray();
-        fileIds.forEach(id -> sources.add(new BsonString(sourceOf(request.getDBName(), request.getCollectionName(), id))));
+        fileIds.forEach(id -> sources.add(new BsonString(sourceOf(db, filesColl, id))));
         var filter = new BsonDocument("source", new BsonDocument("$in", sources));
         for (var target : targets) {
             try {
-                var answer = dispatch(request, Methods.DELETE, pathOf(request, target) + "/*?filter=" + encode(BsonUtils.toJson(filter)), null);
+                var answer = dispatch(caller, Methods.DELETE, pathOf(caller.base(), target) + "/*?filter=" + encode(BsonUtils.toJson(filter)), null);
                 // 404: the collection was never written to, so there is nothing to delete
                 if (answer.status() >= 400 && answer.status() != 404) {
-                    warn(response, "chunks not deleted from '" + target + "': HTTP " + answer.status() + " " + answer.bodyAsString());
+                    warn.accept("chunks not deleted from '" + target + "': HTTP " + answer.status() + " " + answer.bodyAsString());
                 }
             } catch (Exception e) {
                 LOGGER.error("documentChunkingInterceptor: could not delete chunks from {}", target, e);
-                warn(response, "chunks not deleted from '" + target + "': " + e.getMessage());
+                warn.accept("chunks not deleted from '" + target + "': " + e.getMessage());
             }
         }
     }
@@ -362,16 +669,15 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     }
 
     /** A request through the handler chain, in process, signed in as the uploader and marked as the chunker's. */
-    private InProcessDispatcher.Response dispatch(MongoRequest request, HttpString method, String target, BsonValue body) throws Exception {
+    private InProcessDispatcher.Response dispatch(Caller caller, HttpString method, String target, BsonValue body) throws Exception {
         var headers = new HeaderMap();
-        var host = request.getExchange().getRequestHeaders().getFirst(Headers.HOST);
-        if (host != null) {
-            headers.put(Headers.HOST, host);
+        if (caller.host() != null) {
+            headers.put(Headers.HOST, caller.host());
         }
         headers.put(Headers.CONTENT_TYPE, "application/json");
         var bytes = body == null ? new byte[0] : BsonUtils.toJson(body).getBytes(StandardCharsets.UTF_8);
-        var principal = request.getAuthenticatedAccount();
-        Map<String, Object> attached = request.getExchange().getAttachment(Request.ATTACHED_PARAMS_KEY);
+        var principal = caller.principal();
+        var attached = caller.attached();
         return dispatcher.dispatch(method, target, headers, bytes, exchange -> {
             exchange.putAttachment(CHUNKER_WRITE, Boolean.TRUE);
             if (principal != null) {
@@ -383,14 +689,14 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
         });
     }
 
-    private static void copyWarnings(InProcessDispatcher.Response answer, MongoResponse response) {
+    private static void copyWarnings(InProcessDispatcher.Response answer, Consumer<String> warn) {
         var written = answer.bodyAsString();
         if (written == null || written.isBlank()) {
             return;
         }
         try {
             if (BsonDocument.parse(written).get("_warnings") instanceof BsonArray warnings) {
-                warnings.forEach(w -> response.addWarning(w.isString() ? w.asString().getValue() : w.toString()));
+                warnings.forEach(w -> warn.accept(w.isString() ? w.asString().getValue() : w.toString()));
             }
         } catch (Exception e) {
             // not a document: nothing to copy
@@ -411,9 +717,12 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
     /** The path of a collection of the bucket's database, as the request addresses the bucket: mount included. */
     static String pathOf(MongoRequest request, String collection) {
-        var path = request.getPath();
-        var at = path.lastIndexOf("/" + request.getCollectionName());
-        return (at >= 0 ? path.substring(0, at) : "") + "/" + encode(collection);
+        return pathOf(baseOf(request), collection);
+    }
+
+    /** The path of a collection under {@code base}, the part of the upload's path before the bucket. */
+    static String pathOf(String base, String collection) {
+        return base + "/" + encode(collection);
     }
 
     /** Where a chunk comes from: database, bucket and file id. */
@@ -453,10 +762,12 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
         return null;
     }
 
-    /** The type Tika detects from the bytes, and the name when the bytes do not say. */
-    static String detect(byte[] fileBytes, String filename) {
+    private static final Tika TIKA = new Tika();
+
+    /** The type Tika detects from the first bytes of the stream, and the name when the bytes do not say; the stream is reset after. */
+    static String detect(TikaInputStream stream, String filename) {
         try {
-            return new Tika().detect(fileBytes, filename);
+            return TIKA.detect(stream, filename);
         } catch (Exception e) {
             return null;
         }

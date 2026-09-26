@@ -223,4 +223,24 @@ public class DocumentChunkingInterceptorTest {
         // the words around the blank are all there, in order; where a window cuts them is the splitter's business
         assertEquals("first page second page", String.join(" ", chunks));
     }
+
+    @Test
+    public void resumeOf_keepsWhoWhereAndTheSizes_neverTheOverrides() {
+        var principal = new org.restheart.security.BaseAccount("alice", java.util.Set.of("editor"));
+        var caller = new DocumentChunkingInterceptor.Caller("svc.example.com", principal,
+                java.util.Map.of("override-ai-voyage-api-key", "secret"), "/mydb");
+        var upload = new DocumentChunkingInterceptor.Upload(caller, "mydb", "docs.files", new org.bson.BsonString("f1"), false,
+                List.of(), List.of(), 500, 50, new org.bson.types.ObjectId());
+
+        var resume = DocumentChunkingInterceptor.resumeOf(upload, 1);
+
+        assertEquals("svc.example.com", resume.getString("host").getValue());
+        assertEquals("/mydb", resume.getString("base").getValue());
+        assertEquals("alice", resume.getString("user").getValue());
+        assertEquals("editor", resume.getArray("roles").get(0).asString().getValue());
+        assertEquals(500, resume.getInt32("chunkSize").getValue());
+        assertEquals(50, resume.getInt32("chunkOverlap").getValue());
+        assertEquals(1, resume.getInt32("dbLimit").getValue());
+        assertTrue(!resume.toJson().contains("secret"), "no override, no key, is kept on the file");
+    }
 }

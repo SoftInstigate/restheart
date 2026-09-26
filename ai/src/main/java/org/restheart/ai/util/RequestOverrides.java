@@ -96,6 +96,10 @@ public final class RequestOverrides {
     // ── documentChunkingInterceptor overrides: the defaults of a tenant, for a rule that sets none ──
     public static final String CHUNK_SIZE = "override-ai-chunk-size";
     public static final String CHUNK_OVERLAP = "override-ai-chunk-overlap";
+    /** Whether the chunker runs after the upload has answered; wins over the static {@code async} (#758). */
+    public static final String CHUNKING_ASYNC = "override-ai-chunking-async";
+    /** How many files of the request's database are chunked at once; the static {@code max-concurrent} stays the node-wide cap (#758). */
+    public static final String CHUNKING_MAX_CONCURRENT = "override-ai-chunking-max-concurrent";
 
     // ── rerankingInterceptor overrides ───────────────────────────────────────
     public static final String ATLAS_API_KEY = "override-ai-atlas-api-key";
@@ -144,6 +148,23 @@ public final class RequestOverrides {
         }
         var v = req.attachedParam(key);
         return (v instanceof String s && !s.isBlank()) ? s : defaultValue;
+    }
+
+    /** Effective boolean value: an attached {@code Boolean}, or the String {@code true} or {@code false}; else {@code defaultValue}. */
+    public static boolean boolVal(Request<?> req, String key, boolean defaultValue) {
+        if (req == null) {
+            return defaultValue;
+        }
+        var v = req.attachedParam(key);
+        if (v instanceof Boolean b) {
+            return b;
+        }
+        if (v instanceof String s && !s.isBlank()) {
+            var t = s.strip();
+            if (t.equalsIgnoreCase("true")) return true;
+            if (t.equalsIgnoreCase("false")) return false;
+        }
+        return defaultValue;
     }
 
     /**
