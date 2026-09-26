@@ -91,7 +91,7 @@ public class GetAggregationHandler extends PipelinedHandler {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
-        if (request.isInError()) {
+        if (request.isInError() || Boolean.TRUE.equals(request.attachedParam(MongoRequest.AGGREGATION_ANSWERED))) {
             next(exchange);
             return;
         }

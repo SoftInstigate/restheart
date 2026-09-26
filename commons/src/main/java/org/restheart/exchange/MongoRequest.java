@@ -105,6 +105,14 @@ import io.undertow.util.PathTemplateMatch;
 public class MongoRequest extends BsonRequest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoRequest.class);
 
+    /**
+     * Name of the request attached param that an interceptor sets when it has already written
+     * the result of an aggregation: the aggregation handler then leaves the response as it is,
+     * and the RESPONSE interceptors run on it as on any other aggregation. Setting the request
+     * in error instead would skip them too.
+     */
+    public static final String AGGREGATION_ANSWERED = "aggregation-answered";
+
     /** The URI pattern that matches this request (from path template matching). */
     private final String whereUri;
 

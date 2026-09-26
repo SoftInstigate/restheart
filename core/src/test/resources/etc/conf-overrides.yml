@@ -832,5 +832,7 @@
 /fakeEmbeddingProvider5d/enabled: true
 # and a contextual one, whose vectors say how many chunks were embedded together (#754)
 /fakeContextualEmbeddingProvider/enabled: true
+# a reranker that reverses the order, to verify reranking after $vectorScan without a key
+/fakeRerankProvider/enabled: true
 # and one whose every call fails, to verify a write survives a failed embedding
 /fakeEmbeddingProviderFailing/enabled: true

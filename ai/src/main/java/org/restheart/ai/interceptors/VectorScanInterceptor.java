@@ -134,14 +134,12 @@ import io.undertow.util.Headers;
  *       ...stages[i+1..end]]} ({@code $documents}, MongoDB 6.0+, runs a pipeline
  *       against a literal array instead of a collection). Otherwise the winners are
  *       the response directly.</li>
- *   <li>Sets {@code request.setInError(true)} after building the response — same trick
- *       {@code vectorSearchIndexCreateInterceptor} uses — to skip the standard
- *       {@code GetAggregationHandler} execution (which would otherwise send the
- *       unresolved {@code $vectorScan} stage to MongoDB and get a real error back) while
- *       leaving {@code response.isInError() = false}, so {@code RESPONSE}-phase
- *       interceptors — {@code rerankingInterceptor} included — still run normally on
- *       whatever this produced. Reranking composes for free: it only looks at the
- *       final result array, never at how it was produced.</li>
+ *   <li>Attaches the param {@link MongoRequest#AGGREGATION_ANSWERED} to the request after
+ *       building the response, so that {@code GetAggregationHandler} leaves it as it is
+ *       (it would otherwise send the unresolved {@code $vectorScan} stage to MongoDB and get
+ *       a real error back). The request is not marked in error: that would skip the
+ *       {@code RESPONSE} interceptors too, and {@code rerankingInterceptor} and the
+ *       representation must run on the result as on any other aggregation.</li>
  * </ol>
  *
  * <h2>Known limitation</h2>
@@ -334,9 +332,8 @@ public class VectorScanInterceptor implements MongoInterceptor {
         response.setContentTypeAsJson();
         response.setStatusCode(HttpStatus.SC_OK);
 
-        // let RESPONSE-phase interceptors (e.g. rerankingInterceptor) still run, but
-        // skip the standard GetAggregationHandler execution -- see class javadoc
-        request.setInError(true);
+        // the result is written: GetAggregationHandler must leave it as it is -- see class javadoc
+        request.attachParam(MongoRequest.AGGREGATION_ANSWERED, true);
     }
 
     // -------------------------------------------------------------------------

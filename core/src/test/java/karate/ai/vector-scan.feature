@@ -87,6 +87,34 @@ Scenario: results are ordered by similarity, most similar first, each carrying a
     And assert response[1].score > response[2].score
     And assert response[2].score > response[3].score
 
+Scenario: a rerank block reorders what $vectorScan returned, and says so with _rerankScore
+    # the shape of a semantic search: $vectorScan, a $set of text for the reranker, a $project;
+    # fakeRerankProvider returns the results reversed, an order no similarity produces
+    * header Authorization = adminAuth
+    Given path coll + '/_aggrs/scanReranked'
+    And param avars = '{"q": [1, 0], "question": "which category"}'
+    And param _ai-rerank-override = 'fakeRerankProvider'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And assert response.length == 4
+    And match response[0]._id == 'docC'
+    And match response[3]._id == 'docA'
+    And match each response[*]._rerankScore == '#number'
+    And match each response[*].score == '#number'
+
+Scenario: a rerank block whose question is passed as a plain query parameter, as an MCP call does
+    * header Authorization = adminAuth
+    Given path coll + '/_aggrs/scanReranked'
+    And param avars = '{"q": [1, 0]}'
+    And param question = 'which category'
+    And param _ai-rerank-override = 'fakeRerankProvider'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response[0]._id == 'docC'
+    And match each response[*]._rerankScore == '#number'
+
 Scenario: limit truncates to the top-K results
     * header Authorization = adminAuth
     Given path coll + '/_aggrs/scanAll'
