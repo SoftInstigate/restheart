@@ -175,4 +175,16 @@ public class DocumentChunkingInterceptorTest {
                 { "chunking": [ { "target-collection": "a" }, { "target-collection": "b" }, { "target-collection": "a" } ] }"""));
         assertEquals(List.of("a", "b"), DocumentChunkingInterceptor.targetsOf(rules));
     }
+
+    @Test
+    public void aWindowOfWhitespaceAlone_isNoChunk() {
+        // the blank page of a PDF: more whitespace than a chunk holds
+        var text = "first page" + " ".repeat(40) + "\n\n\n" + " ".repeat(40) + "second page";
+
+        var chunks = DocumentChunkingInterceptor.splitIntoChunks(text, 20, 0);
+
+        assertTrue(chunks.stream().noneMatch(String::isBlank), "no blank chunk, got " + chunks);
+        // the words around the blank are all there, in order; where a window cuts them is the splitter's business
+        assertEquals("first page second page", String.join(" ", chunks));
+    }
 }

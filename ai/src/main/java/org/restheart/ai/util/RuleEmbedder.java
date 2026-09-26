@@ -81,7 +81,8 @@ public final class RuleEmbedder {
             var texts = new ArrayList<String>();
             for (var doc : docs) {
                 var text = doc.get(rule.textField());
-                if (text != null && text.isString()) {
+                // a blank text has no meaning to embed, and a provider refuses the whole request that carries one
+                if (text != null && text.isString() && !text.asString().getValue().isBlank()) {
                     targets.add(doc);
                     texts.add(text.asString().getValue());
                 }

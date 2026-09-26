@@ -200,4 +200,27 @@ public class RuleEmbedderTest {
         RuleEmbedder.apply(e, null, "v");
         assertFalse(e.containsKey("v"));
     }
+
+    @Test
+    public void aBlankText_isNotSent_andTheOthersAreEmbedded() {
+        var calls = new ArrayList<List<String>>();
+        EmbeddingModel model = (texts, request) -> {
+            if (texts.stream().anyMatch(String::isBlank)) {
+                throw new IllegalArgumentException("Input cannot contain empty strings");
+            }
+            calls.add(texts);
+            return texts.stream().map(t -> new float[]{0.5f}).toList();
+        };
+        var embedder = new RuleEmbedder(registryWith("p", model), "p");
+        var blank = doc("  \n ", "A");
+        var docs = List.of(doc("a1", "A"), blank, doc("a2", "A"));
+
+        var warnings = embedder.embed(null, List.of(new EmbeddingRule("text", "vector", "p", null, null)), docs);
+
+        assertTrue(warnings.isEmpty());
+        assertEquals(List.of(List.of("a1", "a2")), calls);
+        assertTrue(docs.get(0).containsKey("vector"));
+        assertTrue(!blank.containsKey("vector"));
+        assertTrue(docs.get(2).containsKey("vector"));
+    }
 }

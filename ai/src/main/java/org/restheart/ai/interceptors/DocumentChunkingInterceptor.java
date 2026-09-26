@@ -527,7 +527,11 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
                 int boundary = text.lastIndexOf(' ', end);
                 if (boundary > start) end = boundary;
             }
-            chunks.add(text.substring(start, end).strip());
+            // a window of whitespace alone, as a blank page leaves, is no chunk: an embedding provider refuses an empty input
+            var chunk = text.substring(start, end).strip();
+            if (!chunk.isEmpty()) {
+                chunks.add(chunk);
+            }
             int step = end - start - overlap;
             if (step <= 0) step = size;
             start += step;
