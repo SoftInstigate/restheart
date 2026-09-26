@@ -223,4 +223,12 @@ public class RuleEmbedderTest {
         assertTrue(!blank.containsKey("vector"));
         assertTrue(docs.get(2).containsKey("vector"));
     }
+
+    @Test
+    public void hasContent_needsALetterOrADigit_noBreakSpacesAreNone() {
+        assertTrue(RuleEmbedder.hasContent("ok"));
+        assertTrue(RuleEmbedder.hasContent("12"));
+        assertFalse(RuleEmbedder.hasContent("\u00A0\u00A0 \n"));
+        assertFalse(RuleEmbedder.hasContent("— … ·"));
+    }
 }

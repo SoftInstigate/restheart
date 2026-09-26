@@ -512,30 +512,122 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     }
 
     /**
-     * Splits {@code text} into chunks of at most {@code size} characters with
-     * {@code overlap} characters of context carried over between consecutive chunks.
+     * The boundaries a text is cut at, from the one that keeps the most meaning together to the one
+     * that keeps the least: paragraph, line, sentence, word. Each splits after the separator, so the
+     * pieces put back together are the text as it was.
+     */
+    private static final java.util.regex.Pattern[] SEPARATORS = {
+        java.util.regex.Pattern.compile("(?<=\\n\\n)"),
+        java.util.regex.Pattern.compile("(?<=\\n)"),
+        java.util.regex.Pattern.compile("(?<=[.!?\u2026]\\s)"),
+        java.util.regex.Pattern.compile("(?<=\\s)")
+    };
+
+    /**
+     * Splits {@code text} into chunks of at most {@code size} characters, the way LangChain's
+     * RecursiveCharacterTextSplitter does: the text is cut at paragraphs, a piece still longer than
+     * {@code size} at lines, then sentences, then words; the pieces are then put back together into
+     * chunks as full as {@code size} allows. The overlap is made of whole pieces of the chunk before,
+     * up to {@code overlap} characters, so a chunk never starts in the middle of a word.
+     *
+     * <p>A word is never cut: one longer than {@code size}, a URL or a hash, is a chunk of its own,
+     * longer than the rest. A window of whitespace alone, as a blank page leaves, is no chunk; one
+     * with too little in it to mean anything is joined to its neighbour, see {@link #joinTooSmall}.
      */
     static List<String> splitIntoChunks(String text, int size, int overlap) {
         var chunks = new ArrayList<String>();
         if (text == null || text.isEmpty() || size <= 0) return chunks;
 
-        int start = 0;
-        int len = text.length();
-        while (start < len) {
-            int end = Math.min(start + size, len);
-            if (end < len) {
-                int boundary = text.lastIndexOf(' ', end);
-                if (boundary > start) end = boundary;
+        var pieces = new ArrayList<String>();
+        piecesOf(text, size, 0, pieces);
+
+        // put the pieces back together, as many as fit, keeping whole pieces of the chunk before as overlap
+        var current = new java.util.ArrayDeque<String>();
+        int length = 0;
+        for (var piece : pieces) {
+            if (length + piece.length() > size && !current.isEmpty()) {
+                addChunk(chunks, current);
+                while (!current.isEmpty() && (length > overlap || length + piece.length() > size)) {
+                    length -= current.removeFirst().length();
+                }
             }
-            // a window of whitespace alone, as a blank page leaves, is no chunk: an embedding provider refuses an empty input
-            var chunk = text.substring(start, end).strip();
-            if (!chunk.isEmpty()) {
-                chunks.add(chunk);
-            }
-            int step = end - start - overlap;
-            if (step <= 0) step = size;
-            start += step;
+            current.addLast(piece);
+            length += piece.length();
         }
-        return chunks;
+        addChunk(chunks, current);
+
+        return joinTooSmall(chunks, Math.min(MIN_MEANINGFUL_CHARS, size / 5));
     }
+
+    /** Cuts {@code text} at the separator of {@code level}, and a piece still longer than {@code size} at the next ones. */
+    private static void piecesOf(String text, int size, int level, List<String> out) {
+        if (text.length() <= size || level == SEPARATORS.length) {
+            out.add(text); // fits, or a single word longer than a chunk: whole, never cut
+            return;
+        }
+        var parts = SEPARATORS[level].split(text);
+        if (parts.length == 1) {
+            piecesOf(text, size, level + 1, out);
+            return;
+        }
+        for (var part : parts) {
+            if (part.length() <= size) {
+                out.add(part);
+            } else {
+                piecesOf(part, size, level + 1, out);
+            }
+        }
+    }
+
+    /** The pieces as one chunk, without the whitespace at its ends; nothing when they are whitespace alone. */
+    private static void addChunk(List<String> chunks, java.util.Collection<String> pieces) {
+        var chunk = String.join("", pieces).strip();
+        if (!chunk.isEmpty()) {
+            chunks.add(chunk);
+        }
+    }
+
+    /** The letters and digits a chunk needs to mean something on its own, with the default chunk size and above. */
+    static final int MIN_MEANINGFUL_CHARS = 20;
+
+    /**
+     * Joins every chunk with fewer than {@code min} letters and digits to the one before it, or to
+     * the one after when it is the first: a page number, a running header, the tail of a file after
+     * the last full window. On its own such a chunk is noise in a search, close to everything and to
+     * nothing; joined, its text is kept and the indexes stay without holes. A document that is all
+     * one small chunk stays as it is.
+     */
+    static List<String> joinTooSmall(List<String> chunks, int min) {
+        if (chunks.size() < 2 || min <= 0) {
+            return chunks;
+        }
+        var out = new ArrayList<String>();
+        String pending = null; // small chunks before the first big enough one
+        for (var chunk : chunks) {
+            if (meaningfulChars(chunk) >= min) {
+                out.add(pending == null ? chunk : pending + " " + chunk);
+                pending = null;
+            } else if (!out.isEmpty()) {
+                out.set(out.size() - 1, out.get(out.size() - 1) + " " + chunk);
+            } else {
+                pending = pending == null ? chunk : pending + " " + chunk;
+            }
+        }
+        if (pending != null) {
+            out.add(pending); // nothing was big enough: the whole text in one chunk
+        }
+        return out;
+    }
+
+    /** How many letters and digits {@code s} has. */
+    static int meaningfulChars(String s) {
+        int n = 0;
+        for (int i = 0;i < s.length();) {
+            int cp = s.codePointAt(i);
+            if (Character.isLetterOrDigit(cp)) n++;
+            i += Character.charCount(cp);
+        }
+        return n;
+    }
+
 }

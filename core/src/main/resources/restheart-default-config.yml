@@ -757,8 +757,11 @@ vectorSearchIndexDeleteInterceptor:
 # chunk-overlap and splitter (auto, text, code); the first rule that matches is applied. A bucket
 # without "chunking" is never chunked. The chunker computes no vectors: the target collection embeds
 # the chunks with its own vectorSearch rules, e.g. { "textField": "text", "embeddingField": "vector",
-# "groupBy": "fileId" } to embed a file's chunks together with a contextual model. See
-# https://github.com/SoftInstigate/restheart/issues/754
+# "groupBy": "fileId" } to embed a file's chunks together with a contextual model. Prose is cut
+# as LangChain's RecursiveCharacterTextSplitter does: at paragraphs, then lines, sentences and words,
+# the pieces put back together up to chunk-size, the overlap made of whole pieces; a word is never
+# cut, a chunk of whitespace alone is not written, one with fewer than 20 letters and digits is joined
+# to its neighbour. See https://github.com/SoftInstigate/restheart/issues/754
 documentChunkingInterceptor:
   enabled: false
   # defaults for a rule that sets none

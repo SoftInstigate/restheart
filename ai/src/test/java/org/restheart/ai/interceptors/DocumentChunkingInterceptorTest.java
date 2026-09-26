@@ -88,16 +88,52 @@ public class DocumentChunkingInterceptorTest {
 
     @Test
     public void textLongerThanChunkSize_splitsOnWordBoundariesWithOverlap() {
-        // "aaaa bbbb cccc dddd" (19 chars), size=10, overlap=3.
-        // Walked through by hand against DocumentChunkingInterceptor.splitIntoChunks:
-        //  start=0  end=10 -> trimmed to word boundary at 9  -> "aaaa bbbb", step=6
-        //  start=6  end=16 -> trimmed to word boundary at 14 -> "bbb cccc",  step=5
-        //  start=11 end=19 (== len, no trim)                -> "ccc dddd",  step=5
-        //  start=16 end=19 (== len, no trim)                -> "ddd",       step<=0 -> falls back to size
-        //  start=26 >= len(19) -> loop ends
+        // "aaaa bbbb cccc dddd" (19 chars), size=10, overlap=5: each window ends at a space, and the
+        // next starts at the first whole word within the overlap
         var text = "aaaa bbbb cccc dddd";
-        var chunks = DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3);
-        assertEquals(List.of("aaaa bbbb", "bbb cccc", "ccc dddd", "ddd"), chunks);
+        var chunks = DocumentChunkingInterceptor.splitIntoChunks(text, 10, 5);
+        assertEquals(List.of("aaaa bbbb", "bbbb cccc", "cccc dddd"), chunks);
+    }
+
+    @Test
+    public void anOverlapInsideAWord_carriesNoPartOfIt() {
+        // overlap=3 falls inside "bbbb": the next window starts at the following word, not at "bbb"
+        var chunks = DocumentChunkingInterceptor.splitIntoChunks("aaaa bbbb cccc dddd", 10, 3);
+        assertEquals(List.of("aaaa bbbb", "cccc dddd"), chunks);
+    }
+
+    @Test
+    public void noChunkEverCutsAWord() {
+        var text = "Il regolamento edilizio disciplina le attività di trasformazione urbanistica ed edilizia "
+                + "del territorio comunale, le caratteristiche degli edifici, delle loro pertinenze e degli spazi "
+                + "aperti, pubblici e privati, nel rispetto della normativa nazionale e regionale vigente.";
+        var words = new java.util.HashSet<>(java.util.List.of(text.split("\\s+")));
+        for (int size : new int[] {15, 30, 47, 100}) {
+            for (int overlap : new int[] {0, 5, 13, 40}) {
+                for (var chunk : DocumentChunkingInterceptor.splitIntoChunks(text, size, overlap)) {
+                    for (var word : chunk.split("\\s+")) {
+                        assertTrue(words.contains(word), "size " + size + ", overlap " + overlap + ": '" + word + "' is not a word of the text, in [" + chunk + "]");
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void aWordLongerThanTheWindow_isOneChunkOfItsOwn() {
+        var url = "https://example.com/" + "x".repeat(60);
+        var chunks = DocumentChunkingInterceptor.splitIntoChunks("see " + url + " for the full list", 20, 0);
+        assertTrue(chunks.stream().anyMatch(c -> c.contains(url)), "the URL is whole in a chunk, got " + chunks);
+    }
+
+    @Test
+    public void aChunkTooSmallToMeanAnything_isJoinedToItsNeighbour() {
+        var big = "a chunk with plenty of letters in it";
+        var other = "another chunk with plenty of letters";
+        assertEquals(List.of(big + " p. 12", other), DocumentChunkingInterceptor.joinTooSmall(List.of(big, "p. 12", other), 20));
+        assertEquals(List.of("12 " + big), DocumentChunkingInterceptor.joinTooSmall(List.of("12", big), 20));
+        assertEquals(List.of("ab cd"), DocumentChunkingInterceptor.joinTooSmall(List.of("ab", "cd"), 20));
+        assertEquals(List.of("a short document"), DocumentChunkingInterceptor.joinTooSmall(List.of("a short document"), 20));
     }
 
     @Test

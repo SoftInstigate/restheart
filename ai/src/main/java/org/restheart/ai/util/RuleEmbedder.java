@@ -81,8 +81,9 @@ public final class RuleEmbedder {
             var texts = new ArrayList<String>();
             for (var doc : docs) {
                 var text = doc.get(rule.textField());
-                // a blank text has no meaning to embed, and a provider refuses the whole request that carries one
-                if (text != null && text.isString() && !text.asString().getValue().isBlank()) {
+                // a text without a letter or a digit has nothing to embed, and a provider refuses the whole
+                // request that carries an empty one; no-break spaces, which Java does not count as whitespace, included
+                if (text != null && text.isString() && hasContent(text.asString().getValue())) {
                     targets.add(doc);
                     texts.add(text.asString().getValue());
                 }
@@ -168,5 +169,10 @@ public final class RuleEmbedder {
             arr.add(new BsonDouble(f));
         }
         target.append(field, arr);
+    }
+
+    /** Whether {@code text} has at least one letter or digit. */
+    static boolean hasContent(String text) {
+        return text.codePoints().anyMatch(Character::isLetterOrDigit);
     }
 }
