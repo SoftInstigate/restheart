@@ -1071,8 +1071,9 @@ mcpService:
   # How long an MCP session may go unused, with no open stream, before the server ends it.
   # A session normally ends when the client sends DELETE, which most clients that go away
   # never do; without a timeout their sessions stay in memory for the life of the process.
-  # A client that comes back after its session ended gets a new one on its next request,
-  # transparently. 0 keeps every session until DELETE.
+  # A session subscribed to a resource is never ended this way. A client that comes back after
+  # its session ended is answered 404 and sends a new initialize, as the MCP specification
+  # prescribes. 0 keeps every session until DELETE.
   session-idle-timeout-seconds: 1800
 
   # Enables the MCP "resources" primitive (resources/list, resources/read,
