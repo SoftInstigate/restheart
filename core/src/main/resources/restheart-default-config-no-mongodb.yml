@@ -272,7 +272,8 @@ authTokenService:
 oauthAuthorizationServerMetadataService:
   enabled: false
   # Optional: specify scheme and host for absolute URLs in metadata responses.
-  # If null, the request Host header is used as fallback.
+  # When null: X-Forwarded-Proto and X-Forwarded-Host, each when present, else the request itself.
+  # A per-request override-ai-mcp-public-base-url wins over both.
   # Example: https://api.example.com
   base-url: null
   # URI of the authorization endpoint (included in AS metadata as authorization_endpoint).
