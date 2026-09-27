@@ -345,11 +345,9 @@ public class PolyglotDeployer implements Initializer {
 
                         if (checkPluginFiles) {
                             if (Files.isRegularFile(pluginPath)) {
-                                // Source.findLanguage() is NOT called here:
-                                // it triggers Truffle's language-discovery
-                                // internals which corrupt DefaultContextThread-
-                                // Local (oracle/graal#7520).  Files are
-                                // already filtered to .mjs by the deployer.
+                                // files are already filtered to .mjs by the deployer, so
+                                // Source.findLanguage() is not needed: it would need the
+                                // plugins classloader to see js-language
                                 ret.add(pluginPath);
                             } else {
                                 LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(),

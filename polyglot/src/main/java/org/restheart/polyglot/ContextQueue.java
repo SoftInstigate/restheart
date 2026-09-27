@@ -82,25 +82,15 @@ public class ContextQueue {
         this.modulesReplacements = modulesReplacements;
         this.OPTS = OPTS;
 
-        // Pre-populate pool on the dedicated platform thread.  Each Context
-        // is created, entered, bound, left and returned to the pool — all on
-        // the same thread that will be used at runtime, to avoid
-        // DefaultContextThreadLocal index corruption (oracle/graal#7520).
-        //
-        // If already on the platform thread (e.g. called from within a
-        // JSInterceptorFactory.create lambda), create directly to avoid
-        // self-deadlock on the single-threaded executor.
-        if (PolyglotThreadUtils.isAlreadyOnPlatformThread()) {
-            populatePool(engine, name, conf, logger, mclient, modulesReplacements);
-        } else {
-            try {
-                PolyglotThreadUtils.onPlatformThread(() -> {
-                    populatePool(engine, name, conf, logger, mclient, modulesReplacements);
-                    return null;
-                });
-            } catch (Exception e) {
-                throw new IllegalStateException("Error pre-populating polyglot context pool", e);
-            }
+        // Pre-populate the pool: each Context is created, entered, bound, left and offered.
+        // Truffle operations need the plugins classloader, see PolyglotThreadUtils.
+        try {
+            PolyglotThreadUtils.run(() -> {
+                populatePool(engine, name, conf, logger, mclient, modulesReplacements);
+                return null;
+            });
+        } catch (Exception e) {
+            throw new IllegalStateException("Error pre-populating polyglot context pool", e);
         }
     }
 
@@ -140,8 +130,7 @@ public class ContextQueue {
     private void release(Context ctx) {
         if (!pool.offer(ctx)) {
             try {
-                // Context.close() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-                PolyglotThreadUtils.onPlatformThread(() -> {
+                PolyglotThreadUtils.run(() -> {
                     ctx.close();
                     return null;
                 });
@@ -163,11 +152,9 @@ public class ContextQueue {
      * @throws Exception if the task throws an exception
      */
     public <T> T executeWithContext(ContextTask<T> task) throws Exception {
-        // acquire/enter/task/leave/release must all happen on the very same
-        // platform thread: if the pool is empty, acquire() calls newContext()
-        // which creates a Context that must be entered on the same thread
-        // (see PolyglotThreadUtils / oracle/graal#7520).
-        return PolyglotThreadUtils.onPlatformThread(() -> {
+        // On the calling thread, the request's virtual thread included: only the classloader is
+        // set around the Truffle operations, see PolyglotThreadUtils.
+        return PolyglotThreadUtils.run(() -> {
             Context ctx = acquire();
             try {
                 ctx.enter();
@@ -189,7 +176,7 @@ public class ContextQueue {
      * @throws Exception if the task throws an exception
      */
     public void executeWithContext(VoidContextTask task) throws Exception {
-        PolyglotThreadUtils.onPlatformThread(() -> {
+        PolyglotThreadUtils.run(() -> {
             Context ctx = acquire();
             try {
                 ctx.enter();
@@ -279,10 +266,8 @@ public class ContextQueue {
                 .options(OPTS)
                 .build();
 
-        // NOTE: addBindings() is NOT called here.  It requires ctx.enter(),
-        // and a second enter()/leave() cycle before the caller's own
-        // enter() corrupts Truffle's DefaultContextThreadLocal (oracle/graal#7520).
-        // Callers must call addBindings() AFTER entering the context.
+        // addBindings() is not called here: it needs an entered context, and the caller is
+        // about to enter it.
         return ctx;
     }
 

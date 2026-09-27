@@ -95,13 +95,12 @@ public class JSStringService extends JSService implements StringService {
             LOGGER.trace("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        // All Context lifecycle must run on the dedicated platform thread.
-        // Source.findLanguage() is NOT called here: it corrupts Truffle's
-        // DefaultContextThreadLocal (oracle/graal#7520).
+        // the deployer only hands over .mjs files, so the language is known without
+        // Source.findLanguage(), which needs the plugins classloader to see js-language
         var language = "js";
 
         try {
-            return PolyglotThreadUtils.onPlatformThreadIO(() -> {
+            return PolyglotThreadUtils.runIO(() -> {
                 var ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions);
                 ctx.enter();
                 try {

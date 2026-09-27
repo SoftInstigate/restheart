@@ -64,9 +64,7 @@ public class JSInterceptorFactory {
     public JSInterceptorFactory(Optional<MongoClient> mclient, Configuration config) {
         this.mclient = mclient;
         this.config = config;
-        // Reuse the single shared Engine from JSPlugin rather than creating a
-        // second one.  Two concurrent Engines corrupt Truffle's internal
-        // DefaultContextThreadLocal bookkeeping (see oracle/graal#7520).
+        // the single shared Engine of JSPlugin
         this.engine = JSPlugin.engine();
     }
 
@@ -91,17 +89,16 @@ public class JSInterceptorFactory {
             LOGGER.debug("Enabling require for interceptor {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        // Source.findLanguage() is NOT called here: it corrupts Truffle's
-        // DefaultContextThreadLocal (oracle/graal#7520).
+        // the deployer only hands over .mjs files, so the language is known without
+        // Source.findLanguage(), which needs the plugins classloader to see js-language
         var language = "js";
 
         // check plugin definition
         var sindexPath = pluginPath.toUri().toString();
         LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
-        // All Context lifecycle must run on the dedicated platform thread.
         try {
-            return PolyglotThreadUtils.onPlatformThreadIO(() -> {
+            return PolyglotThreadUtils.runIO(() -> {
                 var ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions);
                 ctx.enter();
                 try {

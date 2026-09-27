@@ -23,6 +23,7 @@ package org.restheart.polyglot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
@@ -40,19 +41,15 @@ import org.slf4j.LoggerFactory;
 import com.mongodb.client.MongoClient;
 
 /**
- * Integration tests for the full polyglot Context lifecycle on the dedicated
- * platform thread.  These tests verify the fix for oracle/graal#7520:
+ * The polyglot Context lifecycle on the calling thread, virtual threads included:
  *
  * <ul>
- *   <li>Contexts created on the platform thread can be entered/evaluated
- *       without {@code ArrayIndexOutOfBoundsException} from
- *       {@code DefaultContextThreadLocal.fastGet()}.</li>
- *   <li>Bindings ({@code LOGGER}, {@code mclient}, {@code pluginArgs}) are
- *       accessible inside entered contexts.</li>
- *   <li>Contexts pooled by {@link ContextQueue} work correctly when
- *       {@code executeWithContext()} is called from virtual threads.</li>
- *   <li>Multiple concurrent virtual threads can use the same
- *       {@link ContextQueue} without corruption.</li>
+ *   <li>a Context is created, entered and evaluated on the thread that asks for it;</li>
+ *   <li>bindings ({@code LOGGER}, {@code mclient}, {@code pluginArgs}) are accessible inside an
+ *       entered context;</li>
+ *   <li>a Context pooled by {@link ContextQueue} serves {@code executeWithContext()} called from
+ *       a virtual thread, on that very thread;</li>
+ *   <li>many concurrent virtual threads share one {@link ContextQueue} without corruption.</li>
  * </ul>
  */
 class ContextLifecycleTest {
@@ -161,8 +158,30 @@ class ContextLifecycleTest {
     }
 
     @Test
-    void engineCreatedByOnPlatformThreadWorksForContextOps() throws Exception {
-        var pltEngine = PolyglotThreadUtils.onPlatformThread(Engine::create);
+    void executeWithContextRunsTheTaskOnTheCallingVirtualThread() throws Exception {
+        var cq = new ContextQueue(engine, "test-thread", null, LOGGER,
+                Optional.<MongoClient>empty(), null, Map.of());
+
+        var seen = new AtomicReference<Thread>();
+        var failure = new AtomicReference<Throwable>();
+
+        var vt = Thread.ofVirtual().unstarted(() -> {
+            try {
+                cq.executeWithContext((ContextQueue.VoidContextTask) ctx -> seen.set(Thread.currentThread()));
+            } catch (Throwable t) {
+                failure.set(t);
+            }
+        });
+        vt.start();
+        vt.join();
+
+        assertNull(failure.get(), () -> "virtual thread failed: " + failure.get());
+        assertSame(vt, seen.get());
+    }
+
+    @Test
+    void engineCreatedByRunWorksForContextOps() throws Exception {
+        var pltEngine = PolyglotThreadUtils.run(Engine::create);
         assertNotNull(pltEngine);
 
         try {

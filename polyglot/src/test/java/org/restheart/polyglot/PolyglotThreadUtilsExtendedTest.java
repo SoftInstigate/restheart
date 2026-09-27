@@ -23,54 +23,42 @@ package org.restheart.polyglot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link PolyglotThreadUtils} covering
- * {@code isAlreadyOnPlatformThread()} and {@code onPlatformThreadIO()}.
+ * {@link PolyglotThreadUtils} with the escape hatch off, its default: a Truffle operation runs
+ * on the thread that calls it, and only the context classloader is set around it.
  */
 class PolyglotThreadUtilsExtendedTest {
 
     @Test
-    void isAlreadyOnPlatformThreadReturnsFalseOnMainThread() {
-        assertFalse(PolyglotThreadUtils.isAlreadyOnPlatformThread(),
-                "main thread is not the platform executor thread");
+    void theEscapeHatchIsOffByDefault() {
+        assertFalse(PolyglotThreadUtils.isForcePlatform());
+        assertFalse(PolyglotThreadUtils.isAlreadyOnPlatformThread());
     }
 
     @Test
-    void isAlreadyOnPlatformThreadReturnsTrueInsideOnPlatformThread() throws Exception {
-        var result = PolyglotThreadUtils.onPlatformThread(
-                () -> PolyglotThreadUtils.isAlreadyOnPlatformThread());
-        assertTrue(result,
-                "task running inside onPlatformThread should see itself as on the platform thread");
+    void runsOnTheCallingThread() throws Exception {
+        var caller = Thread.currentThread();
+        var seen = PolyglotThreadUtils.run(Thread::currentThread);
+        assertSame(caller, seen);
     }
 
     @Test
-    void isAlreadyOnPlatformThreadReturnsFalseOnOtherPlatformThread() throws Exception {
-        var result = new AtomicBoolean(true);
-        var t = new Thread(() ->
-                result.set(PolyglotThreadUtils.isAlreadyOnPlatformThread()));
-        t.start();
-        t.join();
-        assertFalse(result.get(),
-                "a different platform thread is not the RH JS PLT thread");
-    }
-
-    @Test
-    void isAlreadyOnPlatformThreadReturnsFalseOnVirtualThread() throws Exception {
-        var result = new AtomicBoolean(true);
+    void runsOnTheCallingVirtualThread() throws Exception {
+        var seen = new AtomicReference<Thread>();
         var failure = new AtomicReference<Throwable>();
 
         var vt = Thread.ofVirtual().unstarted(() -> {
             try {
-                result.set(PolyglotThreadUtils.isAlreadyOnPlatformThread());
+                seen.set(PolyglotThreadUtils.run(Thread::currentThread));
             } catch (Throwable t) {
                 failure.set(t);
             }
@@ -79,39 +67,46 @@ class PolyglotThreadUtilsExtendedTest {
         vt.join();
 
         assertNull(failure.get(), () -> String.valueOf(failure.get()));
-        assertFalse(result.get(),
-                "a virtual thread is not the RH JS PLT thread");
+        assertSame(vt, seen.get());
+        assertTrue(seen.get().isVirtual());
     }
 
     @Test
-    void onPlatformThreadIOReturnsValue() throws Exception {
-        var result = PolyglotThreadUtils.onPlatformThreadIO(() -> 42);
-        assertEquals(42, result);
+    void restoresTheContextClassloader() throws Exception {
+        var before = Thread.currentThread().getContextClassLoader();
+        PolyglotThreadUtils.run(() -> null);
+        assertSame(before, Thread.currentThread().getContextClassLoader());
     }
 
     @Test
-    void onPlatformThreadIOPropagatesIOException() {
+    void runIOReturnsValue() throws Exception {
+        assertEquals(42, PolyglotThreadUtils.runIO(() -> 42));
+    }
+
+    @Test
+    void runIOPropagatesIOException() {
         var ex = assertThrows(IOException.class,
-                () -> PolyglotThreadUtils.onPlatformThreadIO(() -> {
+                () -> PolyglotThreadUtils.runIO(() -> {
                     throw new IOException("io-boom");
                 }));
         assertEquals("io-boom", ex.getMessage());
     }
 
     @Test
-    void onPlatformThreadIOPropagatesRuntimeException() {
+    void runIOPropagatesRuntimeException() {
         var ex = assertThrows(IllegalStateException.class,
-                () -> PolyglotThreadUtils.onPlatformThreadIO(() -> {
+                () -> PolyglotThreadUtils.runIO(() -> {
                     throw new IllegalStateException("rt-boom");
                 }));
         assertEquals("rt-boom", ex.getMessage());
     }
 
     @Test
-    void onPlatformThreadIORunsOnPlatformThread() throws Exception {
-        var threadName = PolyglotThreadUtils.onPlatformThreadIO(
-                () -> Thread.currentThread().getName());
-        assertTrue(threadName.startsWith("RH JS PLT"),
-                "onPlatformThreadIO should dispatch to the platform thread");
+    void runIOWrapsOtherCheckedExceptions() {
+        var ex = assertThrows(IOException.class,
+                () -> PolyglotThreadUtils.runIO(() -> {
+                    throw new Exception("checked-boom");
+                }));
+        assertEquals("checked-boom", ex.getCause().getMessage());
     }
 }

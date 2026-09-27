@@ -26,62 +26,58 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.graalvm.polyglot.Engine;
-
 /**
- * Runs GraalVM polyglot Context creation, enter/leave and eval on a dedicated
- * single platform thread.
+ * Runs a Truffle operation, Engine and Context creation, enter, eval, leave and close, on the
+ * calling thread with the {@code PluginsClassloader} as its context classloader.
  *
- * <p>Truffle's {@code DefaultContextThreadLocal} (see oracle/graal#7520) stores
- * per-thread state in a fixed-size slot array indexed by an internal counter.
- * When Engine and Context objects are created on one thread and then used from
- * a different thread, the slot indices can resolve to {@code -1}, causing an
- * {@code ArrayIndexOutOfBoundsException}. Using a <em>single</em> dedicated
- * thread for <strong>all</strong> polyglot operations eliminates the
- * cross-thread access entirely.</p>
+ * <p>Truffle resolves a language's fast-thread-local slot by looking its class up through the
+ * thread's context classloader, and returns {@code -1} when it is not found
+ * ({@code PolyglotFastThreadLocals.RESERVED_NULL}). {@code js-language} lives in
+ * {@code plugins/lib}, which only the {@code PluginsClassloader} sees, so a thread whose context
+ * classloader is the system one resolves JavaScript to {@code -1} and the next lookup fails with
+ * {@code ArrayIndexOutOfBoundsException: Index -1} in {@code DefaultContextThreadLocal.fastGet}.
+ * That is the failure #663 met, and it has nothing to do with the kind of thread: Truffle
+ * supports virtual threads on HotSpot since 24.1 (GR-40931), and the
+ * {@code DefaultContextThreadLocal} is a plain {@code ThreadLocal}.</p>
  *
- * <p>When the Truffle bug is fixed, set the system property
- * {@code restheart.polyglot.force-platform-threads=false} to let polyglot
- * operations run on the caller thread (virtual or platform) directly,
- * bypassing the dedicated thread entirely.</p>
+ * <p>So the operation runs where it is called, on the request's virtual thread like every other
+ * plugin, and only the classloader is set around it. One JS plugin blocking on I/O stalls no
+ * other. A pooled Context is entered by a different virtual thread on every request, which is
+ * fine: Truffle sweeps the threads that have terminated from a context's thread table on the
+ * next enter.</p>
+ *
+ * <p>The system property {@code restheart.polyglot.force-platform-threads=true} is the escape
+ * hatch: every operation is then serialized on one dedicated platform thread, {@code RH JS PLT},
+ * as 9.7.2 to 9.8.x did. It exists to compare behaviour, and goes away once the change has been
+ * exercised in production.</p>
+ *
+ * @see <a href="https://github.com/SoftInstigate/restheart/issues/665">#665</a>
  */
 public final class PolyglotThreadUtils {
     /**
-     * System property to control whether polyglot operations are forced onto
-     * a dedicated platform thread. Defaults to {@code true} (workaround for
-     * oracle/graal#7520). Set to {@code false} once Truffle fully supports
-     * virtual threads.
+     * System property that serializes every Truffle operation on one dedicated platform thread.
+     * Defaults to {@code false}.
      */
     private static final String FORCE_PLATFORM_PROP = "restheart.polyglot.force-platform-threads";
 
-    private static final boolean FORCE_PLATFORM;
+    private static final boolean FORCE_PLATFORM = Boolean.parseBoolean(System.getProperty(FORCE_PLATFORM_PROP, "false"));
 
-    static {
-        FORCE_PLATFORM = Boolean.parseBoolean(
-                System.getProperty(FORCE_PLATFORM_PROP, "true"));
-    }
+    private static final String PLATFORM_THREAD_NAME = "RH JS PLT";
 
-    // Single dedicated platform thread for ALL Truffle operations.
-    // Using one thread avoids DefaultContextThreadLocal cross-thread corruption
-    // (see oracle/graal#7520).  The unbounded queue serialises polyglot work;
-    // under extreme concurrency this adds latency but never crashes.
+    // The single platform thread of the escape hatch, created on first use.
     private static volatile ExecutorService platformExecutor;
 
     private static ExecutorService getPlatformExecutor() {
         if (platformExecutor == null) {
             synchronized (PolyglotThreadUtils.class) {
                 if (platformExecutor == null) {
-                    platformExecutor = Executors.newSingleThreadExecutor(runnable -> {
-                        return Thread.ofPlatform().name("RH JS PLT", 0).unstarted(() -> {
-                            // Set PluginsClassloader on the platform thread so that ALL
-                            // Truffle operations use the same classloader context.
-                            var pluginsCl = PolyglotClassloaderHelper.getPluginsClassloader();
-                            if (pluginsCl != null) {
-                                Thread.currentThread().setContextClassLoader(pluginsCl);
-                            }
-                            runnable.run();
-                        });
-                    });
+                    platformExecutor = Executors.newSingleThreadExecutor(runnable -> Thread.ofPlatform().name(PLATFORM_THREAD_NAME, 0).unstarted(() -> {
+                        var pluginsCl = PolyglotClassloaderHelper.getPluginsClassloader();
+                        if (pluginsCl != null) {
+                            Thread.currentThread().setContextClassLoader(pluginsCl);
+                        }
+                        runnable.run();
+                    }));
                 }
             }
         }
@@ -92,34 +88,19 @@ public final class PolyglotThreadUtils {
     }
 
     /**
-     * Creates a polyglot Engine with the PluginsClassloader as context classloader.
+     * Runs a Truffle operation with the {@code PluginsClassloader} as the context classloader of
+     * the calling thread, and restores the previous one afterwards.
      *
-     * <p>Declared here (not as a lambda body inside JSPlugin's static initializer)
-     * so that invoking it from a platform thread never needs to wait on JSPlugin's
-     * own class-initialization monitor, which would deadlock since JSPlugin's
-     * &lt;clinit&gt; is the one submitting this task and blocking on its result.</p>
+     * <p>With the escape hatch on, the task is dispatched to the dedicated platform thread and
+     * the caller waits for it, unless the caller already is that thread.</p>
      *
-     * @return a newly created Engine
+     * @param task the operation
+     * @return what the operation returns
+     * @throws Exception whatever the operation throws
      */
-    public static Engine createEngine() throws IOException {
-        return PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
-    }
-
-    /**
-     * Runs the given task on the dedicated platform thread and waits for its result.
-     *
-     * <p>When {@code restheart.polyglot.force-platform-threads} is {@code true}
-     * (the default), the task is dispatched to the single dedicated platform
-     * thread. When set to {@code false}, the task runs directly on the caller
-     * thread.</p>
-     *
-     * @param task the task to run
-     * @return the result of the task
-     * @throws Exception if the task throws an exception
-     */
-    public static <T> T onPlatformThread(Callable<T> task) throws Exception {
-        if (!FORCE_PLATFORM) {
-            return task.call();
+    public static <T> T run(Callable<T> task) throws Exception {
+        if (!FORCE_PLATFORM || isAlreadyOnPlatformThread()) {
+            return withPluginsClassloader(task);
         }
 
         try {
@@ -139,37 +120,49 @@ public final class PolyglotThreadUtils {
         }
     }
 
+    private static <T> T withPluginsClassloader(Callable<T> task) throws Exception {
+        var pluginsCl = PolyglotClassloaderHelper.getPluginsClassloader();
+        if (pluginsCl == null) {
+            return task.call();
+        }
+
+        var thread = Thread.currentThread();
+        var oldCl = thread.getContextClassLoader();
+        thread.setContextClassLoader(pluginsCl);
+        try {
+            return task.call();
+        } finally {
+            thread.setContextClassLoader(oldCl);
+        }
+    }
+
     /**
-     * Returns whether polyglot operations are currently forced onto platform threads.
-     * Useful for diagnostics and tests.
+     * {@link #run(Callable)} for callers that declare {@code IOException}: any other checked
+     * exception is wrapped in one.
+     */
+    public static <T> T runIO(Callable<T> task) throws IOException, InterruptedException {
+        try {
+            return run(task);
+        } catch (IOException | InterruptedException | RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
+    /**
+     * Whether the escape hatch is on. For diagnostics and tests.
      */
     public static boolean isForcePlatform() {
         return FORCE_PLATFORM;
     }
 
     /**
-     * Returns {@code true} if the calling thread is the dedicated platform
-     * thread used by {@link #onPlatformThread(Callable)}.  Useful to avoid
-     * self-deadlock when already running inside a platform-thread lambda.
+     * Whether the calling thread is the dedicated platform thread of the escape hatch.
      */
     public static boolean isAlreadyOnPlatformThread() {
         return FORCE_PLATFORM
                 && platformExecutor != null
-                && Thread.currentThread().getName().startsWith("RH JS PLT");
-    }
-
-    /**
-     * IOException-friendly variant of {@link #onPlatformThread(Callable)}.
-     */
-    public static <T> T onPlatformThreadIO(Callable<T> task) throws java.io.IOException, InterruptedException {
-        try {
-            return onPlatformThread(task);
-        } catch (java.io.IOException | InterruptedException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new java.io.IOException(e);
-        }
+                && Thread.currentThread().getName().startsWith(PLATFORM_THREAD_NAME);
     }
 }
