@@ -97,4 +97,21 @@ public class ResourceDemandTest {
         assertTrue(demand.all().containsAll(List.of("a", "b")));
         assertEquals(2, demand.subscribedUris());
     }
+
+    @Test
+    public void aSessionHasSubscriptionsUntilItsLastOneGoes() {
+        // what keeps a subscribed session from being ended for being idle
+        assertFalse(demand.hasSubscriptions("s1"));
+
+        demand.subscribed("a", "s1");
+        demand.subscribed("b", "s1");
+        assertTrue(demand.hasSubscriptions("s1"));
+        assertFalse(demand.hasSubscriptions("s2"));
+
+        demand.unsubscribed("a", "s1");
+        assertTrue(demand.hasSubscriptions("s1"));
+
+        demand.sessionEnded("s1");
+        assertFalse(demand.hasSubscriptions("s1"));
+    }
 }

@@ -75,6 +75,15 @@ public class ResourceDemand {
         return emptied[0];
     }
 
+    /**
+     * Whether {@code sessionId} is subscribed to anything. Such a session is not ended for being
+     * idle: its client asked to be told of changes, and ending the session would stop the
+     * notifications without the client knowing.
+     */
+    public boolean hasSubscriptions(String sessionId) {
+        return subscribersByUri.values().stream().anyMatch(sessions -> sessions.contains(sessionId));
+    }
+
     /** @return the URIs left with no subscribers at all once this session is gone */
     public List<String> sessionEnded(String sessionId) {
         var orphaned = new ArrayList<String>();

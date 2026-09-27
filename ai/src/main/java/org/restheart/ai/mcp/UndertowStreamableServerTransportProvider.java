@@ -23,6 +23,7 @@ package org.restheart.ai.mcp;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +33,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
+import org.restheart.cache.Cache;
+import org.restheart.cache.CacheFactory;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.utils.HttpStatus;
@@ -91,6 +95,40 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     private final McpJsonMapper jsonMapper;
     private McpStreamableServerSession.Factory sessionFactory;
     private final ConcurrentHashMap<String, McpStreamableServerSession> sessions = new ConcurrentHashMap<>();
+    private final SessionActivity activity = new SessionActivity();
+
+    /**
+     * The sessions this transport ended for being idle, remembered for a day so that a request
+     * still carrying one is answered {@code 404}, as the Streamable HTTP spec requires for a
+     * terminated session: the client then sends a new {@code InitializeRequest} and gets its
+     * protocol version, capabilities and subscriptions back. A session id unknown for any other
+     * reason, typically a server restart, is still recovered transparently.
+     *
+     * <p>Shared by every transport of a service, see {@link #expiredSessions}: a scope whose
+     * last session expired is disposed, and a transport of its own would forget with it.
+     */
+    private volatile Cache<String, Boolean> expired = newExpiredSessions();
+
+    /** The memory of ended sessions {@link #expired} is kept in: a day, ten thousand ids. */
+    static Cache<String, Boolean> newExpiredSessions() {
+        return CacheFactory.createLocalCache(10_000, Cache.EXPIRE_POLICY.AFTER_WRITE, Duration.ofDays(1).toMillis());
+    }
+
+    /** Shares one memory of expired sessions among the transports of a service. */
+    public void expiredSessions(Cache<String, Boolean> expired) {
+        this.expired = expired;
+    }
+
+    /** Sessions never ended for being idle; see {@link #keepAlive}. */
+    private volatile Predicate<String> keepAlive = sessionId -> false;
+
+    /**
+     * Sessions that are not ended for being idle, whatever their idle time: those subscribed to
+     * a resource, whose client expects notifications.
+     */
+    public void keepAlive(Predicate<String> keepAlive) {
+        this.keepAlive = keepAlive;
+    }
     private volatile boolean isClosing = false;
 
     /**
@@ -151,7 +189,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             } catch (Exception e) {
                 if (isMissingStream(e)) {
                     // the session exists but has no open GET stream right now — see notifyClients
-                    LOGGER.debug("Skipped notifying session {} (no active stream): {}", sessionId, e.getMessage());
+                    LOGGER.trace("Skipped notifying session {} (no active stream): {}", sessionId, e.getMessage());
                 } else {
                     LOGGER.error("Failed to notify session {}: {}", sessionId, e.getMessage());
                 }
@@ -190,8 +228,9 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                             // list_changed notifications are best-effort per spec; the client simply
                             // learns of the change on its next request instead. Logging this at ERROR
                             // would spam the log on every catalog TTL expiry for every non-streaming
-                            // session — which is the common case.
-                            LOGGER.debug("Skipped notifying session {} (no active stream): {}", session.getId(), e.getMessage());
+                            // session — which is the common case; even DEBUG was one line per session
+                            // per expiry, so it is TRACE.
+                            LOGGER.trace("Skipped notifying session {} (no active stream): {}", session.getId(), e.getMessage());
                         } else {
                             LOGGER.error("Failed to notify session {}: {}", session.getId(), e.getMessage());
                         }
@@ -233,6 +272,47 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
 
     private static boolean isMissingStream(Exception e) {
         return e instanceof IllegalStateException && e.getMessage() != null && e.getMessage().startsWith("Stream unavailable for session");
+    }
+
+    /**
+     * Ends the sessions nobody has used for longer than {@code timeout} and that have no open
+     * stream: the ones a client left without sending {@code DELETE}. They are released exactly
+     * as a {@code DELETE} would release them. A session subscribed to a resource is never ended
+     * this way, see {@link #keepAlive}. A client that comes back later is answered {@code 404}
+     * and re-initializes, see {@code expired}.
+     *
+     * @return how many sessions were ended
+     */
+    int expireIdle(Duration timeout) {
+        var ended = 0;
+
+        for (var sessionId : activity.idle(timeout)) {
+            if (keepAlive.test(sessionId)) {
+                continue;
+            }
+
+            var session = sessions.remove(sessionId);
+            activity.forget(sessionId);
+            expired.put(sessionId, Boolean.TRUE);
+
+            if (session == null) {
+                continue;
+            }
+
+            ended++;
+
+            if (onSessionEnded != null) {
+                onSessionEnded.accept(sessionId);
+            }
+
+            try {
+                session.closeGracefully().block();
+            } catch (Exception e) {
+                LOGGER.debug("closing idle MCP session {} failed: {}", sessionId, e.getMessage());
+            }
+        }
+
+        return ended;
     }
 
     @Override
@@ -295,6 +375,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 });
                 var init = sessionFactory.startSession(initReq);
                 sessions.put(init.session().getId(), init.session());
+                activity.touch(init.session().getId());
 
                 McpSchema.InitializeResult result = init.initResult()
                         .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
@@ -325,6 +406,14 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         }
 
         McpStreamableServerSession session = sessions.get(sessionId);
+        if (session == null && expired.get(sessionId) != null) {
+            // ended for being idle: the spec's answer to a terminated session, so the client
+            // re-initializes and gets back what a recovered session would not have
+            res.setStatusCode(HttpStatus.SC_NOT_FOUND);
+            res.setContent("Session expired after being idle. Send a new InitializeRequest.");
+            return;
+        }
+
         if (session == null) {
             // Server is stateless — auto-recover by creating a new session transparently.
             // The stale session ID is typically caused by a server restart; since no application
@@ -340,6 +429,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 init.initResult().contextWrite(c -> c.put(McpTransportContext.KEY, ctx)).block();
                 session = init.session();
                 sessions.put(session.getId(), session);
+                activity.touch(session.getId());
                 res.getExchange().getResponseHeaders()
                         .put(new HttpString(HttpHeaders.MCP_SESSION_ID), session.getId());
                 LOGGER.info("Auto-recovered MCP session: {} → {}", sessionId, session.getId());
@@ -350,6 +440,8 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 return;
             }
         }
+
+        activity.touch(session.getId());
 
         if (message instanceof McpSchema.JSONRPCResponse rpcResp) {
             session.accept(rpcResp).contextWrite(c -> c.put(McpTransportContext.KEY, ctx)).block();
@@ -367,33 +459,47 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             final var activeSession = session;
             var transport = new UndertowStreamableSessionTransport(sessionId, jsonMapper);
             res.setCustomSender(() -> {
-                var exchange = res.getExchange();
-                setSseHeaders(exchange);
-                exchange.startBlocking();
-
-                // Run responseStream on a virtual thread; it calls transport.sendMessage() as results arrive
-                var vt = Thread.ofVirtual().start(() -> {
-                    try {
-                        activeSession.responseStream(rpcReq, transport)
-                                .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
-                                .block();
-                    } catch (Exception e) {
-                        LOGGER.warn("responseStream error for session {}: {}", sessionId, e.getMessage());
-                    } finally {
-                        transport.close();
-                    }
-                });
-
-                drainQueueToExchange(transport, exchange);
+                activity.streamOpened(activeSession.getId());
                 try {
-                    vt.join();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                    streamToolCall(activeSession, rpcReq, transport, res, ctx, sessionId);
+                } finally {
+                    activity.streamClosed(activeSession.getId());
                 }
             });
         } else {
             res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             res.setContent("Unknown JSON-RPC message type");
+        }
+    }
+
+    /**
+     * Streams one tool call's messages as SSE into the exchange, on the request's thread, while
+     * the call itself runs on a virtual thread of its own.
+     */
+    private void streamToolCall(McpStreamableServerSession activeSession, McpSchema.JSONRPCRequest rpcReq,
+            UndertowStreamableSessionTransport transport, ByteArrayResponse res, McpTransportContext ctx, String sessionId) {
+        var exchange = res.getExchange();
+        setSseHeaders(exchange);
+        exchange.startBlocking();
+
+        // Run responseStream on a virtual thread; it calls transport.sendMessage() as results arrive
+        var vt = Thread.ofVirtual().start(() -> {
+            try {
+                activeSession.responseStream(rpcReq, transport)
+                        .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
+                        .block();
+            } catch (Exception e) {
+                LOGGER.warn("responseStream error for session {}: {}", sessionId, e.getMessage());
+            } finally {
+                transport.close();
+            }
+        });
+
+        drainQueueToExchange(transport, exchange);
+        try {
+            vt.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -548,10 +654,12 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             var exchange = res.getExchange();
             setSseHeaders(exchange);
             exchange.startBlocking();
+            activity.streamOpened(sessionId);
             try {
                 drainQueueToExchange(transport, exchange);
             } finally {
                 listeningStream.close();
+                activity.streamClosed(sessionId);
             }
         });
     }
@@ -573,6 +681,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         }
 
         McpStreamableServerSession session = sessions.remove(sessionId);
+        activity.forget(sessionId);
         if (session == null) {
             res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;

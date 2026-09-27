@@ -69,6 +69,7 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
 import org.restheart.utils.InProcessDispatcher;
 import org.restheart.utils.PluginUtils;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,6 +130,12 @@ public class McpService implements ByteArrayService {
     private static final String CTX_SCOPE = "scope";
 
     private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
+
+    /**
+     * How long an MCP session may go unused, with no open stream, before it is ended: see
+     * {@code SessionActivity}. {@code 0} keeps sessions until the client sends {@code DELETE}.
+     */
+    private static final int DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS = 1800;
 
     /**
      * What the client is told at initialize, before it asks anything.
@@ -303,6 +310,11 @@ public class McpService implements ByteArrayService {
             LOGGER.info("MCP shutdown: transport providers closed.");
         }));
 
+        var idleTimeoutSeconds = argOrDefault(config, "session-idle-timeout-seconds", DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS);
+        if (idleTimeoutSeconds > 0) {
+            startIdleSessionSweeper(Duration.ofSeconds(idleTimeoutSeconds));
+        }
+
         LOGGER.info("MCP service initialized on {} (Streamable HTTP transport)", "/mcp");
         if (publicBaseUrl != null) {
             LOGGER.info("MCP resources primitive enabled, public-base-url={}", publicBaseUrl);
@@ -393,6 +405,43 @@ public class McpService implements ByteArrayService {
         });
     }
 
+    /**
+     * Ends, every so often, the sessions of every scope that clients left behind without a
+     * {@code DELETE}. Without it they stay in memory for the life of the process, and every
+     * catalog expiry tries to notify each of them.
+     *
+     * <p>Checked four times per timeout, at most once a minute: a session outlives its timeout
+     * by a quarter of it at worst, which is what an idle timeout is allowed to mean.
+     */
+    private void startIdleSessionSweeper(Duration timeout) {
+        var every = timeout.dividedBy(4);
+        if (every.compareTo(Duration.ofMinutes(1)) > 0) {
+            every = Duration.ofMinutes(1);
+        } else if (every.compareTo(Duration.ofSeconds(1)) < 0) {
+            every = Duration.ofSeconds(1);
+        }
+
+        var interval = every;
+        ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(interval);
+                    var expired = scopes.values().stream()
+                            .mapToInt(scoped -> scoped.provider().expireIdle(timeout))
+                            .sum();
+                    if (expired > 0) {
+                        LOGGER.debug("MCP: ended {} session(s) idle for more than {}", expired, timeout);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Throwable t) {
+                    LOGGER.warn("MCP: ending idle sessions failed: {}", t.getMessage());
+                }
+            }
+        });
+    }
+
     private void release(ScopedServer scoped) {
         scoped.inFlight().decrementAndGet();
     }
@@ -437,6 +486,8 @@ public class McpService implements ByteArrayService {
 
     private ScopedServer newScopedServer(String scope) {
         var scopedProvider = new UndertowStreamableServerTransportProvider(jsonMapper);
+        scopedProvider.keepAlive(demand::hasSubscriptions);
+        scopedProvider.expiredSessions(expiredSessions);
         scopedProvider.onSessionEnded(sessionId -> {
             sessionEnded(sessionId);
             disposeIfUnused(scope);
@@ -766,6 +817,9 @@ public class McpService implements ByteArrayService {
 
     /** Who still wants each resource, so a watch outlives no one — see {@link ResourceDemand}. */
     private final ResourceDemand demand = new ResourceDemand();
+
+    /** The sessions ended for being idle, across every scope: see the transport's {@code expired}. */
+    private final org.restheart.cache.Cache<String, Boolean> expiredSessions = UndertowStreamableServerTransportProvider.newExpiredSessions();
 
     private static final Pattern PATH_VARIABLE = Pattern.compile("\\{([^?][^}]*)\\}");
 

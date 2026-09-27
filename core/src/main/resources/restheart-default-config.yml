@@ -1068,6 +1068,13 @@ mcpService:
   # period is sent immediately; further ones are collapsed into a single notification per interval.
   subscription-notify-interval-seconds: 5
 
+  # How long an MCP session may go unused, with no open stream, before the server ends it.
+  # A session normally ends when the client sends DELETE, which most clients that go away
+  # never do; without a timeout their sessions stay in memory for the life of the process.
+  # A client that comes back after its session ended gets a new one on its next request,
+  # transparently. 0 keeps every session until DELETE.
+  session-idle-timeout-seconds: 1800
+
   # Enables the MCP "resources" primitive (resources/list, resources/read,
   # resources/templates/list, resources/subscribe) in addition to the list_apis/how_to_call
   # tools — the official MCP SDK manages resources as a single server-wide registry, not
