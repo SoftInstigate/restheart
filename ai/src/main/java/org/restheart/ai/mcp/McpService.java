@@ -1798,14 +1798,19 @@ public class McpService implements ByteArrayService {
      * The shape of every {@code call_api} answer, declared so the result can come back structured
      * rather than as a string the model has to parse again.
      *
-     * <p>{@code body} is deliberately untyped: it is whatever the API returned, an object for one
-     * document, an array for a collection, a string when the response was not JSON.
+     * <p>{@code body} is whatever the API returned: an object for one document, an array for a
+     * collection or an aggregation, a string when the response was not JSON. It lists every JSON
+     * type rather than none: a schema with no validation keyword accepts the same values, but some
+     * MCP clients refuse it or read it wrongly, and {@code "object"} alone would make a client that
+     * validates {@code structuredContent} reject every collection.
      */
     private static Map<String, Object> callApiOutputSchema() {
         var properties = new LinkedHashMap<String, Object>();
         properties.put("status", schemaProp("integer", "The HTTP status the API answered with."));
         properties.put("headers", schemaProp("object", "Response headers, each as name to its first value."));
-        properties.put("body", Map.of("description", "The response body, parsed when the API returned JSON."));
+        properties.put("body", Map.of(
+                "type", List.of("object", "array", "string", "number", "boolean", "null"),
+                "description", "The response body, parsed when the API returned JSON."));
         properties.put("truncated", schemaProp("boolean", "Present and true when the body was too large and was cut."));
         properties.put("body_bytes", schemaProp("integer", "The body's real size, when it was truncated."));
 

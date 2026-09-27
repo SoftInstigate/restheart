@@ -145,6 +145,16 @@ public class McpServiceTest {
                 "status, headers and body are what call_api answers with");
         assertEquals(List.of("status", "headers"), schema.get("required"),
                 "a body is not guaranteed — a 204 has none");
+
+        // a body with no type is refused or misread by some clients; an object-only one would
+        // make a client that validates structuredContent reject every collection
+        @SuppressWarnings("unchecked")
+        var body = (Map<String, Object>) properties.get("body");
+        @SuppressWarnings("unchecked")
+        var types = (List<String>) body.get("type");
+        assertNotNull(types, "body declares its type");
+        assertTrue(types.containsAll(List.of("object", "array", "string")),
+                "one document, a collection or an aggregation, a response that is not JSON");
     }
 
     @Test
