@@ -531,12 +531,14 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
                 new AutoDetectParser().parse(tis, handler, tikaMetadata, new ParseContext());
                 text = handler.toString();
             } catch (Exception e) {
-                LOGGER.warn("documentChunkingInterceptor: Tika could not extract text from file {} in {}/{}: {}", fileId, dbName, bucketName, e.getMessage());
+                // the exception, not only its message: a parser failing in a native image says
+                // "Unexpected RuntimeException from ...Parser" and the cause is all there is to go on
+                LOGGER.warn("documentChunkingInterceptor: Tika could not extract text from file {} in {}/{}", fileId, dbName, bucketName, e);
                 warn.accept("no text could be extracted from file " + idString(fileId) + ": " + e.getMessage());
                 return new Outcome("failed", rule.name(), null);
             }
         } catch (Exception e) {
-            LOGGER.warn("documentChunkingInterceptor: could not read file {} from {}/{}: {}", fileId, dbName, bucketName, e.getMessage());
+            LOGGER.warn("documentChunkingInterceptor: could not read file {} from {}/{}", fileId, dbName, bucketName, e);
             warn.accept("file " + idString(fileId) + " not chunked: it could not be read (" + e.getMessage() + ")");
             return new Outcome("failed", null, null);
         }
