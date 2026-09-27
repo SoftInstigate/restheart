@@ -267,6 +267,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.restheart</groupId>
+                <artifactId>restheart-ai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
                 <version>5.7.1</version>

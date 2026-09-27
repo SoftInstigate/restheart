@@ -14,7 +14,7 @@ LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 # Reduce image size by removing package lists after installation
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get install -y --no-install-recommends ca-certificates libfreetype6 && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -23,6 +23,9 @@ WORKDIR /opt/restheart
 
 # Copy only the executable binary
 COPY target/restheart ./restheart
+# AWT in headless mode, used by PDFBox when the chunker extracts text from a PDF: native-image
+# copies the JDK's AWT libraries next to the executable, and they must travel with it
+COPY target/*.so ./
 
 # Create required directories and set permissions in one layer
 RUN chmod +x restheart && mkdir -p etc plugins
