@@ -146,13 +146,15 @@ public class McpServiceTest {
         assertEquals(List.of("status", "headers"), schema.get("required"),
                 "a body is not guaranteed — a 204 has none");
 
-        // a body with no type is refused or misread by some clients; an object-only one would
-        // make a client that validates structuredContent reject every collection
+        // a body with no type, or with a type array, is refused or misread by some clients; an
+        // object-only one would make a client that validates structuredContent reject every collection
         @SuppressWarnings("unchecked")
         var body = (Map<String, Object>) properties.get("body");
+        assertNull(body.get("type"), "one type per anyOf branch, never a type array");
         @SuppressWarnings("unchecked")
-        var types = (List<String>) body.get("type");
-        assertNotNull(types, "body declares its type");
+        var branches = (List<Map<String, Object>>) body.get("anyOf");
+        assertNotNull(branches, "body declares its types as anyOf branches");
+        var types = branches.stream().map(b -> b.get("type")).toList();
         assertTrue(types.containsAll(List.of("object", "array", "string")),
                 "one document, a collection or an aggregation, a response that is not JSON");
     }
