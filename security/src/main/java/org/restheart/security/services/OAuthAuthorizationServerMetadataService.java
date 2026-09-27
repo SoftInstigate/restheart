@@ -32,6 +32,7 @@ import org.restheart.security.ACLRegistry;
 import static org.restheart.utils.GsonUtils.array;
 import static org.restheart.utils.GsonUtils.object;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.URLUtils;
 
 /**
  * OAuth 2.0 Authorization Server Metadata endpoint per RFC 8414.
@@ -113,21 +114,18 @@ public class OAuthAuthorizationServerMetadataService implements JsonService {
     }
 
     /**
-     * Resolves the base URL from config or from the request Host header.
+     * The base URL {@code issuer} and every endpoint are named with.
+     *
+     * <p>Behind a proxy that terminates TLS the listener speaks plain {@code http}, so the
+     * request's own scheme and {@code Host} would hand a client an authorization server it cannot
+     * reach — found on a deployment behind an AWS ALB, where both well-known documents named
+     * {@code http://} for an HTTPS-only service. The resolution is the one the protected-resource
+     * document and the MCP catalogue use: the per-tenant override, then the configured value, then
+     * the forwarded headers, then the request itself.
+     *
+     * @see URLUtils#publicBaseUrl(String, io.undertow.server.HttpServerExchange)
      */
     private String resolveBaseUrl(JsonRequest request) {
-        if (baseUrl != null && !baseUrl.isBlank()) {
-            return baseUrl;
-        }
-
-        // Fall back to request Host header
-        var exchange = request.getExchange();
-        var host = exchange.getRequestHeaders().getFirst("Host");
-        if (host != null) {
-            var scheme = exchange.getRequestScheme();
-            return scheme + "://" + host;
-        }
-
-        return "";
+        return URLUtils.publicBaseUrl(baseUrl, request.getExchange());
     }
 }
