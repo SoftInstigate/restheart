@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +101,7 @@ public class ResourceSubscriptions {
         }
 
         private void scheduleTrailing() {
-            Thread.ofVirtual().name("mcp-notify-" + uri).start(() -> {
+            ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                 try {
                     Thread.sleep(interval);
 

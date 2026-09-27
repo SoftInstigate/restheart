@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -270,6 +272,19 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         }
     }
 
+    /**
+     * Waits for a task submitted to RESTHeart's virtual threads executor, as {@code join} waits
+     * for a thread. The tasks passed here handle their own failures, so an
+     * {@code ExecutionException} is only logged.
+     */
+    private static void awaitDone(Future<?> task) throws InterruptedException {
+        try {
+            task.get();
+        } catch (ExecutionException e) {
+            LOGGER.warn("MCP response task failed: {}", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+        }
+    }
+
     private static boolean isMissingStream(Exception e) {
         return e instanceof IllegalStateException && e.getMessage() != null && e.getMessage().startsWith("Stream unavailable for session");
     }
@@ -483,7 +498,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         exchange.startBlocking();
 
         // Run responseStream on a virtual thread; it calls transport.sendMessage() as results arrive
-        var vt = Thread.ofVirtual().start(() -> {
+        var responding = ThreadsUtils.virtualThreadsExecutor().submit(() -> {
             try {
                 activeSession.responseStream(rpcReq, transport)
                         .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
@@ -497,7 +512,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
 
         drainQueueToExchange(transport, exchange);
         try {
-            vt.join();
+            awaitDone(responding);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -550,7 +565,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         var transport = new UndertowStreamableSessionTransport(sessionId, jsonMapper, false);
         var messages = new ArrayList<String>();
 
-        var vt = Thread.ofVirtual().start(() -> {
+        var responding = ThreadsUtils.virtualThreadsExecutor().submit(() -> {
             try {
                 session.responseStream(rpcReq, transport)
                         .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
@@ -567,7 +582,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             while ((message = transport.take()) != null) {
                 messages.add(message);
             }
-            vt.join();
+            awaitDone(responding);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             transport.close();
