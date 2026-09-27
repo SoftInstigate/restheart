@@ -237,6 +237,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
+          <!-- Karate runs its JavaScript on GraalJS, i.e. Truffle, inside this JVM: without these
+               Java 25 warns that Truffle calls System::load and sun.misc.Unsafe. Same flags the
+               Dockerfile and bin/start.sh give RESTHeart. -->
+          <argLine>--enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow</argLine>
           <includes>
             <include>${it.includes}</include>
           </includes>
