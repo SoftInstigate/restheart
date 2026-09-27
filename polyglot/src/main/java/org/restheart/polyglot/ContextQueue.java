@@ -96,14 +96,7 @@ public class ContextQueue {
 
     private void populatePool(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements) {
         for (var c = 0;c < POOL_SIZE;c++) {
-            var ctx = newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS);
-            ctx.enter();
-            try {
-                addBindings(ctx, name, conf, logger, mclient);
-            } finally {
-                ctx.leave();
-            }
-            pool.offer(ctx);
+            pool.offer(newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS));
         }
     }
 
@@ -125,10 +118,13 @@ public class ContextQueue {
     /**
      * Returns a context to the pool if there's space, otherwise closes it.
      *
+     * <p>The queue is unbounded, so the bound is checked here: without it a burst of requests
+     * beyond the pool size would leave its on-demand contexts in the pool for good.</p>
+     *
      * @param ctx the context to release
      */
     private void release(Context ctx) {
-        if (!pool.offer(ctx)) {
+        if (pool.size() >= POOL_SIZE || !pool.offer(ctx)) {
             try {
                 PolyglotThreadUtils.run(() -> {
                     ctx.close();
@@ -250,6 +246,15 @@ public class ContextQueue {
         return newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS);
     }
 
+    /**
+     * A new context with the default bindings ({@code LOGGER}, {@code mclient},
+     * {@code pluginArgs}) in place, left, ready to be entered by its user.
+     *
+     * <p>The bindings are added here, whoever asks for the context: the pool at start-up and
+     * {@link #acquire()} when the pool is empty under load. A context created on demand without
+     * them answered {@code ReferenceError: LOGGER is not defined} to the requests beyond the
+     * pool size, and, once released, kept doing so from the pool.</p>
+     */
     public static Context newContext(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
         // js.commonjs-core-modules-replacements was removed in GraalVM 25.1.x
         if (modulesReplacements != null) {
@@ -266,8 +271,14 @@ public class ContextQueue {
                 .options(OPTS)
                 .build();
 
-        // addBindings() is not called here: it needs an entered context, and the caller is
-        // about to enter it.
+        // the bindings need an entered context
+        ctx.enter();
+        try {
+            addBindings(ctx, name, conf, logger, mclient);
+        } finally {
+            ctx.leave();
+        }
+
         return ctx;
     }
 

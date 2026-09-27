@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
@@ -177,6 +179,45 @@ class ContextLifecycleTest {
 
         assertNull(failure.get(), () -> "virtual thread failed: " + failure.get());
         assertSame(vt, seen.get());
+    }
+
+    @Test
+    void aContextCreatedOnDemandUnderLoadHasTheBindings() throws Exception {
+        // more concurrent users than the pool holds (one context per processor), each keeping
+        // its context long enough for the others to find the pool empty
+        var cq = new ContextQueue(engine, "test-load", null, LOGGER,
+                Optional.<MongoClient>empty(), null, Map.of());
+        var users = Runtime.getRuntime().availableProcessors() + 4;
+        var gate = new CountDownLatch(users);
+
+        var failures = new AtomicReference<String>();
+
+        var threads = IntStream.range(0, users)
+                .mapToObj(i -> Thread.ofVirtual().unstarted(() -> {
+                    try {
+                        var hasLogger = cq.executeWithContext((ContextQueue.ContextTask<Boolean>) ctx -> {
+                            gate.countDown();
+                            gate.await(10, TimeUnit.SECONDS);
+                            return ctx.eval("js", "typeof LOGGER !== 'undefined' && typeof pluginArgs !== 'undefined'").asBoolean();
+                        });
+                        if (!hasLogger) {
+                            failures.compareAndSet(null, "user " + i + " got a context without the bindings");
+                        }
+                    } catch (Throwable t) {
+                        failures.compareAndSet(null, "user " + i + " failed: " + t.getMessage());
+                    }
+                }))
+                .toList();
+
+        for (var t : threads) t.start();
+        for (var t : threads) t.join();
+
+        assertNull(failures.get(), failures::get);
+
+        // and the pool, once the burst is over, serves a context with the bindings too
+        var afterwards = cq.executeWithContext((ContextQueue.ContextTask<Boolean>) ctx ->
+                ctx.eval("js", "typeof LOGGER !== 'undefined'").asBoolean());
+        assertTrue(afterwards);
     }
 
     @Test
