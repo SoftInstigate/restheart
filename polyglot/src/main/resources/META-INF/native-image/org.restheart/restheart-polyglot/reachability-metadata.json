@@ -26,6 +26,10 @@
       "allDeclaredConstructors": true,
       "allPublicMethods": true,
       "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread",
+      "allPublicMethods": true
     }
   ]
 }
