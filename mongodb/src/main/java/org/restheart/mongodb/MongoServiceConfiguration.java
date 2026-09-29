@@ -321,7 +321,7 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * How often a comment is sent on an idle change stream to keep it open, in milliseconds;
+     * How often an idle change stream is kept open, in milliseconds: a comment on SSE, a ping on WebSocket;
      * {@code 0} or less sends none.
      *
      * <p>A stream that has nothing to report sends nothing at all, and a proxy or a load balancer

@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -142,6 +143,22 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
 
     public void onSessionEnded(java.util.function.Consumer<String> listener) {
         this.onSessionEnded = listener;
+    }
+
+    /** How often an idle SSE stream gets a comment line, in milliseconds; 0 or less sends none. */
+    private volatile long streamKeepAliveMs = 0;
+
+    /**
+     * Sends a comment line on an SSE stream that has been silent for the given interval. A stream
+     * with nothing to report sends nothing at all, and a load balancer or proxy in front of
+     * RESTHeart drops a connection idle for its timeout without closing it: the client keeps
+     * waiting for messages that will never arrive. The comment keeps the connection in use, and
+     * one that cannot be written ends the stream, so the client sees it end and reconnects.
+     *
+     * @param millis the interval; 0 or less sends none
+     */
+    public void streamKeepAlive(long millis) {
+        this.streamKeepAliveMs = millis;
     }
 
     public UndertowStreamableServerTransportProvider(McpJsonMapper jsonMapper) {
@@ -510,7 +527,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             }
         });
 
-        drainQueueToExchange(transport, exchange);
+        drainQueueToExchange(transport, exchange, streamKeepAliveMs);
         try {
             awaitDone(responding);
         } catch (InterruptedException e) {
@@ -671,7 +688,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             exchange.startBlocking();
             activity.streamOpened(sessionId);
             try {
-                drainQueueToExchange(transport, exchange);
+                drainQueueToExchange(transport, exchange, streamKeepAliveMs);
             } finally {
                 listeningStream.close();
                 activity.streamClosed(sessionId);
@@ -729,18 +746,29 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
     }
 
+    /** The SSE comment written on a silent stream, see {@link #streamKeepAlive}. */
+    private static final byte[] KEEP_ALIVE_COMMENT = ":\n\n".getBytes(StandardCharsets.UTF_8);
+
     /**
      * Blocks on the transport's event queue, writing SSE events to the exchange
-     * output stream until the transport signals close (null sentinel).
+     * output stream until the transport signals close (null sentinel). A stream silent for
+     * {@code keepAliveMs} gets a comment line, see {@link #streamKeepAlive}.
      */
     private static void drainQueueToExchange(UndertowStreamableSessionTransport transport,
-                                             HttpServerExchange exchange) {
+                                             HttpServerExchange exchange, long keepAliveMs) {
         try {
             OutputStream out = exchange.getOutputStream();
             while (true) {
-                String event = transport.take(); // blocks; null = close signal
-                if (event == null) break;
-                out.write(event.getBytes(StandardCharsets.UTF_8));
+                var next = keepAliveMs > 0 ? transport.poll(keepAliveMs) : Optional.of(Optional.ofNullable(transport.take()));
+                if (next.isEmpty()) {
+                    // silent for keepAliveMs: a write that fails ends the stream below
+                    out.write(KEEP_ALIVE_COMMENT);
+                    out.flush();
+                    continue;
+                }
+                var event = next.get();
+                if (event.isEmpty()) break; // close signal
+                out.write(event.get().getBytes(StandardCharsets.UTF_8));
                 out.flush();
             }
         } catch (IOException e) {
@@ -796,6 +824,15 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         String take() throws InterruptedException {
             var opt = queue.take();
             return opt.isPresent() ? opt.get() : null;
+        }
+
+        /**
+         * Waits up to {@code millis} for the next SSE event.
+         *
+         * @return empty when nothing arrived in time; otherwise the event, or an empty event on close
+         */
+        Optional<Optional<String>> poll(long millis) throws InterruptedException {
+            return Optional.ofNullable(queue.poll(millis, TimeUnit.MILLISECONDS));
         }
 
         @Override

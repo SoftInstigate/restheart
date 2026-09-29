@@ -956,7 +956,7 @@ mongo:
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
 
-  # How often a comment is sent on an idle change stream (SSE) to keep the connection in use.
+  # How often an idle change stream is kept in use: a comment on SSE, a ping on WebSocket.
   # A stream with nothing to report sends nothing at all, and a proxy in front of RESTHeart
   # closes a connection idle for its own timeout. Set to 0 to send none.
   change-streams-keep-alive-ms: 20_000
@@ -1075,6 +1075,12 @@ mcpService:
   # its session ended is answered 404 and sends a new initialize, as the MCP specification
   # prescribes. 0 keeps every session until DELETE.
   session-idle-timeout-seconds: 1800
+
+  # How often an idle MCP stream (SSE) gets a comment line, to keep the connection in use: a
+  # proxy in front of RESTHeart drops a connection idle for its own timeout, and the client would
+  # wait forever. A comment that cannot be written ends the stream, and the client reconnects.
+  # 0 sends none.
+  stream-keep-alive-seconds: 20
 
   # Enables the MCP "resources" primitive (resources/list, resources/read,
   # resources/templates/list, resources/subscribe) in addition to the list_apis/how_to_call

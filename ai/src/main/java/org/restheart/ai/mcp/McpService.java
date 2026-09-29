@@ -136,6 +136,7 @@ public class McpService implements ByteArrayService {
      * {@code SessionActivity}. {@code 0} keeps sessions until the client sends {@code DELETE}.
      */
     private static final int DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS = 1800;
+    private static final int DEFAULT_STREAM_KEEP_ALIVE_SECONDS = 20;
 
     /**
      * What the client is told at initialize, before it asks anything.
@@ -235,6 +236,9 @@ public class McpService implements ByteArrayService {
      */
     private String publicBaseUrl;
 
+    /** See the transport provider's streamKeepAlive; from stream-keep-alive-seconds. */
+    private int streamKeepAliveSeconds = DEFAULT_STREAM_KEEP_ALIVE_SECONDS;
+
     /**
      * The running service, so {@link McpCatalogFilterInterceptor} can reuse this catalog and this
      * visibility rule instead of building its own. There is exactly one instance: RESTHeart plugins
@@ -309,6 +313,8 @@ public class McpService implements ByteArrayService {
             scopes.values().forEach(scoped -> scoped.provider().closeGracefully().block());
             LOGGER.info("MCP shutdown: transport providers closed.");
         }));
+
+        streamKeepAliveSeconds = argOrDefault(config, "stream-keep-alive-seconds", DEFAULT_STREAM_KEEP_ALIVE_SECONDS);
 
         var idleTimeoutSeconds = argOrDefault(config, "session-idle-timeout-seconds", DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS);
         if (idleTimeoutSeconds > 0) {
@@ -487,6 +493,7 @@ public class McpService implements ByteArrayService {
     private ScopedServer newScopedServer(String scope) {
         var scopedProvider = new UndertowStreamableServerTransportProvider(jsonMapper);
         scopedProvider.keepAlive(demand::hasSubscriptions);
+        scopedProvider.streamKeepAlive(streamKeepAliveSeconds * 1000L);
         scopedProvider.expiredSessions(expiredSessions);
         scopedProvider.onSessionEnded(sessionId -> {
             sessionEnded(sessionId);
