@@ -67,6 +67,20 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
 
     private AccountsConfigData data;
 
+    /**
+     * The name of the auth cookie when {@code cookie-name} is not set: the one
+     * {@code authCookieSetter} sets and {@code authCookieHandler} reads, so that a cookie this
+     * plugin issues is the one the handler looks for.
+     */
+    @SuppressWarnings("unchecked")
+    private String authCookieSetterName() {
+        var conf = rhConfig == null ? null : rhConfig.toMap().get("authCookieSetter");
+        if (conf instanceof Map<?, ?> m && m.get("name") instanceof String name && !name.isBlank()) {
+            return name;
+        }
+        return "rh_auth";
+    }
+
     @OnInit
     @SuppressWarnings("unchecked")
     public void onInit() {
@@ -91,7 +105,7 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
                 jwtConfig.issuer(),
                 configVal(config, "jwt-ttl", 15),
                 configVal(config, "cookie-domain", "localhost"),
-                configVal(config, "cookie-name", "rh_auth"),
+                configVal(config, "cookie-name", authCookieSetterName()),
                 configVal(config, "cookie-secure", true),
                 configVal(config, "frontend-url", "http://localhost:4200"),
                 configVal(config, "frontend-app-url", "http://localhost:4200/app"),

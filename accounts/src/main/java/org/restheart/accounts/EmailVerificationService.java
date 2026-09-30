@@ -38,7 +38,7 @@ import java.util.Set;
  * redirects the browser to the application. The {@code delivery} query parameter selects
  * how the JWT is handed to the frontend:
  * <ul>
- *   <li>{@code delivery=cookie} (or omitted, default) — sets the {@code rh_auth} cookie
+ *   <li>{@code delivery=cookie} (or omitted, default) — sets the auth cookie ({@code /authCookieSetter/name})
  *       and redirects to {@code frontendAppUrl}. For same-origin setups where cookie
  *       auth works.</li>
  *   <li>{@code delivery=fragment} — redirects to {@code frontendAppUrl} with the JWT

@@ -51,8 +51,8 @@ public record AccountsConfigData(
 
         /**
          * Name of the HttpOnly authentication cookie, e.g. {@code "8x5_auth"}.
-         * Must match {@code authCookieSetter.name} and {@code authCookieHandler} configuration.
-         * Defaults to {@code "rh_auth"} (RESTHeart's built-in default).
+         * Defaults to {@code authCookieSetter.name}, the one {@code authCookieHandler} reads, and
+         * to {@code "rh_auth"} when that is not set either.
          */
         String cookieName,
 

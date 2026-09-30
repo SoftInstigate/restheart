@@ -27,7 +27,7 @@ import java.util.Set;
  * <pre>
  *   Authorization: Bearer &lt;jwt&gt;
  * </pre>
- * or via the {@code rh_auth=Bearer_&lt;jwt&gt;} cookie (authCookieHandler).
+ * or via the {@code <authCookieSetter name>=Bearer_&lt;jwt&gt;} cookie (authCookieHandler).
  *
  * <p>Instances are thread-safe: {@link Algorithm} is immutable and {@link JWT} is a static
  * factory.
@@ -267,13 +267,13 @@ public class JwtHelper {
     }
 
     /**
-     * Builds the {@code rh_auth} cookie value compatible with RESTHeart's
+     * Builds the auth cookie value compatible with RESTHeart's
      * {@code authCookieHandler}.
      *
      * <p>Format: {@code Bearer_<jwt>}
      *
      * @param jwt the JWT issued by {@link #issueToken}
-     * @return the value to assign to the {@code rh_auth} cookie
+     * @return the value to assign to the auth cookie
      */
     public static String cookieValue(String jwt) {
         return AuthCookie.bearerValue(jwt);
@@ -317,14 +317,6 @@ public class JwtHelper {
     @Deprecated
     public static String setCookieHeader(String jwt, String cookieName, String domain) {
         return setCookieHeader(jwt, cookieName, domain, 0, true);
-    }
-
-    /**
-     * @deprecated Use {@link #setCookieHeader(String, String, String)} with explicit cookie name.
-     */
-    @Deprecated
-    public static String setCookieHeader(String jwt, String domain) {
-        return setCookieHeader(jwt, "rh_auth", domain);
     }
 
     private static Object bsonValueToObject(BsonValue value) {
