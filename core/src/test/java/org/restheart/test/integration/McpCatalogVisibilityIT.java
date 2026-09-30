@@ -138,7 +138,7 @@ public class McpCatalogVisibilityIT extends AbstactIT {
      * An action whose rule reads a query parameter is listed like any other. A listing carries no
      * arguments, so probing it would answer no for the very caller entitled to it — and an agent
      * that reads a catalogue without {@code create} concludes the service is read-only, which is
-     * how three matches of {@code examples/market-game} ended.
+     * how three matches of the market game ({@code github.com/ulabase/market-ai-game}) ended.
      */
     @Test
     public void listApis_offersAnActionWhoseRuleReadsAQueryParameter() throws Exception {

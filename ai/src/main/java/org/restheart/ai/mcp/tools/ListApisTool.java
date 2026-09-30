@@ -96,7 +96,7 @@ public final class ListApisTool {
      * already. Filtering them bought a courtesy — an append-only ledger not advertising
      * {@code delete} — and cost far more: a listing is composed without arguments, so an action
      * whose rule reads one was dropped for the very caller entitled to it, and three matches of
-     * {@code examples/market-game} ended with the agent concluding the service was read-only.
+     * the market game ({@code github.com/ulabase/market-ai-game}) ended with the agent concluding the service was read-only.
      *
      * <p>What each action says about <em>this</em> caller is added instead: whether the rules that
      * apply to them permit it, refuse it, or leave it undecided until the call carries its
