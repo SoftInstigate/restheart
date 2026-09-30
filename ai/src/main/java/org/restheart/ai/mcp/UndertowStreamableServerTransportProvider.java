@@ -758,6 +758,9 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                                              HttpServerExchange exchange, long keepAliveMs) {
         try {
             OutputStream out = exchange.getOutputStream();
+            // the status and headers go out now: a client, or a proxy in front of RESTHeart,
+            // otherwise waits for them until the first message, which may never come
+            out.flush();
             while (true) {
                 var next = keepAliveMs > 0 ? transport.poll(keepAliveMs) : Optional.of(Optional.ofNullable(transport.take()));
                 if (next.isEmpty()) {
