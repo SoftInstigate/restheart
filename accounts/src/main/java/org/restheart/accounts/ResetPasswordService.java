@@ -103,6 +103,12 @@ public class ResetPasswordService implements JsonService {
             return;
         }
 
+        // asked for a cookie this server does not read: refused before anything is done
+        if (TokenDelivery.refused(req.getQueryParameterOrDefault("delivery", null), conf)) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, TokenDelivery.COOKIE_UNAVAILABLE);
+            return;
+        }
+
         // 1. Validate body — all three fields are required
         var body = req.getContent();
         if (body == null || !body.isJsonObject()) {
@@ -203,7 +209,8 @@ public class ResetPasswordService implements JsonService {
         // 7b. Auto-login: deliver the token per the `delivery` query parameter.
         // fetch()-based endpoint → cookie (default) or body (bearer).
         var delivery = TokenDelivery.resolve(
-                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,
+                TokenDelivery.Mode.BODY, conf);
 
         // 8. Success response
         var responseBody = new JsonObject();

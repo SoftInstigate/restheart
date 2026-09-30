@@ -113,6 +113,12 @@ public class GetTeamsService implements JsonService {
             return;
         }
 
+        // asked for a cookie this server does not read: refused before anything is done
+        if (TokenDelivery.refused(req.getQueryParameterOrDefault("delivery", null), conf)) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, TokenDelivery.COOKIE_UNAVAILABLE);
+            return;
+        }
+
         if (req.isGet()) {
             handleList(req, res);
             return;
@@ -204,7 +210,8 @@ public class GetTeamsService implements JsonService {
                 RequestOverrides.accountPropertiesClaims(req, conf));
 
         var delivery = TokenDelivery.resolve(
-                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,
+                TokenDelivery.Mode.BODY, conf);
 
         var responseBody = new JsonObject();
         responseBody.add("id", JsonParser.parseString(BsonUtils.toJson(teamRef.id())));

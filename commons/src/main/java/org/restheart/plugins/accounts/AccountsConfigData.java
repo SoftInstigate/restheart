@@ -64,6 +64,15 @@ public record AccountsConfigData(
          */
         boolean cookieSecure,
 
+        /**
+         * Whether the token can be handed over as the auth cookie ({@code delivery=cookie}).
+         * Defaults to whether {@code authCookieHandler} is enabled: a cookie the server never
+         * reads authenticates nobody. When {@code false}, {@code delivery=cookie} is refused with
+         * {@code 400} and the endpoints that default to the cookie hand the token over in the body
+         * or in the URL fragment instead.
+         */
+        boolean cookieDelivery,
+
         /** Base URL of the public frontend, e.g. {@code "https://app.example.com"}. */
         String frontendUrl,
 
@@ -214,7 +223,48 @@ public record AccountsConfigData(
             List<String> accountPropertiesClaims,
             List<String> usersUnrestrictedRoles) {
         this(db, DEFAULT_USERS_COLLECTION, appName, jwtKey, jwtIssuer, jwtTtl,
-                cookieDomain, cookieName, cookieSecure, frontendUrl, frontendAppUrl,
+                cookieDomain, cookieName, cookieSecure, true, frontendUrl, frontendAppUrl,
+                termsVersion, privacyVersion, defaultLocale, verificationTemplatePath,
+                passwordResetTemplatePath, inviteTemplatePath, teamClaimName,
+                memberRoleName, membershipEndpointsEnabled, ownershipRole, defaultRole,
+                accountPropertiesClaims, usersUnrestrictedRoles);
+    }
+
+    /**
+     * Compatibility constructor for callers written before {@code cookieDelivery} was added;
+     * defaults it to {@code true}, the behaviour of those versions.
+     *
+     * @deprecated use the canonical constructor and pass {@code cookieDelivery} explicitly.
+     *             Kept so that plugins built against 9.9.0 keep compiling.
+     */
+    @Deprecated(since = "9.9.1", forRemoval = true)
+    public AccountsConfigData(
+            String db,
+            String usersCollection,
+            String appName,
+            String jwtKey,
+            String jwtIssuer,
+            int jwtTtl,
+            String cookieDomain,
+            String cookieName,
+            boolean cookieSecure,
+            String frontendUrl,
+            String frontendAppUrl,
+            String termsVersion,
+            String privacyVersion,
+            String defaultLocale,
+            String verificationTemplatePath,
+            String passwordResetTemplatePath,
+            String inviteTemplatePath,
+            String teamClaimName,
+            String memberRoleName,
+            boolean membershipEndpointsEnabled,
+            String ownershipRole,
+            String defaultRole,
+            List<String> accountPropertiesClaims,
+            List<String> usersUnrestrictedRoles) {
+        this(db, usersCollection, appName, jwtKey, jwtIssuer, jwtTtl,
+                cookieDomain, cookieName, cookieSecure, true, frontendUrl, frontendAppUrl,
                 termsVersion, privacyVersion, defaultLocale, verificationTemplatePath,
                 passwordResetTemplatePath, inviteTemplatePath, teamClaimName,
                 memberRoleName, membershipEndpointsEnabled, ownershipRole, defaultRole,

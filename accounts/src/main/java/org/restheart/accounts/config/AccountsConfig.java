@@ -81,6 +81,19 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
         return "rh_auth";
     }
 
+    /**
+     * Whether {@code authCookieHandler} is enabled, the default of {@code cookie-delivery}. Read
+     * from its own block, {@code authCookieHandler: {enabled: …}} or {@code /authCookieHandler/enabled};
+     * when the configuration does not say, the cookie is assumed to be read.
+     */
+    private boolean authCookieHandlerEnabled() {
+        var conf = rhConfig == null ? null : rhConfig.toMap().get("authCookieHandler");
+        if (conf instanceof Map<?, ?> m && m.get("enabled") instanceof Boolean enabled) {
+            return enabled;
+        }
+        return true;
+    }
+
     @OnInit
     @SuppressWarnings("unchecked")
     public void onInit() {
@@ -107,6 +120,7 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
                 configVal(config, "cookie-domain", "localhost"),
                 configVal(config, "cookie-name", authCookieSetterName()),
                 configVal(config, "cookie-secure", true),
+                configVal(config, "cookie-delivery", authCookieHandlerEnabled()),
                 configVal(config, "frontend-url", "http://localhost:4200"),
                 configVal(config, "frontend-app-url", "http://localhost:4200/app"),
                 configVal(config, "terms-version", "1.0"),

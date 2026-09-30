@@ -448,7 +448,12 @@ accountsConfig:
   # JWT access token TTL in minutes. Key and issuer are sourced from jwtConfigProvider.
   jwt-ttl: 15
   cookie-domain: localhost
-  cookie-name: rh_auth
+  # The auth cookie's name; unset, the one authCookieSetter sets (/authCookieSetter/name).
+  # cookie-name: rh_auth
+  # Whether a token can be handed over as that cookie (delivery=cookie); unset, whether
+  # authCookieHandler is enabled. When false, delivery=cookie is refused with 400 and the
+  # endpoints that default to the cookie use the body or the URL fragment instead.
+  # cookie-delivery: true
   frontend-url: http://localhost:4200
   frontend-app-url: http://localhost:4200/app
   terms-version: "1.0"

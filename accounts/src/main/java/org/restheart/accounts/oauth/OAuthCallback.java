@@ -134,6 +134,12 @@ public class OAuthCallback implements StringService {
             return;
         }
 
+        // asked for a cookie this server does not read: refused before anything is done
+        if (TokenDelivery.refused(deliveryParam(req), conf)) {
+            redirectError(res, req, TokenDelivery.COOKIE_UNAVAILABLE);
+            return;
+        }
+
         // Extract provider from path
         var parts = req.getPath().split("/");
         if (parts.length < 5) {
@@ -307,6 +313,10 @@ public class OAuthCallback implements StringService {
         // `delivery` query parameter is absent, preserve the historical behavior of setting
         // BOTH the cookie and the URL fragment (resolve default is null = "both").
         var delivery = TokenDelivery.resolve(deliveryParam(req), null);
+        if (delivery == null && !conf.cookieDelivery()) {
+            // the historical "both" is only the fragment when the cookie authenticates nobody
+            delivery = TokenDelivery.Mode.FRAGMENT;
+        }
 
         if (delivery != TokenDelivery.Mode.FRAGMENT) {
             TokenDelivery.cookie(res, req, conf, jwtToken);

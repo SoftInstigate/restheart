@@ -101,6 +101,12 @@ public class ActivateService implements JsonService {
             return;
         }
 
+        // asked for a cookie this server does not read: refused before anything is done
+        if (TokenDelivery.refused(req.getQueryParameterOrDefault("delivery", null), conf)) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, TokenDelivery.COOKIE_UNAVAILABLE);
+            return;
+        }
+
         // 1. Validate body
         var body = req.getContent();
         if (body == null || !body.isJsonObject()) {
@@ -199,7 +205,8 @@ public class ActivateService implements JsonService {
         // fetch()-based endpoint → cookie (default) or body (bearer).
         // Default preserves the previous cookie-only behavior.
         var delivery = TokenDelivery.resolve(
-                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,
+                TokenDelivery.Mode.BODY, conf);
 
         var responseBody = new com.google.gson.JsonObject();
         responseBody.addProperty("message", "Account activated");

@@ -41,6 +41,30 @@ public final class TokenDelivery {
     }
 
     /**
+     * The answer to {@code delivery=cookie} on a server that does not authenticate with the
+     * cookie ({@link AccountsConfigData#cookieDelivery()} false).
+     */
+    public static final String COOKIE_UNAVAILABLE = "delivery=cookie is not available: this server does not "
+            + "authenticate with a cookie. Use delivery=body, or delivery=fragment for a link opened in the browser";
+
+    /**
+     * Whether the request asks for {@code delivery=cookie} on a server that cannot honour it.
+     * Checked before anything is done, so a refused request changes nothing.
+     */
+    public static boolean refused(String raw, AccountsConfigData conf) {
+        return !conf.cookieDelivery() && raw != null && "cookie".equalsIgnoreCase(raw.trim());
+    }
+
+    /**
+     * Like {@link #resolve(String, Mode)}, with the mode to use instead of the cookie when the
+     * server does not deliver it ({@link AccountsConfigData#cookieDelivery()} false).
+     */
+    public static Mode resolve(String raw, Mode defaultMode, Mode withoutCookie, AccountsConfigData conf) {
+        var mode = resolve(raw, defaultMode);
+        return mode == Mode.COOKIE && !conf.cookieDelivery() ? withoutCookie : mode;
+    }
+
+    /**
      * Parses the {@code delivery} query-parameter value into a {@link Mode}.
      *
      * @param raw         the raw parameter value (may be {@code null}/blank)
