@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * voyageRerankProvider:
  *   enabled: true
  *   api-key: <key>
- *   model: rerank-2.5        # optional, this is the default
+ *   model: rerank-3          # optional, this is the default
  * }</pre>
  *
  * <h2>Multi-tenant</h2>
@@ -73,7 +73,7 @@ public class VoyageRerankProvider implements Provider<RerankModel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(VoyageRerankProvider.class);
 
     private static final String DEFAULT_BASE_URL = "https://api.voyageai.com/v1";
-    private static final String DEFAULT_MODEL = "rerank-2.5";
+    private static final String DEFAULT_MODEL = "rerank-3";
 
     @Inject("config")
     private Map<String, Object> config;
