@@ -25,6 +25,7 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 import com.codahale.metrics.Timer;
 import com.google.common.net.HttpHeaders;
 
@@ -277,6 +278,40 @@ public class Metrics {
      */
     public static void xffValueRIndex(int ridx) {
         xffReverseIndex = ridx;
+    }
+
+    /** The registry of the failed authentication histograms, shared by whoever counts and whoever blocks. */
+    private static final MetricRegistry AUTH_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
+
+    /** The window the failed authentications are counted in. */
+    public static final int FAILED_AUTH_WINDOW_SECONDS = 10;
+
+    /**
+     * Counts one failed authentication for the source of a request, the one
+     * {@link #failedAuthHistogramName(HttpServerExchange)} names. Each failure is one entry in a
+     * sliding time window, which Dropwizard keeps safely under concurrent updates: none is lost,
+     * however many arrive together.
+     *
+     * @param exchange the request that failed to authenticate
+     */
+    public static void failedAuth(HttpServerExchange exchange) {
+        failedAuthHistogram(exchange).update(1);
+    }
+
+    /**
+     * The failed authentications of the source of a request in the last
+     * {@link #FAILED_AUTH_WINDOW_SECONDS} seconds: the entries in its window.
+     *
+     * @param exchange the request
+     * @return how many times its source failed to authenticate in the window
+     */
+    public static int failedAuthCount(HttpServerExchange exchange) {
+        return failedAuthHistogram(exchange).getSnapshot().size();
+    }
+
+    private static Histogram failedAuthHistogram(HttpServerExchange exchange) {
+        return AUTH_REGISTRY.histogram(failedAuthHistogramName(exchange),
+                () -> new Histogram(new SlidingTimeWindowArrayReservoir(FAILED_AUTH_WINDOW_SECONDS, TimeUnit.SECONDS)));
     }
 
     /**

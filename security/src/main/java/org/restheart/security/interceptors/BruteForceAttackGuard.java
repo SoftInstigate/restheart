@@ -39,7 +39,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 
 import static org.restheart.metrics.Metrics.collectFailedAuthBy;
-import static org.restheart.metrics.Metrics.failedAuthHistogramName;
 import static org.restheart.metrics.Metrics.xffValue;
 import static org.restheart.metrics.Metrics.xffValueRIndex;
 
@@ -50,13 +49,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 import com.google.common.net.HttpHeaders;
 
 import org.slf4j.Logger;
@@ -110,7 +104,6 @@ import org.slf4j.LoggerFactory;
 public class BruteForceAttackGuard implements WildcardInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(BruteForceAttackGuard.class);
 
-    private static final MetricRegistry AUTH_METRIC_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
     private static int xForwardedForValueFromLast = 0;
 
     private int maxFailedAttempts = 5;
@@ -193,8 +186,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
         // This interceptor runs BEFORE authentication
         // Check if failed attempts from this source exceed the threshold
-        var histogram = authHisto(request);
-        var failedAttempts = histogram.getSnapshot().getMax();
+        var failedAttempts = Metrics.failedAuthCount(request.getExchange());
 
         sweep();
 
@@ -322,10 +314,6 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     private static String escape(String s) {
         return s == null ? "" : s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-    }
-
-    private Histogram authHisto(ServiceRequest<?> request) {
-        return AUTH_METRIC_REGISTRY.histogram(failedAuthHistogramName(request.getExchange()), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS)));
     }
 
     /**

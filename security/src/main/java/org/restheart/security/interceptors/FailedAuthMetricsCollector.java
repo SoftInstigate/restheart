@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
+import org.restheart.metrics.Metrics;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
@@ -36,11 +37,9 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.Slf4jReporter.LoggingLevel;
-import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 
 import io.undertow.server.HttpServerExchange;
 
-import static org.restheart.metrics.Metrics.failedAuthHistogramName;
 
 /**
  * Collects metrics for failed authentication attempts.
@@ -109,25 +108,13 @@ public class FailedAuthMetricsCollector implements WildcardInterceptor {
     }
 
     /**
-     * Registers stats of failed authentication in dropwizard's
-     * slide time window histograms of 10 seconds.
-     *
-     * For each request, register one histogram whose name contains the remote ip
-     * and one with the value of the header X-Forwarded-For, if present.
-     *
-     * This method updates the histograms with max+1 for failed ones,
-     * so that the max of each histogram is the number of failed authentications
-     * in the last 10 seconds.
+     * Counts the failure for the source of the request, the remote ip or the tracked value of
+     * X-Forwarded-For: one entry in its 10 seconds window, see {@link Metrics#failedAuth}.
      *
      * @param exchange
      */
     private void updateFailedAuthMetrics(HttpServerExchange exchange) {
-        // update the histogram
-        var histo = AUTH_METRIC_REGISTRY.histogram(
-                failedAuthHistogramName(exchange),
-                () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))
-        );
-        histo.update(histo.getSnapshot().getMax() + 1);
+        Metrics.failedAuth(exchange);
 
         // every 100 failed requests, prune metrics
         tryPruneMetrics();
@@ -136,7 +123,12 @@ public class FailedAuthMetricsCollector implements WildcardInterceptor {
     /**
      * Cleanup metrics to avoid memory leaks when an attacker sends
      * many requests with rotating ips or X-Forwarded-For headers
-     * generating many dropwizard's meters
+     * generating many dropwizard's meters.
+     *
+     * Every 100 failed requests, the histograms with nothing in their window are removed:
+     * the sources quiet for the last 10 seconds. The others are kept, or a source would
+     * restart from zero every hundred failures overall, and a threshold of 100 or more
+     * could never be reached.
      */
     private void tryPruneMetrics() {
         var total = AUTH_METRIC_REGISTRY.counter(MetricRegistry.name(Authenticator.class, "_total"));
@@ -144,8 +136,15 @@ public class FailedAuthMetricsCollector implements WildcardInterceptor {
         if (total.getCount() % 100 == 0) {
             total.dec(total.getCount());
             LOGGER.trace("Pruning auth metrics");
-            AUTH_METRIC_REGISTRY.removeMatching((name, metric) ->
-                    name.startsWith(MetricRegistry.name(Authenticator.class, FAILED_AUTH_METRIC_PREFIX)));
+            pruneIdle(AUTH_METRIC_REGISTRY);
         }
+    }
+
+    /** Removes the failed auth histograms whose 10 seconds window is empty. */
+    static void pruneIdle(MetricRegistry registry) {
+        registry.removeMatching((name, metric) ->
+                name.startsWith(MetricRegistry.name(Authenticator.class, FAILED_AUTH_METRIC_PREFIX))
+                        && metric instanceof Histogram histogram
+                        && histogram.getSnapshot().size() == 0);
     }
 }
