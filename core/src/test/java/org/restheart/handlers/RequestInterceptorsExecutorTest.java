@@ -116,6 +116,27 @@ public class RequestInterceptorsExecutorTest {
         }
     }
 
+    @RegisterPlugin(name = "rejectingBeforeAuth", description = "refuses the client at REQUEST_BEFORE_AUTH, whatever its credentials")
+    static class RejectingBeforeAuthInterceptor implements Interceptor<ServiceRequest<?>, ServiceResponse<?>> {
+        private final List<String> calls;
+
+        RejectingBeforeAuthInterceptor(List<String> calls) {
+            this.calls = calls;
+        }
+
+        @Override
+        public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
+            return true;
+        }
+
+        @Override
+        public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
+            calls.add("rejectingBeforeAuth");
+            // as BruteForceAttackGuard: the error is for every credential, so it must not wait for authentication
+            response.rejectBeforeAuth(429, "too many failed attempts");
+        }
+    }
+
     @RegisterPlugin(name = "nonResolvingAfterAuth", description = "registered at REQUEST_AFTER_AUTH but never resolves")
     static class NonResolvingAfterAuthInterceptor implements Interceptor<ServiceRequest<?>, ServiceResponse<?>> {
         private final List<String> calls;
@@ -336,6 +357,39 @@ public class RequestInterceptorsExecutorTest {
 
             assertEquals(List.of("securityHandler", "next"), calls, "with nothing denying, the whole pipeline must run through to the final next handler");
             assertTrue(!Exchange.isInError(exchange), "the exchange must not be flagged in error");
+        }
+    }
+
+    /**
+     * An interceptor that refuses the client whatever its credentials, with
+     * {@code response.rejectBeforeAuth(...)}, is answered at the end of {@code REQUEST_BEFORE_AUTH}:
+     * the security handler never runs, so wrong and right credentials get the same response.
+     * Deferring it, as for the other denials, would answer 401 to the wrong ones and the pending
+     * error to the right ones.
+     */
+    @Test
+    public void rejectionBeforeAuthIsSentWithoutAuthenticating() throws Exception {
+        var calls = new ArrayList<String>();
+        var rejecting = new RejectingBeforeAuthInterceptor(calls);
+        var service = new TestService();
+
+        try (var registryStatic = registryReturning(service, List.of(rejecting), List.of())) {
+            var exchange = fakeServiceExchange();
+
+            var nextHandlerStandIn = new RecordingHandler(calls, "next");
+            var afterAuthExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_AUTH);
+            var securityHandlerStandIn = new RecordingHandler(calls, "securityHandler");
+            var beforeAuthExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_BEFORE_AUTH);
+
+            var pipeline = PipelinedHandler.pipe(beforeAuthExecutor, securityHandlerStandIn, afterAuthExecutor, nextHandlerStandIn);
+
+            pipeline.handleRequest(exchange);
+
+            assertEquals(List.of("rejectingBeforeAuth"), calls,
+                    "the pipeline must stop at REQUEST_BEFORE_AUTH: neither the security handler nor anything after it runs");
+            assertEquals(429, exchange.getStatusCode(), "the rejection's status code must be the one sent");
+            assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("too many failed attempts"),
+                    "the rejection's body must be the one sent");
         }
     }
 }

@@ -195,7 +195,16 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         // might snoop information. For instance, a request to MongoService might
         // be able to check if a collection exists (this check is done by
         // BEFORE_AUTH interceptor CollectionPropsInjector)
-        if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH && Exchange.isInError(exchange)) {
+        //
+        // The exception is an interceptor that refuses the client whatever its credentials and
+        // says so with response.rejectBeforeAuth(), like the brute force guard: its error is sent
+        // here, at the end of BEFORE_AUTH, or wrong credentials would answer 401 and right ones
+        // the pending error, telling the two apart.
+        var send = Exchange.isInError(exchange)
+                && (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
+                || (this.interceptPoint == InterceptPoint.REQUEST_BEFORE_AUTH && Exchange.isRejectedBeforeAuth(exchange)));
+
+        if (send) {
             // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);

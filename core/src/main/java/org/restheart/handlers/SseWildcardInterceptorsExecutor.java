@@ -216,7 +216,13 @@ public class SseWildcardInterceptorsExecutor extends PipelinedHandler {
         // when this executor has interceptors of its own): a denial raised by the
         // REQUEST_BEFORE_AUTH invocation of this executor must still be observed and sent
         // here even if zero WildcardInterceptors are registered for REQUEST_AFTER_AUTH.
-        if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH && Exchange.isInError(exchange)) {
+        // The exception, as there: an interceptor that refuses the client whatever its credentials
+        // (response.rejectBeforeAuth(), the brute force guard) is answered before authentication.
+        var send = Exchange.isInError(exchange)
+                && (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
+                || (this.interceptPoint == InterceptPoint.REQUEST_BEFORE_AUTH && Exchange.isRejectedBeforeAuth(exchange)));
+
+        if (send) {
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             }

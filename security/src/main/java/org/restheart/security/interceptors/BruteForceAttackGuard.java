@@ -63,7 +63,8 @@ import org.slf4j.LoggerFactory;
  * collected by FailedAuthMetricsCollector. When the number of failed authentication attempts
  * from the same source (IP address or X-Forwarded-For header) exceeds the configured threshold
  * within the sliding time window (10 seconds), it immediately errors the request with a
- * 429 Too Many Requests status, preventing the authentication attempt from even being processed.
+ * 429 Too Many Requests status, sent before authentication is attempted: a blocked source gets
+ * the same answer whatever credentials it sends.
  * </p>
  * <p>
  * This preemptive approach prevents attackers from consuming server resources with repeated
@@ -193,8 +194,9 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         if (failedAttempts >= this.maxFailedAttempts) {
             blocked(request.getExchange(), failedAttempts);
 
-            // Set the request as in error to stop further processing
-            response.setInError(
+            // Refuse now, before authentication: an error left pending until after it would answer
+            // 401 to wrong credentials and 429 to right ones, telling the attacker which is which
+            response.rejectBeforeAuth(
                     org.restheart.utils.HttpStatus.SC_TOO_MANY_REQUESTS,
                     "Too many failed authentication attempts. Please try again later."
             );

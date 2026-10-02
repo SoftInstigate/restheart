@@ -116,6 +116,10 @@ public class FailedAuthMetricsCollector implements WildcardInterceptor {
     private void updateFailedAuthMetrics(HttpServerExchange exchange) {
         Metrics.failedAuth(exchange);
 
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Failed auth counted: histogram={} count={}", Metrics.failedAuthHistogramName(exchange), Metrics.failedAuthCount(exchange));
+        }
+
         // every 100 failed requests, prune metrics
         tryPruneMetrics();
     }

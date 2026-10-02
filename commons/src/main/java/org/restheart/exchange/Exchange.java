@@ -86,6 +86,9 @@ public abstract class Exchange<T> {
     /** Attachment key for tracking error state in the HTTP exchange. */
     protected static final AttachmentKey<Boolean> IN_ERROR_KEY = AttachmentKey.create(Boolean.class);
 
+    /** Attachment key for an error an interceptor wants sent before authentication. */
+    protected static final AttachmentKey<Boolean> REJECTED_BEFORE_AUTH_KEY = AttachmentKey.create(Boolean.class);
+
     /** Attachment key for tracking whether response interceptors have been executed. */
     private static final AttachmentKey<Boolean> RESPONSE_INTERCEPTOR_EXECUTED = AttachmentKey.create(Boolean.class);
 
@@ -183,6 +186,16 @@ public abstract class Exchange<T> {
      */
     public static void setInError(HttpServerExchange exchange) {
         exchange.putAttachment(IN_ERROR_KEY, true);
+    }
+
+    /**
+     * Checks if the exchange was rejected with {@link Response#rejectBeforeAuth(int, String)}.
+     *
+     * @param exchange the HttpServerExchange to check
+     * @return true if its error must be sent before authentication
+     */
+    public static boolean isRejectedBeforeAuth(HttpServerExchange exchange) {
+        return exchange.getAttachment(REJECTED_BEFORE_AUTH_KEY) != null && exchange.getAttachment(REJECTED_BEFORE_AUTH_KEY);
     }
 
     /**
