@@ -620,6 +620,18 @@ bruteForceAttackGuard:
   # 0 -> k.k.k.k
   # 2 -> y.y.y.y
   x-forwarded-for-value-from-last-element: 0
+  # A server reached through more than one entry, each with its own chain of proxies, finds the
+  # client at a different position on each: the first override whose predicate matches decides.
+  # The predicate must tell the entries apart by something a client cannot forge, e.g. a host only
+  # one entry forwards.
+  # x-forwarded-for-overrides:
+  #   - predicate: regex[pattern='.*\.example\.app', value='%{i,Host}', full-match=true]
+  #     value-from-last-element: 1
+  # Mail an alarm when a source gets blocked, with the emails provider configured; at most one
+  # mail per source every notify-cooldown-minutes. The log has it anyway, on one line that starts
+  # with "Brute force guard:".
+  # notify-email: security@example.com
+  # notify-cooldown-minutes: 60
 
 # Sets the X-Powered-By: restheart.org response header
 xPoweredBy:

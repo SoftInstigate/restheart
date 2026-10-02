@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.security.Authenticator;
 import io.undertow.attribute.ExchangeAttributes;
+import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HttpString;
@@ -108,6 +109,18 @@ public class Metrics {
     private static int xffReverseIndex = 0;
 
     /**
+     * The reverse index for the requests that match a predicate, the first match wins: a server
+     * reached through more than one entry, each with its own chain of proxies, finds the client at a
+     * different position on each.
+     *
+     * @param predicate     which requests
+     * @param valueFromLast the reverse index for them
+     */
+    public record XffOverride(Predicate predicate, int valueFromLast) {}
+
+    private static List<XffOverride> xffOverrides = List.of();
+
+    /**
      * Generates a metric name for tracking failed authentication attempts.
      * 
      * <p>The generated name includes the authentication failure tracking strategy
@@ -135,7 +148,7 @@ public class Metrics {
                 var xff = ExchangeAttributes.requestHeader(_X_FORWARDED_FOR).readAttribute(exchange);
                 yield xff == null
                         ? MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", "not-set")
-                        : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", xffValue(xff, xffReverseIndex));
+                        : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", xffValue(xff, xffValueRIndex(exchange)));
             }
         };
     }
@@ -264,6 +277,33 @@ public class Metrics {
      */
     public static void xffValueRIndex(int ridx) {
         xffReverseIndex = ridx;
+    }
+
+    /**
+     * Sets the reverse indexes that apply to the requests matching a predicate, before the one of
+     * {@link #xffValueRIndex(int)}; the first matching predicate wins.
+     *
+     * @param overrides the overrides, in order
+     */
+    public static void xffOverrides(List<XffOverride> overrides) {
+        xffOverrides = overrides == null ? List.of() : List.copyOf(overrides);
+    }
+
+    /**
+     * The reverse index for a request: the one of the first override whose predicate matches it,
+     * else the one of {@link #xffValueRIndex(int)}. Counting failures and blocking both use it, so
+     * they always agree on the address.
+     *
+     * @param exchange the request
+     * @return the reverse index to use in its X-Forwarded-For
+     */
+    public static int xffValueRIndex(HttpServerExchange exchange) {
+        for (var override : xffOverrides) {
+            if (override.predicate().resolve(exchange)) {
+                return override.valueFromLast();
+            }
+        }
+        return xffReverseIndex;
     }
 
 
