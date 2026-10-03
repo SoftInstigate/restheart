@@ -162,9 +162,11 @@ import io.undertow.util.Headers;
         name = "vectorScanInterceptor",
         description = "Executes $vectorScan: brute-force vector similarity search requiring no mongot or index",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-        // first of the phase but for the db and collection properties injectors (MIN_VALUE and
-        // MIN_VALUE + 1), which resolve() reads: since 9.9.3 they run in this phase too
-        priority = Integer.MIN_VALUE + 2,
+        // early in the phase, but after the db and collection properties injectors (MIN_VALUE and
+        // MIN_VALUE + 1, in this phase since 9.9.3), which resolve() reads, and leaving room
+        // (MIN_VALUE + 2 .. + 9) to interceptors that declare an aggregation for the request:
+        // resolve() must see the stages they add
+        priority = Integer.MIN_VALUE + 10,
         enabledByDefault = false
 )
 public class VectorScanInterceptor implements MongoInterceptor {
