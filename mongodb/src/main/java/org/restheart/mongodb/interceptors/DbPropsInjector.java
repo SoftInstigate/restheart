@@ -41,15 +41,19 @@ import com.mongodb.MongoException;
 /**
  *
  * Injects the db properties into the MongoRequest
-      
-       It is also responsible of sending NOT_FOUND in case of requests involving not
-       existing dbs (that are not PUT)
+ *
+ * It is also responsible of sending NOT_FOUND in case of requests involving not
+ * existing dbs (that are not PUT)
+ *
+ * After authentication, since 9.9.3, as CollectionPropsInjector: the properties come from a
+ * query on the database, and whether the db exists is information nobody should get without
+ * credentials.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "dbPropsInjector",
         description = "Injects the db properties into the BsonRequest",
-        interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
         priority = Integer.MIN_VALUE)
 public class DbPropsInjector implements MongoInterceptor {
     private final Logger LOGGER = LoggerFactory.getLogger(DbPropsInjector.class);

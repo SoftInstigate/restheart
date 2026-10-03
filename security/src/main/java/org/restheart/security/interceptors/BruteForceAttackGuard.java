@@ -194,9 +194,9 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         if (failedAttempts >= this.maxFailedAttempts) {
             blocked(request.getExchange(), failedAttempts);
 
-            // Refuse now, before authentication: an error left pending until after it would answer
-            // 401 to wrong credentials and 429 to right ones, telling the attacker which is which
-            response.rejectBeforeAuth(
+            // Sent at once, before authentication (RequestInterceptorsExecutor): a blocked source gets
+            // the same 429 whatever credentials it sends
+            response.setInError(
                     org.restheart.utils.HttpStatus.SC_TOO_MANY_REQUESTS,
                     "Too many failed authentication attempts. Please try again later."
             );

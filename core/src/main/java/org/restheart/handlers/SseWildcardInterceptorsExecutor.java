@@ -68,17 +68,14 @@ import io.undertow.util.AttachmentKey;
  *
  * <p>The SSE pipeline runs this executor twice for the same exchange: once at
  * {@code REQUEST_BEFORE_AUTH}, once at {@code REQUEST_AFTER_AUTH}. A denial raised via
- * {@code response.setInError(...)} at {@code REQUEST_BEFORE_AUTH} is <strong>deferred, not
- * ignored</strong>, mirroring {@link RequestInterceptorsExecutor} (see the comment above its
- * {@code REQUEST_AFTER_AUTH} check): sending the error response before authentication would
- * let an unauthenticated client learn something about the endpoint. The two invocations share
- * a single {@code SseHandshakeRequest}/{@code SseHandshakeResponse} pair for the exchange,
+ * {@code response.setInError(...)} is sent where it is raised, mirroring
+ * {@link RequestInterceptorsExecutor} (see the comment above its terminal check: until 9.9.2 a
+ * denial before authentication was held back until after it). The two invocations share a
+ * single {@code SseHandshakeRequest}/{@code SseHandshakeResponse} pair for the exchange,
  * attached under an {@link AttachmentKey} owned by this class (deliberately not
  * {@code ServiceRequest}/{@code ServiceResponse}'s own {@code REQUEST_KEY}/{@code RESPONSE_KEY},
  * which other handlers on this pipeline rely on staying unpopulated): whichever invocation runs
- * first creates the pair, the other reuses it. So a status code and body set on a
- * {@code REQUEST_BEFORE_AUTH} denial are still the ones sent once {@code REQUEST_AFTER_AUTH}
- * observes the exchange in error.
+ * first creates the pair, the other reuses it.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  * @see WildcardInterceptor
@@ -210,19 +207,10 @@ public class SseWildcardInterceptorsExecutor extends PipelinedHandler {
             RequestPhaseContext.reset();
         }
 
-        // Denial only takes effect after auth, mirroring RequestInterceptorsExecutor:
-        // denying before auth would let an unauthenticated client learn something
-        // about the endpoint from the error response. Reached unconditionally (not just
-        // when this executor has interceptors of its own): a denial raised by the
-        // REQUEST_BEFORE_AUTH invocation of this executor must still be observed and sent
-        // here even if zero WildcardInterceptors are registered for REQUEST_AFTER_AUTH.
-        // The exception, as there: an interceptor that refuses the client whatever its credentials
-        // (response.rejectBeforeAuth(), the brute force guard) is answered before authentication.
-        var send = Exchange.isInError(exchange)
-                && (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
-                || (this.interceptPoint == InterceptPoint.REQUEST_BEFORE_AUTH && Exchange.isRejectedBeforeAuth(exchange)));
-
-        if (send) {
+        // A denial takes effect where it is raised, mirroring RequestInterceptorsExecutor (see
+        // the comment there: until 9.9.2 a denial before auth was held back until after it).
+        // Reached unconditionally, not just when this executor has interceptors of its own.
+        if (Exchange.isInError(exchange)) {
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             }

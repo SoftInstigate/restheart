@@ -189,22 +189,15 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             RequestPhaseContext.reset();
         }
 
-        // If an interceptor sets the response as errored
-        // stop processing the request and send the response
-        // This happens AFTER_AUTH, otherwise not authenticated requests
-        // might snoop information. For instance, a request to MongoService might
-        // be able to check if a collection exists (this check is done by
-        // BEFORE_AUTH interceptor CollectionPropsInjector)
-        //
-        // The exception is an interceptor that refuses the client whatever its credentials and
-        // says so with response.rejectBeforeAuth(), like the brute force guard: its error is sent
-        // here, at the end of BEFORE_AUTH, or wrong credentials would answer 401 and right ones
-        // the pending error, telling the two apart.
-        var send = Exchange.isInError(exchange)
-                && (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
-                || (this.interceptPoint == InterceptPoint.REQUEST_BEFORE_AUTH && Exchange.isRejectedBeforeAuth(exchange)));
-
-        if (send) {
+        // If an interceptor sets the response as errored, stop processing the request and send
+        // the response, at REQUEST_BEFORE_AUTH as at REQUEST_AFTER_AUTH. Until 9.9.2 an error set
+        // before authentication was held back and sent after it, so that an unauthenticated
+        // request could not learn, from the 404 of CollectionPropsInjector, whether a collection
+        // exists. That hid the answer, not the query, and it cost the brute force guard its
+        // point: wrong credentials got the 401 of the authentication, right ones the pending 429.
+        // Now nothing that runs before authentication reads the database, and an error set there
+        // is one a client may see without credentials.
+        if (Exchange.isInError(exchange)) {
             // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);

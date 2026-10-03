@@ -90,15 +90,14 @@ public class FailedAuthMetricsCollector implements WildcardInterceptor {
 
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
-        // Only update metrics for authentication failures (401), not authorization failures (403)
-        // Authorization failures are permission issues, not brute force attack attempts
-        var statusCode = response.getStatusCode();
-        if (statusCode < 0 || statusCode == 401) {
-            // Status code -1 means not set yet (will become 401)
-            // Status code 401 is Unauthorized (authentication failure)
+        // Authentication failures only, not authorization ones: a request denied by an authorizer
+        // has an authenticated account, a brute force attempt has none. The status code is no
+        // guide: an error set before authentication, like the 404 of a collection that does not
+        // exist, is still on the response here, and a request with wrong credentials on such a
+        // path is as much a failed authentication as any other.
+        if (!request.isAuthenticated()) {
             updateFailedAuthMetrics(request.getExchange());
         }
-        // If status code is 403 (Forbidden), it's an authorization failure - don't count it
     }
 
     @Override

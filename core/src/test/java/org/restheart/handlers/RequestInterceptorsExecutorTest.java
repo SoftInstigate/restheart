@@ -110,30 +110,9 @@ public class RequestInterceptorsExecutorTest {
         @Override
         public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
             calls.add("denyingBeforeAuth");
-            // mirrors CollectionPropsInjector/DbPropsInjector/ContentSizeChecker/BruteForceAttackGuard:
-            // deny before auth, don't send yet (see RequestInterceptorsExecutor's REQUEST_AFTER_AUTH check)
+            // as ContentSizeChecker or BruteForceAttackGuard: the error is sent at once, before
+            // authentication (see RequestInterceptorsExecutor's terminal check)
             response.setInError(403, "denied before auth", null);
-        }
-    }
-
-    @RegisterPlugin(name = "rejectingBeforeAuth", description = "refuses the client at REQUEST_BEFORE_AUTH, whatever its credentials")
-    static class RejectingBeforeAuthInterceptor implements Interceptor<ServiceRequest<?>, ServiceResponse<?>> {
-        private final List<String> calls;
-
-        RejectingBeforeAuthInterceptor(List<String> calls) {
-            this.calls = calls;
-        }
-
-        @Override
-        public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
-            return true;
-        }
-
-        @Override
-        public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
-            calls.add("rejectingBeforeAuth");
-            // as BruteForceAttackGuard: the error is for every credential, so it must not wait for authentication
-            response.rejectBeforeAuth(429, "too many failed attempts");
         }
     }
 
@@ -260,15 +239,14 @@ public class RequestInterceptorsExecutorTest {
     // -----------------------------------------------------------------------
 
     /**
-     * The regression test for GitHub issue #717: nothing is registered at
-     * {@code REQUEST_AFTER_AUTH}, so that invocation's {@code interceptors} list is genuinely
-     * empty. The pending denial raised at {@code REQUEST_BEFORE_AUTH} must still be observed and
-     * sent: this must not depend on some other, unrelated interceptor happening to be registered
-     * at {@code REQUEST_AFTER_AUTH} for this service (in a stock build, interceptors such as
-     * DateHeader/XPoweredBy mask this by always being registered there by default).
+     * A denial raised at {@code REQUEST_BEFORE_AUTH} is sent there, with its status and body,
+     * and nothing after it runs: not the security handler, not the final handler. Until 9.9.2 it
+     * was held back until {@code REQUEST_AFTER_AUTH} (GitHub issue #717 was about that pending
+     * denial getting lost when nothing was registered there); now that nothing before
+     * authentication reads the database, the error goes out where it is raised.
      */
     @Test
-    public void beforeAuthDenialIsDeferredAndSentAtAfterAuthWhenNoAfterAuthInterceptorsRegistered() throws Exception {
+    public void beforeAuthDenialIsSentBeforeAuthenticatingWhenNoAfterAuthInterceptorsRegistered() throws Exception {
         var calls = new ArrayList<String>();
         var denying = new DenyingBeforeAuthInterceptor(calls);
         var service = new TestService();
@@ -286,27 +264,21 @@ public class RequestInterceptorsExecutorTest {
 
             pipeline.handleRequest(exchange);
 
-            assertEquals(List.of("denyingBeforeAuth", "securityHandler"), calls,
-                    "the before-auth interceptor and the security handler must run, but the pipeline must stop "
-                            + "at REQUEST_AFTER_AUTH once the deferred denial is observed, even though REQUEST_AFTER_AUTH "
-                            + "has no interceptors of its own for this service: the final next handler must never run");
+            assertEquals(List.of("denyingBeforeAuth"), calls,
+                    "the pipeline must stop at REQUEST_BEFORE_AUTH: neither the security handler nor the final next handler runs");
             assertTrue(Exchange.isInError(exchange), "the exchange must be flagged in error");
-            assertEquals(403, exchange.getStatusCode(),
-                    "the status code set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth");
+            assertEquals(403, exchange.getStatusCode(), "the status code set by the denial must be the one sent");
             assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied before auth"),
-                    "the body set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth, not lost");
+                    "the body set by the denial must be the one sent, not lost");
         }
     }
 
     /**
-     * Positive control: an (unrelated, non-resolving) interceptor is registered at
-     * {@code REQUEST_AFTER_AUTH}, so that invocation's {@code interceptors} list is non-empty.
-     * This passes with or without the fix and proves nothing about the defect on its own; it
-     * exists to show the difference from the negative control above, which is the one that
-     * actually exercises the fix.
+     * The same with an (unrelated, non-resolving) interceptor registered at
+     * {@code REQUEST_AFTER_AUTH}: it is never reached.
      */
     @Test
-    public void beforeAuthDenialIsDeferredAndSentAtAfterAuthWithAfterAuthInterceptorsRegistered() throws Exception {
+    public void beforeAuthDenialIsSentBeforeAuthenticatingWithAfterAuthInterceptorsRegistered() throws Exception {
         var calls = new ArrayList<String>();
         var denying = new DenyingBeforeAuthInterceptor(calls);
         var nonResolving = new NonResolvingAfterAuthInterceptor(calls);
@@ -324,12 +296,11 @@ public class RequestInterceptorsExecutorTest {
 
             pipeline.handleRequest(exchange);
 
-            assertEquals(List.of("denyingBeforeAuth", "securityHandler"), calls,
-                    "the REQUEST_AFTER_AUTH interceptor must be considered but not handled (its resolve() declines), "
-                            + "and the pipeline must stop at REQUEST_AFTER_AUTH once the deferred denial is observed");
-            assertEquals(403, exchange.getStatusCode(), "the deferred denial's status code must still be sent");
+            assertEquals(List.of("denyingBeforeAuth"), calls,
+                    "the pipeline must stop at REQUEST_BEFORE_AUTH: the REQUEST_AFTER_AUTH interceptor is never reached");
+            assertEquals(403, exchange.getStatusCode(), "the denial's status code must be sent");
             assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied before auth"),
-                    "the deferred denial's body must still be sent");
+                    "the denial's body must be sent");
         }
     }
 
@@ -357,39 +328,6 @@ public class RequestInterceptorsExecutorTest {
 
             assertEquals(List.of("securityHandler", "next"), calls, "with nothing denying, the whole pipeline must run through to the final next handler");
             assertTrue(!Exchange.isInError(exchange), "the exchange must not be flagged in error");
-        }
-    }
-
-    /**
-     * An interceptor that refuses the client whatever its credentials, with
-     * {@code response.rejectBeforeAuth(...)}, is answered at the end of {@code REQUEST_BEFORE_AUTH}:
-     * the security handler never runs, so wrong and right credentials get the same response.
-     * Deferring it, as for the other denials, would answer 401 to the wrong ones and the pending
-     * error to the right ones.
-     */
-    @Test
-    public void rejectionBeforeAuthIsSentWithoutAuthenticating() throws Exception {
-        var calls = new ArrayList<String>();
-        var rejecting = new RejectingBeforeAuthInterceptor(calls);
-        var service = new TestService();
-
-        try (var registryStatic = registryReturning(service, List.of(rejecting), List.of())) {
-            var exchange = fakeServiceExchange();
-
-            var nextHandlerStandIn = new RecordingHandler(calls, "next");
-            var afterAuthExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_AUTH);
-            var securityHandlerStandIn = new RecordingHandler(calls, "securityHandler");
-            var beforeAuthExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_BEFORE_AUTH);
-
-            var pipeline = PipelinedHandler.pipe(beforeAuthExecutor, securityHandlerStandIn, afterAuthExecutor, nextHandlerStandIn);
-
-            pipeline.handleRequest(exchange);
-
-            assertEquals(List.of("rejectingBeforeAuth"), calls,
-                    "the pipeline must stop at REQUEST_BEFORE_AUTH: neither the security handler nor anything after it runs");
-            assertEquals(429, exchange.getStatusCode(), "the rejection's status code must be the one sent");
-            assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("too many failed attempts"),
-                    "the rejection's body must be the one sent");
         }
     }
 }

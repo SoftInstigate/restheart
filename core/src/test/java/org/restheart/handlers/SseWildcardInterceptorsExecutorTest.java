@@ -231,14 +231,10 @@ public class SseWildcardInterceptorsExecutorTest {
     }
 
     @Test
-    public void beforeAuthWildcardInterceptorDenialIsDeferredNotSentImmediately() throws Exception {
+    public void beforeAuthWildcardInterceptorDenialIsSentAtOnce() throws Exception {
         var calls = new ArrayList<String>();
-        // this interceptor calls setInError, but REQUEST_BEFORE_AUTH denial must not
-        // short-circuit the pipeline nor be sent to the client yet (mirrors
-        // RequestInterceptorsExecutor: denying pre-auth would let an unauthenticated client
-        // learn something about the endpoint from the error body). The denial is deferred until
-        // the REQUEST_AFTER_AUTH invocation of this executor, not dropped: see
-        // beforeAuthDenialIsDeferredAndSentAtAfterAuthWithStatusAndBody below.
+        // this interceptor calls setInError at REQUEST_BEFORE_AUTH: the denial is sent there,
+        // mirroring RequestInterceptorsExecutor, and the security handler never runs
         var beforeAuth = new BeforeAuthWildcardInterceptor(calls, 403);
 
         try (var registryStatic = registryReturning(Set.of(record(beforeAuth)))) {
@@ -248,24 +244,21 @@ public class SseWildcardInterceptorsExecutorTest {
 
             executor.handleRequest(exchange);
 
-            assertEquals(List.of("beforeAuthWildcard", "securityHandler"), calls,
-                    "the interceptor must run, then hand off to the next handler (the security handler)");
-            assertTrue(Exchange.isInError(exchange), "the denial must still flag the exchange as in error, for REQUEST_AFTER_AUTH to observe");
-            assertEquals(0, exchange.getStatusCode(), "the status code must not yet be written to the exchange: nothing has been sent");
-            assertEquals(null, exchange.getSentContent(), "the denial body must not be sent yet: it is deferred to REQUEST_AFTER_AUTH");
+            assertEquals(List.of("beforeAuthWildcard"), calls,
+                    "the interceptor must run and the pipeline must stop: the security handler never runs");
+            assertTrue(Exchange.isInError(exchange), "the denial must flag the exchange as in error");
+            assertEquals(403, exchange.getStatusCode(), "the denial's status code must be written to the exchange");
+            assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied before auth"),
+                    "the denial body must be sent at once");
         }
     }
 
     @Test
-    public void beforeAuthDenialIsDeferredAndSentAtAfterAuthWithStatusAndBody() throws Exception {
+    public void beforeAuthDenialIsSentBeforeAuthenticatingWithStatusAndBody() throws Exception {
         var calls = new ArrayList<String>();
         // denies at REQUEST_BEFORE_AUTH
         var beforeAuth = new BeforeAuthWildcardInterceptor(calls, 403);
-        // registered at REQUEST_AFTER_AUTH, but does not resolve: covers the "interceptors
-        // present" path, i.e. the REQUEST_AFTER_AUTH executor's wildcardInterceptors list is
-        // non-empty but nothing of its own actually runs. See
-        // beforeAuthDenialIsDeferredAndSentAtAfterAuthWithStatusAndBodyWhenNoAfterAuthInterceptorsRegistered
-        // below for the empty-list case.
+        // registered at REQUEST_AFTER_AUTH, but never reached: the denial stops the pipeline before
         var afterAuthNonResolving = new AfterAuthWildcardInterceptor(calls, false, null);
 
         try (var registryStatic = registryReturning(Set.of(record(beforeAuth), record(afterAuthNonResolving)))) {
@@ -281,31 +274,26 @@ public class SseWildcardInterceptorsExecutorTest {
 
             pipeline.handleRequest(exchange);
 
-            assertEquals(List.of("beforeAuthWildcard", "securityHandler"), calls,
-                    "the before-auth interceptor and the security handler must run, but the pipeline must stop "
-                            + "at REQUEST_AFTER_AUTH once the deferred denial is observed: the final next handler must never run");
+            assertEquals(List.of("beforeAuthWildcard"), calls,
+                    "the pipeline must stop at REQUEST_BEFORE_AUTH: neither the security handler nor the final next handler runs");
             assertTrue(Exchange.isInError(exchange), "the exchange must be flagged in error");
             assertEquals(403, exchange.getStatusCode(),
-                    "the status code set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth");
+                    "the status code set by the REQUEST_BEFORE_AUTH denial must be the one sent");
             assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied before auth"),
-                    "the body set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth, not lost");
+                    "the body set by the REQUEST_BEFORE_AUTH denial must be the one sent, not lost");
             assertTrue(exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE) != null
                     && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
-                    "the deferred denial body must still be sent with an application/json content type");
+                    "the denial body must be sent with an application/json content type");
         }
     }
 
     @Test
-    public void beforeAuthDenialIsDeferredAndSentAtAfterAuthWithStatusAndBodyWhenNoAfterAuthInterceptorsRegistered() throws Exception {
+    public void beforeAuthDenialIsSentBeforeAuthenticatingWhenNoAfterAuthInterceptorsRegistered() throws Exception {
         var calls = new ArrayList<String>();
         // denies at REQUEST_BEFORE_AUTH
         var beforeAuth = new BeforeAuthWildcardInterceptor(calls, 403);
 
-        // negative control: nothing at all is registered for REQUEST_AFTER_AUTH, so that
-        // executor's wildcardInterceptors list is genuinely empty. The pending denial must
-        // still be observed and sent: this must not depend on some other, unrelated
-        // WildcardInterceptor happening to be registered at REQUEST_AFTER_AUTH (in a stock
-        // build, DateHeader/XPoweredBy mask this by always being registered there).
+        // nothing at all is registered for REQUEST_AFTER_AUTH: the denial is sent before it anyway
         try (var registryStatic = registryReturning(Set.of(record(beforeAuth)))) {
             var nextHandlerStandIn = new RecordingHandler(calls, "next");
             var afterAuthExecutor = new SseWildcardInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_AUTH);
@@ -319,18 +307,17 @@ public class SseWildcardInterceptorsExecutorTest {
 
             pipeline.handleRequest(exchange);
 
-            assertEquals(List.of("beforeAuthWildcard", "securityHandler"), calls,
-                    "the before-auth interceptor and the security handler must run, but the pipeline must stop "
-                            + "at REQUEST_AFTER_AUTH once the deferred denial is observed, even though REQUEST_AFTER_AUTH "
-                            + "has no WildcardInterceptors of its own: the final next handler must never run");
+            assertEquals(List.of("beforeAuthWildcard"), calls,
+                    "the pipeline must stop at REQUEST_BEFORE_AUTH, with nothing registered at REQUEST_AFTER_AUTH: "
+                            + "neither the security handler nor the final next handler runs");
             assertTrue(Exchange.isInError(exchange), "the exchange must be flagged in error");
             assertEquals(403, exchange.getStatusCode(),
-                    "the status code set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth");
+                    "the status code set by the REQUEST_BEFORE_AUTH denial must be the one sent");
             assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied before auth"),
-                    "the body set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth, not lost");
+                    "the body set by the REQUEST_BEFORE_AUTH denial must be the one sent, not lost");
             assertTrue(exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE) != null
                     && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
-                    "the deferred denial body must still be sent with an application/json content type");
+                    "the denial body must be sent with an application/json content type");
         }
     }
 

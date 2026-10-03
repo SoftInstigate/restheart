@@ -386,23 +386,4 @@ public abstract class Response<T> extends Exchange<T> {
     public void setInError(int code, String message) {
         setInError(code, message, null);
     }
-
-    /**
-     * Sets the response in an error state, to be sent before authentication.
-     * <p>
-     * An error set at {@code REQUEST_BEFORE_AUTH} with {@link #setInError(int, String)} is sent
-     * only after authentication, so an unauthenticated client learns nothing from it. That delay
-     * is wrong for an interceptor that refuses the client whatever its credentials, like the brute
-     * force guard: wrong credentials would answer 401 and right ones the pending error, telling
-     * the two apart. With this method the response is sent at the end of
-     * {@code REQUEST_BEFORE_AUTH}, and no authentication is attempted.
-     * </p>
-     *
-     * @param code the HTTP status code to set (e.g., 429)
-     * @param message the error message to include in the response
-     */
-    public void rejectBeforeAuth(int code, String message) {
-        setInError(code, message, null);
-        wrapped.putAttachment(REJECTED_BEFORE_AUTH_KEY, true);
-    }
 }
