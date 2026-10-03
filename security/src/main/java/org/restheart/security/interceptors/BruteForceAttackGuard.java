@@ -192,6 +192,11 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         sweep();
 
         if (failedAttempts >= this.maxFailedAttempts) {
+            // a blocked request counts as a failure too: no authentication runs for it, so the
+            // collector never sees it, and without this the window would drain while the attack
+            // goes on, letting the threshold of attempts through every 10 seconds. Counted, the
+            // block holds until the source stops for a whole window.
+            Metrics.failedAuth(request.getExchange());
             blocked(request.getExchange(), failedAttempts);
 
             // Sent at once, before authentication (RequestInterceptorsExecutor): a blocked source gets
