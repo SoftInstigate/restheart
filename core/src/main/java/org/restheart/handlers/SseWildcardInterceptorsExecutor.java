@@ -162,30 +162,27 @@ public class SseWildcardInterceptorsExecutor extends PipelinedHandler {
             RequestPhaseContext.setPhase(Phase.PHASE_START);
             LOGGER.debug("{} SSE WILDCARD INTERCEPTORS for {} {}", interceptPoint, exchange.getRequestMethod(), exchange.getRequestPath());
 
-            List<WildcardInterceptor> resolvedInterceptors = null;
+            // resolved right before handled, in priority order, as RequestInterceptorsExecutor does:
+            // resolve() sees what the interceptors before it attached to the request
+            RequestPhaseContext.setPhase(Phase.INFO);
+            LOGGER.debug("Found {} SSE wildcard interceptors", this.wildcardInterceptors.size());
+
             for (var ri : this.wildcardInterceptors) {
+                boolean resolved;
                 try {
-                    if (ri.resolve(request, response)) {
-                        if (resolvedInterceptors == null) {
-                            resolvedInterceptors = new ArrayList<>(this.wildcardInterceptors.size());
-                        }
-                        resolvedInterceptors.add(ri);
-                    }
+                    resolved = ri.resolve(request, response);
                 } catch (Exception ex) {
                     LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
 
                     Exchange.setInError(exchange);
                     LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
+                    return;
                 }
-            }
-            if (resolvedInterceptors == null) {
-                resolvedInterceptors = List.of();
-            }
 
-            RequestPhaseContext.setPhase(Phase.INFO);
-            LOGGER.debug("Found {} SSE wildcard interceptors", resolvedInterceptors.size());
+                if (!resolved) {
+                    continue;
+                }
 
-            for (var ri : resolvedInterceptors) {
                 try {
                     RequestPhaseContext.setPhase(Phase.ITEM);
                     if (LOGGER.isDebugEnabled()) {

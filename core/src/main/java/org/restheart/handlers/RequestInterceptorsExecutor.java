@@ -22,7 +22,6 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.restheart.exchange.ByteArrayProxyRequest;
@@ -119,34 +118,14 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             LOGGER.debug("{} COMPLETED in 0ms", interceptPoint);
             RequestPhaseContext.reset();
         } else {
-            // interceptors is already List<Interceptor<?,?>> - the instanceof/cast pair this
-            // replaced only stripped generics to the raw type so resolve()/handle() below can be
-            // called without a wildcard-capture mismatch against request/response (hence the
-            // rawtypes suppression on the method); it never filtered anything out. Stays null
-            // until the first match so the common "nothing resolves" case allocates nothing.
-            List<Interceptor> resolvedInterceptors = null;
-            for (var ri : interceptors) {
-                var interceptor = (Interceptor) ri;
-                try {
-                    if (interceptor.resolve(request, response)) {
-                        if (resolvedInterceptors == null) {
-                            resolvedInterceptors = new ArrayList<>(interceptors.size());
-                        }
-                        resolvedInterceptors.add(interceptor);
-                    }
-                } catch (Exception ex) {
-                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", interceptor.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
-
-                    Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + interceptor.getClass().getSimpleName(), ex));
-                }
-            }
-            if (resolvedInterceptors == null) {
-                resolvedInterceptors = List.of();
-            }
-
+            // Each interceptor is resolved right before it is handled, in priority order, so its
+            // resolve() sees what the interceptors before it attached to the request: the
+            // properties of the db and of the collection, read by their injectors first of all at
+            // REQUEST_AFTER_AUTH, are there for whoever decides on them, like the schema and the
+            // constraints checkers. Resolving every interceptor up front and only then handling
+            // them, as until 9.9.2, hid that state from resolve().
             RequestPhaseContext.setPhase(Phase.INFO);
-            LOGGER.debug("Found {} interceptors", resolvedInterceptors.size());
+            LOGGER.debug("Found {} interceptors", interceptors.size());
 
             // executionStartTime is only ever read by the debug log after the loop, so it's
             // skipped entirely when debug is disabled instead of paying for a clock read that
@@ -154,19 +133,34 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             // needs a duration unconditionally, so nanoTime() is used there for resolution instead
             // (currentTimeMillis() is coarse enough to systematically show 0ms for fast interceptors).
             var executionStartTime = LOGGER.isDebugEnabled() ? System.nanoTime() : 0L;
-            var totalInterceptors = resolvedInterceptors.size();
 
-            for (int i = 0;i < totalInterceptors;i++) {
-                var ri = resolvedInterceptors.get(i);
+            for (var ri : interceptors) {
+                var interceptor = (Interceptor) ri;
+
+                boolean resolved;
+                try {
+                    resolved = interceptor.resolve(request, response);
+                } catch (Exception ex) {
+                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", interceptor.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
+
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + interceptor.getClass().getSimpleName(), ex));
+                    return;
+                }
+
+                if (!resolved) {
+                    continue;
+                }
+
                 var interceptorStartTime = System.nanoTime();
 
                 try {
                     RequestPhaseContext.setPhase(Phase.ITEM);
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("{} (priority: {})", PluginUtils.name(ri), PluginUtils.priority(ri));
+                        LOGGER.debug("{} (priority: {})", PluginUtils.name(interceptor), PluginUtils.priority(interceptor));
                     }
 
-                    ri.handle(request, response);
+                    interceptor.handle(request, response);
 
                     RequestPhaseContext.setPhase(Phase.SUBITEM);
                     if (LOGGER.isDebugEnabled()) {
@@ -178,7 +172,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                     LOGGER.error("✗ FAILED after {}ms: {}", interceptorDurationMs, ex.getMessage());
 
                     Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + interceptor.getClass().getSimpleName(), ex));
                 }
             }
 

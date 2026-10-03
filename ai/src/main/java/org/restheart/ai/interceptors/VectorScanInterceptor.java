@@ -162,7 +162,9 @@ import io.undertow.util.Headers;
         name = "vectorScanInterceptor",
         description = "Executes $vectorScan: brute-force vector similarity search requiring no mongot or index",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-        priority = Integer.MIN_VALUE,
+        // first of the phase but for the db and collection properties injectors (MIN_VALUE and
+        // MIN_VALUE + 1), which resolve() reads: since 9.9.3 they run in this phase too
+        priority = Integer.MIN_VALUE + 2,
         enabledByDefault = false
 )
 public class VectorScanInterceptor implements MongoInterceptor {
