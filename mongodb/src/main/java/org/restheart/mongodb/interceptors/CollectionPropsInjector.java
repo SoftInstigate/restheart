@@ -45,7 +45,7 @@ import com.mongodb.MongoException;
  * It is also responsible of sending NOT_FOUND in case of requests involving not
  * existing collections (that are not PUT)
  *
- * After authentication, since 9.9.3: the properties come from a query on the database, and
+ * After authentication, since 9.10.0: the properties come from a query on the database, and
  * whether the collection exists is information. Before authentication anyone could have the
  * query run and, through the 404, learn its answer. Nothing before authentication needs the
  * properties: the authorizers decide on the request, not on the metadata.

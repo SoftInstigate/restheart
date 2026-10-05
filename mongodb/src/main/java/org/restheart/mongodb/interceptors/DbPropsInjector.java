@@ -45,7 +45,7 @@ import com.mongodb.MongoException;
  * It is also responsible of sending NOT_FOUND in case of requests involving not
  * existing dbs (that are not PUT)
  *
- * After authentication, since 9.9.3, as CollectionPropsInjector: the properties come from a
+ * After authentication, since 9.10.0, as CollectionPropsInjector: the properties come from a
  * query on the database, and whether the db exists is information nobody should get without
  * credentials.
  *
