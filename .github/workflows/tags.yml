@@ -176,7 +176,9 @@ jobs:
     strategy:
       matrix:
         mongodb-version: ["8.3"]
-    timeout-minutes: 20
+    # Central takes up to 20 minutes to validate and publish, and the step waits for it: at 20
+    # the job was cancelled seconds after a deployment that had succeeded (9.10.0)
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
 
