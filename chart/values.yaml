@@ -349,7 +349,7 @@ restHeartConfiguration:
     max-limit: 1000
     verbose: false
   filterOperatorsBlacklist:
-    blacklist: ["$where"]
+    blacklist: ["$where", "$function", "$accumulator"]
     enabled: true
   bruteForceAttackGuard:
     enabled: false

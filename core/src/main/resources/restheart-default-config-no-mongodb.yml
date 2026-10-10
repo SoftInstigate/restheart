@@ -585,9 +585,10 @@ stripeInitTracker:
 roles:
   uri: /roles
 
-# A global blacklist for mongodb operators in filter query parameter
+# A global blacklist for mongodb operators in filter query parameter: the operators that run
+# JavaScript on the server. A filter that uses one is refused with 403, nested anywhere in it.
 filterOperatorsBlacklist:
-  blacklist: ["$where"]
+  blacklist: ["$where", "$function", "$accumulator"]
   enabled: true
 
 # Aggregation pipeline security settings
