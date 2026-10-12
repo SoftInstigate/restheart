@@ -13,6 +13,7 @@ import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
@@ -55,6 +56,10 @@ public class ResendInviteService implements JsonService {
 
     @Inject("mclient")
     private MongoClient mclient;
+
+    // the user documents written here are validated by the users collection's JSON Schema, when it has one
+    @Inject(value = "json-schemas", required = false)
+    private JsonSchemas jsonSchemas;
 
     @Inject("accountsConfig")
     private AccountsConfigData conf;
@@ -211,7 +216,7 @@ public class ResendInviteService implements JsonService {
     // -------------------------------------------------------------------------
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
 }
