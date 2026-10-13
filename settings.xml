@@ -11,6 +11,9 @@
             <id>central</id>
             <username>${CENTRAL_USERNAME}</username>
             <password>${CENTRAL_PASSWORD}</password>
+            <repositoryOrigins>
+                <repositoryOrigin>https://central.sonatype.com</repositoryOrigin>
+            </repositoryOrigins>
         </server>
         <server>
             <id>gpg.passphrase</id>
