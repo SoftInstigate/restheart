@@ -109,27 +109,10 @@ jobs:
           gpg --pinentry-mode=loopback --batch --yes --fast-import private.key
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-      # TEMPORARY: diagnoses the 401 from the snapshots repository. Prints only the HTTP status
-      # and the credential lengths, never their values. Remove once the issue is resolved.
-      - name: Probe Central snapshot credentials (temporary)
-        if: github.ref == 'refs/heads/master'
-        continue-on-error: true
-        run: |
-          echo "username length: ${#CENTRAL_USERNAME}, password length: ${#CENTRAL_PASSWORD}"
-          case "$CENTRAL_USERNAME$CENTRAL_PASSWORD" in
-            *[[:space:]]*) echo "WARNING: credentials contain whitespace" ;;
-          esac
-          B=https://central.sonatype.com/repository/maven-snapshots
-          F="org/restheart/restheart-security/ci-probe/ci-probe-${GITHUB_RUN_ID}.pom.asc"
-          code=$(curl -s -o /dev/null -w "%{http_code}" -u "$CENTRAL_USERNAME:$CENTRAL_PASSWORD" -X PUT --data x "$B/$F")
-          echo "probe PUT status: $code"
-        env:
-          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
       - name: Deploy to Maven Central (8.3 only)
         run: |
           MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
-          mvn -B deploy -Pdeploy -DskipTests -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml
+          mvn -B deploy -Pdeploy -DskipTests -Dmongodb.version="${{ matrix.mongodb-version }}" -Dmaven.repository.credentialScope=id -s settings.xml
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
