@@ -1948,16 +1948,18 @@ public class McpService implements ByteArrayService {
      * the status and the body the API answered with, exactly as a REST client would. Only a
      * failure to execute at all (unknown resource or action, invalid arguments, a dispatch
      * error) is a tool error.
+     *
+     * <p>A session with no account is a session the ACL let in as {@code $unauthenticated}: its
+     * actions run the same way, dispatched with no identity, and the ACL decides each of them as it
+     * decides an anonymous request from a listener ({@code InProcessAuthMechanism} does not sign
+     * in a request that carries no principal). A deployment that has no permission for
+     * {@code $unauthenticated} on {@code /mcp} never gets here: the handshake is refused.
      */
     @SuppressWarnings("unchecked")
     private CallToolResult callCallApi(McpSyncServerExchange exchange, CallToolRequest request) {
         var ctx = exchange.transportContext();
         var args = request.arguments();
         var principal = principal(ctx);
-
-        if (principal == null) {
-            return errorResult("no authenticated session: call_api runs the action as the caller's own identity, so the MCP session must itself be authenticated");
-        }
 
         try {
             var actionArgs = args.get("args") instanceof Map<?, ?> m ? (Map<String, Object>) m : null;
