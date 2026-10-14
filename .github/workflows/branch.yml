@@ -106,9 +106,13 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: Deploy to Maven Central (8.3 only)
+        # the wrapper pins Maven 3.9: with the Maven 3.10 of the runners the Central bundle carries
+        # maven-metadata-local.xml and _remote.repositories next to the artifacts, and Central refuses
+        # it, "Bundle has content that does NOT have a .pom file" (central-publishing-maven-plugin
+        # issue 79)
         run: |
           MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
-          mvn -B deploy -Pdeploy -DskipTests -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml
+          ./mvnw -B deploy -Pdeploy -DskipTests -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
