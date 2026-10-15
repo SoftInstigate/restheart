@@ -585,13 +585,17 @@ stripeInitTracker:
 roles:
   uri: /roles
 
-# A global blacklist for mongodb operators in filter query parameter: the operators that run
-# JavaScript on the server. A filter that uses one is refused with 403, nested anywhere in it.
+# A global blacklist for mongodb operators in the filter and keys query parameters: the operators
+# that run JavaScript on the server. A request that uses one is refused with 403, nested anywhere
+# in them. The aggregation pipeline of a PATCH request is checked by updatePipelineSecurityChecker
+# against the aggregationSecurity blacklists below.
 filterOperatorsBlacklist:
   blacklist: ["$where", "$function", "$accumulator"]
   enabled: true
 
-# Aggregation pipeline security settings
+# Aggregation pipeline security settings. They apply to the aggregations declared on collections,
+# to change streams, to GraphQL apps and, through updatePipelineSecurityChecker, to the aggregation
+# pipeline of a PATCH request
 aggregationSecurity:
   enabled: true
   # Block dangerous pipeline stages that can access other databases or execute code
@@ -602,6 +606,12 @@ aggregationSecurity:
   allowCrossDatabaseOperations: false
   # Control JavaScript execution in aggregation pipelines
   allowJavaScriptExecution: false
+
+# updatePipelineSecurityChecker refuses with 403 a PATCH whose body is an aggregation pipeline that
+# the aggregationSecurity blacklists forbid. Enabled by default; disable it only where
+# aggregationSecurity is disabled too
+# updatePipelineSecurityChecker:
+#   enabled: true
 
 # bruteForceAttackGuard defends from brute force password cracking attacks
 # by returning `429 Too Many Requests` when more than

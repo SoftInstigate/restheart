@@ -33,10 +33,17 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 
 /**
- * Forbids all requests to Mongo API that use an blacklisted operator in the filter query paramter
+ * Forbids the requests to the Mongo API whose filter or keys query parameters use a blacklisted
+ * operator, nested anywhere in them.
+ *
+ * <p>The keys parameter is a projection, and since MongoDB 4.4 a projection holds aggregation
+ * expressions, {@code $function} included: filter and keys are the two query parameters where a
+ * client writes operators that MongoDB evaluates on the server. The third place, the aggregation
+ * pipeline of a PATCH request, is checked by
+ * {@link org.restheart.mongodb.interceptors.UpdatePipelineSecurityChecker}.
  */
 @RegisterPlugin(name = "filterOperatorsBlacklist",
-        description = "forbids requests containing filter qparameter using operator in blacklist",
+        description = "forbids requests whose filter or keys query parameters use an operator in the blacklist",
         enabledByDefault = false)
 public class FilterOperatorsBlacklist implements Initializer {
     @Inject("acl-registry")
@@ -60,7 +67,8 @@ public class FilterOperatorsBlacklist implements Initializer {
     public void init() {
         this.registry.registerVeto(req -> {
             if (req instanceof MongoRequest mreq) {
-                return contains(mreq.getFiltersDocument(), blacklist);
+                return contains(mreq.getFiltersDocument(), blacklist)
+                    || contains(mreq.getProjectionDocument(), blacklist);
             } else {
                 return false; // don't veto
             }
@@ -74,8 +82,9 @@ public class FilterOperatorsBlacklist implements Initializer {
      * @return true if doc contains any operator in blacklist
      */
     private boolean contains(BsonDocument doc, List<String> blacklist) {
+        // no filter is an empty document, no keys is null: nothing to refuse in either
         if (doc == null) {
-            return true;
+            return false;
         }
 
         var found = doc.keySet().stream().anyMatch(k -> blacklist.contains(k));
