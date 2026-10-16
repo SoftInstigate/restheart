@@ -23,6 +23,7 @@ package org.restheart.security.authorizers;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -190,10 +191,10 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
 
                     String marker;
 
-                    // to highlight the effective permission
+                    // to highlight the first matching permission for this role
                     if (resolved && matched.isEmpty()) {
                         matched.add(permission);
-                        marker = " <--";
+                        marker = " <-- first match for role";
                     } else {
                         marker = "";
                     }
@@ -232,6 +233,7 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
         if (permissions.isEmpty()) {
             return false;
         } else {
+            permissions.sort(Comparator.comparingInt(MongoAclPermission::getPriority).reversed());
             exchange.putAttachment(MATCHING_ACL_PERMISSION, permissions.get(0));
             return true;
         }
