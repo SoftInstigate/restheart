@@ -157,10 +157,10 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Descrip
 
                             String marker;
 
-                            // to highlight the effective permission
+                            // to highlight the first matching permission for this role
                             if (resolved && matched.isEmpty()) {
                                 matched.add(permission);
-                                marker = "<--";
+                                marker = "<-- first match for role";
                             } else {
                                 marker = "";
                             }
@@ -194,6 +194,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Descrip
         if (machedPermissions.isEmpty()) {
             return false;
         } else {
+            machedPermissions.sort(Comparator.comparingInt(FileAclPermission::getPriority));
             exchange.putAttachment(MATCHING_ACL_PERMISSION, machedPermissions.get(0));
             return true;
         }
