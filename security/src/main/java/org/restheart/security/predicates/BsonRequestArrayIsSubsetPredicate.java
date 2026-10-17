@@ -29,6 +29,7 @@ import org.bson.BsonDocument;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.Request;
 import org.restheart.security.EvaluationScope;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.utils.BsonUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
@@ -56,7 +57,8 @@ public class BsonRequestArrayIsSubsetPredicate implements Predicate {
 
         for (var value : values) {
             try {
-                this.values.add(BsonUtils.parse(value));
+                // the quotes of the value come back from the placeholders of the ACL parser
+                this.values.add(BsonUtils.parse(AclVarsInterpolator.restoreQuotes(value)));
             } catch (Throwable t) {
                 throw new IllegalArgumentException(value + " is not a valid bson value");
             }

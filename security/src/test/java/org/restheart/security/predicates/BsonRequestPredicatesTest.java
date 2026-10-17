@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.restheart.exchange.ExchangeWithRequestFactory.withBson;
 
 import org.junit.jupiter.api.Test;
+import org.restheart.exchange.Request;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.utils.MongoUtils;
 import org.restheart.utils.BsonUtils;
 
@@ -176,6 +178,41 @@ public class BsonRequestPredicatesTest {
         assertFalse(
                 predicateArrayArray2.resolve(exchangeArrayArray2KO3),
                 "check negative predicate ArrayArray2KO3");
+    }
+
+    /**
+     * The predicates as the ACL loads them, through {@link AclVarsInterpolator}, which turns the
+     * quotes inside the values into placeholders before Undertow parses the predicate: the
+     * values must come back with their quotes, or a BSON string value cannot be parsed
+     * (issue #761: the permission was discarded at startup).
+     */
+    @Test
+    public void testQuotedBsonValuesThroughTheAclParser() throws Exception {
+        final var subset = "bson-request-array-is-subset(key=roles, values={'\"user\"','\"admin\"'})";
+        final var contains = "bson-request-array-contains(key=tags, values='\"public\"')";
+        final var equals = "bson-request-prop-equals(key=status, value='\"draft\"')";
+        final var cl = MongoUtils.class.getClassLoader();
+
+        // validated at load time, as the ACL does before accepting a permission
+        AclVarsInterpolator.validatePredicate(subset, cl);
+        AclVarsInterpolator.validatePredicate(contains, cl);
+        AclVarsInterpolator.validatePredicate(equals, cl);
+
+        final var allowed = exchangeWithBsonContent("{ 'roles': ['user'], 'tags': ['public', 'x'], 'status': 'draft' }");
+        final var refused = exchangeWithBsonContent("{ 'roles': ['user', 'root'], 'tags': ['private'], 'status': 'final' }");
+
+        assertTrue(AclVarsInterpolator.interpolatePredicate(Request.of(allowed), subset, cl).resolve(allowed),
+                "roles [user] is a subset of {\"user\", \"admin\"}");
+        assertFalse(AclVarsInterpolator.interpolatePredicate(Request.of(refused), subset, cl).resolve(refused),
+                "roles [user, root] is not a subset of {\"user\", \"admin\"}");
+        assertTrue(AclVarsInterpolator.interpolatePredicate(Request.of(allowed), contains, cl).resolve(allowed),
+                "tags [public, x] contains \"public\"");
+        assertFalse(AclVarsInterpolator.interpolatePredicate(Request.of(refused), contains, cl).resolve(refused),
+                "tags [private] does not contain \"public\"");
+        assertTrue(AclVarsInterpolator.interpolatePredicate(Request.of(allowed), equals, cl).resolve(allowed),
+                "status draft equals \"draft\"");
+        assertFalse(AclVarsInterpolator.interpolatePredicate(Request.of(refused), equals, cl).resolve(refused),
+                "status final does not equal \"draft\"");
     }
 
     private HttpServerExchange exchangeWithBsonContent(final String content) {

@@ -1085,6 +1085,26 @@ public class AclVarsInterpolator {
     private static final String DOUBLE_QUOTE_PLACEHOLDER = "___RESTHEART_DOUBLE_QUOTE___";
 
     /**
+     * Puts the quotes back in a value that went through {@link #normalizeQuotes}: the parameter
+     * of a predicate as Undertow hands it to its builder. The placeholders exist so that
+     * Undertow's parser does not stumble on quotes inside a quoted string; the predicate that
+     * reads the value as JSON or BSON needs the quotes themselves, as in
+     * {@code bson-request-array-is-subset(key=roles, values={'"user"','"admin"'})}, where each
+     * value must be a BSON string. Without this step the predicate received
+     * {@code ___RESTHEART_DOUBLE_QUOTE___user___RESTHEART_DOUBLE_QUOTE___} and refused it
+     * (issue #761).
+     *
+     * @param value a parameter value, possibly with placeholders; {@code null} is returned as is
+     * @return the value with its quotes
+     */
+    public static String restoreQuotes(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.replace(SINGLE_QUOTE_PLACEHOLDER, "'").replace(DOUBLE_QUOTE_PLACEHOLDER, "\"");
+    }
+
+    /**
      * Wraps a string value in single quotes for use in predicates.
      * Replaces any quotes within the string with appropriate placeholders.
      *
