@@ -257,7 +257,8 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
 
         StreamSupport.stream(this.permissions.spliterator(), true)
                 .filter(p -> p.getRoles() != null && p.getRoles().contains(role))
-                .sorted(Comparator.comparingInt(FileAclPermission::getPriority))
+                // the documented order, the one mongoAclAuthorizer applies: the highest priority first
+                .sorted(Comparator.comparingInt(FileAclPermission::getPriority).reversed())
                 .forEachOrdered(p -> ret.add(p));
 
         return ret;

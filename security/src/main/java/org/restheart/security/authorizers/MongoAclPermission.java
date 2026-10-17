@@ -98,9 +98,11 @@ public class MongoAclPermission extends BaseAclPermission {
         var _priority = doc.get("priority");
 
         if (_priority == null || _priority.isNull() || !_priority.isNumber()) {
-            priority = Integer.MAX_VALUE; // very low priority
+            // the lowest priority: permissions are evaluated from the highest priority down, so a
+            // permission without one is considered last
+            priority = Integer.MIN_VALUE;
 
-            LOGGER.debug("predicate {} doesn't have priority; setting it to very low priority", _id);
+            LOGGER.debug("predicate {} doesn't have priority; setting it to the lowest priority", _id);
         } else {
             priority = _priority.asNumber().intValue();
         }
