@@ -1,8 +1,8 @@
-Feature: ACL gating by the active team role (@user.team.role)
+Feature: ACL gating by the active team role (@team.role)
 
-  # End-to-end proof that the active team role, carried in user.team.role and
-  # mirrored into the JWT `team` claim as { _id, role }, is usable from an ACL
-  # permission to gate an operation (predicate equals[@user.team.role,"owner"]).
+  # End-to-end proof that the active team role, read through the @team variable from the
+  # membership provider (since 9.12.0 the token carries no team claim), is usable from an ACL
+  # permission to gate an operation (predicate equals[@team.role,"owner"]).
   #
   # The permission lives in conf-overrides.yml (role: user, path-prefix
   # /restheart-test/team-partitioned). Every verified accounts user has system role
@@ -20,7 +20,7 @@ Feature: ACL gating by the active team role (@user.team.role)
     * match [200, 201, 409] contains responseStatus
 
   # ---------------------------------------------------------------------------
-  Scenario: active-team owner may POST (predicate @user.team.role == owner)
+  Scenario: active-team owner may POST (predicate @team.role == owner)
   # ---------------------------------------------------------------------------
     Given path '/restheart-test/team-partitioned'
     And header Authorization = 'Bearer ' + ownerJwt
@@ -29,7 +29,7 @@ Feature: ACL gating by the active team role (@user.team.role)
     Then status 201
 
   # ---------------------------------------------------------------------------
-  Scenario: active-team member is denied POST (predicate @user.team.role != owner)
+  Scenario: active-team member is denied POST (predicate @team.role != owner)
   # ---------------------------------------------------------------------------
     * def memberEmail = 'tracl-member-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -48,7 +48,7 @@ Feature: ACL gating by the active team role (@user.team.role)
     Then status 200
     * def memberJwt = responseHeaders['Set-Cookie'][0].split('Bearer_')[1].split(';')[0]
 
-    # member's JWT carries team.role == member → predicate fails → forbidden
+    # the member's active-team role is member → predicate fails → forbidden
     Given path '/restheart-test/team-partitioned'
     And header Authorization = 'Bearer ' + memberJwt
     And request { "title": "member todo" }
@@ -56,7 +56,7 @@ Feature: ACL gating by the active team role (@user.team.role)
     Then status 403
 
   # ---------------------------------------------------------------------------
-  Scenario: mergeRequest writes team as ObjectId from @user.team._id (data partitioning)
+  Scenario: mergeRequest writes team as ObjectId from @team._id (data partitioning)
   # ---------------------------------------------------------------------------
     Given path '/restheart-test/team-partitioned'
     And header Authorization = 'Bearer ' + ownerJwt
@@ -85,7 +85,7 @@ Feature: ACL gating by the active team role (@user.team.role)
     Then status 200
     And match response.team._id == teamId
   # ---------------------------------------------------------------------------
-  Scenario: promoting a member to owner syncs user.team.role (drives the next token)
+  Scenario: promoting a member to owner syncs user.team.role (what @team.role reads)
   # ---------------------------------------------------------------------------
     * def memberEmail = 'tracl-promote-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -117,8 +117,8 @@ Feature: ACL gating by the active team role (@user.team.role)
     When method PATCH
     Then status 200
 
-    # after promotion: user.team.role is synced to owner, so the member's next
-    # issued/refreshed JWT (login, switch-team, ...) carries team.role == owner
+    # after promotion: user.team.role is synced to owner, which is what @team.role resolves
+    # to on the member's very next request, whatever token it holds
     Given path '/users/' + memberEmail
     And header Authorization = adminAuth
     And param rep = 's'

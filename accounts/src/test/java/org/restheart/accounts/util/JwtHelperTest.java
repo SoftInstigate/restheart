@@ -43,7 +43,7 @@ class JwtHelperTest {
                 "passwordResetToken", "passwordResetCreatedAt", "plan");
 
         var jwt = new JwtHelper(KEY, ISSUER, 15, claims);
-        var token = jwt.issueToken("user@example.com", ROLES, null, null, null, userDoc);
+        var token = jwt.issueToken("user@example.com", ROLES, null, null, userDoc);
         var decoded = JWT.decode(token);
 
         assertNull(decoded.getClaim("password").asString(), "password must never become a claim");
@@ -72,7 +72,7 @@ class JwtHelperTest {
                 .append("plan", new BsonString("pro"));
 
         var jwt = new JwtHelper(KEY, ISSUER, 15, List.of("pwd", "plan"), registry);
-        var token = jwt.issueToken("user@example.com", ROLES, null, null, null, userDoc);
+        var token = jwt.issueToken("user@example.com", ROLES, null, null, userDoc);
         var decoded = JWT.decode(token);
 
         assertNull(decoded.getClaim("pwd").asString(),
@@ -89,14 +89,14 @@ class JwtHelperTest {
         var jwt = new JwtHelper(KEY, ISSUER, 15, List.of("a"), null);
 
         // No override: constructor list ("a") applies.
-        var tokenDefault = jwt.issueToken("user@example.com", ROLES, null, null, null, userDoc, null);
+        var tokenDefault = jwt.issueToken("user@example.com", ROLES, null, null, userDoc, null);
         var decodedDefault = JWT.decode(tokenDefault);
         assertEquals("from-constructor-list", decodedDefault.getClaim("a").asString());
         assertNull(decodedDefault.getClaim("b").asString());
 
         // Override present: only "b" applies, "a" is not copied even though the
         // constructor list still contains it.
-        var tokenOverridden = jwt.issueToken("user@example.com", ROLES, null, null, null, userDoc, List.of("b"));
+        var tokenOverridden = jwt.issueToken("user@example.com", ROLES, null, null, userDoc, List.of("b"));
         var decodedOverridden = JWT.decode(tokenOverridden);
         assertNull(decodedOverridden.getClaim("a").asString());
         assertEquals("from-override-list", decodedOverridden.getClaim("b").asString());
@@ -111,11 +111,25 @@ class JwtHelperTest {
         var jwt = new JwtHelper(KEY, ISSUER, 15, List.of("plan"), null);
 
         // A tenant-supplied override that lists "password" must not leak it.
-        var token = jwt.issueToken("user@example.com", ROLES, null, null, null, userDoc,
+        var token = jwt.issueToken("user@example.com", ROLES, null, null, userDoc,
                 List.of("password", "plan"));
         var decoded = JWT.decode(token);
 
         assertNull(decoded.getClaim("password").asString());
         assertEquals("pro", decoded.getClaim("plan").asString());
+    }
+    @Test
+    void theActiveTeamIsNotAClaimUnlessListed() {
+        // since 9.12.0 no issuer adds the team on its own: a rule reads @team, a deployment that wants
+        // it in the token lists "@team"; the stored property is copied only when the list names it
+        var userDoc = new BsonDocument("_id", new BsonString("user@example.com"))
+                .append("team", new BsonDocument("_id", new BsonString("t1")).append("role", new BsonString("owner")))
+                .append("plan", new BsonString("pro"));
+
+        var token = new JwtHelper(KEY, ISSUER, 15, List.of("plan")).issueToken("user@example.com", ROLES, null, null, userDoc);
+        var decoded = JWT.decode(token);
+
+        assertEquals("pro", decoded.getClaim("plan").asString());
+        assertNull(decoded.getClaim("team").asMap(), "the team is not a claim unless the list names it");
     }
 }

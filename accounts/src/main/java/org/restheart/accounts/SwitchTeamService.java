@@ -168,15 +168,14 @@ public class SwitchTeamService implements JsonService {
                         : Set.<String>of())
                 .orElse(Set.of());
 
-        // Issue new JWT with the system roles from DB, not the membership role
+        // Issue new JWT with the system roles from DB, not the membership role. No team claim: a
+        // rule reads the active team through @team, and the response body says it to the client
         var token = jwt.issueToken(
                 email,
                 dbRoles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                java.util.Map.<String, Object>of(conf.teamClaimName(),
-                        TeamClaim.of(matched.teamId(), matched.role())),
-                null,
+                userDoc.orElse(null),
                 RequestOverrides.accountPropertiesClaims(req, conf),
                 req);
 
@@ -186,7 +185,7 @@ public class SwitchTeamService implements JsonService {
                 req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,
                 TokenDelivery.Mode.BODY, conf);
 
-        // Response body — team mirrors the { _id, role } claim shape
+        // Response body: the team, as { _id, role }, is the answer to the action
         var responseBody = new JsonObject();
         responseBody.add(conf.teamClaimName(),
                 JsonParser.parseString(BsonUtils.toJson(TeamClaim.of(matched.teamId(), matched.role()))));

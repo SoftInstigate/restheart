@@ -156,20 +156,20 @@
       predicate: path-prefix[path="/auth/invite"] or path-prefix[path="/auth/resend-invite"]
       priority: 100
 
-    # 9.6.0: proves ACL gating by the active team role carried in user.team.role.
-    # System role is `user` for every verified accounts user; the predicate refines
-    # it to only those whose ACTIVE team role is `owner` (via @user.team.role).
-    # Exercised by team-role-acl.feature.
+    # 9.6.0, migrated with 9.12.0: proves ACL gating by the active team role. System role is
+    # `user` for every verified accounts user; the predicate refines it to only those whose ACTIVE
+    # team role is `owner`, read through @team from the membership provider (the token carries no
+    # team claim any more). Exercised by team-role-acl.feature.
     - role: user
       predicate: >
         path-prefix[path="/restheart-test/team-partitioned"]
         and method[value="POST"]
-        and equals[@user.team.role, "owner"]
+        and equals[@team.role, "owner"]
       priority: 100
       mongo:
         allowWriteMode: true
         mergeRequest: >
-          {"team": "@user.team._id"}
+          {"team": "@team._id"}
 
     # #765: the same team as @team, resolved by restheart-accounts' TeamVarResolver from the
     # membership provider, never from the token. A readFilter on @team._id returns the same

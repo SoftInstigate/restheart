@@ -483,7 +483,10 @@ accountsConfig:
   # ── Membership SPI (9.4.1+) ─────────────────────────────────────────────
   # See https://restheart.org/docs/accounts/membership-providers
 
-  # JWT claim name for the active team identifier.
+  # The name of the ACL variable restheart-accounts registers for the active team, @team, read
+  # from the membership provider as { _id, role } (@team._id, @team.role). Since 9.12.0 the tokens
+  # the accounts endpoints issue carry no such claim: to put it in every token, /token included,
+  # list "@team" in jwtConfigProvider/account-properties-claims, and the claim takes this name too.
   # Default: "team".
   team-claim-name: team
 
