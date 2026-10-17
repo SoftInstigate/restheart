@@ -109,14 +109,30 @@ final class StoppableMongo implements AutoCloseable {
     }
 
     /**
-     * Blocks until the database is a writable primary, so a restart is not raced.
+     * Blocks until the database is ready for a test to rely on: the image's own health check
+     * passes, and the database is a writable primary.
      *
-     * <p>Not a {@code ping}: the atlas-local image answers one while it is still initialising its
-     * single-node replica set, and it restarts {@code mongod} to do so - a test that started
-     * writing on the strength of a ping got "interrupted at shutdown" moments later.</p>
+     * <p>The {@code hello} alone is not enough with the atlas-local image. Its runner initialises
+     * the single-node replica set in steps, and {@code mongod} is a writable primary between two
+     * of them: about nine seconds after the first start it answers {@code isWritablePrimary},
+     * and some twenty seconds later the next step restarts it. A test that started from that
+     * window got "interrupted at shutdown" in the middle of its work. Worse, stopping the
+     * container during the sequence makes the runner go through it again on the next start, so
+     * the restart turned up in a later test as well, moments after this method had returned.
+     * Once the sequence is over, a stopped and started container is a stable primary within a
+     * few seconds.</p>
+     *
+     * <p>The image's {@code HEALTHCHECK} ({@code runner healthcheck}) passes only when the
+     * sequence is over, so it is run here, in the container, before the {@code hello}. Docker runs
+     * it every thirty seconds on its own; running it directly reports the state without that
+     * delay. An image that declares none, like the plain {@code mongo} one, gets the {@code hello}
+     * alone.</p>
      */
     private void awaitReady() {
-        var deadline = System.currentTimeMillis() + 90_000L;
+        var deadline = System.currentTimeMillis() + 180_000L;
+
+        awaitHealthcheck(deadline);
+
         RuntimeException last = null;
         while (System.currentTimeMillis() < deadline) {
             try {
@@ -131,7 +147,38 @@ final class StoppableMongo implements AutoCloseable {
                 sleep(500);
             }
         }
-        throw new IllegalStateException("MongoDB was not a writable primary within 90s", last);
+        throw new IllegalStateException("MongoDB was not a writable primary within the deadline", last);
+    }
+
+    /** Runs the image's {@code HEALTHCHECK} command in the container until it passes, if it declares one. */
+    private void awaitHealthcheck(long deadline) {
+        var healthcheck = container.getContainerInfo().getConfig().getHealthcheck();
+        if (healthcheck == null || healthcheck.getTest() == null || healthcheck.getTest().size() < 2) {
+            return;
+        }
+
+        // ["CMD", "/usr/local/bin/runner", "healthcheck"] or ["CMD-SHELL", "<a shell line>"]
+        var test = healthcheck.getTest();
+        var command = "CMD-SHELL".equals(test.get(0))
+            ? new String[] {"/bin/sh", "-c", test.get(1)}
+            : test.subList(1, test.size()).toArray(String[]::new);
+
+        Exception last = null;
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                // the check itself can block for a while when the runner is between two steps
+                if (container.execInContainer(command).getExitCode() == 0) {
+                    return;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("interrupted", e);
+            } catch (IOException | RuntimeException e) {
+                last = e;
+            }
+            sleep(1_000);
+        }
+        throw new IllegalStateException("the container's health check did not pass within the deadline", last);
     }
 
     static void sleep(long millis) {
