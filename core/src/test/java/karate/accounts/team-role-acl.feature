@@ -85,7 +85,7 @@ Feature: ACL gating by the active team role (@team.role)
     Then status 200
     And match response.team._id == teamId
   # ---------------------------------------------------------------------------
-  Scenario: promoting a member to owner syncs user.team.role (what @team.role reads)
+  Scenario: promoting a member to owner is seen by @team.role on the member's next request
   # ---------------------------------------------------------------------------
     * def memberEmail = 'tracl-promote-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -102,14 +102,14 @@ Feature: ACL gating by the active team role (@team.role)
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "PromoteAcl1!" }
     When method PATCH
     Then status 200
+    * def memberJwt = responseHeaders['Set-Cookie'][0].split('Bearer_')[1].split(';')[0]
 
-    # before promotion: active-team role is member
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    And match response.team.role == 'member'
+    # before promotion: the active-team role is member, the predicate fails
+    Given path '/restheart-test/team-partitioned'
+    And header Authorization = 'Bearer ' + memberJwt
+    And request { "title": "still a member" }
+    When method POST
+    Then status 403
 
     Given path '/auth/member-role'
     And header Authorization = 'Bearer ' + ownerJwt
@@ -117,11 +117,10 @@ Feature: ACL gating by the active team role (@team.role)
     When method PATCH
     Then status 200
 
-    # after promotion: user.team.role is synced to owner, which is what @team.role resolves
-    # to on the member's very next request, whatever token it holds
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    And match response.team.role == 'owner'
+    # after promotion: @team.role reads owner from the team on the member's very next request,
+    # with the same token it has held all along
+    Given path '/restheart-test/team-partitioned'
+    And header Authorization = 'Bearer ' + memberJwt
+    And request { "title": "an owner now" }
+    When method POST
+    Then status 201

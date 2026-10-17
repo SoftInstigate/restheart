@@ -163,14 +163,14 @@ Feature: DELETE /auth/remove-member
     When method PATCH
     Then status 200
 
-    # Read the team ID before removal
-    Given path '/users/' + memberEmail
+    # the member is listed by a team before removal (memberships live on the teams since 9.12.0)
+    Given path '/teams'
     And header Authorization = adminAuth
     And param rep = 's'
+    And param filter = '{"members.userId": "' + memberEmail + '"}'
     When method GET
     Then status 200
-    And match response.teams == '#array'
-    * assert response.teams.length >= 1
+    * assert response.length >= 1
 
     Given path '/auth/remove-member'
     And header Authorization = 'Bearer ' + ownerJwt
@@ -178,11 +178,19 @@ Feature: DELETE /auth/remove-member
     When method DELETE
     Then status 200
 
-    # Verify teams array is now empty
+    # no team lists the member any more, and the active team is cleared
+    Given path '/teams'
+    And header Authorization = adminAuth
+    And param rep = 's'
+    And param filter = '{"members.userId": "' + memberEmail + '"}'
+    When method GET
+    Then status 200
+    And match response == []
+
     Given path '/users/' + memberEmail
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    And match response.teams == '#[0]'
+    And match response.teams == '#notpresent'
     And match response.team == '#notpresent'

@@ -62,12 +62,11 @@ Feature: no team claim in the accounts tokens, @team in ACL rules, "@team" in ac
     # and the acceptance made the second team the active one. Back to the first, the one it owns.
     * def ownerJwt = secondSetup.ownerAcceptJwt
 
-    Given path '/users/owner-test@example.com'
-    And header Authorization = adminAuth
-    And param rep = 's'
+    Given path '/auth/teams'
+    And header Authorization = 'Bearer ' + ownerJwt
     When method GET
     Then status 200
-    * def firstTeamId = karate.filter(response.teams, function(x){ return x.role == 'owner' })[0].id
+    * def firstTeamId = karate.filter(response, function(x){ return x.role == 'owner' })[0].id
 
     Given path '/auth/switch-team'
     And header Authorization = 'Bearer ' + ownerJwt

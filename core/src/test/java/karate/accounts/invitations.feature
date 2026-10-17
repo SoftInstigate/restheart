@@ -39,12 +39,12 @@ Feature: Invitations — new and existing users
     # If 409, the user is already a member — skip token lookup and acceptance.
     * if (inviteStatus == 201) karate.call('classpath:karate/accounts/helpers/accept-invite-existing.feature', { secondOwnerJwt: secondOwnerJwt, secondTeamId: secondTeamId, ownerJwt: ownerJwt })
 
-    # Verify team is present for user (whether newly accepted or already a member)
-    Given path '/users/owner-test@example.com'
-    And header Authorization = adminAuth
+    # Verify the membership (whether newly accepted or already there): the teams say who belongs
+    Given path '/auth/teams'
+    And header Authorization = 'Bearer ' + ownerJwt
     When method GET
     Then status 200
-    * def teamIds = response.teams ? karate.map(response.teams, function(x){ return x.id }) : []
+    * def teamIds = karate.map(response, function(x){ return x.id })
     And match teamIds contains secondTeamId
 
   # ---------------------------------------------------------------------------

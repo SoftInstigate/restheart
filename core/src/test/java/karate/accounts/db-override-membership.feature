@@ -65,10 +65,10 @@ Feature: DefaultMembershipProvider uses override-users-db per-request
     When method GET
     Then status 200
     * match response.team._id == '#present'
-    * match response.team.role == 'owner'
-    * match response.teams == '#[1]'
-    * match response.teams[0].role == 'owner'
-    * def teamOid = response.teams[0].id['$oid']
+    # 9.12.0: the user keeps the active team id only; who belongs, and as what, is on the team
+    * match response.team.role == '#notpresent'
+    * match response.teams == '#notpresent'
+    * def teamOid = response.team._id['$oid']
 
     # 5. Confirm team document exists in the overridden database's teams collection
     Given path '/' + dbOverride + '/teams/' + teamOid

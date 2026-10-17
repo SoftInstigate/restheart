@@ -149,7 +149,8 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
                 configVal(config, "ownership-role", "owner"),
                 configVal(config, "default-role", "user"),
                 accountPropertiesClaims,
-                configVal(config, "users-unrestricted-roles", null)
+                configVal(config, "users-unrestricted-roles", null),
+                configVal(config, "migrate-memberships", false)
         );
     }
 

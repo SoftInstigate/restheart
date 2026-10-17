@@ -3,6 +3,7 @@ package org.restheart.accounts;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.exchange.ExchangeKeys.METHOD;
@@ -14,6 +15,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.acl.TeamVarResolver;
+import org.restheart.accounts.spi.MembershipMigration;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.AclVarsRegistry;
 import org.restheart.security.predicates.BsonRequestBlacklistPredicate;
@@ -238,6 +240,30 @@ public class AccountsInitializer implements Initializer {
             LOGGER.info("accountsInitializer: indexes ensured in db `{}`", conf.db());
         } catch (Exception e) {
             LOGGER.warn("accountsInitializer: index error (non-fatal)", e);
+        }
+
+        if (conf.migrateMemberships()) {
+            migrateMemberships(database);
+        }
+    }
+    /**
+     * The one-off migration to the 9.12.0 membership model (#766), run when
+     * {@code accountsConfig/migrate-memberships} is on: see {@link MembershipMigration}. Every
+     * membership the old user-side list claimed and the team does not confirm goes to the log as a
+     * warning, for an operator to look at; nothing is added to a team.
+     */
+    private void migrateMemberships(com.mongodb.client.MongoDatabase database) {
+        try {
+            var users = database.getCollection(conf.usersCollection(), BsonDocument.class);
+            var teams = database.getCollection("teams", BsonDocument.class);
+
+            var plan = MembershipMigration.plan(users, teams);
+            plan.mismatches().forEach(m -> LOGGER.warn("accountsInitializer: membership migration: {}", m));
+
+            var applied = MembershipMigration.apply(plan, users);
+            LOGGER.info("accountsInitializer: {}; turn migrate-memberships off now", MembershipMigration.summary(plan, applied));
+        } catch (Exception e) {
+            LOGGER.error("accountsInitializer: membership migration failed", e);
         }
     }
 }

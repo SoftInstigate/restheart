@@ -201,7 +201,7 @@ Feature: PATCH /auth/member-role
     Then status 200
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — role updated in user.teams[] after PATCH
+  Scenario: verify DB — role updated in team.members[] after PATCH (9.12.0: the one place it is kept)
   # ---------------------------------------------------------------------------
     * def memberEmail = 'umr-db-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -219,14 +219,22 @@ Feature: PATCH /auth/member-role
     When method PATCH
     Then status 200
 
-    # Verify initial role
-    Given path '/users/' + memberEmail
+    # the owner's active team, where the member was invited
+    Given path '/users/owner-test@example.com'
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    * def initialRole = response.teams[0].role
-    * match initialRole == 'member'
+    * def teamOid = response.team._id['$oid']
+    * def roleOf = function(members){ return karate.filter(members, function(x){ return x.userId == memberEmail })[0].role }
+
+    # Verify initial role
+    Given path '/teams/' + teamOid
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    * match roleOf(response.members) == 'member'
 
     # Promote to admin
     Given path '/auth/member-role'
@@ -236,10 +244,9 @@ Feature: PATCH /auth/member-role
     Then status 200
 
     # Verify updated role in DB
-    Given path '/users/' + memberEmail
+    Given path '/teams/' + teamOid
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    * def updatedRole = response.teams[0].role
-    * match updatedRole == 'owner'
+    * match roleOf(response.members) == 'owner'

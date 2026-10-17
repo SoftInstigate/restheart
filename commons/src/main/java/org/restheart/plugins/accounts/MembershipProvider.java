@@ -105,10 +105,9 @@ public interface MembershipProvider {
     /**
      * Removes a user from the given team. Called by {@code DELETE /auth/remove-member}.
      *
-     * <p>Implementations must remove the membership entry from both the user-side
-     * ({@code user.teams[]}) and the team-side ({@code team.members[]}) stores.
-     * If the team being removed is currently the user's active team, implementations
-     * should clear or update the active team field accordingly.
+     * <p>Implementations remove the membership from wherever they keep it (the default provider:
+     * the team's {@code members}). If the team being removed is currently the user's active
+     * team, implementations should clear or update the active team field accordingly.
      *
      * <p>This method is a no-op if the user is not a member of the given team.
      *
@@ -123,8 +122,8 @@ public interface MembershipProvider {
      * Updates the org-level role of a user within the given team.
      * Called by {@code PATCH /auth/member-role}.
      *
-     * <p>Implementations must update the role on both the user-side
-     * ({@code user.teams[].role}) and the team-side ({@code team.members[].role}).
+     * <p>Implementations update the role where they keep it (the default provider: the team's
+     * {@code members}); {@code @team.role} reads it on the next request.
      *
      * <p>This method is a no-op if the user is not a member of the given team.
      *
@@ -206,9 +205,8 @@ public interface MembershipProvider {
      * server-side — a client-side pre-check (list members, see only the caller,
      * then delete) is a race condition against a concurrent invite acceptance.
      *
-     * <p>On success, implementations must also clear the caller's own membership
-     * pointer to this team (both {@code user.teams[]} and the active-team field,
-     * if it was active).
+     * <p>On success, implementations must also clear the caller's active-team field, if it
+     * pointed to this team.
      *
      * @param userId the caller's identifier (email address); must be a member of {@code teamId}
      * @param teamId the team to delete

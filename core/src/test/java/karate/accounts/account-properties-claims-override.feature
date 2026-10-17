@@ -74,9 +74,9 @@ Feature: override-accounts-account-properties-claims per-request + JWT claims de
     * match payload.emailVerificationToken == '#notpresent'
 
     # The override REPLACES the static list, but it cannot lower the required-claims floor:
-    # "teams" is listed in jwtConfigProvider/required-account-properties-claims, so it is
+    # "_id" is listed in jwtConfigProvider/required-account-properties-claims, so it is
     # present even though this override never asked for it. See the dedicated scenario below.
-    * match payload.teams == '#present'
+    * match payload._id == email
 
   # ---------------------------------------------------------------------------
   Scenario: /token applies the same per-request override and denylist

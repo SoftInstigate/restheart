@@ -522,6 +522,13 @@ accountsConfig:
   account-properties-claims:
   # - srvNode  # example: attached-param set by SrvNodeEnricher in multi-team deployments
 
+  # One-off migration of existing data to the 9.12.0 membership model: who belongs to a team is
+  # kept on the team only (teams.members), the user keeps just the id of its active team. Turn it
+  # on once: at startup every user document still carrying the old `teams` array or `team.role`
+  # has them removed, and every membership they listed that the team does not confirm is reported
+  # in the log, never added. Then turn it off.
+  #migrate-memberships: false
+
 # Dependency-injection service holding the active MembershipProvider.
 accountsService:
   enabled: false

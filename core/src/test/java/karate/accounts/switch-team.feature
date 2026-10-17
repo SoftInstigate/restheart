@@ -107,15 +107,20 @@ Feature: POST /auth/switch-team
     And match response.team._id == originalTeamId
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — invite with existing user adds teams entry
+  Scenario: an invited existing user is listed by the second team (9.12.0: memberships live on the teams)
   # ---------------------------------------------------------------------------
-    # Check owner-test has orgs array with both teams
-    Given path '/users/owner-test@example.com'
+    Given path '/teams/' + secondTeamId['$oid']
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    And match response.teams == '#array'
-    * assert response.teams.length >= 2
-    * def teamIds = karate.map(response.teams, function(x){ return x.id })
+    * def memberIds = karate.map(response.members, function(x){ return x.userId })
+    And match memberIds contains 'owner-test@example.com'
+
+    Given path '/auth/teams'
+    And header Authorization = 'Bearer ' + ownerJwt
+    When method GET
+    Then status 200
+    * assert response.length >= 2
+    * def teamIds = karate.map(response, function(x){ return x.id })
     And match teamIds contains secondTeamId

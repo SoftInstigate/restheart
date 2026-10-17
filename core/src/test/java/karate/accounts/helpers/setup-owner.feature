@@ -18,6 +18,14 @@ Feature: setup owner user for invite and activate tests
     # 200/204 = deleted, 404 = did not exist — both are fine
     * match [200, 204, 404] contains responseStatus
 
+    # and the teams that still name it: since 9.12.0 a membership lives on the team, so a user
+    # registered again with the same email would find the teams of the previous run
+    Given path '/teams/*'
+    And header Authorization = adminAuth
+    And param filter = '{"members.userId": "owner-test@example.com"}'
+    When method DELETE
+    * match [200, 204, 404] contains responseStatus
+
     # 1. Register fresh
     Given path '/auth/register'
     And request

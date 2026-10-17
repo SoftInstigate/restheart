@@ -39,6 +39,8 @@
 # node, the one naming the issuing node, verified on every later request).
 /jwtConfigProvider/required-account-properties-claims:
   - teams
+  # a user of restheart-accounts has no `teams` property since 9.12.0: _id stands in for it there
+  - _id
 
 /jwtTokenManager/enabled: true
 /jwtTokenManager/ttl: 15

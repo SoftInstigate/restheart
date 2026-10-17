@@ -619,7 +619,20 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                     .append("stripe_customer_id", BsonNull.VALUE);
         }
 
-        // Authenticated: resolve team
+        // Authenticated: resolve the team, first through the @team variable restheart-accounts
+        // registers (the tokens it issues carry no team claim since 9.12.0), then the claim
+        var fromVariable = org.restheart.security.AclVarsInterpolator.resolveRegisteredVar(request, "@team")
+                .filter(org.bson.BsonValue::isDocument)
+                .map(org.bson.BsonValue::asDocument)
+                .filter(d -> d.containsKey("_id") && d.get("_id").isObjectId());
+
+        if (fromVariable.isPresent()) {
+            return new BsonDocument()
+                    .append("type", new BsonString("team"))
+                    .append("id", fromVariable.get().get("_id"))
+                    .append("stripe_customer_id", BsonNull.VALUE);
+        }
+
         var account = request.getAuthenticatedAccount();
         if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
             var props = withProperties.propertiesAsMap();
