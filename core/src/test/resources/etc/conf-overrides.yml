@@ -171,6 +171,21 @@
         mergeRequest: >
           {"team": "@user.team._id"}
 
+    # #765: the same team as @team, resolved by restheart-accounts' TeamVarResolver from the
+    # membership provider, never from the token. A readFilter on @team._id returns the same
+    # documents to a token from POST /token and to one from the accounts endpoints, and follows a
+    # switch of team whatever token the caller still holds. Exercised by team-claim-variable.feature.
+    - role: user
+      predicate: >
+        path-prefix[path="/restheart-test/team-scoped"]
+        and (method[value="GET"] or method[value="POST"])
+      priority: 100
+      mongo:
+        readFilter: >
+          {"team": "@team._id"}
+        mergeRequest: >
+          {"team": "@team._id"}
+
     # #754: `test` may write to this bucket and nowhere near the chunks collections its rules
     # fill; karate/ai/chunking-rules.feature proves the chunks are written anyway
     - role: test

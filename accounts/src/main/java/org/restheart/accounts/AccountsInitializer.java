@@ -13,7 +13,9 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.accounts.acl.TeamVarResolver;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.AclVarsRegistry;
 import org.restheart.security.predicates.BsonRequestBlacklistPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,12 @@ public class AccountsInitializer implements Initializer {
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
+
+    @Inject("acl-vars-registry")
+    private AclVarsRegistry aclVarsRegistry;
+
+    @Inject("accountsService")
+    private AccountsService accountsService;
 
     // Every privileged mutation of a user document (roles, teams, team, password,
     // sub, *Token fields, ...) is performed by an accounts-plugin service through
@@ -103,6 +111,11 @@ public class AccountsInitializer implements Initializer {
 
     @Override
     public void init() {
+        // @team: the active team as { _id, role }, for ACL rules and for the "@team" entry of
+        // jwtConfigProvider/account-properties-claims, which makes POST /token carry the same claim
+        // the accounts endpoints issue, whatever the membership provider stores (#765)
+        aclVarsRegistry.register(new TeamVarResolver(accountsService, conf.teamClaimName()));
+
         // Generic REST writes to /users are restricted to self-service profile/app-level
         // edits — see USER_WRITE_DENYLIST above for why this is safe to enforce
         // unconditionally.

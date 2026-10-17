@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.security.tokens.JwtTokenManager;
 import org.restheart.security.AuthCookie;
@@ -189,6 +190,25 @@ public class JwtHelper {
                              Map<String, Object> extraClaims,
                              BsonDocument userDocument,
                              List<String> accountPropertiesClaimsOverride) {
+        return issueToken(email, roles, authDb, accountProperties, extraClaims, userDocument, accountPropertiesClaimsOverride, null);
+    }
+
+    /**
+     * As {@link #issueToken(String, Set, String, Map, Map, BsonDocument, List)}, with the request that
+     * issues the token. The ACL-variable entries of the claim list ({@code "@team"}) are resolved
+     * against it, so a service that has the request at hand must pass it, or those entries add no
+     * claim to the token it issues.
+     *
+     * @param request the issuing request, or {@code null} where there is none
+     */
+    public String issueToken(String email,
+                             Set<String> roles,
+                             String authDb,
+                             Map<String, Object> accountProperties,
+                             Map<String, Object> extraClaims,
+                             BsonDocument userDocument,
+                             List<String> accountPropertiesClaimsOverride,
+                             Request<?> request) {
         var effectiveClaims = accountPropertiesClaimsOverride != null
                 ? accountPropertiesClaimsOverride
                 : accountPropertiesClaims;
@@ -233,7 +253,7 @@ public class JwtHelper {
         // below, which deliberately does not carry the mark.
         builder = jwtIssuer.withClaim(builder, JwtTokenManager.RENEWABLE, true);
 
-        builder = jwtIssuer.applyAccountClaims(builder, properties, effectiveClaims);
+        builder = jwtIssuer.applyAccountClaims(builder, properties, effectiveClaims, request);
 
         for (var e : extra.entrySet()) {
             if (isDenylisted(e.getKey())) continue;
@@ -320,28 +340,7 @@ public class JwtHelper {
     }
 
     private static Object bsonValueToObject(BsonValue value) {
-        return switch (value) {
-            case org.bson.BsonString s -> s.getValue();
-            case org.bson.BsonBoolean b -> b.getValue();
-            case org.bson.BsonInt32 i -> i.getValue();
-            case org.bson.BsonInt64 l -> l.getValue();
-            case org.bson.BsonDouble d -> d.getValue();
-            case org.bson.BsonObjectId oid -> Map.of("$oid", oid.getValue().toHexString());
-            case BsonArray a -> {
-                var list = new java.util.ArrayList<>();
-                for (var item : a) {
-                    list.add(bsonValueToObject(item));
-                }
-                yield list;
-            }
-            case BsonDocument d -> {
-                var map = new java.util.HashMap<String, Object>();
-                for (var entry : d.entrySet()) {
-                    map.put(entry.getKey(), bsonValueToObject(entry.getValue()));
-                }
-                yield map;
-            }
-            default -> value.toString();
-        };
+        // the one conversion every issuer applies, so a claim reads the same whoever minted it
+        return DefaultJwtIssuer.claimValue(value);
     }
 }

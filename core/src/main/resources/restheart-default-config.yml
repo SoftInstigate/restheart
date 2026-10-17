@@ -55,6 +55,18 @@ jwtConfigProvider:
   algorithm: HS256 # Supported: HS256, HS384, HS512
   issuer: restheart.org
   audience: null   # null or array of audience strings
+  # Account properties copied into every JWT this deployment issues, on /token and by the accounts
+  # endpoints alike. A plain entry names a property of the user document, nested with / (e.g.
+  # consents/tos/version). An entry starting with @ is an ACL variable instead, resolved with the
+  # request that issues the token and put in the token under its name: "@team", registered by
+  # restheart-accounts, carries the active team as { _id, role } on every token path, whatever the
+  # membership provider stores. Quote it: @ is reserved in YAML.
+  #account-properties-claims:
+  #  - profile
+  #  - "@team"
+  # Claims copied whatever a per-request override of the list says.
+  #required-account-properties-claims:
+  #  - srvNode
 
 # Issues signed JWTs on behalf of other plugins, which inject it as @Inject("jwtIssuer").
 # Key, algorithm, issuer, audience and claim policy all come from jwtConfigProvider above: a token
@@ -288,6 +300,9 @@ jwtTokenManager:
   # paths (/token, /auth/verify, /auth/activate, /auth/reset-password, /auth/switch-team,
   # OAuth callbacks) produce identical JWTs.
   #
+  # Deprecated: configure account-properties-claims in jwtConfigProvider instead, once for every
+  # token path; the active team is best carried by its "@team" entry (see there).
+  #
   # For restheart-accounts multi-team deployments, the teams claim MUST be listed here
   # (e.g. "teams") so that the JWT contains the active team ID.
   # Without this, endpoints like POST /auth/invite and POST /auth/switch-team will
@@ -499,6 +514,8 @@ accountsConfig:
   # (/token, /auth/verify, /auth/activate, etc.) produce identical JWTs.
   # For multi-team deployments, include the teams claim (e.g. "teams").
   # authDb is always included automatically — never list it here.
+  # Deprecated: configure account-properties-claims in jwtConfigProvider instead, once for every
+  # token path; the active team is best carried by its "@team" entry (see there).
   account-properties-claims:
   # - srvNode  # example: attached-param set by SrvNodeEnricher in multi-team deployments
 

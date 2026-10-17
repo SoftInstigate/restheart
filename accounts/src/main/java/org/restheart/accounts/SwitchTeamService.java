@@ -177,7 +177,8 @@ public class SwitchTeamService implements JsonService {
                 java.util.Map.<String, Object>of(conf.teamClaimName(),
                         TeamClaim.of(matched.teamId(), matched.role())),
                 null,
-                RequestOverrides.accountPropertiesClaims(req, conf));
+                RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
 
         // Deliver the reissued token per the `delivery` query parameter
         // (cookie by default, body for bearer SPAs).

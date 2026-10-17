@@ -55,6 +55,11 @@ jwtConfigProvider:
   algorithm: HS256 # Supported: HS256, HS384, HS512
   issuer: restheart.org
   audience: null   # null or array of audience strings
+  # Account properties copied into every JWT this deployment issues, on /token and by any other
+  # issuer alike: a property of the user document, nested with /, or an ACL variable ("@name",
+  # quoted, resolved with the request that issues the token).
+  #account-properties-claims:
+  #  - profile
 
 # Issues signed JWTs on behalf of other plugins, which inject it as @Inject("jwtIssuer").
 # Key, algorithm, issuer, audience and claim policy all come from jwtConfigProvider above: a token

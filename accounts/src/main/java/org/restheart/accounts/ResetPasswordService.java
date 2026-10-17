@@ -204,7 +204,8 @@ public class ResetPasswordService implements JsonService {
                 req.attachedParams(),
                 extraClaims,
                 user,
-                RequestOverrides.accountPropertiesClaims(req, conf));
+                RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
 
         // 7b. Auto-login: deliver the token per the `delivery` query parameter.
         // fetch()-based endpoint → cookie (default) or body (bearer).

@@ -207,7 +207,8 @@ public class GetTeamsService implements JsonService {
                 java.util.Map.<String, Object>of(conf.teamClaimName(),
                         TeamClaim.of(teamRef.id(), RequestOverrides.ownershipRole(req, conf))),
                 null,
-                RequestOverrides.accountPropertiesClaims(req, conf));
+                RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
 
         var delivery = TokenDelivery.resolve(
                 req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,

@@ -203,7 +203,8 @@ public class EmailVerificationService implements JsonService {
                 req.attachedParams(),
                 extraClaims,
                 user,
-                RequestOverrides.accountPropertiesClaims(req, conf));
+                RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
 
         LOGGER.info("Email verified — user activated: <{}>", storedEmail);
 

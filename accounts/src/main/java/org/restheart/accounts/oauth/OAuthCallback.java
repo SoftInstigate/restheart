@@ -230,7 +230,8 @@ public class OAuthCallback implements StringService {
                             java.util.Map.<String, Object>of(conf.teamClaimName(),
                                     TeamClaim.of(membership.get().teamId(), membership.get().role())),
                             null,
-                            RequestOverrides.accountPropertiesClaims(req, conf));
+                            RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
                     setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin", callbackResult.returnTo());
                     return;
                 }
@@ -267,7 +268,8 @@ public class OAuthCallback implements StringService {
                         req.attachedParams(),
                         java.util.Map.<String, Object>of(conf.teamClaimName(), teamClaim),
                         null,
-                        RequestOverrides.accountPropertiesClaims(req, conf));
+                        RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
                 setAuthCookieAndRedirect(res, req, jwtToken, "signin", callbackResult.returnTo());
                 return;
             }
@@ -283,7 +285,8 @@ public class OAuthCallback implements StringService {
                     req.attachedParams(),
                     extraClaims,
                     null,
-                    RequestOverrides.accountPropertiesClaims(req, conf));
+                    RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
             setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin", callbackResult.returnTo());
 
         } catch (OAuthService.OAuthException e) {

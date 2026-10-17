@@ -30,8 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.exchange.Request;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.security.BaseAccount;
 import org.restheart.security.WithProperties;
@@ -66,6 +70,15 @@ import com.auth0.jwt.algorithms.Algorithm;
  * <p>Only the account properties named by the effective {@code account-properties-claims} list
  * become claims. A name may be a nested path using {@code /} — {@code consents/tos/version}
  * selects that nested value and rebuilds the nesting in the token.
+ *
+ * <h2>Variables</h2>
+ * <p>An entry starting with {@code @} is not a property of the user document: it is an ACL
+ * variable, the ones a {@link org.restheart.security.VarResolver} contributes, resolved with the
+ * request that issues the token and put in the token under the variable's name. {@code "@team"},
+ * registered by restheart-accounts, carries the active team as {@code { _id, role }} on {@code /token}
+ * exactly as the accounts endpoints build it, whatever the membership provider stores. A variable that
+ * resolves to nothing adds no claim; a request-less issuance resolves none. Only the bare variable is
+ * accepted ({@code @team}, not {@code @team.role}): a claim mirrors the variable, whole.
  *
  * <h2>Denylist</h2>
  * <p>{@link #DEFAULT_DENYLIST} plus the configured password property are refused whatever the
@@ -237,6 +250,11 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
                 continue;
             }
 
+            // an ACL variable, not a property: see variableClaims(Request, List)
+            if (isVariableClaim(path)) {
+                continue;
+            }
+
             var keys = keysFromPath(path);
 
             if (Arrays.stream(keys).anyMatch(this::isDenylisted)) {
@@ -255,6 +273,118 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
         return ret;
     }
 
+    /** Whether {@code entry} of a claim list names an ACL variable rather than an account property. */
+    public static boolean isVariableClaim(String entry) {
+        return entry != null && entry.startsWith("@") && entry.length() > 1;
+    }
+
+    /**
+     * The claim an ACL-variable entry produces: the variable's name, without the {@code @} — the
+     * part up to the first {@code .}, {@code (} or {@code [}.
+     */
+    public static String variableClaimName(String entry) {
+        var rest = entry.substring(1);
+
+        for (var i = 0; i < rest.length(); i++) {
+            var c = rest.charAt(i);
+            if (c == '.' || c == '(' || c == '[') {
+                return rest.substring(0, i);
+            }
+        }
+
+        return rest;
+    }
+
+    /**
+     * The claims the ACL-variable entries of the effective claim list produce for {@code request}:
+     * each {@code @name} entry resolved through the registered {@link org.restheart.security.VarResolver}
+     * with the request that issues the token, under the claim {@code name}. An entry whose variable
+     * resolves to nothing, or names no registered variable, adds no claim; a denylisted name is
+     * refused like any other claim. Without a request there is nothing to resolve against, and the
+     * map is empty.
+     *
+     * @param request the request that issues the token, or {@code null} where there is none
+     * @param claimsOverride effective list for this issuance; {@code null} uses {@link #defaultClaims()}
+     * @return the claims, in the order of the list; never {@code null}
+     */
+    public Map<String, Object> variableClaims(Request<?> request, List<String> claimsOverride) {
+        final var ret = new java.util.LinkedHashMap<String, Object>();
+
+        if (request == null) {
+            return ret;
+        }
+
+        var configured = claimsOverride != null ? claimsOverride : defaultClaims;
+
+        var entries = new java.util.LinkedHashSet<String>();
+        entries.addAll(requiredClaims);
+        if (configured != null) {
+            entries.addAll(configured);
+        }
+
+        for (var entry : entries) {
+            if (!isVariableClaim(entry)) {
+                continue;
+            }
+
+            var name = variableClaimName(entry);
+
+            if (isDenylisted(name)) {
+                LOGGER.debug("Refusing denylisted claim '{}'", entry);
+                continue;
+            }
+
+            if (!AclVarsInterpolator.isRegisteredVar(entry)) {
+                // a startup check reports this with the configuration in hand; here it only costs
+                // the claim, as a property the document does not have would
+                LOGGER.debug("No registered ACL variable for claim entry '{}'", entry);
+                continue;
+            }
+
+            AclVarsInterpolator.resolveRegisteredVar(request, entry)
+                    .filter(v -> !v.isNull())
+                    .map(DefaultJwtIssuer::claimValue)
+                    .ifPresent(v -> ret.put(name, v));
+        }
+
+        return ret;
+    }
+
+    /**
+     * A BSON value as a JWT claim value, the types {@link #withClaim(Builder, String, Object)}
+     * maps: a document becomes a map, an array a list, an ObjectId the Extended JSON
+     * {@code {"$oid": "…"}} — the shape a client reads back from the token and sends again as a
+     * document id — and anything else its string form.
+     */
+    public static Object claimValue(BsonValue value) {
+        return switch (value) {
+            case null -> null;
+            case BsonString s -> s.getValue();
+            case org.bson.BsonBoolean b -> b.getValue();
+            case org.bson.BsonInt32 i -> i.getValue();
+            case org.bson.BsonInt64 l -> l.getValue();
+            case org.bson.BsonDouble d -> d.getValue();
+            case org.bson.BsonObjectId oid -> Map.of("$oid", oid.getValue().toHexString());
+            case org.bson.BsonDateTime dt -> new Date(dt.getValue());
+            case org.bson.BsonNull n -> null;
+            case BsonArray a -> {
+                var list = new java.util.ArrayList<>();
+                for (var item : a) {
+                    list.add(claimValue(item));
+                }
+                yield list;
+            }
+            case BsonDocument d -> {
+                var map = new HashMap<String, Object>();
+                for (var entry : d.entrySet()) {
+                    map.put(entry.getKey(), claimValue(entry.getValue()));
+                }
+                yield map;
+            }
+            default -> value.toString();
+        };
+    }
+
     /**
      * Adds to {@code builder} the {@code authDb} claim (when present in {@code properties}) and
      * the claims selected by {@link #accountClaims(Map, List)}.
@@ -262,16 +392,30 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
      * @return the updated builder, for chaining
      */
     public Builder applyAccountClaims(Builder builder, Map<String, ? super Object> properties, List<String> claimsOverride) {
-        if (properties == null) {
-            return builder;
+        return applyAccountClaims(builder, properties, claimsOverride, null);
+    }
+
+    /**
+     * As {@link #applyAccountClaims(Builder, Map, List)}, also adding the claims the ACL-variable
+     * entries of the list produce for {@code request} — see {@link #variableClaims(Request, List)}.
+     * Every issuer that has the request at hand should use this one: an entry such as
+     * {@code "@team"} yields its claim only here.
+     *
+     * @param request the request that issues the token, or {@code null} where there is none
+     */
+    public Builder applyAccountClaims(Builder builder, Map<String, ? super Object> properties, List<String> claimsOverride, Request<?> request) {
+        if (properties != null) {
+            var authDb = authDb(properties);
+            if (authDb != null) {
+                builder = builder.withClaim("authDb", authDb);
+            }
+
+            for (var e : accountClaims(properties, claimsOverride).entrySet()) {
+                builder = withClaim(builder, e.getKey(), e.getValue());
+            }
         }
 
-        var authDb = authDb(properties);
-        if (authDb != null) {
-            builder = builder.withClaim("authDb", authDb);
-        }
-
-        for (var e : accountClaims(properties, claimsOverride).entrySet()) {
+        for (var e : variableClaims(request, claimsOverride).entrySet()) {
             builder = withClaim(builder, e.getKey(), e.getValue());
         }
 
@@ -313,9 +457,28 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
                         Map<String, ?> extraClaims,
                         List<String> claimsOverride,
                         String issuerOverride) {
+        return issue(subject, roles, expires, properties, extraClaims, claimsOverride, issuerOverride, null);
+    }
+
+    /**
+     * Same as {@link #issue(String, Set, Date, Map, Map, List, String)}, with the request that
+     * issues the token, which the ACL-variable entries of the claim list are resolved against —
+     * see {@link #variableClaims(Request, List)}.
+     *
+     * @param request the issuing request, or {@code null} where there is none: the variable
+     *                entries then add no claim
+     */
+    public String issue(String subject,
+                        Set<String> roles,
+                        Date expires,
+                        Map<String, ? super Object> properties,
+                        Map<String, ?> extraClaims,
+                        List<String> claimsOverride,
+                        String issuerOverride,
+                        Request<?> request) {
         var builder = newBuilder(subject, roles, expires, issuerOverride);
 
-        builder = applyAccountClaims(builder, properties, claimsOverride);
+        builder = applyAccountClaims(builder, properties, claimsOverride, request);
 
         if (extraClaims != null) {
             for (var e : extraClaims.entrySet()) {
@@ -366,7 +529,8 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
                 properties,
                 null,
                 claimsOverride(request),
-                issuerOverride);
+                issuerOverride,
+                request);
     }
 
     /**
