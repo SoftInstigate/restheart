@@ -31,11 +31,15 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.ai.mcp.RegisteredMcpAware;
+import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
 
 public class HowToCallToolTest {
+
+    /** These tests are about composing a request, not about who may see what. */
+    private static final HowToCallTool.Gate VISIBLE = HowToCallTool.Gate.OPEN;
 
     private static McpAware fixed(McpResource resource) {
         return new McpAware() {
@@ -48,9 +52,22 @@ public class HowToCallToolTest {
 
     private static HowToCallTool toolFor(McpResource resource) {
         var registry = McpAwareRegistry.of(List.of(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of())));
-        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), key -> {
         });
         return new HowToCallTool(lookup);
+    }
+
+    /**
+     * A resource left out of the catalog for this caller must not be describable either: composing
+     * a request for it would hand back, action by action, what hiding it was meant to withhold.
+     */
+    @Test
+    public void hiddenResource_isUnknown() {
+        var tool = toolFor(McpResource.builder().uri("https://host/a").action("query", a -> a.method("GET")).build());
+
+        assertThrows(UnknownResourceException.class,
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "query", Map.of(), null,
+                        (resource, action, args) -> false));
     }
 
     @Test
@@ -59,7 +76,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         assertThrows(UnknownResourceException.class,
-                () -> tool.call(null, "https://host", "https://host/does-not-exist", "query", Map.of(), null));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/does-not-exist", "query", Map.of(), null, VISIBLE));
     }
 
     @Test
@@ -68,7 +85,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(UnknownActionException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "delete", Map.of(), null));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "delete", Map.of(), null, VISIBLE));
         assertTrue(ex.validActions().contains("query"));
     }
 
@@ -81,12 +98,16 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "get", Map.of(), null));
+                () -> tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "get", Map.of(), null, VISIBLE));
         assertEquals(1, ex.errors().size());
     }
 
     @Test
-    public void bodySchemaViolation_throwsValidationFailed() {
+    public void aBodyTheSchemaWouldRefuse_isStillComposed() {
+        // The schema describes the document the resource stores, and a caller does not send that
+        // document: a deployment fills fields in on the way (mongo.mergeRequest stamps the author
+        // and the time). Refusing here would refuse writes the REST endpoint accepts, whose own
+        // checker runs after those fields are set. The service judges the body; this does not.
         var resource = McpResource.builder()
                 .uri("https://host/echo")
                 .action("echo", a -> a.method("POST").bodySchema(Map.of(
@@ -95,9 +116,10 @@ public class HowToCallToolTest {
                 .build();
         var tool = toolFor(resource);
 
-        var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("other", "x")), null));
-        assertTrue(!ex.errors().isEmpty());
+        var descriptor = tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/echo", "echo",
+                Map.of("body", Map.of("other", "x")), null, VISIBLE);
+
+        assertEquals(Map.of("other", "x"), descriptor.get("body"));
     }
 
     @Test
@@ -108,7 +130,7 @@ public class HowToCallToolTest {
                 .build();
         var tool = toolFor(resource);
 
-        var descriptor = tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("message", "hi")), null);
+        var descriptor = tool.call(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/echo", "echo", Map.of("body", Map.of("message", "hi")), null, VISIBLE);
 
         assertEquals("http", descriptor.get("transport"));
         assertEquals(Map.of("message", "hi"), descriptor.get("body"));

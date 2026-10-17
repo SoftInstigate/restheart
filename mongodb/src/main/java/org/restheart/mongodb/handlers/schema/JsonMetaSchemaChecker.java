@@ -21,15 +21,10 @@
 package org.restheart.mongodb.handlers.schema;
 
 import io.undertow.server.HttpServerExchange;
-import java.io.InputStream;
 import java.util.ArrayList;
 import org.bson.BsonDocument;
-import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
-import org.everit.json.schema.loader.SchemaLoader;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -45,26 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class JsonMetaSchemaChecker extends PipelinedHandler {
 
-    static final String JSON_METASCHEMA_FILENAME = "json-schema-draft-v4.json";
-
     static final Logger LOGGER = LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
-
-    private static Schema schema;
-
-    static {
-        try {
-            InputStream jsonMetaschemaIS = JsonMetaSchemaChecker.class
-                    .getClassLoader()
-                    .getResourceAsStream(JSON_METASCHEMA_FILENAME);
-
-            JSONObject rawSchema
-                    = new JSONObject(new JSONTokener(jsonMetaschemaIS));
-
-            schema = SchemaLoader.load(rawSchema);
-        } catch (JSONException ex) {
-            LOGGER.error("error initializing", ex);
-        }
-    }
 
     /**
      *
@@ -84,8 +60,20 @@ public class JsonMetaSchemaChecker extends PipelinedHandler {
                 ? new BsonDocument()
                 : request.getContent();
 
+        // checked against the metaschema of the draft it declares, draft-07 when it declares none
+        var declared = contentToCheck.isDocument() ? contentToCheck.asDocument().get("$schema") : null;
+        var draft = JsonSchemaDrafts.draftOf(declared);
+
+        if (draft.isEmpty()) {
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "Unsupported $schema "
+                    + (declared == null ? "" : declared.toString())
+                    + ": the schema store takes " + JsonSchemaDrafts.SUPPORTED);
+            next(exchange);
+            return;
+        }
+
         try {
-            schema.validate(new JSONObject(contentToCheck.toString()));
+            JsonSchemaDrafts.metaschema(draft.get()).validate(new JSONObject(contentToCheck.toString()));
         } catch (ValidationException ve) {
             var errors = new ArrayList<String>();
 

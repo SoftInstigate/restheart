@@ -110,6 +110,37 @@ public interface MongoServiceConfigurationKeys {
     public static final String AGGREGATION_CHECK_OPERATORS = "aggregation-check-operators";
 
     /**
+     * The key for the interval between the comments sent to keep an idle change stream alive.
+     */
+    public static final String CHANGE_STREAMS_KEEP_ALIVE_MS = "change-streams-keep-alive-ms";
+
+    /**
+     * The default interval between keep-alive comments on a change stream, in milliseconds.
+     */
+    public static final long DEFAULT_CHANGE_STREAMS_KEEP_ALIVE_MS = 20_000;
+
+    /**
+     * Name of the collection holding the guard documents that serialize writes to collections
+     * declaring constraints.
+     */
+    public static final String CONSTRAINTS_GUARD_COLLECTION_KEY = "constraints-guard-collection";
+
+    /**
+     * Default value of constraints-guard-collection.
+     */
+    public static final String DEFAULT_CONSTRAINTS_GUARD_COLLECTION = "_constraints";
+
+    /**
+     * Name of the schema store, the collection of each database holding its JSON schemas.
+     */
+    public static final String SCHEMA_STORE_KEY = "schema-store";
+
+    /**
+     * Default value of schema-store.
+     */
+    public static final String DEFAULT_SCHEMA_STORE = "_schemas";
+
+    /**
      * the key for the mongo-uri property.
      */
     public static final String MONGO_URI_KEY = "mongo-uri";
@@ -144,6 +175,15 @@ public interface MongoServiceConfigurationKeys {
      * the key for the instance-base-url property.
      */
     public static final String INSTANCE_BASE_URL_KEY = "instance-base-url";
+
+    /**
+     * The attached parameter that overrides {@code instance-base-url} for one request.
+     *
+     * <p>{@code instance-base-url} is one value for the node, and a node that serves many tenants,
+     * one per host, needs one per tenant: the deployment attaches it to each request, as it does
+     * {@code override-acl-db} and the other per-tenant settings.
+     */
+    public static final String INSTANCE_BASE_URL_OVERRIDE = "override-mongo-instance-base-url";
 
     /**
      * the key for the instance-name property.

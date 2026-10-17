@@ -23,6 +23,7 @@ package org.restheart.security.mechanisms;
 import java.util.Map;
 
 import org.restheart.configuration.ConfigurationException;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
@@ -30,6 +31,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.security.ApiKeyCredential;
+import org.restheart.security.authenticators.MongoApiKeyAuthenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +138,12 @@ public class ApiKeyAuthMechanism implements AuthMechanism {
             final var credential = new ApiKeyCredential(token);
 
             try {
-                final var account = this.authenticator.verify(credential);
+                // Given the request, mongoApiKeyAuthenticator looks the key up in the
+                // database it resolves to (override-keys-db), so a key works only on its
+                // own tenant — as basicAuthMechanism does for mongoRealmAuthenticator.
+                final var account = this.authenticator instanceof final MongoApiKeyAuthenticator mauth
+                        ? mauth.verify(Request.of(exchange), credential)
+                        : this.authenticator.verify(credential);
 
                 if (account != null) {
                     securityContext.authenticationComplete(account, getMechanismName(), false);

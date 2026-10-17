@@ -115,13 +115,29 @@ public class AuthCookieSetter implements WildcardInterceptor {
 
     @Override
     public boolean resolve(ServiceRequest<?> req, ServiceResponse<?> res) {
-        if (!this.enabled || req.isOptions() || !req.isAuthenticated() || res.getHeader("Auth-Token") == null) {
+        if (!this.enabled || req.isOptions() || res.getHeader("Auth-Token") == null) {
             return false;
         }
 
-        // Primary: /token/cookie endpoint
+        // Primary: /token/cookie endpoint.
+        //
+        // Authentication is not required here, and that is deliberate. A token renewed inside the
+        // grace window arrives on a request that is by definition NOT authenticated — its token
+        // expired, which is why it is being renewed — so demanding it would leave the grace window
+        // unusable by every browser app, the ones that meet an expired token most often.
+        //
+        // What stands in for it is the Auth-Token header, checked above: on this endpoint only
+        // authTokenService sets it, and only after verifying the presented token's signature and
+        // its expiry against the grace window. Nobody reaches this line by asking nicely; the
+        // header means a component has already vouched for the caller.
         if (TOKEN_COOKIE_ENDPOINT.equals(req.getPath())) {
             return true;
+        }
+
+        // Everywhere else the old rule stands: a cookie is written only for a caller already
+        // authenticated by this request.
+        if (!req.isAuthenticated()) {
+            return false;
         }
 
         // Legacy: ?set-auth-cookie query parameter (if enabled)

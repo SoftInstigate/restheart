@@ -1,9 +1,5 @@
 package org.restheart.accounts;
 
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.metrics.Metrics;
@@ -14,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Feeds token-validation failures from restheart-accounts endpoints into the
@@ -47,7 +42,6 @@ public class TokenFailedAuthInterceptor implements WildcardInterceptor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenFailedAuthInterceptor.class);
 
-    private static final MetricRegistry AUTH_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
 
     private static final Set<String> JSON_TOKEN_PATHS = Set.of(
             "/auth/activate",
@@ -77,10 +71,7 @@ public class TokenFailedAuthInterceptor implements WildcardInterceptor {
 
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
-        var histoName = Metrics.failedAuthHistogramName(request.getExchange());
-        var histo = AUTH_REGISTRY.histogram(histoName,
-                () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS)));
-        histo.update(histo.getSnapshot().getMax() + 1);
+        Metrics.failedAuth(request.getExchange());
 
         LOGGER.debug("Token failure counted for bruteForceAttackGuard — path={} status={}",
                 request.getPath(), response.getStatusCode());

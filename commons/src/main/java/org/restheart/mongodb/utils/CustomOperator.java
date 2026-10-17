@@ -19,6 +19,7 @@
  */
 package org.restheart.mongodb.utils;
 
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.Request;
 
@@ -93,4 +94,45 @@ public interface CustomOperator {
      *         execution error rather than silently degrading the pipeline
      */
     BsonValue resolve(Request<?> request, BsonValue arg);
+
+    /**
+     * Resolves this operator's value knowing where it is used.
+     *
+     * <p>An operator may need its surroundings: {@code $vectorize} as the {@code queryVector} of a
+     * {@code $vectorSearch} or {@code $vectorScan} stage embeds the question with the model of the
+     * vector field that stage's {@code path} names, which the argument alone cannot tell. The
+     * default ignores the placement and calls {@link #resolve(Request, BsonValue)}, so an
+     * operator that does not care changes nothing.
+     *
+     * @param request the current request, may be {@code null}
+     * @param arg the value under the {@code $name} key, already interpolated
+     * @param placement where the operator is used, or {@code null} at the top level
+     * @return the resolved value
+     * @since 9.9.0
+     */
+    default BsonValue resolve(Request<?> request, BsonValue arg, Placement placement) {
+        return resolve(request, arg);
+    }
+
+    /**
+     * Where an operator is used: the nearest enclosing single-key {@code $operator} document whose
+     * value is a document, and the key under it the operator sits below.
+     *
+     * <p>For {@code {"$vectorScan": {"path": "v", "queryVector": {"$vectorize": ...}}}} the
+     * {@code $vectorize} is placed at operator {@code $vectorScan}, args the stage's document, key
+     * {@code queryVector}. An operator nested deeper under the same key keeps that key: the
+     * placement says which argument of the enclosing operator it contributes to, not its depth.
+     *
+     * @param operator the enclosing key, with its {@code $}
+     * @param args the document under that key, as stored, not yet interpolated
+     * @param key the key under {@code args} the operator sits below, or {@code null} when the
+     *        operator is the whole value of {@code operator}
+     */
+    record Placement(String operator, BsonDocument args, String key) {
+        /** The value of {@code name} in {@link #args}, when it is a string. */
+        public String argString(String name) {
+            var v = args == null ? null : args.get(name);
+            return v != null && v.isString() ? v.asString().getValue() : null;
+        }
+    }
 }

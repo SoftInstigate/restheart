@@ -90,12 +90,9 @@ public class McpResourcesIT extends AbstactIT {
         Unirest.post(TEST_COLL).basicAuth("admin", "secret").contentType("application/json")
                 .body("{\"item\":\"journal\",\"qty\":10,\"status\":\"D\"}").asEmpty();
 
-        // past CachedResourceLookup's TTL (conf-overrides sets it to 1s) so this class's own
-        // just-created resources aren't served from a stale catalog entry
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
+        mcp.awaitResource(TEST_COLL);
     }
 
     // ---------------------------------------------------------------- listing
@@ -162,7 +159,7 @@ public class McpResourcesIT extends AbstactIT {
     public void readingTheCount_returnsTheNumberOfDocuments() throws Exception {
         var text = mcp.readResource(TEST_COLL + "/_size");
 
-        assertEquals(2, BsonDocument.parse(text).getNumber("size").intValue(),
+        assertEquals(2, BsonDocument.parse(text).getNumber("_size").intValue(),
                 "expected the fixture's two documents: " + text);
     }
 
@@ -172,7 +169,7 @@ public class McpResourcesIT extends AbstactIT {
         // the filter would answer it with a plausible, wrong number.
         var text = mcp.readResource(TEST_COLL + "/_size?filter=" + urlEncode("{\"status\":\"A\"}"));
 
-        assertEquals(1, BsonDocument.parse(text).getNumber("size").intValue(),
+        assertEquals(1, BsonDocument.parse(text).getNumber("_size").intValue(),
                 "only the notebook is in status A: " + text);
     }
 
@@ -182,7 +179,7 @@ public class McpResourcesIT extends AbstactIT {
         // exact count rather than silently answering for the whole collection — same as REST.
         var text = mcp.readResource(TEST_COLL + "/_size?count=estimated&filter=" + urlEncode("{\"status\":\"A\"}"));
 
-        assertEquals(1, BsonDocument.parse(text).getNumber("size").intValue(),
+        assertEquals(1, BsonDocument.parse(text).getNumber("_size").intValue(),
                 "the estimate opt-in swallowed the filter: " + text);
     }
 
@@ -306,6 +303,36 @@ public class McpResourcesIT extends AbstactIT {
 
     // ------------------------------------------------------------ read: error
 
+    /**
+     * The MCP SDK refuses a read whose URI carries a host it did not register, before any of our
+     * code runs — its registry is built once for the whole server and it matches the exact URI,
+     * falling back only to templates that carry the same host.
+     *
+     * <p>This is what makes per-tenant resource URIs impossible on SDK 2.x. A multi-tenant
+     * deployment would want every tenant's catalogue to name that tenant's own host; the listing
+     * could be rewritten on the way out, but the reads that followed would all be refused right
+     * here. Per-caller repositories are java-sdk#578, targeted at SDK 3.0.
+     *
+     * <p>Kept as a test rather than a note: if a future SDK starts routing these to us, this fails
+     * and tells us the limitation is gone.
+     */
+    @Test
+    public void readingAUriWithAnUnregisteredHost_isRefusedByTheSdk() throws Exception {
+        var known = mcp.rpc("resources/read", """
+                {"uri":"%s?page=1"}
+                """.formatted(TEST_COLL));
+
+        assertFalse(isFailure(known), "the control must succeed, or this proves nothing: " + known.toJson());
+
+        var foreign = mcp.rpc("resources/read", """
+                {"uri":"%s?page=1"}
+                """.formatted(TEST_COLL.replace("http://localhost:8080", "http://tenant-a.local:8080")));
+
+        assertTrue(isFailure(foreign), "same resource, unregistered host: " + foreign.toJson());
+        assertTrue(foreign.toJson().contains("Resource not found"),
+                "expected the SDK's own refusal, meaning our code was never reached: " + foreign.toJson());
+    }
+
     @Test
     public void readingAnUnknownResource_isAnError() throws Exception {
         var envelope = mcp.rpc("resources/read", """
@@ -316,12 +343,30 @@ public class McpResourcesIT extends AbstactIT {
     }
 
     @Test
+    public void aFailedRead_isAJsonRpcError_notContentSayingError() throws Exception {
+        // The shape matters as much as the failure. A result whose text begins with "Error:" is
+        // indistinguishable from data: the envelope says success, and an agent has to notice a
+        // prefix in prose to learn its read did not happen. Clients branch on `error`; none of
+        // them branch on that.
+        var envelope = mcp.rpc("resources/read", """
+                {"uri":"%s/does-not-exist?page=1"}
+                """.formatted(TEST_DB));
+
+        assertTrue(envelope.containsKey("error"),
+                "a failed read must answer with a JSON-RPC error: " + envelope.toJson());
+        assertFalse(envelope.containsKey("result"),
+                "a failed read must not also carry a result: " + envelope.toJson());
+
+        var code = envelope.getDocument("error").getInt32("code").getValue();
+        assertEquals(-32002, code, "unknown resource must be RESOURCE_NOT_FOUND: " + envelope.toJson());
+    }
+
+    @Test
     public void readingAnMcpDisabledCollection_isAnError() throws Exception {
         // opting in is per-resource: a collection with no mcp block does not exist for an agent,
         // even though the URI is otherwise perfectly valid
         Unirest.put(TEST_DB + "/private").basicAuth("admin", "secret")
                 .contentType("application/json").body("{}").asEmpty();
-        Thread.sleep(1_500);
 
         var envelope = mcp.rpc("resources/read", """
                 {"uri":"%s/private?page=1"}

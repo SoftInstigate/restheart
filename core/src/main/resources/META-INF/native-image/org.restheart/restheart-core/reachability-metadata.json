@@ -3413,6 +3413,24 @@
       "type": {
         "proxy": ["java.security.PrivilegedAction", "java.util.function.Consumer"]
       }
+    },
+    {
+      "type": "sun.net.www.protocol.http.Handler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.net.www.protocol.https.Handler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     }
   ],
   "resources": [
@@ -3501,6 +3519,12 @@
       "glob": "json-schema-draft-v4.json"
     },
     {
+      "glob": "json-schema-draft-v6.json"
+    },
+    {
+      "glob": "json-schema-draft-v7.json"
+    },
+    {
       "glob": "logback.xml"
     },
     {
@@ -3528,19 +3552,19 @@
       "glob": "META-INF/services/org.apache.commons.jxpath.JXPathContextFactory"
     },
     {
-      "glob": "email-templates/invite.html"
-    },
-    {
-      "glob": "email-templates/verification.html"
-    },
-    {
-      "glob": "email-templates/password-reset.html"
+      "glob": "email-templates/*.html"
     },
     {
       "glob": "static/metrics"
     },
     {
       "glob": "static/metrics/**"
+    },
+    {
+      "glob": "static/oauth"
+    },
+    {
+      "glob": "static/oauth/**"
     }
   ],
   "bundles": [

@@ -27,10 +27,19 @@ import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.exchange.Request;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.utils.BsonUtils;
 import graphql.schema.DataFetchingEnvironment;
 
 public abstract class FieldMapping {
+    /**
+     * Where {@code GraphQLService} puts the request it is serving, so a mapping can resolve the
+     * {@code @} variables that depend on it (restheart#727). graphql-java's {@code GraphQLContext}
+     * holds arbitrary objects; {@code localContext} is a {@code BsonDocument} and cannot.
+     */
+    public static final String REQUEST_CONTEXT_KEY = "restheart-request";
+
     protected final String fieldName;
 
     public FieldMapping(String fieldName) {
@@ -42,6 +51,52 @@ public abstract class FieldMapping {
     }
 
     public abstract GraphQLDataFetcher getDataFetcher();
+
+    /**
+     * The values a mapping's {@code $arg} references can resolve against: the field's own GraphQL
+     * arguments, plus the variables RESTHeart makes available to an app definition.
+     *
+     * <p>Shared by every mapping on purpose. These two lists had drifted — an aggregation mapping
+     * could write {@code {"$arg": "@user._id"}} and a query mapping could not, for no reason an
+     * app author could have guessed from the documentation. Which variables an app definition may
+     * use is one decision, so it is made in one place.
+     *
+     * <ul>
+     *   <li>the field's arguments, by name</li>
+     *   <li>{@code rootDoc} — the parent document, only from path level 2 down
+     *       (see <a href="https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument">the docs</a>)</li>
+     * </ul>
+     *
+     * <p>{@code @}-prefixed variables are deliberately <b>not</b> here. They are resolved by their
+     * registered {@link org.restheart.security.VarResolver}, from the request — one source, the
+     * same one an ACL predicate uses. This used to hold a hand-copied {@code @user}, which is why
+     * {@code @user} was the only variable a mapping could name.
+     */
+    /**
+     * The request being served, or {@code null} where there is none — a unit test, or any caller
+     * that builds an execution without one. Without it the {@code @} variables simply do not
+     * resolve; nothing else changes.
+     */
+    protected static Request<?> request(DataFetchingEnvironment env) {
+        var graphQLContext = env.getGraphQlContext();
+        return graphQLContext == null ? null : graphQLContext.get(REQUEST_CONTEXT_KEY);
+    }
+
+    protected static BsonDocument contextValues(DataFetchingEnvironment env) {
+        var values = BsonUtils.toBsonDocument(env.getArguments());
+
+        BsonDocument localContext = env.getLocalContext();
+        if (localContext == null) {
+            return values;
+        }
+
+        var rootDoc = localContext.get("rootDoc");
+        if (rootDoc != null) {
+            values.put("rootDoc", rootDoc);
+        }
+
+        return values;
+    }
 
     public BsonValue interpolateFkOperator(BsonDocument source, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
         if (source.containsKey("$fk")) {

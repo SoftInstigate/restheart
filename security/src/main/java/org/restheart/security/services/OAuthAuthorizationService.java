@@ -28,15 +28,19 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.restheart.exchange.ByteArrayRequest;
+import org.restheart.exchange.Request;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.accounts.OAuthProviderRegistry;
+import org.restheart.plugins.security.OAuthTokenIssuer;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.WithProperties;
 import org.restheart.security.interceptors.FormDataToBasicAuthInterceptor;
@@ -47,6 +51,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.auth0.jwt.algorithms.Algorithm;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
@@ -62,7 +68,19 @@ import io.undertow.util.HttpString;
  *       (credentials must be in the {@code Authorization: Basic …} header). Verifies
  *       authentication, issues a short-lived authorization code, and redirects to
  *       {@code redirect_uri?code=…[&state=…]}.</li>
+ *   <li>{@code GET /authorize/offer} — called by the login UI with the credentials in
+ *       {@code Authorization: Basic …}, before it submits them, to learn what the registered
+ *       {@link OAuthTokenIssuer} lets this account choose: {@code 204} nothing, submit at once;
+ *       {@code 200} an offer to render as a second step; {@code 403} a refusal, stop there.
+ *       Wrong credentials are a {@code 401}, which is what makes it the page's first step.</li>
  * </ul>
+ *
+ * <h2>Which token the code stands for</h2>
+ * <p>By itself the code stands for the account's own JWT. When an {@link OAuthTokenIssuer} is
+ * registered, {@code POST /authorize} passes it the user's choice — the {@code choice.<name>}
+ * query parameters, preselected by {@code scope} — and seals what it returns in the code, under
+ * the claim {@value OAuthTokenIssuers#CODE_CLAIM}. From then on that code is the issuer's:
+ * {@code POST /token} asks it for the token and never falls back to the JWT.
  *
  * <h2>Stateless authorization codes</h2>
  * <p>The authorization code is a short-lived JWT signed with the shared
@@ -123,15 +141,61 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     private String loginUrl;
     private List<String> allowedRedirectUris;
+
+    /**
+     * Per-request override of {@code login-url}, for an instance serving more than one tenant.
+     *
+     * <p>The configured value is one page for the whole node — the right shape for a single
+     * deployment, the wrong one where each tenant has its own sign-in page with its own brand on
+     * it. An interceptor that knows which tenant a request belongs to attaches this; the configured
+     * value stays the fallback.
+     */
+    public static final String OVERRIDE_LOGIN_URL = "override-oauth-login-url";
+
+    /**
+     * Per-request override of {@code allowed-redirect-uris}, same reasoning: one tenant's clients
+     * are not another's. Attached as a {@code List<String>}.
+     */
+    public static final String OVERRIDE_ALLOWED_REDIRECT_URIS = "override-oauth-allowed-redirect-uris";
     private volatile DefaultJwtIssuer jwtIssuer;
+
+    static final String AUTHORIZE_URI = "/authorize";
+    static final String OFFER_URI = "/authorize/offer";
+    static final String PROVIDERS_URI = "/authorize/providers";
+
+    /** The registered {@link OAuthTokenIssuer}, resolved on first use; {@code null} until then. */
+    private volatile Optional<OAuthTokenIssuer> tokenIssuer;
 
     @OnInit
     public void init() {
         this.loginUrl = argOrDefault(config, "login-url", null);
         this.allowedRedirectUris = argOrDefault(config, "allowed-redirect-uris", List.of());
 
-        // allow unauthenticated GET (redirect to login) and authenticated POST (issue code)
-        aclRegistry.registerAllow(req -> "/authorize".equals(req.getPath()));
+        // allow unauthenticated GET (redirect to login) and authenticated POST (issue code);
+        // /authorize/offer answers 401 itself when no credentials come with it
+        aclRegistry.registerAllow(req -> AUTHORIZE_URI.equals(req.getPath()) || OFFER_URI.equals(req.getPath())
+                || PROVIDERS_URI.equals(req.getPath()));
+    }
+
+    /**
+     * The deployment's {@link OAuthTokenIssuer}, or empty. Providers may initialise after this
+     * service does, so the lookup waits for the first request that needs it.
+     */
+    private Optional<OAuthTokenIssuer> tokenIssuer() {
+        var local = this.tokenIssuer;
+
+        if (local == null) {
+            synchronized (this) {
+                local = this.tokenIssuer;
+                if (local == null) {
+                    local = OAuthTokenIssuers.discover(registry, this);
+                    local.ifPresent(i -> LOGGER.info("Authorization Code flow issues tokens through '{}'", i.getClass().getName()));
+                    this.tokenIssuer = local;
+                }
+            }
+        }
+
+        return local;
     }
 
     /**
@@ -161,12 +225,183 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
+        if (PROVIDERS_URI.equals(request.getPath())) {
+            switch (request.getMethod()) {
+                case GET -> handleProviders(request, response);
+                case OPTIONS -> handleOptions(request);
+                default -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+            return;
+        }
+
+        if (OFFER_URI.equals(request.getPath())) {
+            switch (request.getMethod()) {
+                case GET -> handleOffer(request, response);
+                case OPTIONS -> handleOptions(request);
+                default -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+            return;
+        }
+
         switch (request.getMethod()) {
             case GET -> handleGet(request, response);
             case POST -> handlePost(request, response);
             case OPTIONS -> handleOptions(request);
             default -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /authorize/providers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Which social providers this deployment can sign the person in with, for the sign-in page to
+     * offer as buttons: {@code {"providers":["google"]}}, and {@code []} when there are none or
+     * when nothing implements {@link OAuthProviderRegistry} on this instance.
+     *
+     * <p>Unauthenticated, like {@code GET /authorize}: it is asked before anyone has signed in, and
+     * it says nothing a person could not learn by looking at the page they were sent to. The
+     * answer is per request because a deployment configures providers per tenant.
+     */
+    private void handleProviders(ByteArrayRequest request, ByteArrayResponse response) {
+        var providers = providerRegistry()
+                .map(registry -> registry.availableProviders(request))
+                .orElseGet(List::of);
+
+        var array = new StringBuilder();
+        providers.forEach(name -> array.append(array.isEmpty() ? "" : ",").append('"').append(name.replace("\"", "")).append('"'));
+
+        response.setContent(("{\"providers\":[" + array + "]}").getBytes(StandardCharsets.UTF_8));
+        response.setContentTypeAsJson();
+        response.setStatusCode(HttpStatus.SC_OK);
+    }
+
+    /**
+     * The registry of social providers, found by type among the registered providers exactly as
+     * the token issuer is: nothing has to agree on a name, and an instance without the accounts
+     * module simply has none. Resolved on every call rather than cached, because it is asked once
+     * per page load and a cached empty answer would outlive a module initialising after this one.
+     */
+    private Optional<OAuthProviderRegistry> providerRegistry() {
+        for (var record : registry.getProviders()) {
+            var instance = record.getInstance();
+
+            if (OAuthProviderRegistry.class.isAssignableFrom(instance.rawType())
+                    && instance.get(null) instanceof OAuthProviderRegistry found) {
+                return Optional.of(found);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /authorize/offer
+    // -------------------------------------------------------------------------
+
+    /**
+     * What the sign-in page may offer the account whose credentials it is about to submit.
+     *
+     * <p>Three answers, and the page acts on each: {@code 204}, no issuer or nothing to choose,
+     * submit at once; {@code 200}, an offer to render; {@code 403}, a refusal to show and stop
+     * at. Unauthenticated is {@code 401}, so the page learns about a wrong password here rather
+     * than after a redirect.
+     */
+    private void handleOffer(ByteArrayRequest request, ByteArrayResponse response) {
+        var account = request.getAuthenticatedAccount();
+
+        if (account == null) {
+            if (!request.getExchange().getRequestHeaders().contains("No-Auth-Challenge")
+                    && !request.getExchange().getQueryParameters().containsKey("noauthchallenge")) {
+                response.getHeaders().put(
+                        HttpString.tryFromString("WWW-Authenticate"),
+                        "Basic realm=\"RESTHeart\"");
+            }
+            response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
+            return;
+        }
+
+        response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
+
+        var issuer = tokenIssuer();
+
+        if (issuer.isEmpty()) {
+            response.setStatusCode(HttpStatus.SC_NO_CONTENT);
+            return;
+        }
+
+        Optional<OAuthTokenIssuer.Offer> offer;
+
+        try {
+            offer = issuer.get().offer(account, request);
+        } catch (OAuthTokenIssuer.Refusal r) {
+            LOGGER.debug("Token issuer refused an offer to '{}': {} - {}", account.getPrincipal().getName(), r.error(), r.description());
+            sendError(response, HttpStatus.SC_FORBIDDEN, r.error(), r.description());
+            return;
+        }
+
+        if (offer == null || offer.isEmpty()) {
+            response.setStatusCode(HttpStatus.SC_NO_CONTENT);
+            return;
+        }
+
+        response.setContent(toJson(offer.get()).toString().getBytes(StandardCharsets.UTF_8));
+        response.setContentTypeAsJson();
+        response.setStatusCode(HttpStatus.SC_OK);
+    }
+
+    /** The offer as the page reads it. Names are the JSON the page's script expects. */
+    static JsonObject toJson(OAuthTokenIssuer.Offer offer) {
+        var json = new JsonObject();
+
+        if (offer.title() != null) {
+            json.addProperty("title", offer.title());
+        }
+
+        if (offer.message() != null) {
+            json.addProperty("message", offer.message());
+        }
+
+        var choices = new JsonArray();
+
+        for (var choice : offer.choices()) {
+            var c = new JsonObject();
+            c.addProperty("name", choice.name());
+            c.addProperty("label", choice.label());
+            c.addProperty("type", choice.type().name().toLowerCase());
+
+            if (choice.type() == OAuthTokenIssuer.Type.SELECT) {
+                var options = new JsonArray();
+
+                for (var option : choice.options()) {
+                    var o = new JsonObject();
+                    o.addProperty("value", option.value());
+                    o.addProperty("label", option.label() != null ? option.label() : option.value());
+                    options.add(o);
+                }
+
+                c.add("options", options);
+            }
+
+            if (choice.min() != null) {
+                c.addProperty("min", choice.min());
+            }
+
+            if (choice.max() != null) {
+                c.addProperty("max", choice.max());
+            }
+
+            if (choice.value() != null) {
+                c.addProperty("value", choice.value());
+            }
+
+            choices.add(c);
+        }
+
+        json.add("choices", choices);
+
+        return json;
     }
 
     // -------------------------------------------------------------------------
@@ -180,6 +415,8 @@ public class OAuthAuthorizationService implements ByteArrayService {
      * {@code code_challenge_method}).
      */
     private void handleGet(ByteArrayRequest request, ByteArrayResponse response) {
+        var loginUrl = loginUrl(request);
+
         if (loginUrl == null || loginUrl.isBlank()) {
             sendError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "server_error", "login-url is not configured");
@@ -200,7 +437,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
                     "invalid_request", "redirect_uri is required");
             return;
         }
-        if (!isAllowedRedirectUri(redirectUri)) {
+        if (!isAllowedRedirectUri(redirectUri, request)) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
                     "invalid_request", "redirect_uri is not in the allowed list");
             return;
@@ -245,6 +482,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
             // If credentials came from form body (browser login UI), redirect back to login with error
             var fromForm = request.getExchange()
                     .getAttachment(FormDataToBasicAuthInterceptor.FORM_CREDENTIALS_FOR_AUTHORIZE);
+            var loginUrl = loginUrl(request);
             if (Boolean.TRUE.equals(fromForm) && loginUrl != null && !loginUrl.isBlank()) {
                 var queryString = request.getExchange().getQueryString();
                 var separator = loginUrl.contains("?") ? "&" : "?";
@@ -280,7 +518,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
                     "invalid_request", "redirect_uri is required");
             return;
         }
-        if (!isAllowedRedirectUri(redirectUri)) {
+        if (!isAllowedRedirectUri(redirectUri, request)) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
                     "invalid_request", "redirect_uri is not in the allowed list");
             return;
@@ -294,6 +532,26 @@ public class OAuthAuthorizationService implements ByteArrayService {
             redirectWithError(response, redirectUri, state,
                     "invalid_request", "code_challenge_method must be 'S256'");
             return;
+        }
+
+        // What the registered issuer seals in the code, if there is one and it has something to
+        // say: from here on the code is the issuer's, and /token will not answer it with the JWT.
+        Map<String, Object> sealed = Map.of();
+
+        var tokenIssuer = tokenIssuer();
+
+        if (tokenIssuer.isPresent()) {
+            var choice = OAuthTokenIssuers.choiceOf(params);
+
+            try {
+                var claims = tokenIssuer.get().claims(account, request, choice);
+                sealed = claims == null ? Map.of() : claims;
+            } catch (OAuthTokenIssuer.Refusal r) {
+                LOGGER.debug("Token issuer refused the choice {} of '{}': {} - {}", choice,
+                        account.getPrincipal().getName(), r.error(), r.description());
+                refuse(request, response, redirectUri, state, r);
+                return;
+            }
         }
 
         // Issue authorization code as a short-lived signed JWT.
@@ -317,6 +575,12 @@ public class OAuthAuthorizationService implements ByteArrayService {
                     DefaultJwtIssuer.claimsOverride(request));
         }
 
+        if (!sealed.isEmpty()) {
+            // Signed, not encrypted, and about to travel in a redirect URL: the issuer was told
+            // never to put a secret here.
+            codeBuilder = codeBuilder.withClaim(OAuthTokenIssuers.CODE_CLAIM, sealed);
+        }
+
         var code = jwtIssuer.sign(codeBuilder);
 
         var sb = new StringBuilder(redirectUri);
@@ -337,11 +601,25 @@ public class OAuthAuthorizationService implements ByteArrayService {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private boolean isAllowedRedirectUri(String uri) {
-        for (var pattern : allowedRedirectUris) {
+    private boolean isAllowedRedirectUri(String uri, Request<?> request) {
+        for (var pattern : allowedRedirectUris(request)) {
             if (matchesPattern(pattern, uri)) return true;
         }
         return false;
+    }
+
+    /** The tenant's sign-in page when one was attached, the configured one otherwise. */
+    private String loginUrl(Request<?> request) {
+        return request != null && request.attachedParam(OVERRIDE_LOGIN_URL) instanceof String s && !s.isBlank()
+                ? s
+                : loginUrl;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> allowedRedirectUris(Request<?> request) {
+        return request != null && request.attachedParam(OVERRIDE_ALLOWED_REDIRECT_URIS) instanceof List<?> l && !l.isEmpty()
+                ? (List<String>) l
+                : allowedRedirectUris;
     }
 
     /**
@@ -363,6 +641,34 @@ public class OAuthAuthorizationService implements ByteArrayService {
         var body = "{\"error\":\"" + error + "\",\"error_description\":\"" + description + "\"}";
         response.setContent(body.getBytes(StandardCharsets.UTF_8));
         response.setContentTypeAsJson();
+    }
+
+    /**
+     * A refusal from the issuer takes the route wrong credentials take: back to the sign-in page
+     * when the credentials came from its form, so the person sees why and can choose again; to
+     * the client's {@code redirect_uri} otherwise, as an OAuth error, because there is no page.
+     */
+    private void refuse(ByteArrayRequest request, ByteArrayResponse response, String redirectUri,
+                        String state, OAuthTokenIssuer.Refusal refusal) {
+        var fromForm = request.getExchange()
+                .getAttachment(FormDataToBasicAuthInterceptor.FORM_CREDENTIALS_FOR_AUTHORIZE);
+        var loginUrl = loginUrl(request);
+
+        if (Boolean.TRUE.equals(fromForm) && loginUrl != null && !loginUrl.isBlank()) {
+            var queryString = request.getExchange().getQueryString();
+            var separator = loginUrl.contains("?") ? "&" : "?";
+            var sb = new StringBuilder(loginUrl).append(separator)
+                    .append("error=").append(encode(refusal.error()))
+                    .append("&error_description=").append(encode(refusal.description()));
+            if (queryString != null && !queryString.isBlank()) {
+                sb.append("&").append(queryString);
+            }
+            response.getHeaders().put(Headers.LOCATION, sb.toString());
+            response.setStatusCode(HttpStatus.SC_MOVED_TEMPORARILY);
+            return;
+        }
+
+        redirectWithError(response, redirectUri, state, refusal.error(), refusal.description());
     }
 
     private void redirectWithError(ByteArrayResponse response, String redirectUri,

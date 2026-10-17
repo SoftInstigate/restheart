@@ -24,6 +24,7 @@ package org.restheart.metrics;
 import io.undertow.util.PathTemplate;
 import io.undertow.util.PathTemplateMatcher;
 import io.undertow.util.PathTemplateMatcher.PathMatchResult;
+import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.Inject;
@@ -124,6 +125,15 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
 
     @Override
     public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
+        // A request RESTHeart dispatched to itself is the second half of one operation, not a
+        // second operation: the MCP call_api tool and resources/read run an action through the
+        // whole chain in-process, and the /mcp request that asked for it is already counted.
+        // Timing both makes one agent call look like two, which is what a deployment bills on.
+        // Same condition RequestLogger uses to keep one log line per operation.
+        if (Exchange.isInProcess(request.getExchange())) {
+            return false;
+        }
+
         var uri = request.getPath();
         var matchInclude = this.include.stream().anyMatch(ptm -> ptm.match(uri) != null);
 

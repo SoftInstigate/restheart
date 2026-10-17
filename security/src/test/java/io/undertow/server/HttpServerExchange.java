@@ -156,8 +156,27 @@ public class HttpServerExchange extends AbstractAttachable {
         return null;
     }
 
+    private final HeaderMap requestHeaders = new HeaderMap();
+
     public HeaderMap getRequestHeaders() {
-        return null;
+        return requestHeaders;
+    }
+
+    private String requestScheme = "http";
+
+    public String getRequestScheme() {
+        return requestScheme;
+    }
+
+    public HttpServerExchange setRequestScheme(String requestScheme) {
+        this.requestScheme = requestScheme;
+        return this;
+    }
+
+    private final HeaderMap responseHeaders = new HeaderMap();
+
+    public HeaderMap getResponseHeaders() {
+        return responseHeaders;
     }
 
     public SecurityContext getSecurityContext() {

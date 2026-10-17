@@ -23,15 +23,27 @@ package org.restheart.ai.mcp;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
+import org.restheart.cache.Cache;
+import org.restheart.cache.CacheFactory;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +98,68 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     private final McpJsonMapper jsonMapper;
     private McpStreamableServerSession.Factory sessionFactory;
     private final ConcurrentHashMap<String, McpStreamableServerSession> sessions = new ConcurrentHashMap<>();
+    private final SessionActivity activity = new SessionActivity();
+
+    /**
+     * The sessions this transport ended for being idle, remembered for a day so that a request
+     * still carrying one is answered {@code 404}, as the Streamable HTTP spec requires for a
+     * terminated session: the client then sends a new {@code InitializeRequest} and gets its
+     * protocol version, capabilities and subscriptions back. A session id unknown for any other
+     * reason, typically a server restart, is still recovered transparently.
+     *
+     * <p>Shared by every transport of a service, see {@link #expiredSessions}: a scope whose
+     * last session expired is disposed, and a transport of its own would forget with it.
+     */
+    private volatile Cache<String, Boolean> expired = newExpiredSessions();
+
+    /** The memory of ended sessions {@link #expired} is kept in: a day, ten thousand ids. */
+    static Cache<String, Boolean> newExpiredSessions() {
+        return CacheFactory.createLocalCache(10_000, Cache.EXPIRE_POLICY.AFTER_WRITE, Duration.ofDays(1).toMillis());
+    }
+
+    /** Shares one memory of expired sessions among the transports of a service. */
+    public void expiredSessions(Cache<String, Boolean> expired) {
+        this.expired = expired;
+    }
+
+    /** Sessions never ended for being idle; see {@link #keepAlive}. */
+    private volatile Predicate<String> keepAlive = sessionId -> false;
+
+    /**
+     * Sessions that are not ended for being idle, whatever their idle time: those subscribed to
+     * a resource, whose client expects notifications.
+     */
+    public void keepAlive(Predicate<String> keepAlive) {
+        this.keepAlive = keepAlive;
+    }
     private volatile boolean isClosing = false;
+
+    /**
+     * Told when a session ends. A subscription lives on its session, and the SDK forgets its own
+     * without saying so, so whatever is being held on that session's behalf — a change stream, for
+     * one — has to be released here (#617).
+     */
+    private volatile java.util.function.Consumer<String> onSessionEnded;
+
+    public void onSessionEnded(java.util.function.Consumer<String> listener) {
+        this.onSessionEnded = listener;
+    }
+
+    /** How often an idle SSE stream gets a comment line, in milliseconds; 0 or less sends none. */
+    private volatile long streamKeepAliveMs = 0;
+
+    /**
+     * Sends a comment line on an SSE stream that has been silent for the given interval. A stream
+     * with nothing to report sends nothing at all, and a load balancer or proxy in front of
+     * RESTHeart drops a connection idle for its timeout without closing it: the client keeps
+     * waiting for messages that will never arrive. The comment keeps the connection in use, and
+     * one that cannot be written ends the stream, so the client sees it end and reconnects.
+     *
+     * @param millis the interval; 0 or less sends none
+     */
+    public void streamKeepAlive(long millis) {
+        this.streamKeepAliveMs = millis;
+    }
 
     public UndertowStreamableServerTransportProvider(McpJsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
@@ -110,11 +183,54 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         this.sessionFactory = sessionFactory;
     }
 
+    /**
+     * Sends a notification to one session — what {@code resources/subscribe} needs (#617).
+     *
+     * <p>The SDK routes {@code notifications/resources/updated} through here, to the sessions it
+     * has recorded as subscribed to that URI, rather than broadcasting: a subscription is a
+     * promise made to one client. The interface's default implementation refuses with
+     * {@code UnsupportedOperationException}, and {@code notifyResourcesUpdated} swallows that
+     * error, so a provider that does not override this advertises subscriptions and then silently
+     * delivers nothing.
+     */
+    @Override
+    public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+        var session = sessions.get(sessionId);
+
+        if (session == null) {
+            // it ended between the change and this notification; nothing to deliver it to
+            return Mono.empty();
+        }
+
+        return Mono.fromRunnable(() -> {
+            try {
+                session.sendNotification(method, params).block();
+            } catch (Exception e) {
+                if (isMissingStream(e)) {
+                    // the session exists but has no open GET stream right now — see notifyClients
+                    LOGGER.trace("Skipped notifying session {} (no active stream): {}", sessionId, e.getMessage());
+                } else {
+                    LOGGER.error("Failed to notify session {}: {}", sessionId, e.getMessage());
+                }
+            }
+        });
+    }
+
+    /**
+     * Whether any session is still live on this transport.
+     *
+     * <p>Read when a session ends, to decide whether the scope this transport serves still has a
+     * reason to exist.
+     */
+    boolean hasSessions() {
+        return !sessions.isEmpty();
+    }
+
     @Override
     public Mono<Void> notifyClients(String method, Object params) {
         if (sessions.isEmpty()) return Mono.empty();
         return Mono.fromRunnable(() ->
-                sessions.values().parallelStream().forEach(session -> {
+                onEverySession("notifying clients of " + method, session -> {
                     try {
                         session.sendNotification(method, params).block();
                     } catch (Exception e) {
@@ -131,8 +247,9 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                             // list_changed notifications are best-effort per spec; the client simply
                             // learns of the change on its next request instead. Logging this at ERROR
                             // would spam the log on every catalog TTL expiry for every non-streaming
-                            // session — which is the common case.
-                            LOGGER.debug("Skipped notifying session {} (no active stream): {}", session.getId(), e.getMessage());
+                            // session — which is the common case; even DEBUG was one line per session
+                            // per expiry, so it is TRACE.
+                            LOGGER.trace("Skipped notifying session {} (no active stream): {}", session.getId(), e.getMessage());
                         } else {
                             LOGGER.error("Failed to notify session {}: {}", session.getId(), e.getMessage());
                         }
@@ -141,15 +258,100 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         );
     }
 
+    /**
+     * Runs {@code action} once per live session, one virtual thread each, and returns when they
+     * have all finished.
+     *
+     * <p>Not {@code parallelStream()}, which was here before: that runs on the JVM-wide
+     * {@code ForkJoinPool.commonPool} — platform threads — and every action here blocks, on an SSE
+     * write or on a session close. Blocking a shared, CPU-sized pool is the one thing it must not
+     * be used for, and it contradicts RESTHeart's threading model, where blocking work belongs on
+     * a virtual thread. The fan-out is kept: a slow client must not delay the notification of the
+     * others.
+     */
+    private void onEverySession(String what, Consumer<McpStreamableServerSession> action) {
+        var tasks = sessions.values().stream()
+                .map(session -> (Callable<Void>) () -> {
+                    action.accept(session);
+                    return null;
+                })
+                .toList();
+
+        if (tasks.isEmpty()) {
+            return;
+        }
+
+        try {
+            ThreadsUtils.virtualThreadsExecutor().invokeAll(tasks);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Interrupted while {}", what);
+        }
+    }
+
+    /**
+     * Waits for a task submitted to RESTHeart's virtual threads executor, as {@code join} waits
+     * for a thread. The tasks passed here handle their own failures, so an
+     * {@code ExecutionException} is only logged.
+     */
+    private static void awaitDone(Future<?> task) throws InterruptedException {
+        try {
+            task.get();
+        } catch (ExecutionException e) {
+            LOGGER.warn("MCP response task failed: {}", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+        }
+    }
+
     private static boolean isMissingStream(Exception e) {
         return e instanceof IllegalStateException && e.getMessage() != null && e.getMessage().startsWith("Stream unavailable for session");
+    }
+
+    /**
+     * Ends the sessions nobody has used for longer than {@code timeout} and that have no open
+     * stream: the ones a client left without sending {@code DELETE}. They are released exactly
+     * as a {@code DELETE} would release them. A session subscribed to a resource is never ended
+     * this way, see {@link #keepAlive}. A client that comes back later is answered {@code 404}
+     * and re-initializes, see {@code expired}.
+     *
+     * @return how many sessions were ended
+     */
+    int expireIdle(Duration timeout) {
+        var ended = 0;
+
+        for (var sessionId : activity.idle(timeout)) {
+            if (keepAlive.test(sessionId)) {
+                continue;
+            }
+
+            var session = sessions.remove(sessionId);
+            activity.forget(sessionId);
+            expired.put(sessionId, Boolean.TRUE);
+
+            if (session == null) {
+                continue;
+            }
+
+            ended++;
+
+            if (onSessionEnded != null) {
+                onSessionEnded.accept(sessionId);
+            }
+
+            try {
+                session.closeGracefully().block();
+            } catch (Exception e) {
+                LOGGER.debug("closing idle MCP session {} failed: {}", sessionId, e.getMessage());
+            }
+        }
+
+        return ended;
     }
 
     @Override
     public Mono<Void> closeGracefully() {
         return Mono.fromRunnable(() -> {
             isClosing = true;
-            sessions.values().parallelStream().forEach(session -> {
+            onEverySession("closing sessions", session -> {
                 try {
                     session.closeGracefully().block();
                 } catch (Exception ignored) {
@@ -205,6 +407,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 });
                 var init = sessionFactory.startSession(initReq);
                 sessions.put(init.session().getId(), init.session());
+                activity.touch(init.session().getId());
 
                 McpSchema.InitializeResult result = init.initResult()
                         .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
@@ -235,6 +438,14 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         }
 
         McpStreamableServerSession session = sessions.get(sessionId);
+        if (session == null && expired.get(sessionId) != null) {
+            // ended for being idle: the spec's answer to a terminated session, so the client
+            // re-initializes and gets back what a recovered session would not have
+            res.setStatusCode(HttpStatus.SC_NOT_FOUND);
+            res.setContent("Session expired after being idle. Send a new InitializeRequest.");
+            return;
+        }
+
         if (session == null) {
             // Server is stateless — auto-recover by creating a new session transparently.
             // The stale session ID is typically caused by a server restart; since no application
@@ -250,6 +461,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 init.initResult().contextWrite(c -> c.put(McpTransportContext.KEY, ctx)).block();
                 session = init.session();
                 sessions.put(session.getId(), session);
+                activity.touch(session.getId());
                 res.getExchange().getResponseHeaders()
                         .put(new HttpString(HttpHeaders.MCP_SESSION_ID), session.getId());
                 LOGGER.info("Auto-recovered MCP session: {} → {}", sessionId, session.getId());
@@ -261,6 +473,8 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             }
         }
 
+        activity.touch(session.getId());
+
         if (message instanceof McpSchema.JSONRPCResponse rpcResp) {
             session.accept(rpcResp).contextWrite(c -> c.put(McpTransportContext.KEY, ctx)).block();
             res.setStatusCode(HttpStatus.SC_ACCEPTED);
@@ -269,39 +483,166 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             session.accept(rpcNotif).contextWrite(c -> c.put(McpTransportContext.KEY, ctx)).block();
             res.setStatusCode(HttpStatus.SC_ACCEPTED);
 
+        } else if (message instanceof McpSchema.JSONRPCRequest rpcReq && BUFFERED_METHODS.contains(rpcReq.method())) {
+            respondBuffered(session, rpcReq, sessionId, res, ctx);
+
         } else if (message instanceof McpSchema.JSONRPCRequest rpcReq) {
             // Tool call → SSE streaming response
             final var activeSession = session;
             var transport = new UndertowStreamableSessionTransport(sessionId, jsonMapper);
             res.setCustomSender(() -> {
-                var exchange = res.getExchange();
-                setSseHeaders(exchange);
-                exchange.startBlocking();
-
-                // Run responseStream on a virtual thread; it calls transport.sendMessage() as results arrive
-                var vt = Thread.ofVirtual().start(() -> {
-                    try {
-                        activeSession.responseStream(rpcReq, transport)
-                                .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
-                                .block();
-                    } catch (Exception e) {
-                        LOGGER.warn("responseStream error for session {}: {}", sessionId, e.getMessage());
-                    } finally {
-                        transport.close();
-                    }
-                });
-
-                drainQueueToExchange(transport, exchange);
+                activity.streamOpened(activeSession.getId());
                 try {
-                    vt.join();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                    streamToolCall(activeSession, rpcReq, transport, res, ctx, sessionId);
+                } finally {
+                    activity.streamClosed(activeSession.getId());
                 }
             });
         } else {
             res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             res.setContent("Unknown JSON-RPC message type");
         }
+    }
+
+    /**
+     * Streams one tool call's messages as SSE into the exchange, on the request's thread, while
+     * the call itself runs on a virtual thread of its own.
+     */
+    private void streamToolCall(McpStreamableServerSession activeSession, McpSchema.JSONRPCRequest rpcReq,
+                                UndertowStreamableSessionTransport transport, ByteArrayResponse res, McpTransportContext ctx, String sessionId) {
+        var exchange = res.getExchange();
+        setSseHeaders(exchange);
+        exchange.startBlocking();
+
+        // Run responseStream on a virtual thread; it calls transport.sendMessage() as results arrive
+        var responding = ThreadsUtils.virtualThreadsExecutor().submit(() -> {
+            try {
+                activeSession.responseStream(rpcReq, transport)
+                        .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
+                        .block();
+            } catch (Exception e) {
+                LOGGER.warn("responseStream error for session {}: {}", sessionId, e.getMessage());
+            } finally {
+                transport.close();
+            }
+        });
+
+        drainQueueToExchange(transport, exchange, streamKeepAliveMs);
+        try {
+            awaitDone(responding);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * The JSON-RPC methods answered with exactly one message and nothing streamed.
+     *
+     * <p>These go back through RESTHeart's own {@code ResponseSender} as {@code application/json},
+     * not through {@code setCustomSender} writing SSE into the exchange. Two reasons. The
+     * Streamable HTTP spec expects a plain JSON response when there is nothing to stream, and
+     * framing a single line as an event stream is ceremony the client has to unwrap. More
+     * importantly, a response written by a custom sender never passes the standard response
+     * pipeline, so no {@code InterceptPoint.RESPONSE} interceptor can see or change it — which is
+     * how a per-caller filter on {@code resources/list} becomes possible at all.
+     *
+     * <p>Deliberately a list of methods rather than a guess: {@code tools/call} may legitimately
+     * emit progress notifications or a sampling request before its result, and buffering those
+     * would hold back a stream that exists to be incremental.
+     */
+    private static final Set<String> BUFFERED_METHODS = Set.of(
+            McpSchema.METHOD_RESOURCES_LIST,
+            McpSchema.METHOD_RESOURCES_TEMPLATES_LIST,
+            McpSchema.METHOD_RESOURCES_READ,
+            McpSchema.METHOD_TOOLS_LIST,
+            McpSchema.METHOD_PROMPT_LIST,
+            McpSchema.METHOD_PING);
+
+    /**
+     * Runs a request to completion and answers with its single message, letting RESTHeart send it.
+     *
+     * <p>If the SDK ever emits more than one message for a method listed in {@link
+     * #BUFFERED_METHODS} the response falls back to SSE: nothing has been written to the exchange
+     * yet at that point, so the choice is still open, and dropping the extra messages would be
+     * worse than a slightly unexpected content type.
+     */
+    /** The request id, rendered as JSON: echoing it is what lets the client match the error to its call. */
+    private static String jsonId(McpSchema.JSONRPCRequest rpcReq) {
+        var id = rpcReq.id();
+
+        if (id == null) {
+            return "null";
+        }
+
+        return id instanceof Number ? id.toString() : "\"" + id.toString().replace("\"", "\\\"") + "\"";
+    }
+
+    private void respondBuffered(McpStreamableServerSession session, McpSchema.JSONRPCRequest rpcReq,
+                                 String sessionId, ByteArrayResponse res, McpTransportContext ctx) {
+        var transport = new UndertowStreamableSessionTransport(sessionId, jsonMapper, false);
+        var messages = new ArrayList<String>();
+
+        var responding = ThreadsUtils.virtualThreadsExecutor().submit(() -> {
+            try {
+                session.responseStream(rpcReq, transport)
+                        .contextWrite(c -> c.put(McpTransportContext.KEY, ctx))
+                        .block();
+            } catch (Exception e) {
+                LOGGER.warn("responseStream error for session {}: {}", sessionId, e.getMessage());
+            } finally {
+                transport.close();
+            }
+        });
+
+        try {
+            String message;
+            while ((message = transport.take()) != null) {
+                messages.add(message);
+            }
+            awaitDone(responding);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            transport.close();
+        }
+
+        if (messages.size() == 1) {
+            res.setContentType(APPLICATION_JSON);
+            res.setContent(messages.get(0));
+            return;
+        }
+
+        // No message at all means the session failed to produce one — responseStream threw, and
+        // the exception above was only logged, or it completed having emitted nothing. Falling
+        // through to SSE would answer 200 with a well-formed stream carrying zero events, and a
+        // client waiting for a reply to its request would wait for one that is never coming. A
+        // failure has to look like a failure.
+        if (messages.isEmpty()) {
+            LOGGER.warn("{} produced no message for session {}; answering 500 rather than an empty stream",
+                    rpcReq.method(), sessionId);
+
+            res.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            res.setContentType(APPLICATION_JSON);
+            res.setContent("{\"jsonrpc\":\"2.0\",\"id\":" + jsonId(rpcReq)
+                    + ",\"error\":{\"code\":-32603,\"message\":\"Internal error: the server produced no response\"}}");
+            return;
+        }
+
+        LOGGER.debug("{} produced {} messages; answering with SSE after all", rpcReq.method(), messages.size());
+
+        res.setCustomSender(() -> {
+            var exchange = res.getExchange();
+            setSseHeaders(exchange);
+            exchange.startBlocking();
+            try (var out = exchange.getOutputStream()) {
+                for (var m : messages) {
+                    out.write(UndertowStreamableSessionTransport
+                            .formatSseEvent(MESSAGE_EVENT_TYPE, m, null).getBytes(StandardCharsets.UTF_8));
+                }
+                out.flush();
+            } catch (IOException e) {
+                LOGGER.debug("SSE write failed for session {}: {}", sessionId, e.getMessage());
+            }
+        });
     }
 
     /**
@@ -345,10 +686,12 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             var exchange = res.getExchange();
             setSseHeaders(exchange);
             exchange.startBlocking();
+            activity.streamOpened(sessionId);
             try {
-                drainQueueToExchange(transport, exchange);
+                drainQueueToExchange(transport, exchange, streamKeepAliveMs);
             } finally {
                 listeningStream.close();
+                activity.streamClosed(sessionId);
             }
         });
     }
@@ -370,9 +713,16 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         }
 
         McpStreamableServerSession session = sessions.remove(sessionId);
+        activity.forget(sessionId);
         if (session == null) {
             res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;
+        }
+
+        // the session is where a subscription actually lives: the SDK forgets its own without
+        // saying so, and anything still watching on its behalf has to stop (#617)
+        if (onSessionEnded != null) {
+            onSessionEnded.accept(sessionId);
         }
 
         try {
@@ -396,18 +746,32 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
     }
 
+    /** The SSE comment written on a silent stream, see {@link #streamKeepAlive}. */
+    private static final byte[] KEEP_ALIVE_COMMENT = ":\n\n".getBytes(StandardCharsets.UTF_8);
+
     /**
      * Blocks on the transport's event queue, writing SSE events to the exchange
-     * output stream until the transport signals close (null sentinel).
+     * output stream until the transport signals close (null sentinel). A stream silent for
+     * {@code keepAliveMs} gets a comment line, see {@link #streamKeepAlive}.
      */
     private static void drainQueueToExchange(UndertowStreamableSessionTransport transport,
-                                             HttpServerExchange exchange) {
+                                             HttpServerExchange exchange, long keepAliveMs) {
         try {
             OutputStream out = exchange.getOutputStream();
+            // the status and headers go out now: a client, or a proxy in front of RESTHeart,
+            // otherwise waits for them until the first message, which may never come
+            out.flush();
             while (true) {
-                String event = transport.take(); // blocks; null = close signal
-                if (event == null) break;
-                out.write(event.getBytes(StandardCharsets.UTF_8));
+                var next = keepAliveMs > 0 ? transport.poll(keepAliveMs) : Optional.of(Optional.ofNullable(transport.take()));
+                if (next.isEmpty()) {
+                    // silent for keepAliveMs: a write that fails ends the stream below
+                    out.write(KEEP_ALIVE_COMMENT);
+                    out.flush();
+                    continue;
+                }
+                var event = next.get();
+                if (event.isEmpty()) break; // close signal
+                out.write(event.get().getBytes(StandardCharsets.UTF_8));
                 out.flush();
             }
         } catch (IOException e) {
@@ -442,15 +806,36 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         private volatile boolean closed = false;
         private final ReentrantLock lock = new ReentrantLock();
 
+        /**
+         * When false the queue carries the raw JSON-RPC message instead of an SSE frame, so a
+         * caller that is buffering a single response can hand it to RESTHeart's own response
+         * sender rather than writing the exchange itself. See {@link #BUFFERED_METHODS}.
+         */
+        private final boolean sseFraming;
+
         UndertowStreamableSessionTransport(String sessionId, McpJsonMapper jsonMapper) {
+            this(sessionId, jsonMapper, true);
+        }
+
+        UndertowStreamableSessionTransport(String sessionId, McpJsonMapper jsonMapper, boolean sseFraming) {
             this.sessionId = sessionId;
             this.jsonMapper = jsonMapper;
+            this.sseFraming = sseFraming;
         }
 
         /** Blocks until the next SSE event string is available; returns {@code null} on close. */
         String take() throws InterruptedException {
             var opt = queue.take();
             return opt.isPresent() ? opt.get() : null;
+        }
+
+        /**
+         * Waits up to {@code millis} for the next SSE event.
+         *
+         * @return empty when nothing arrived in time; otherwise the event, or an empty event on close
+         */
+        Optional<Optional<String>> poll(long millis) throws InterruptedException {
+            return Optional.ofNullable(queue.poll(millis, TimeUnit.MILLISECONDS));
         }
 
         @Override
@@ -466,7 +851,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 try {
                     if (closed) return;
                     String json = jsonMapper.writeValueAsString(message);
-                    queue.put(Optional.of(formatSseEvent(MESSAGE_EVENT_TYPE, json, messageId)));
+                    queue.put(Optional.of(sseFraming ? formatSseEvent(MESSAGE_EVENT_TYPE, json, messageId) : json));
                 } catch (Exception e) {
                     LOGGER.error("Failed to queue SSE message for session {}: {}", sessionId, e.getMessage());
                 } finally {
@@ -497,7 +882,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             }
         }
 
-        private static String formatSseEvent(String eventType, String data, String id) {
+        static String formatSseEvent(String eventType, String data, String id) {
             var sb = new StringBuilder();
             if (id != null) sb.append("id: ").append(id).append('\n');
             sb.append("event: ").append(eventType).append('\n');

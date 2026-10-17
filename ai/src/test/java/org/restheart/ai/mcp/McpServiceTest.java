@@ -21,6 +21,8 @@
 package org.restheart.ai.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -94,40 +96,98 @@ public class McpServiceTest {
 
         @SuppressWarnings("unchecked")
         var properties = (Map<String, Object>) tool.inputSchema().get("properties");
-        // no "token": the descriptor never carries a credential, so it stays stable and reusable —
-        // get_token issues one separately, when the caller is about to send the request
+        // no "token": the descriptor never carries a credential — it is documentation for code
+        // the agent writes for the user, and the user's own credential goes in the placeholder
         assertEquals(Set.of("resource", "action", "args", "transport"), properties.keySet());
     }
 
     @Test
-    public void howToCallToolDefinition_descriptionPointsAtGetToken() {
+    public void howToCallToolDefinition_describesAndPointsAtCallApiForExecution() {
         var description = McpService.howToCallToolDefinition().description();
 
-        assertTrue(description.contains(DescriptorRenderer.TOKEN_PLACEHOLDER),
+        assertTrue(description.contains(DescriptorRenderer.CREDENTIAL_PLACEHOLDER),
                 "must quote the placeholder it actually emits, so the agent can match the two");
-        assertTrue(description.contains("get_token"), "must name the tool that fills the placeholder in");
+        assertTrue(description.contains("call_api"), "must name the tool that executes, or an agent reads this as the way to act");
     }
 
     @Test
-    public void getTokenToolDefinition_takesNoArguments() {
-        var tool = McpService.getTokenToolDefinition();
+    public void callApiToolDefinition_takesWhatHowToCallTakes_andStatesTheWorstCase() {
+        var tool = McpService.callApiToolDefinition();
 
-        assertEquals("get_token", tool.name());
+        assertEquals("call_api", tool.name());
 
         @SuppressWarnings("unchecked")
         var properties = (Map<String, Object>) tool.inputSchema().get("properties");
-        assertTrue(properties.isEmpty(), "the token is for the current session — there is nothing to parameterize");
-        assertNull(tool.inputSchema().get("required"));
+        // the same call, executed rather than described: resource, action, args — and never a token
+        assertEquals(Set.of("resource", "action", "args"), properties.keySet());
+        assertEquals(List.of("resource", "action"), tool.inputSchema().get("required"));
+
+        // one tool for every action: a host that asks before a destructive tool asks before every call
+        assertFalse(tool.annotations().readOnlyHint(), "call_api writes");
+        assertTrue(tool.annotations().destructiveHint(), "must state the worst case, since the action is not known per tool");
+    }
+
+    /**
+     * A tool that declares an output schema must answer with structured content, so the client
+     * gets the result as data rather than as a string to parse a second time. The shape never
+     * varies with the resource being called, which is what makes declaring it possible at all.
+     */
+    @Test
+    public void callApiToolDefinition_declaresTheShapeOfItsAnswer() {
+        var schema = McpService.callApiToolDefinition().outputSchema();
+
+        assertNotNull(schema, "without an output schema a client has no reason to read structuredContent");
+        assertEquals("object", schema.get("type"));
+
+        @SuppressWarnings("unchecked")
+        var properties = (Map<String, Object>) schema.get("properties");
+        assertTrue(properties.keySet().containsAll(Set.of("status", "headers", "body")),
+                "status, headers and body are what call_api answers with");
+        assertEquals(List.of("status", "headers"), schema.get("required"),
+                "a body is not guaranteed — a 204 has none");
+
+        // a body with no type, or with a type array, is refused or misread by some clients; an
+        // object-only one would make a client that validates structuredContent reject every collection
+        @SuppressWarnings("unchecked")
+        var body = (Map<String, Object>) properties.get("body");
+        assertNull(body.get("type"), "one type per anyOf branch, never a type array");
+        @SuppressWarnings("unchecked")
+        var branches = (List<Map<String, Object>>) body.get("anyOf");
+        assertNotNull(branches, "body declares its types as anyOf branches");
+        var types = branches.stream().map(b -> b.get("type")).toList();
+        assertTrue(types.containsAll(List.of("object", "array", "string")),
+                "one document, a collection or an aggregation, a response that is not JSON");
     }
 
     @Test
-    public void getTokenToolDefinition_statesTheTokenIsShortLived() {
-        var description = McpService.getTokenToolDefinition().description();
+    public void callApiToolDefinition_tellsTheAgentANon2xxIsAResult() {
+        var description = McpService.callApiToolDefinition().description();
 
-        assertTrue(description.contains(DescriptorRenderer.TOKEN_PLACEHOLDER),
-                "must quote the placeholder it fills in");
-        assertTrue(description.contains("expires_in"),
-                "must point at the field telling the agent how long the token lasts");
+        assertTrue(description.contains("status"), "must name the field carrying the HTTP status");
+        assertTrue(description.contains("403"), "must say a refusal comes back as a status to read, not a tool error");
+        // reads too: many clients, and their subagents, have tools and no resources primitive
+        assertTrue(description.contains("`query`") && description.contains("`execute`"),
+                "must name the read actions, since call_api is the only road every client has");
+    }
+
+    @Test
+    public void callApiToolDefinition_saysAWriteAnswersWithNoBody() {
+        var description = McpService.callApiToolDefinition().description();
+
+        assertTrue(description.contains("Location"), "the id of what was created comes from the header, not the body");
+        assertTrue(description.contains("201"), "must name the status a create answers with");
+    }
+
+    @Test
+    public void instructions_sendTheAgentToTheOnlyCompleteCatalog() {
+        // a client that lists resources without also calling resources/templates/list shows a
+        // partial catalog, and nothing in the protocol tells the agent that
+        assertTrue(McpService.INSTRUCTIONS.contains("list_apis"), "must name the complete catalog");
+        assertTrue(McpService.INSTRUCTIONS.contains("resources/templates/list"),
+                "must name the method that lists what resources/list leaves out — naming the concept is not enough");
+        assertTrue(McpService.INSTRUCTIONS.contains("call_api"), "must name the one executable road");
+        assertTrue(McpService.INSTRUCTIONS.contains("reads included"),
+                "must not send reads to resources/read, which a tools-only client does not have");
     }
 
     @Test

@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,6 +52,7 @@ import org.restheart.graphql.dataloaders.AggregationBatchLoader;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
 import org.restheart.graphql.instrumentation.MaxQueryTimeInstrumentation;
 import org.restheart.graphql.mcp.GraphqlMcpAwareImpl;
+import org.restheart.graphql.models.FieldMapping;
 import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
@@ -66,7 +68,6 @@ import org.restheart.plugins.Service;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
-import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.WithProperties;
@@ -165,12 +166,13 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
         return mcpAware.describeMcp(ctx);
     }
 
-    @Override
-    public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
-        return mcpAware.describeTemplates(ctx);
-    }
-
     private static final Parser GQL_PARSER = new Parser();
+
+    /** The caller's roles, empty when unauthenticated — which sees only the fields no {@code @visible} restricts. */
+    private static Set<String> rolesOf(GraphQLRequest req) {
+        var account = req.getAuthenticatedAccount();
+        return account == null || account.getRoles() == null ? Set.of() : account.getRoles();
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -232,6 +234,11 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
         var inputBuilder = ExecutionInput.newExecutionInput()
                 .query(req.getQuery())
                 .localContext(localContext.get())
+                // The request itself, not a BSON copy of parts of it: it is what the @-variable
+                // resolvers need to answer who is asking (restheart#727). localContext cannot carry
+                // it — it is a BsonDocument — which is why only @user, copied in as BSON above, used
+                // to be available inside a mapping.
+                .graphQLContext(ctx -> ctx.put(FieldMapping.REQUEST_CONTEXT_KEY, req))
                 .dataLoaderRegistry(dataLoaderRegistry);
 
         inputBuilder.operationName(req.getOperationName());
@@ -243,7 +250,9 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
         var chainedInstrumentations = new ArrayList<Instrumentation>();
         chainedInstrumentations.add(new MaxQueryTimeInstrumentation(this.queryTimeLimit));
 
-        gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
+        // the schema this caller may see: a field their roles exclude is not in it at all, so
+        // asking for it is a validation error and introspection never mentions it (restheart#478)
+        gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema(rolesOf(req)))
                 .valueUnboxer((Object object) -> object instanceof BsonNull ? null : ValueUnboxer.DEFAULT.unbox(object))
                 .instrumentation(new ChainedInstrumentation(chainedInstrumentations))
                 .build();

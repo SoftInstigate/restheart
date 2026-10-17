@@ -23,10 +23,13 @@ package org.restheart.polyglot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
@@ -40,19 +43,15 @@ import org.slf4j.LoggerFactory;
 import com.mongodb.client.MongoClient;
 
 /**
- * Integration tests for the full polyglot Context lifecycle on the dedicated
- * platform thread.  These tests verify the fix for oracle/graal#7520:
+ * The polyglot Context lifecycle on the calling thread, virtual threads included:
  *
  * <ul>
- *   <li>Contexts created on the platform thread can be entered/evaluated
- *       without {@code ArrayIndexOutOfBoundsException} from
- *       {@code DefaultContextThreadLocal.fastGet()}.</li>
- *   <li>Bindings ({@code LOGGER}, {@code mclient}, {@code pluginArgs}) are
- *       accessible inside entered contexts.</li>
- *   <li>Contexts pooled by {@link ContextQueue} work correctly when
- *       {@code executeWithContext()} is called from virtual threads.</li>
- *   <li>Multiple concurrent virtual threads can use the same
- *       {@link ContextQueue} without corruption.</li>
+ *   <li>a Context is created, entered and evaluated on the thread that asks for it;</li>
+ *   <li>bindings ({@code LOGGER}, {@code mclient}, {@code pluginArgs}) are accessible inside an
+ *       entered context;</li>
+ *   <li>a Context pooled by {@link ContextQueue} serves {@code executeWithContext()} called from
+ *       a virtual thread, on that very thread;</li>
+ *   <li>many concurrent virtual threads share one {@link ContextQueue} without corruption.</li>
  * </ul>
  */
 class ContextLifecycleTest {
@@ -161,8 +160,69 @@ class ContextLifecycleTest {
     }
 
     @Test
-    void engineCreatedByOnPlatformThreadWorksForContextOps() throws Exception {
-        var pltEngine = PolyglotThreadUtils.onPlatformThread(Engine::create);
+    void executeWithContextRunsTheTaskOnTheCallingVirtualThread() throws Exception {
+        var cq = new ContextQueue(engine, "test-thread", null, LOGGER,
+                Optional.<MongoClient>empty(), null, Map.of());
+
+        var seen = new AtomicReference<Thread>();
+        var failure = new AtomicReference<Throwable>();
+
+        var vt = Thread.ofVirtual().unstarted(() -> {
+            try {
+                cq.executeWithContext((ContextQueue.VoidContextTask) ctx -> seen.set(Thread.currentThread()));
+            } catch (Throwable t) {
+                failure.set(t);
+            }
+        });
+        vt.start();
+        vt.join();
+
+        assertNull(failure.get(), () -> "virtual thread failed: " + failure.get());
+        assertSame(vt, seen.get());
+    }
+
+    @Test
+    void aContextCreatedOnDemandUnderLoadHasTheBindings() throws Exception {
+        // more concurrent users than the pool holds (one context per processor), each keeping
+        // its context long enough for the others to find the pool empty
+        var cq = new ContextQueue(engine, "test-load", null, LOGGER,
+                Optional.<MongoClient>empty(), null, Map.of());
+        var users = Runtime.getRuntime().availableProcessors() + 4;
+        var gate = new CountDownLatch(users);
+
+        var failures = new AtomicReference<String>();
+
+        var threads = IntStream.range(0, users)
+                .mapToObj(i -> Thread.ofVirtual().unstarted(() -> {
+                    try {
+                        var hasLogger = cq.executeWithContext((ContextQueue.ContextTask<Boolean>) ctx -> {
+                            gate.countDown();
+                            gate.await(10, TimeUnit.SECONDS);
+                            return ctx.eval("js", "typeof LOGGER !== 'undefined' && typeof pluginArgs !== 'undefined'").asBoolean();
+                        });
+                        if (!hasLogger) {
+                            failures.compareAndSet(null, "user " + i + " got a context without the bindings");
+                        }
+                    } catch (Throwable t) {
+                        failures.compareAndSet(null, "user " + i + " failed: " + t.getMessage());
+                    }
+                }))
+                .toList();
+
+        for (var t : threads) t.start();
+        for (var t : threads) t.join();
+
+        assertNull(failures.get(), failures::get);
+
+        // and the pool, once the burst is over, serves a context with the bindings too
+        var afterwards = cq.executeWithContext((ContextQueue.ContextTask<Boolean>) ctx ->
+                ctx.eval("js", "typeof LOGGER !== 'undefined'").asBoolean());
+        assertTrue(afterwards);
+    }
+
+    @Test
+    void engineCreatedByRunWorksForContextOps() throws Exception {
+        var pltEngine = PolyglotThreadUtils.run(Engine::create);
         assertNotNull(pltEngine);
 
         try {

@@ -97,6 +97,12 @@ public class SwitchTeamService implements JsonService {
             return;
         }
 
+        // asked for a cookie this server does not read: refused before anything is done
+        if (TokenDelivery.refused(req.getQueryParameterOrDefault("delivery", null), conf)) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, TokenDelivery.COOKIE_UNAVAILABLE);
+            return;
+        }
+
         var account = req.getAuthenticatedAccount();
 
         // Parse body
@@ -176,7 +182,8 @@ public class SwitchTeamService implements JsonService {
         // Deliver the reissued token per the `delivery` query parameter
         // (cookie by default, body for bearer SPAs).
         var delivery = TokenDelivery.resolve(
-                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,
+                TokenDelivery.Mode.BODY, conf);
 
         // Response body — team mirrors the { _id, role } claim shape
         var responseBody = new JsonObject();

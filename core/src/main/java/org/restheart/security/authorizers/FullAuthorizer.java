@@ -21,13 +21,16 @@
 package org.restheart.security.authorizers;
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
-import org.restheart.plugins.security.RequestDescriptor;
+import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.security.PermissionEnumerator;
+import org.restheart.security.BaseAclPermission;
 
 /**
  *
@@ -37,7 +40,7 @@ import org.restheart.plugins.security.RequestDescriptor;
         name = "fullAuthorizer",
         description = "authorizes all requests",
         enabledByDefault = false)
-public class FullAuthorizer implements DescriptorAwareAuthorizer {
+public class FullAuthorizer implements Authorizer, PermissionEnumerator {
 
     private boolean authenticationRequired;
 
@@ -73,25 +76,30 @@ public class FullAuthorizer implements DescriptorAwareAuthorizer {
         return true;
     }
 
-    /**
-     * Same "allow any operation to any user" contract as {@link #isAllowed(Request)} — see
-     * restheart#722. Without this, a service plugged as {@code secured = false} (which auto-adds
-     * this authorizer specifically so the ALLOWER side is trivially satisfied for it) would still
-     * fail closed on any {@code operationsToAuthorize()}-derived check, since {@code
-     * PluginsRegistryImpl.plugService()}'s unsecured branch only forwards VETOERs plus this
-     * authorizer to {@code AuthorizersHandler} — silently contradicting what {@code secured =
-     * false} is supposed to mean for that service.
-     */
-    @Override
-    public Decision decide(RequestDescriptor descriptor) {
-        // Allows everything and resolves no permission — there is no ACL entry behind this
-        // decision, so there is no readFilter or projection to carry.
-        return Decision.allowed(null, null);
-    }
-
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAuthenticationRequired(final Request request) {
         return !request.isOptions() && authenticationRequired;
     }
+
+    /**
+     * Its rule, written down: {@code true}.
+     *
+     * <p>Enumerable like any other, because "allow everything" is something the predicate language
+     * can say. Without this, a service configured with no authorizer but this one — which is what
+     * {@code secured = false} gets — would have an empty MCP catalog: not one resource could be
+     * shown to be allowed, on a server where everything is.
+     */
+    @Override
+    public Set<BaseAclPermission> permissions(Request<?> request) {
+        return Set.of(ALLOW_EVERYTHING);
+    }
+
+    private static final BaseAclPermission ALLOW_EVERYTHING =
+            new BaseAclPermission(request -> true, Set.of(), 0, null) {
+                @Override
+                public Optional<String> predicateSource() {
+                    return Optional.of("true");
+                }
+            };
 }

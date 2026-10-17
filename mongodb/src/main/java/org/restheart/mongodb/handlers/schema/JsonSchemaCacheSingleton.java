@@ -26,11 +26,11 @@ import java.util.Optional;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.everit.json.schema.Schema;
+import org.restheart.exchange.MongoRequest;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.BsonUtils;
@@ -129,7 +129,7 @@ public class JsonSchemaCacheSingleton {
     }
 
     private BsonDocument loadRaw(String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
-        var document = dbs.collection(Optional.empty(), schemaStoreDb, _SCHEMAS)
+        var document = dbs.collection(Optional.empty(), schemaStoreDb, MongoRequest.schemaStore())
                 .find(eq("_id", schemaId))
                 .first();
 

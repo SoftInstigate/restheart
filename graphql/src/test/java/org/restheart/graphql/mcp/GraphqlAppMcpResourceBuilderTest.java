@@ -147,9 +147,13 @@ public class GraphqlAppMcpResourceBuilderTest {
 
         var resource = GraphqlAppMcpResourceBuilder.build(APP_URI, mcp, SDL).orElseThrow();
 
-        assertEquals(1, resource.examples().size());
-        assertEquals("Find low-stock items", resource.examples().get(0).description());
-        assertEquals("execute", resource.examples().get(0).action());
-        assertEquals("{ lowStock(threshold: 10) { sku } }", resource.examples().get(0).args().get("query"));
+        // the two built-in introspection examples come first — an agent needs the types before
+        // it can write a selection set — and the operator's own follow them
+        assertEquals(3, resource.examples().size());
+
+        var operators = resource.examples().get(2);
+        assertEquals("Find low-stock items", operators.description());
+        assertEquals("execute", operators.action());
+        assertEquals("{ lowStock(threshold: 10) { sku } }", operators.args().get("query"));
     }
 }

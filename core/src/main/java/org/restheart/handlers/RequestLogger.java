@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ByteArrayProxyResponse;
+import org.restheart.exchange.Exchange;
 import org.restheart.exchange.JsonProxyRequest;
 import org.restheart.logging.RequestPhaseContext;
 import org.slf4j.Logger;
@@ -123,7 +124,8 @@ public class RequestLogger extends PipelinedHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         // Use ScopedValue to set the exchange for the entire request processing pipeline
         RequestPhaseContext.runWithExchange(exchange, () -> {
-            if (requestsLogMode > 0 && LOGGER.isInfoEnabled()) {
+            // an in-process request is the server calling itself: its outer request is already logged
+            if (requestsLogMode > 0 && LOGGER.isInfoEnabled() && !Exchange.isInProcess(exchange)) {
                 // Optimization: only check for exclusion patterns if any are configured
                 if (hasExclusionPatterns) {
                     // Check if the request path should be excluded from logging

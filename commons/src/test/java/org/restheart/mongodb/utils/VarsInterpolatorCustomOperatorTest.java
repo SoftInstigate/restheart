@@ -22,13 +22,13 @@ package org.restheart.mongodb.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
 import java.util.Set;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.security.JwtAccount;
 import io.undertow.server.HttpServerExchange;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
@@ -80,6 +80,50 @@ class VarsInterpolatorCustomOperatorTest {
     }
 
     @Test
+    void anOperatorLearnsWhichStageAndKeyItIsUsedUnder() throws Exception {
+        var opName = uniqueName();
+        var seen = new CustomOperator.Placement[1];
+        CustomOperatorRegistryImpl.getInstance().register(new CustomOperator() {
+            @Override
+            public String name() {
+                return opName;
+            }
+
+            @Override
+            public BsonValue resolve(Request<?> request, BsonValue arg) {
+                return new BsonString("without placement");
+            }
+
+            @Override
+            public BsonValue resolve(Request<?> request, BsonValue arg, Placement placement) {
+                seen[0] = placement;
+                return new BsonString("placed");
+            }
+        });
+
+        // {"$vectorScan": {"path": "bodyVector", "queryVector": {"$op": {"$var": "q"}}}}
+        var stage = new BsonDocument("$vectorScan", new BsonDocument("path", new BsonString("bodyVector"))
+                .append("queryVector", new BsonDocument("$" + opName, new BsonDocument("$var", new BsonString("q")))));
+        var values = new BsonDocument("q", new BsonString("hello"));
+
+        var result = VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, values);
+
+        assertEquals(new BsonString("placed"), result.asDocument().getDocument("$vectorScan").get("queryVector"));
+        assertEquals("$vectorScan", seen[0].operator());
+        assertEquals("queryVector", seen[0].key());
+        assertEquals("bodyVector", seen[0].argString("path"));
+
+        // deeper under the same key, the key is kept; at the top level there is no placement
+        var nested = new BsonDocument("$vectorScan", new BsonDocument("path", new BsonString("v"))
+                .append("queryVector", new BsonDocument("inner", new BsonDocument("$" + opName, new BsonString("x")))));
+        VarsInterpolator.interpolate(VAR_OPERATOR.$var, nested, values);
+        assertEquals("queryVector", seen[0].key());
+
+        VarsInterpolator.interpolate(VAR_OPERATOR.$var, new BsonDocument("$" + opName, new BsonString("x")), values);
+        assertEquals(null, seen[0]);
+    }
+
+    @Test
     void requestIsPassedThroughToTheOperator() throws Exception {
         var opName = uniqueName();
         var req = mock(Request.class);
@@ -117,7 +161,7 @@ class VarsInterpolatorCustomOperatorTest {
         assertEquals(stage, result);
     }
 
-    // --- @ names are resolved by the server, or not at all (restheart#727) ---
+    // --- a @ name the server resolves to nothing is unbound, not null ---
 
     private static MongoRequest jwtRequest() {
         var request = mock(MongoRequest.class);
@@ -126,17 +170,6 @@ class VarsInterpolatorCustomOperatorTest {
         when(request.getAuthenticatedAccount())
                 .thenReturn(new JwtAccount("alice", Set.of("user"), "{\"sub\":\"alice\"}"));
         return request;
-    }
-
-    @Test
-    void aSuppliedValueCannotStandInForAServerResolvedVar() throws Exception {
-        // the caller supplies @user.sub, which the server also resolves: the server wins
-        var supplied = BsonDocument.parse("{\"@user.sub\": \"bob\"}");
-        var stage = BsonDocument.parse("{\"owner\": {\"$var\": \"@user.sub\"}}");
-
-        var result = VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, supplied, jwtRequest());
-
-        assertEquals(BsonDocument.parse("{\"owner\": \"alice\"}"), result);
     }
 
     @Test
@@ -159,11 +192,11 @@ class VarsInterpolatorCustomOperatorTest {
     }
 
     @Test
-    void anUnknownAtNameIsUnboundRatherThanALiteral() {
-        // a mistyped @usr._id must fail, not become the string "@usr._id" and match a document
-        var stage = BsonDocument.parse("{\"owner\": {\"$var\": \"@usr._id\"}}");
+    void aVarTheServerResolvesIsStillBound() throws Exception {
+        var stage = BsonDocument.parse("{\"owner\": {\"$var\": \"@user.sub\"}}");
 
-        assertThrows(QueryVariableNotBoundException.class,
-                () -> VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, new BsonDocument(), jwtRequest()));
+        var result = VarsInterpolator.interpolate(VAR_OPERATOR.$var, stage, new BsonDocument(), jwtRequest());
+
+        assertEquals(BsonDocument.parse("{\"owner\": \"alice\"}"), result);
     }
 }

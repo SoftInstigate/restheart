@@ -127,6 +127,11 @@
       password: secret
       roles: [ aclreader ]
 
+    # karate/graphql/visibility — same route permission as aclowner1, one extra role, so the
+    # only difference between the two callers is what @visible lets them see
+    - userid: hruser
+      password: secret
+      roles: [ hr, aclreader ]
     # acl-filter-unbound-var.feature: a file realm account has no _id, and neither has a JWT
     # issued for it, so the @user._id in the readFilter below is never bound for this user.
     - userid: unboundreader
@@ -165,6 +170,12 @@
         allowWriteMode: true
         mergeRequest: >
           {"team": "@user.team._id"}
+
+    # #754: `test` may write to this bucket and nowhere near the chunks collections its rules
+    # fill; karate/ai/chunking-rules.feature proves the chunks are written anyway
+    - role: test
+      predicate: path-prefix[path="/ai-test-chunk-rules/docs.files"]
+      priority: 100
 
     - role: $unauthenticated
       predicate: path[path="/auth/invitation"] and method[value="GET"]
@@ -235,6 +246,42 @@
         projectResponse: >
           {"secret": 0}
 
+    # McpCatalogVisibilityIT — a rule that decides on a query parameter, which is precisely what a
+    # catalogue cannot know about: it is composed without one. Reading is open so the collection is
+    # listed; writing needs ?ticket=golden, so `create` is absent from the listing and callable all
+    # the same.
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-mcp-ticket"]
+      priority: 0
+
+    - role: aclreader
+      predicate: method(POST) and path-prefix[path="/test-mcp-ticket"] and equals(%{q,ticket}, 'golden')
+      priority: 0
+
+    # karate/graphql/vars — the route permission the general security model requires; what the
+    # query then reads is decided by the app definition's own @ variables, not here.
+    - role: aclreader
+      predicate: method(POST) and path[path="/graphql/test-vars"]
+      priority: 0
+
+    # the same feature reaches the aggregation from the REST side, to prove ?avars cannot
+    # supply a value for a server-resolved @ variable
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-graphql/test-vars"]
+      priority: 0
+
+    # karate/graphql/visibility
+    - role: aclreader
+      predicate: method(POST) and path[path="/graphql/test-visible"]
+      priority: 0
+
+    # api-key-token-renewal.feature: a role narrower than the user who owns the key, allowed only
+    # to mint and renew its own token. Its point is the contrast — the user behind the key is
+    # admin, whose own roles are [user, admin], so a renewal that re-read the account would be
+    # visible as this role turning into those.
+    - role: keynarrow
+      predicate: path-prefix[path="/token"]
+      priority: 0
     # ChangeStreamPermissionsIT — readFilter and projectResponse apply to change streams as they
     # do to a GET.
     - role: aclreader
@@ -477,6 +524,9 @@
 
 /mongo/default-representation-format: HAL
 
+# ChangeStreamSseIT.idleStreamIsKeptAlive — 20s by default, which no test can wait for
+/mongo/change-streams-keep-alive-ms: 1000
+
 /graphql/db: test-graphql
 /graphql/verbose: true
 
@@ -484,6 +534,8 @@
 # default is 300s, far too long for ITs that create a resource and immediately expect
 # list_apis/how_to_call to see it. A 1s TTL keeps McpMongo*IT/McpGraphqlAppIT deterministic.
 /mcpService/catalog-ttl-seconds: 1
+# McpSubscriptionsIT: the trailing notification of a burst has to land inside a test's patience
+/mcpService/subscription-notify-interval-seconds: 1
 
 /proxies:
  - location: /pecho
@@ -603,6 +655,29 @@
 # Used by db-override-membership.feature to verify DefaultMembershipProvider
 # resolves the database per-request. Does not affect other tests.
 /dbOverrideInterceptor/enabled: true
+
+# Test interceptor: attaches override-keys-db when ?_keys-db-override=<db> is present.
+# Used by api-key-auth.feature to show a key works only on its own tenant (#738).
+# Does not affect other tests.
+/keysDbOverrideInterceptor/enabled: true
+
+# Test provider: stands in for a deployment that partitions the MCP catalogue.
+# Resolves the scope from ?mcpScope=<scope>, and UNPARTITIONED for every request without
+# it — so the whole suite keeps today's behaviour and only McpScopeIT opts in. See
+# TestMcpScopeProvider.
+/testMcpScopeProvider/enabled: true
+
+# Test provider: stands in for a deployment that issues its own token through the Authorization
+# Code flow (#740). Offers a role and a number of days when ?ti=1 is present, refuses with
+# ?ti=refuse, and stays out of every request without ti — so the OAuth scenarios that predate it
+# keep today's behaviour and only oauth-token-issuer.feature opts in. See TestOAuthTokenIssuer.
+/testOAuthTokenIssuer/enabled: true
+
+# Test interceptor: attaches override-ai-mcp-public-base-url when
+# ?_mcp-baseurl-override=<url> is present, standing in for the Cloud deployment layer
+# that derives a service's base URL from its hostname. Used by McpScopeIT to give two
+# callers two different scopes on one instance. Does not affect other tests.
+/mcpBaseUrlOverrideInterceptor/enabled: true
 
 # Test interceptor: attaches override-accounts-account-properties-claims when
 # ?_claims-override=<a,b,c> is present. Used by
@@ -735,3 +810,29 @@
 # feature is the only one that does), and needs no MongoDB capability the official-mongo
 # CI legs lack, unlike the rest of restheart-ai's *.feature files.
 /vectorScanInterceptor/enabled: true
+
+# Test interceptor: attaches override-ai-max-candidates-cap / override-ai-max-limit-cap when
+# ?_ai-max-candidates-cap-override=<n> / ?_ai-max-limit-cap-override=<n> is present, standing
+# in for a multi-tenant deployment that decides the caps per tenant (#755). Used
+# by karate/ai/vector-scan.feature only; every other request is untouched.
+/aiVectorScanCapOverrideInterceptor/enabled: true
+# attaches override-ai-chunking-async / -max-concurrent from ?_ai-chunking-async / ?_ai-chunking-max-concurrent (#758)
+/aiChunkingOverrideInterceptor/enabled: true
+
+# Test interceptor: attaches override-mongo-instance-base-url when ?_instance-base-url-override=<url>
+# is present, standing in for a multi-tenant deployment that gives each tenant its own public base
+# URL (#749). Used by karate/location-header.feature only.
+/instanceBaseUrlOverrideInterceptor/enabled: true
+
+# Test embedding providers: deterministic vectors, 3 and 5 long, no network and no key. A
+# collection whose vectorSearch rules name them gets real-looking vectors on every CI leg, so
+# karate/ai/embedding-rules.feature can verify several rules on one collection (#752) without
+# the live provider that embedding-provider.feature needs. Nothing names them but that feature.
+/fakeEmbeddingProvider3d/enabled: true
+/fakeEmbeddingProvider5d/enabled: true
+# and a contextual one, whose vectors say how many chunks were embedded together (#754)
+/fakeContextualEmbeddingProvider/enabled: true
+# a reranker that reverses the order, to verify reranking after $vectorScan without a key
+/fakeRerankProvider/enabled: true
+# and one whose every call fails, to verify a write survives a failed embedding
+/fakeEmbeddingProviderFailing/enabled: true

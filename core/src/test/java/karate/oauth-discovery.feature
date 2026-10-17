@@ -28,3 +28,15 @@ Scenario: POST /.well-known/oauth-authorization-server - method not allowed
     Given path '/.well-known/oauth-authorization-server'
     When method POST
     Then status 405
+
+Scenario: GET /.well-known/oauth-authorization-server behind a TLS-terminating proxy - issuer and endpoints carry the forwarded scheme and host
+    # the listener speaks plain http; a document built from its own scheme would hand the client
+    # an authorization server it cannot reach. Same resolution as the protected-resource document.
+    Given path '/.well-known/oauth-authorization-server'
+    And header X-Forwarded-Proto = 'https'
+    And header X-Forwarded-Host = 'api.example.com'
+    When method GET
+    Then status 200
+    And match response.issuer == 'https://api.example.com'
+    And match response.authorization_endpoint == 'https://api.example.com/authorize'
+    And match response.token_endpoint == 'https://api.example.com/token'

@@ -76,6 +76,34 @@ final class VoyageContextualWireEmbeddings {
         return toList(ordered);
     }
 
+    /**
+     * For a request of one or more documents, each a group of chunks: one vector per chunk, the
+     * documents in the order of their outer {@code index}, the chunks of each in the order of their
+     * inner {@code index}. A single-chunk document per text is the independent case, a single
+     * document with every chunk the contextual one.
+     */
+    static List<float[]> parseDocuments(String responseBody) {
+        var groups = BsonDocument.parse(responseBody).getArray("data");
+        var documents = new float[groups.size()][][];
+        for (var g : groups) {
+            var groupDoc = g.asDocument();
+            var inner = groupDoc.getArray("data");
+            var chunks = new float[inner.size()][];
+            for (var item : inner) {
+                var doc = item.asDocument();
+                chunks[doc.getInt32("index").getValue()] = toFloatArray(doc.getArray("embedding"));
+            }
+            documents[groupDoc.getInt32("index").getValue()] = chunks;
+        }
+        var result = new ArrayList<float[]>();
+        for (var chunks : documents) {
+            for (var chunk : chunks) {
+                result.add(chunk);
+            }
+        }
+        return result;
+    }
+
     private static float[] toFloatArray(BsonArray vector) {
         var embedding = new float[vector.size()];
         for (int i = 0;i < vector.size();i++) {

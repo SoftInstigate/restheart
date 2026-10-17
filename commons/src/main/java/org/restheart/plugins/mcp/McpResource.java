@@ -21,10 +21,12 @@
 package org.restheart.plugins.mcp;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -40,16 +42,20 @@ import java.util.function.Consumer;
 public final class McpResource {
     private final String uri;
     private final String kind;
+    private final boolean subscribable;
     private final String description;
     private final List<Map.Entry<Transport, List<String>>> transports;
     private final Map<String, Action> actions;
     private final Map<String, Object> auth;
     private final List<Example> examples;
     private final Map<String, Object> extra;
+    private final String showIf;
+    private final Set<String> hideFromRoles;
 
     private McpResource(Builder b) {
         this.uri = Objects.requireNonNull(b.uri, "uri is required");
         this.kind = b.kind == null ? "service" : b.kind;
+        this.subscribable = b.subscribable;
         this.description = b.description;
         this.auth = b.auth;
         this.extra = Map.copyOf(b.extra);
@@ -68,6 +74,24 @@ public final class McpResource {
         }
 
         this.examples = List.copyOf(b.examples);
+        this.showIf = b.showIf;
+        this.hideFromRoles = Set.copyOf(b.hideFromRoles);
+    }
+
+    /**
+     * The condition under which this resource is announced, as written in its {@code mcp} metadata,
+     * or {@code null} when there is none and the caller's permissions decide.
+     *
+     * <p>Deliberately absent from {@link #toMap()}: it says who is told about the resource, which
+     * is nobody's business but the server's — least of all the agent reading the catalog.
+     */
+    public String showIf() {
+        return showIf;
+    }
+
+    /** The roles this resource is not announced to. Also absent from {@link #toMap()}. */
+    public Set<String> hideFromRoles() {
+        return hideFromRoles;
     }
 
     public String uri() {
@@ -76,6 +100,24 @@ public final class McpResource {
 
     public String kind() {
         return kind;
+    }
+
+    /**
+     * Whether {@code resources/subscribe} on this resource can ever deliver a
+     * {@code notifications/resources/updated}.
+     * <p>
+     * Notifications come from a change stream, so a resource is subscribable when there is a
+     * collection whose changes can make it stale: the collection itself, or an aggregation over it,
+     * which shares the same stream. A service is computed from nothing watchable, a GraphQL app
+     * reads across collections its mapping decides at query time, and a change stream is a live
+     * channel that is not readable in the first place — subscribing to those used to succeed and
+     * then stay silent forever.
+     * <p>
+     * The owning plugin declares this so the answer is known from the catalog, without having to
+     * try opening a watch to find out.
+     */
+    public boolean subscribable() {
+        return subscribable;
     }
 
     public String description() {
@@ -115,6 +157,12 @@ public final class McpResource {
         var m = new LinkedHashMap<String, Object>();
         m.put("uri", uri);
         m.put("kind", kind);
+
+        // Only when true: absence means "not subscribable", and stating that on every service and
+        // aggregation would pad the catalog with a negative that is already the default.
+        if (subscribable) {
+            m.put("subscribable", true);
+        }
         if (description != null) {
             m.put("description", description);
         }
@@ -183,6 +231,25 @@ public final class McpResource {
         }
     }
 
+    /**
+     * What an action acts on.
+     *
+     * <p>The one thing an agent cannot work out from a name, and the one where the mistake does not
+     * undo: on a collection, {@code delete} reads as "delete the collection" and deletes a
+     * document, while {@code create} is a creation <em>under</em> the resource rather than of it.
+     */
+    public enum Target {
+        /** The resource itself: its properties, its indexes, its existence. */
+        RESOURCE,
+
+        /** Something under the resource: a document of a collection, a collection of a database. */
+        ELEMENT;
+
+        public String wireName() {
+            return name().toLowerCase();
+        }
+    }
+
     /** One invokable action of a resource (e.g. {@code query}, {@code create}, {@code execute}). */
     public static final class Action {
         private String method;
@@ -191,6 +258,8 @@ public final class McpResource {
         private Map<String, Object> bodySchema;
         private String description;
         private boolean readable;
+        private Target target = Target.ELEMENT;
+        private final List<String> requires = new ArrayList<>();
 
         public Action method(String method) {
             this.method = method;
@@ -213,8 +282,8 @@ public final class McpResource {
         }
 
         /**
-         * Marks this action servable by {@code resources/read} (#617) — the framework calls
-         * {@code McpAware.readResource(...)} for it. Only a resource with at least one such
+         * Marks this action servable by {@code resources/read} (#617) — the framework runs
+         * it through {@code McpAware.execute(...)} for it, in-process, as the caller. Only a resource with at least one such
          * action is ever registered with the MCP resources primitive at all (a resource with
          * none stays reachable through {@code list_apis}/{@code how_to_call} only), since {@code
          * resources/read} must always return real data. Only ever set on a safe/idempotent,
@@ -224,6 +293,36 @@ public final class McpResource {
         public Action readable(boolean readable) {
             this.readable = readable;
             return this;
+        }
+
+        /**
+         * What this action acts on. Defaults to {@link Target#ELEMENT}, which is what most actions
+         * of a collection do and what a reader is least likely to be surprised by.
+         */
+        public Action target(Target target) {
+            this.target = target;
+            return this;
+        }
+
+        public Target target() {
+            return target;
+        }
+
+        /**
+         * A condition of the caller's permission this action needs beyond the permission matching
+         * its method and path — named so that both an agent and a diagnostic can quote it, as in
+         * {@code mongo.allowManagementRequests}.
+         *
+         * <p>They are additional, never sufficient: a permission that grants them and does not
+         * match the request still refuses it, and one that matches without them refuses it too.
+         */
+        public Action requires(String... conditions) {
+            requires.addAll(List.of(conditions));
+            return this;
+        }
+
+        public List<String> requires() {
+            return List.copyOf(requires);
         }
 
         public boolean readable() {
@@ -282,6 +381,14 @@ public final class McpResource {
             if (readable) {
                 m.put("readable", true);
             }
+            // Only when it is the resource: an action on an element is the ordinary case, and
+            // saying so on every one of them would pad the catalog with what is already expected.
+            if (target == Target.RESOURCE) {
+                m.put("target", target.wireName());
+            }
+            if (!requires.isEmpty()) {
+                m.put("requires", List.copyOf(requires));
+            }
             return m;
         }
     }
@@ -293,10 +400,26 @@ public final class McpResource {
      * full {@code body_schema}, which is for the request body, not a query/path param's value.
      */
     public record Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue,
-                        Map<String, Param> properties) {
+                        Map<String, Param> properties, String header) {
 
         public Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue) {
-            this(type, description, required, enumValues, defaultValue, null);
+            this(type, description, required, enumValues, defaultValue, null, null);
+        }
+
+        public Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue,
+                     Map<String, Param> properties) {
+            this(type, description, required, enumValues, defaultValue, properties, null);
+        }
+
+        /**
+         * The same parameter, carried as a request header instead of a query parameter.
+         *
+         * <p>Some conditions of the HTTP API are stated that way and cannot be stated otherwise:
+         * dropping a collection needs its current ETag in {@code If-Match}, and a request without
+         * it is refused with a {@code 409} whatever its query string says.
+         */
+        public Param asHeader(String name) {
+            return new Param(type, description, required, enumValues, defaultValue, properties, name);
         }
 
         Map<String, Object> toMap() {
@@ -318,6 +441,9 @@ public final class McpResource {
                 var propsJson = new LinkedHashMap<String, Object>();
                 properties.forEach((name, p) -> propsJson.put(name, p.toMap()));
                 m.put("properties", propsJson);
+            }
+            if (header != null) {
+                m.put("header", header);
             }
             return m;
         }
@@ -341,15 +467,24 @@ public final class McpResource {
     public static final class Builder {
         private String uri;
         private String kind;
+        private boolean subscribable;
         private String description;
         private Map<String, Object> auth;
         private final Map<String, Action> actions = new LinkedHashMap<>();
         private final Map<Transport, List<String>> transportActions = new LinkedHashMap<>();
         private final List<Example> examples = new ArrayList<>();
         private final Map<String, Object> extra = new LinkedHashMap<>();
+        private String showIf;
+        private final Set<String> hideFromRoles = new LinkedHashSet<>();
 
         public Builder uri(String uri) {
             this.uri = uri;
+            return this;
+        }
+
+        /** @see McpResource#subscribable() */
+        public Builder subscribable(boolean subscribable) {
+            this.subscribable = subscribable;
             return this;
         }
 
@@ -389,6 +524,20 @@ public final class McpResource {
         /** Sets a kind-specific top-level field not modeled by the generic framework (see {@link McpResource#extra()}). */
         public Builder extra(String key, Object value) {
             extra.put(key, value);
+            return this;
+        }
+
+        /** @see McpResource#showIf() */
+        public Builder showIf(String predicate) {
+            this.showIf = predicate;
+            return this;
+        }
+
+        /** @see McpResource#hideFromRoles() */
+        public Builder hideFromRoles(Collection<String> roles) {
+            if (roles != null) {
+                this.hideFromRoles.addAll(roles);
+            }
             return this;
         }
 

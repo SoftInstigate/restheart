@@ -38,7 +38,7 @@ import java.util.Set;
  * redirects the browser to the application. The {@code delivery} query parameter selects
  * how the JWT is handed to the frontend:
  * <ul>
- *   <li>{@code delivery=cookie} (or omitted, default) — sets the {@code rh_auth} cookie
+ *   <li>{@code delivery=cookie} (or omitted, default) — sets the auth cookie ({@code /authCookieSetter/name})
  *       and redirects to {@code frontendAppUrl}. For same-origin setups where cookie
  *       auth works.</li>
  *   <li>{@code delivery=fragment} — redirects to {@code frontendAppUrl} with the JWT
@@ -117,6 +117,13 @@ public class EmailVerificationService implements JsonService {
         }
 
         final var loginErrorBase = RequestOverrides.frontendUrl(req, conf) + "/auth/login";
+
+        // asked for a cookie this server does not read: refused before the token is used, and
+        // told to the browser the way the other failures of this link are
+        if (TokenDelivery.refused(req.getQueryParameterOrDefault("delivery", null), conf)) {
+            redirect(res, loginErrorBase + "?error=cookie_unavailable");
+            return;
+        }
 
         // ── 1. Read query parameters ─────────────────────────────────────────
         var email = req.getQueryParameterOrDefault("email", null);
@@ -208,7 +215,7 @@ public class EmailVerificationService implements JsonService {
         // token verification (the token is single-use, unset from the DB in step 5a above).
         // Same query-param convention as OAuthCallback's `flow=signup`.
         var appUrl = RequestOverrides.frontendAppUrl(req, conf) + "?flow=signup";
-        var mode = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE);
+        var mode = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE, TokenDelivery.Mode.FRAGMENT, conf);
 
         if (mode == TokenDelivery.Mode.FRAGMENT) {
             // Cross-origin SPAs (Bearer auth): hand the JWT via URL fragment,

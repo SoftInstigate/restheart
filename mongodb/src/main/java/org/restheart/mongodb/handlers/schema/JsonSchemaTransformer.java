@@ -46,7 +46,6 @@ public class JsonSchemaTransformer extends PipelinedHandler {
     static final Logger LOGGER = LoggerFactory
             .getLogger(JsonSchemaTransformer.class);
 
-    private static final BsonString $SCHEMA = new BsonString("http://json-schema.org/draft-04/schema#");
 
     private final boolean phase;
 
@@ -112,10 +111,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
                 // escape all $ prefixed keys
                 escapeSchema(document);
 
-                // add (overwrite) $schema field
-                if (null != document) {
-                    document.put("_$schema", $SCHEMA);
-                }
+                declareDraft(document, uri);
             }
         } else if (request.isSchemaStore()) {
             if (request.isPost()) {
@@ -148,14 +144,33 @@ public class JsonSchemaTransformer extends PipelinedHandler {
                 // escape all $ prefixed keys
                 escapeSchema(document);
 
-                // add (overwrite) $schema field
-                if (null != document) {
-                    document.put("_$schema", $SCHEMA);
-                }
+                declareDraft(document, uri);
             } else if (request.isGet() && null != document && document.isDocument()) {
                 unescapeSchema(document.asDocument());
             }
         }
+    }
+
+    /**
+     * Keeps the draft the schema declares, which {@link JsonMetaSchemaChecker} has already
+     * accepted, and declares draft-07 when it declares none. On draft-06 and draft-07 the URI the
+     * store gives the schema is also its {@code $id}: those drafts resolve a {@code $ref} against
+     * {@code $id}, and ignore draft-04's {@code id}.
+     *
+     * <p>Called after {@link #escapeSchema}, so the keys are the escaped ones.
+     */
+    private static void declareDraft(BsonDocument schema, SchemaStoreURL uri) {
+        if (schema == null) {
+            return;
+        }
+
+        if (!schema.containsKey("_$schema")) {
+            schema.put("_$schema", new BsonString(JsonSchemaDrafts.DEFAULT));
+        }
+
+        JsonSchemaDrafts.draftOf(schema.get("_$schema"))
+                .filter(JsonSchemaDrafts::usesDollarId)
+                .ifPresent(draft -> schema.put("_$id", new BsonString(uri.toString())));
     }
 
     /**

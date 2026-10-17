@@ -149,4 +149,41 @@ public class PipelineParamScannerTest {
                 """);
         assertTrue(PipelineParamScanner.scan(stages).isRequired("status"));
     }
+
+    @Test
+    public void restheartsOwnVariablesAreNotTheCallers() {
+        // What "add pagination" writes. RESTHeart computes both from ?page and ?pagesize, so an
+        // agent neither supplies them nor should be asked to: counting them as parameters made a
+        // paginated aggregation advertise two required strings nobody can usefully set.
+        var stages = BsonArray.parse("[{\"$skip\": {\"$var\": \"@skip\"}}, {\"$limit\": {\"$var\": \"@limit\"}}]");
+        var scan = PipelineParamScanner.scan(stages);
+
+        assertTrue(scan.names().isEmpty(), "nothing for the caller to pass");
+        assertTrue(scan.required().isEmpty(), "and so nothing required");
+        assertEquals(List.of("@skip", "@limit"), List.copyOf(scan.predefined()));
+        assertTrue(PipelineParamScanner.paginates(scan), "which is how ?page and ?pagesize get declared");
+    }
+
+    @Test
+    public void theCallersOwnSkipAndLimitAreOrdinaryParameters() {
+        // The other way to paginate, and the better one for an agent: any non-reserved query
+        // parameter binds as an avar, so these are named, typed and describable like any other.
+        var stages = BsonArray.parse("[{\"$skip\": {\"$var\": \"skip\"}}, {\"$limit\": {\"$var\": \"limit\"}}]");
+        var scan = PipelineParamScanner.scan(stages);
+
+        assertEquals(List.of("skip", "limit"), List.copyOf(scan.names()));
+        assertTrue(scan.predefined().isEmpty());
+        assertFalse(PipelineParamScanner.paginates(scan));
+    }
+
+    @Test
+    public void aPipelineMixingBothKeepsThemApart() {
+        var stages = BsonArray.parse(
+                "[{\"$match\": {\"region\": {\"$var\": \"region\"}}}, {\"$skip\": {\"$var\": \"@skip\"}}]");
+        var scan = PipelineParamScanner.scan(stages);
+
+        assertEquals(List.of("region"), List.copyOf(scan.names()));
+        assertEquals(List.of("@skip"), List.copyOf(scan.predefined()));
+        assertTrue(PipelineParamScanner.paginates(scan));
+    }
 }

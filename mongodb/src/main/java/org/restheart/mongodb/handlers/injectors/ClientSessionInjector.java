@@ -25,9 +25,15 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.sessions.ClientSessionFactory;
+import org.restheart.mongodb.db.sessions.Sid;
+import org.restheart.mongodb.db.sessions.Txn;
+import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 
 /**
  *
@@ -67,6 +73,22 @@ public class ClientSessionInjector extends PipelinedHandler {
         return ClientSessionInjectorHandlerHolder.INSTANCE;
     }
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientSessionInjector.class);
+
+    /**
+     * Marks a transaction this server opened, as opposed to one the client owns and drives with
+     * {@code ?sid=&txn=}. Only the former is ours to commit.
+     */
+    private static final AttachmentKey<Boolean> SERVER_STARTED_TXN = AttachmentKey.create(Boolean.class);
+
+    /**
+     * @return true if the transaction the request runs in was opened by this server, and is
+     * therefore this server's to commit
+     */
+    public static boolean serverStartedTxn(MongoRequest request) {
+        return Boolean.TRUE.equals(request.getExchange().getAttachment(SERVER_STARTED_TXN));
+    }
+
     private ClientSessionFactory clientSessionFactory = ClientSessionFactory.getInstance();
 
     /**
@@ -96,20 +118,89 @@ public class ClientSessionInjector extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
 
-        if (request.isInError() || !exchange.getQueryParameters().containsKey(CLIENT_SESSION_KEY)) {
+        if (request.isInError()) {
             next(exchange);
             return;
         }
 
-        try {
-            request.setClientSession(getClientSessionFactory().getClientSession(exchange));
-        } catch (IllegalArgumentException ex) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage());
-            next(exchange);
-            return;
+        if (exchange.getQueryParameters().containsKey(CLIENT_SESSION_KEY)) {
+            try {
+                request.setClientSession(getClientSessionFactory().getClientSession(exchange));
+            } catch (IllegalArgumentException ex) {
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage());
+                next(exchange);
+                return;
+            }
+        } else if (request.isTxnRequested()) {
+            startServerTxn(request);
         }
 
         next(exchange);
+    }
+
+    /**
+     * Opens a transaction for a request that asked, with {@code MongoRequest.startTxn()}, to be able
+     * to undo its own write. The write joins it: every handler passes
+     * {@code request.getClientSession()} down to the db layer.
+     *
+     * <p>Only reached when the client did not supply a session of its own. A client-driven
+     * transaction ({@code ?sid=&txn=}) is joined rather than nested — MongoDB has no nested
+     * transactions — and it is the branch above that installs it.
+     *
+     * <p>Whether transactions are available at all is read from the installed factory rather than
+     * probed here: {@code TxnsActivator} swaps in {@link TxnClientSessionFactory} at startup, and
+     * only when MongoDB is a replica set. When it did not, this is a no-op and the request runs
+     * unwrapped — {@code rollback()} then falls back to a compensating write.
+     */
+    private void startServerTxn(MongoRequest request) {
+        if (!(getClientSessionFactory() instanceof TxnClientSessionFactory txnFactory)) {
+            LOGGER.debug("Transaction requested but not available: MongoDB is not a replica set. "
+                    + "A rollback would be a compensating write.");
+            return;
+        }
+
+        // a session of our own, used by this request alone, so its transaction number starts at 1
+        var cs = txnFactory.getTxnClientSession(Sid.randomUUID(), request.rsOps(), new Txn(1, Txn.TransactionStatus.NONE));
+
+        cs.setMessageSentInCurrentTransaction(false);
+
+        if (!cs.hasActiveTransaction()) {
+            cs.startTransaction();
+        }
+
+        request.setClientSession(cs);
+        request.getExchange().putAttachment(SERVER_STARTED_TXN, Boolean.TRUE);
+
+        // Safety net for the one path that skips txnCloser: a RESPONSE interceptor that throws
+        // stops the executor's loop, so the interceptors after it — txnCloser included — never run.
+        // close() aborts a transaction still in progress and swallows its own errors, so a request
+        // that blew up leaves nothing open and nothing committed. On every normal request the
+        // transaction is already closed by then and this is a no-op.
+        request.getExchange().addExchangeCompleteListener((exchange, nextListener) -> {
+            try {
+                if (cs.hasActiveTransaction()) {
+                    LOGGER.warn("Transaction still open when the request ended, aborting it: "
+                            + "the write was not committed");
+                    cs.close();
+                }
+            } finally {
+                nextListener.proceed();
+            }
+        });
+
+        LOGGER.debug("Request runs in a server-side transaction");
+    }
+
+    /**
+     * Whether this deployment can run a request in a transaction.
+     *
+     * <p>Read from the installed factory rather than probed: {@code TxnsActivator} swaps in
+     * {@link TxnClientSessionFactory} at startup, and only when MongoDB is a replica set.
+     *
+     * @return true if {@code MongoRequest.startTxn()} will actually open a transaction
+     */
+    public static boolean transactionsAvailable() {
+        return getInstance().getClientSessionFactory() instanceof TxnClientSessionFactory;
     }
 
     /**

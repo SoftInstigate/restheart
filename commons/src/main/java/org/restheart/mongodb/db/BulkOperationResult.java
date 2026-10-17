@@ -19,6 +19,10 @@
  */
 package org.restheart.mongodb.db;
 
+import java.util.List;
+
+import org.bson.BsonValue;
+
 import com.mongodb.bulk.BulkWriteResult;
 
 /**
@@ -51,6 +55,8 @@ import com.mongodb.bulk.BulkWriteResult;
 public class BulkOperationResult extends OperationResult {
     private final BulkWriteResult bulkResult;
 
+    private final List<BsonValue> patchedIds;
+
     /**
      * Constructs a new BulkOperationResult with the specified HTTP status code, ETag, and bulk write result.
      * 
@@ -63,9 +69,38 @@ public class BulkOperationResult extends OperationResult {
      */
     public BulkOperationResult(int httpCode, Object etag,
                                BulkWriteResult bulkResult) {
+        this(httpCode, etag, bulkResult, null);
+    }
+
+    /**
+     * Constructs a new BulkOperationResult that also carries the ids of the documents the operation
+     * touched.
+     *
+     * @param httpCode the HTTP status code representing the outcome of the operation
+     * @param etag the entity tag for cache validation and optimistic concurrency control
+     * @param bulkResult the MongoDB bulk write result
+     * @param patchedIds the ids of the patched documents, or null when they were not collected
+     */
+    public BulkOperationResult(int httpCode, Object etag,
+                               BulkWriteResult bulkResult, List<BsonValue> patchedIds) {
         super(httpCode, etag);
 
         this.bulkResult = bulkResult;
+        this.patchedIds = patchedIds;
+    }
+
+    /**
+     * The ids of the documents a bulk patch modified, when they were collected.
+     *
+     * <p>A bulk patch updates by filter and MongoDB reports counts, not identities, so what was
+     * touched is normally unknown. They are collected when the operation runs in a transaction —
+     * there the ids are read and updated atomically, so the set cannot go stale — and that is what
+     * makes it possible to validate the outcome of a bulk patch and undo it.
+     *
+     * @return the ids of the patched documents, or {@code null} when they were not collected
+     */
+    public List<BsonValue> getPatchedIds() {
+        return patchedIds;
     }
 
     /**

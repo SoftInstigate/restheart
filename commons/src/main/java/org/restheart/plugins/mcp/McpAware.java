@@ -65,6 +65,31 @@ public interface McpAware {
     }
 
     /**
+     * Starts watching a resource's content, so the framework can tell subscribed clients it
+     * changed (#617, {@code notifications/resources/updated}).
+     *
+     * <p>Default: not watchable. A plugin that cannot tell when its data changed says so by not
+     * overriding this, and {@code resources/subscribe} on such a resource is refused — accepting a
+     * subscription that will never fire is worse than declining it, because the client waits
+     * instead of polling.
+     *
+     * <p>{@code onChange} is a bare signal, not an event: the MCP notification carries no payload,
+     * it only tells a client to re-read. So an implementation is free — and expected — to collapse
+     * a burst of underlying changes into one call, and the framework rate-limits it again on the
+     * way out. A collection taking a thousand writes a second must not produce a thousand of
+     * anything.
+     *
+     * @param ctx         the calling context
+     * @param resourceUri the resource to watch
+     * @param onChange    invoked, on any thread, whenever the resource's content may have changed
+     * @return a handle whose {@code close()} stops the watch, or empty if this resource cannot be
+     *         watched
+     */
+    default Optional<AutoCloseable> watch(McpContext ctx, String resourceUri, Runnable onChange) {
+        return Optional.empty();
+    }
+
+    /**
      * Optional default MCP configuration baked into the plugin code, used exclusively by
      * the default {@link #describeMcp(McpContext)} to build a resource without requiring
      * operator YAML (e.g. a built-in {@code /ping} service that should just work).
@@ -102,30 +127,35 @@ public interface McpAware {
     }
 
     /**
-     * Implements {@code resources/read} "documents mode" (#617) for one action of a resource this
-     * plugin contributes — called only for an action the resource itself declared
-     * {@code readable: true} on (see {@link McpResource.Action#readable()}); the framework
-     * validates that before calling this, so an implementation never has to re-check eligibility.
+     * Executes one action of one resource this plugin contributes, with the caller's identity,
+     * and returns the outcome in HTTP terms. This is what the {@code call_api} tool runs, and what
+     * {@code resources/read} runs for an action declared {@code readable}.
      *
-     * <p>Called in-process — no {@code HttpServerExchange} is created or required by the
-     * framework. The implementation talks directly to its own engine (a {@code MongoClient}, a
-     * GraphQL execution engine, ...), exactly as it already does inside its own {@code handle()}
-     * method, applying the exact same ACL/validation enforcement its normal REST path does.
+     * <p><b>The default is the right implementation for nearly every plugin, and it is not in
+     * this method.</b> {@link Optional#empty()} means "not mine, use the default": the MCP server
+     * then composes the HTTP request from the resource's own description (method, URL template,
+     * where each argument goes) and runs it through RESTHeart's <em>whole</em> handler chain,
+     * in-process: authentication with the session's identity, authorizers, every request and
+     * response interceptor, the service. Nothing is bypassed, so the action is authorized and
+     * transformed exactly as the same call over REST would be.
      *
-     * @param resource the resource URI being read (without any query string/extra path — the
-     *                 same URI {@link #describeMcp(McpContext)} produced for it)
-     * @param action   the {@code readable} action being invoked (e.g. {@code query}, {@code get})
-     * @param args     already-parsed arguments (query string for a collection, path segment for
-     *                 a single document, ...), validated against the action's declared
-     *                 {@code params}/{@code body_schema} before this is called
-     * @return the resource's actual content, or {@link Optional#empty()} on failure to produce
-     *         it — a plugin that marks no action readable never needs to override this at all
-     *         (the default already returns empty), since the framework only ever registers a
-     *         resource with the MCP resources primitive when it has a {@code readable} action;
-     *         {@code resources/read} always means "here is data", never a description of the
-     *         resource — that's exclusively {@code list_apis}/{@code how_to_call}'s job
+     * <p>Override this <b>only</b> when the plugin <em>is</em> the whole semantics of the
+     * operation: no interceptor and no data-level ACL would apply to it on the REST path. A
+     * direct implementation is never a cheap optimization: it has to redo by hand whatever the
+     * chain would have done, and keep doing so as the chain evolves. A plugin that owns some
+     * actions and not others answers for its own and returns empty for the rest.
+     *
+     * @param ctx      the calling context: principal, base URL, scope, this plugin's name, URI
+     *                 and configuration
+     * @param resource the resource URI, as {@link #describeMcp(McpContext)} produced it
+     * @param action   an action declared by the resource, already validated by the framework
+     *                 together with {@code args} against the action's params and body schema
+     * @param args     the action arguments: values for declared params, plus an optional
+     *                 {@code body} entry
+     * @return the outcome, or {@link Optional#empty()} to have the framework execute it
+     *         through the handler chain
      */
-    default Optional<McpReadResult> readResource(McpContext ctx, String resource, String action, Map<String, Object> args) {
+    default Optional<McpResult> execute(McpContext ctx, String resource, String action, Map<String, Object> args) {
         return Optional.empty();
     }
 

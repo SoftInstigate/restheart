@@ -25,7 +25,6 @@ import java.util.Optional;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.Databases;
@@ -46,11 +45,16 @@ import com.mongodb.MongoException;
  * It is also responsible of sending NOT_FOUND in case of requests involving not
  * existing collections (that are not PUT)
  *
+ * After authentication, since 9.10.0: the properties come from a query on the database, and
+ * whether the collection exists is information. Before authentication anyone could have the
+ * query run and, through the 404, learn its answer. Nothing before authentication needs the
+ * properties: the authorizers decide on the request, not on the metadata.
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "collectionPropsInjector",
         description = "Injects the collection properties into the BsonRequest",
-        interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
         priority = Integer.MIN_VALUE + 1)
 public class CollectionPropsInjector implements MongoInterceptor {
     private final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjector.class);
@@ -156,7 +160,7 @@ public class CollectionPropsInjector implements MongoInterceptor {
             errMsg = RESOURCE_DOES_NOT_EXIST;
         } else if (resourceName.endsWith(FS_FILES_SUFFIX)) {
             errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST, request.getCollectionName());
-        } else if (_SCHEMAS.equals(resourceName)) {
+        } else if (MongoRequest.schemaStore().equals(resourceName)) {
             errMsg = SCHEMA_STORE_DOES_NOT_EXIST;
         } else {
             errMsg = String.format(COLLECTION_DOES_NOT_EXIST, request.getCollectionName());

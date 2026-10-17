@@ -7,6 +7,7 @@ import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
@@ -39,6 +40,10 @@ public class AcceptInviteService implements JsonService, Initializer {
 
     @Inject("mclient")
     private MongoClient mclient;
+
+    // the user documents written here are validated by the users collection's JSON Schema, when it has one
+    @Inject(value = "json-schemas", required = false)
+    private JsonSchemas jsonSchemas;
 
     @Inject("accountsConfig")
     private AccountsConfigData conf;
@@ -82,7 +87,7 @@ public class AcceptInviteService implements JsonService, Initializer {
         }
         var token = jo.get("token").getAsString().trim();
 
-        var db = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
+        var db = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
 
         // Find invitation by token in auth_invitations collection
         var inviteOpt = db.findInvitationByToken(token);

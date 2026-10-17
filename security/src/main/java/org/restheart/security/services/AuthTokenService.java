@@ -32,6 +32,7 @@ import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.*;
+import org.restheart.plugins.security.OAuthTokenIssuer;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.BaseAccount;
 import org.restheart.security.JwtAccount;
@@ -66,6 +67,26 @@ public class AuthTokenService implements ByteArrayService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenService.class);
 
     private static final String TOKEN_ENDPOINT = "/token";
+
+    /**
+     * Default grace window, in seconds.
+     *
+     * <p>Five minutes, sized for the client that went idle rather than the one that is busy. A busy
+     * client gets its {@code 401} within seconds of expiry and renews at once — seconds would do.
+     * The client that actually meets an expired token is the one that stopped calling for a while,
+     * so this sets how long it may stay away and still resume without sending the user through the
+     * sign-in flow again.
+     *
+     * <p>The window extends the power to renew, not to read; but a renewal yields a token that
+     * reads, so for whoever holds the token grace and {@code ttl} are the same thing one step
+     * apart. Moving seconds from one to the other changes little. Their sum is what matters, and
+     * what it measures is revocation latency: {@code renew()} re-reads the account, so a user
+     * disabled or stripped of a role keeps working for at most {@code ttl + grace}.
+     *
+     * <p>It bounds nothing else. A renewed token is renewable in turn, so the chain has no end of
+     * its own — bound it with a permission on the {@code renewals} claim.
+     */
+    private static final int DEFAULT_REFRESH_GRACE_SECONDS = 300;
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
     private static final String TOKEN_REDIRECT_ENDPOINT = "/token/redirect";
 
@@ -82,6 +103,15 @@ public class AuthTokenService implements ByteArrayService {
      * Verifier used to validate authorization-code JWTs (issued by OAuthAuthorizationService).
      */
     private JWTVerifier authCodeVerifier;
+
+    /**
+     * Verifies the token presented for {@code grant_type=refresh_token}, tolerating an expiry up to
+     * {@link #refreshGraceSeconds} old — see {@link #handleRefreshTokenGrant}.
+     */
+    private JWTVerifier refreshVerifier;
+
+    /** How long after expiry a token is still accepted, for renewal only. */
+    private long refreshGraceSeconds;
 
     @Inject("acl-registry")
     ACLRegistry aclRegistry;
@@ -101,6 +131,33 @@ public class AuthTokenService implements ByteArrayService {
         this.authCodeVerifier = JWT.require(algo)
                 .withIssuer(jwtConfig.issuer())
                 .build();
+
+        // RESTHeart has one token, renewed by presenting itself — there is no second, longer-lived
+        // credential. An OAuth client, though, keeps the token and refreshes it when it has expired;
+        // many wait for the 401. Accepting a recently expired token FOR RENEWAL ONLY is what makes
+        // the standard grant work against that model without inventing a refresh token.
+        // read as a Number: argOrDefault casts the configured value to the default's type, and YAML
+        // gives an Integer where a long is wanted
+        Number grace = argOrDefault(config, "refresh-grace-seconds", (Number) DEFAULT_REFRESH_GRACE_SECONDS);
+        this.refreshGraceSeconds = grace.longValue();
+
+        // The audience check is the one jwtTokenManager applies to every token it accepts. Leaving
+        // it out here would make this endpoint the weakest verifier on the server, and the one that
+        // hands back a fresh token.
+        final var refreshVerification = JWT.require(algo)
+                .withIssuer(jwtConfig.issuer())
+                .acceptExpiresAt(this.refreshGraceSeconds);
+
+        if (jwtConfig.audience() != null && jwtConfig.audience().length > 0) {
+            refreshVerification.withAudience(jwtConfig.audience());
+        }
+
+        this.refreshVerifier = refreshVerification.build();
+
+        // Logged because it is otherwise invisible: an operator who sets refresh-grace-seconds has
+        // no way to tell from outside whether it took effect, short of timing a token's expiry.
+        LOGGER.info("Token renewal accepts a token expired up to {}s ago (grant_type=refresh_token)",
+                this.refreshGraceSeconds);
     }
 
     /**
@@ -161,13 +218,21 @@ public class AuthTokenService implements ByteArrayService {
     private void handlePost(ByteArrayRequest request, ByteArrayResponse response, boolean isCookieEndpoint) throws Exception {
         // --- unauthenticated request ---
         if (!request.isAuthenticated()) {
-            // authorization_code grant is the only unauthenticated POST to /token (not /token/cookie)
-            if (!isCookieEndpoint) {
-                var bodyParams = parseFormBody(request);
-                if ("authorization_code".equals(bodyParams.get("grant_type"))) {
-                    handleAuthorizationCodeGrant(request, bodyParams, response);
-                    return;
-                }
+            var bodyParams = parseFormBody(request);
+
+            // authorization_code is the only unauthenticated POST to /token, and never to
+            // /token/cookie: it ends a browser redirect flow that has its own way back.
+            if (!isCookieEndpoint && "authorization_code".equals(bodyParams.get("grant_type"))) {
+                handleAuthorizationCodeGrant(request, bodyParams, response);
+                return;
+            }
+
+            // refresh_token is accepted on both. On /token/cookie the renewed token goes back as a
+            // fresh cookie and never in the body — a browser app uses that endpoint precisely so
+            // its JavaScript never sees the token.
+            if ("refresh_token".equals(bodyParams.get("grant_type"))) {
+                handleRefreshTokenGrant(request, bodyParams, response, isCookieEndpoint);
+                return;
             }
             if (!request.getExchange().getRequestHeaders().contains("No-Auth-Challenge")
                     && !request.getExchange().getQueryParameters().containsKey("noauthchallenge")) {
@@ -278,6 +343,16 @@ public class AuthTokenService implements ByteArrayService {
                 java.util.Base64.getUrlDecoder().decode(decoded.getPayload()), StandardCharsets.UTF_8);
         var account = new JwtAccount(username, roles, authCodePayload);
 
+        // A code sealed by an OAuthTokenIssuer is the issuer's to answer, and nobody else's. No
+        // fallback to the JWT below when the issuer is gone: that would hand out the wide
+        // credential the issuer was registered to replace, to whoever presents the code.
+        var sealedClaim = decoded.getClaim(OAuthTokenIssuers.CODE_CLAIM);
+
+        if (!sealedClaim.isMissing() && !sealedClaim.isNull()) {
+            handleIssuerGrant(request, response, sealedClaim.asMap(), account);
+            return;
+        }
+
         // issue access token via the configured token manager
         var tokenManagerRecord = this.registry.getTokenManager();
         if (tokenManagerRecord == null) {
@@ -306,6 +381,10 @@ public class AuthTokenService implements ByteArrayService {
             resp.add("expires_in", new JsonPrimitive(expiresIn));
         }
 
+        // Same token under both names — see handleRefreshTokenGrant. A client that stores
+        // refresh_token and presents it at expiry then finds a grant that accepts it.
+        resp.add("refresh_token", new JsonPrimitive(tokenString));
+
         response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
         response.getHeaders().put(HttpString.tryFromString("Pragma"), "no-cache");
         response.setContentTypeAsJson();
@@ -313,6 +392,221 @@ public class AuthTokenService implements ByteArrayService {
         response.setStatusCode(HttpStatus.SC_OK);
 
         LOGGER.debug("Token issued via authorization_code grant for user '{}'", username);
+    }
+
+    /**
+     * Answers a code sealed by the registered {@link OAuthTokenIssuer} with the token it mints.
+     *
+     * <p>The response is the issuer's: {@code refresh_token} only when it gives one, and no
+     * {@code username} or {@code roles}, which are the JWT's business. If no issuer is registered
+     * the grant fails — a sealed code means "not the JWT", and that holds whatever happened to
+     * the issuer between {@code /authorize} and here.
+     */
+    private void handleIssuerGrant(ByteArrayRequest request, ByteArrayResponse response,
+                                   Map<String, Object> sealed, Account account) {
+        var issuer = tokenIssuer();
+
+        if (issuer.isEmpty()) {
+            LOGGER.error("The authorization code was sealed by an OAuthTokenIssuer but none is registered; not falling back to the JWT");
+            sendTokenError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR, "server_error", "no token issuer is registered for this authorization code");
+            return;
+        }
+
+        OAuthTokenIssuer.IssuedToken issued;
+
+        try {
+            issued = issuer.get().issue(sealed == null ? Map.of() : sealed, account, request);
+        } catch (OAuthTokenIssuer.Refusal r) {
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, r.error(), r.description());
+            return;
+        }
+
+        if (issued == null || issued.accessToken() == null || issued.accessToken().isBlank()) {
+            LOGGER.error("The token issuer returned no token for user '{}'", account.getPrincipal().getName());
+            sendTokenError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR, "server_error", "failed to issue token");
+            return;
+        }
+
+        var resp = new JsonObject();
+        resp.add("access_token", new JsonPrimitive(issued.accessToken()));
+        resp.add("token_type", new JsonPrimitive(issued.tokenType() != null ? issued.tokenType() : "Bearer"));
+
+        if (issued.expiresIn() != null) {
+            resp.add("expires_in", new JsonPrimitive(issued.expiresIn()));
+        }
+
+        if (issued.refreshToken() != null && !issued.refreshToken().isBlank()) {
+            resp.add("refresh_token", new JsonPrimitive(issued.refreshToken()));
+        }
+
+        response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
+        response.getHeaders().put(HttpString.tryFromString("Pragma"), "no-cache");
+        response.setContentTypeAsJson();
+        response.setContent(resp.toString());
+        response.setStatusCode(HttpStatus.SC_OK);
+
+        LOGGER.debug("Token issued via authorization_code grant by the token issuer for user '{}'", account.getPrincipal().getName());
+    }
+
+    /** The registered {@link OAuthTokenIssuer}, resolved on first use; {@code null} until then. */
+    private volatile Optional<OAuthTokenIssuer> tokenIssuer;
+
+    private Optional<OAuthTokenIssuer> tokenIssuer() {
+        var local = this.tokenIssuer;
+
+        if (local == null) {
+            synchronized (this) {
+                local = this.tokenIssuer;
+                if (local == null) {
+                    local = OAuthTokenIssuers.discover(registry, this);
+                    this.tokenIssuer = local;
+                }
+            }
+        }
+
+        return local;
+    }
+
+    /**
+     * The bearer token the request presents, or {@code null}.
+     *
+     * <p>Read straight off the {@code Authorization} header rather than from the cookie: by the
+     * time a service runs, {@code authCookieHandler} has copied the cookie there (it intercepts at
+     * {@code REQUEST_BEFORE_AUTH}), so one place covers both a client sending the header itself and
+     * a browser sending a cookie.
+     */
+    private static String bearerToken(ByteArrayRequest request) {
+        var header = request.getHeader("Authorization");
+
+        if (header == null || !header.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return null;
+        }
+
+        var token = header.substring(7).trim();
+        return token.isEmpty() ? null : token;
+    }
+
+    /**
+     * Handles {@code grant_type=refresh_token}.
+     *
+     * <p>RESTHeart has one token, not an access/refresh pair: a token is renewed by presenting
+     * itself, which {@code GET /token?renew} has always done. This grant exposes that same renewal
+     * through the mechanism an OAuth client actually looks for — without it, a client discovers no
+     * way to refresh and runs the whole Authorization Code flow again on every expiry, browser and
+     * consent included.
+     *
+     * <p>The one adjustment is the grace window. A client keeps the token and refreshes it once it
+     * has expired — many wait for the 401 — while {@code ?renew} requires one still valid. So a
+     * token is accepted here up to {@link #refreshGraceSeconds} past its expiry, <em>for renewal
+     * only</em>: it is verified by a separate verifier used nowhere else, so an expired token still
+     * opens nothing and reaches no data. Beyond the window the caller authenticates again, which by
+     * then is the right answer anyway.
+     */
+    private void handleRefreshTokenGrant(ByteArrayRequest request, Map<String, String> bodyParams, ByteArrayResponse response, boolean isCookieEndpoint) {
+        var presented = bodyParams.get("refresh_token");
+
+        if (presented == null || presented.isBlank()) {
+            // A browser app cannot put its token in a form field: the cookie holding it is
+            // HttpOnly, which is the point of using one. Without this fallback the grace window —
+            // the whole reason this grant exists — is unreachable by exactly the clients that meet
+            // an expired token most often. authCookieHandler has already turned the cookie into an
+            // Authorization header by the time this runs, so there is nothing to parse here.
+            presented = bearerToken(request);
+        }
+
+        if (presented == null || presented.isBlank()) {
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_request",
+                    "refresh_token is required, as a form parameter or as the presented bearer token");
+            return;
+        }
+
+        com.auth0.jwt.interfaces.DecodedJWT decoded;
+
+        try {
+            decoded = refreshVerifier.verify(presented);
+        } catch (Exception e) {
+            LOGGER.debug("Refresh token verification failed: {}", e.getMessage());
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_grant",
+                    "the token is invalid, or expired longer ago than the renewal window allows");
+            return;
+        }
+
+        // An authorization code is a JWT too, signed with the same key and carrying the same issuer,
+        // sub and roles — the verifier above cannot tell the two apart. Redeeming a code here would
+        // yield a full access token without the code_verifier ever being presented, which is the
+        // whole of what PKCE protects against: a stolen code would become a stolen session.
+        //
+        // The code challenge is what a code has and a token does not, so its presence is the test.
+        if (!decoded.getClaim(OAuthAuthorizationService.CLAIM_CODE_CHALLENGE).isMissing()) {
+            LOGGER.warn("An authorization code was presented as a refresh_token by '{}' — refused",
+                    decoded.getSubject());
+            sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_grant",
+                    "an authorization code cannot be used as a refresh token; exchange it with "
+                            + "grant_type=authorization_code and its code_verifier");
+            return;
+        }
+
+        var username = decoded.getSubject();
+        var rolesArr = decoded.getClaim(OAuthAuthorizationService.CLAIM_ROLES).asArray(String.class);
+        var roles = rolesArr != null ? Set.of(rolesArr) : Set.<String>of();
+
+        // Rebuild the account from the token's own payload, exactly as the authorization_code grant
+        // does, so the renewed token carries the same claims rather than a reduced set.
+        var payload = new String(
+                java.util.Base64.getUrlDecoder().decode(decoded.getPayload()), StandardCharsets.UTF_8);
+        var account = new JwtAccount(username, roles, payload);
+
+        var tokenManagerRecord = this.registry.getTokenManager();
+
+        if (tokenManagerRecord == null) {
+            LOGGER.error("No token manager configured; cannot renew token for user '{}'", username);
+            sendTokenError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR, "server_error", "token manager not available");
+            return;
+        }
+
+        // renew(), not get(): get() answers "what is this account's token" and a caching manager
+        // hands back the same one, with the same expiry — renewing nothing. renew() also re-reads
+        // the account, so the new token carries current roles and a disabled user stops renewing.
+        var credential = tokenManagerRecord.getInstance().renew(account, request);
+
+        if (credential == null) {
+            LOGGER.error("Token manager returned null credential renewing for user '{}'", username);
+            sendTokenError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR, "server_error", "failed to issue token");
+            return;
+        }
+
+        var tokenString = new String(credential.getPassword());
+        var expiresIn = expiresInFromJwt(tokenString);
+
+        var resp = new JsonObject();
+
+        if (isCookieEndpoint) {
+            // authCookieSetter reads this header and writes the cookie. The token stays out of the
+            // body: handing it to JavaScript would undo the HttpOnly cookie this endpoint is for.
+            response.getHeaders().put(AUTH_TOKEN_HEADER, tokenString);
+            resp.add("authenticated", new JsonPrimitive(true));
+            resp.add("username", new JsonPrimitive(username));
+        } else {
+            resp.add("access_token", new JsonPrimitive(tokenString));
+            resp.add("token_type", new JsonPrimitive("Bearer"));
+
+            // The same token renews itself, so it is handed back under both names: a client that
+            // stores refresh_token separately, as most do, keeps something that works.
+            resp.add("refresh_token", new JsonPrimitive(tokenString));
+        }
+
+        if (expiresIn != null) {
+            resp.add("expires_in", new JsonPrimitive(expiresIn));
+        }
+
+        response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
+        response.getHeaders().put(HttpString.tryFromString("Pragma"), "no-cache");
+        response.setContentTypeAsJson();
+        response.setContent(resp.toString());
+        response.setStatusCode(HttpStatus.SC_OK);
+
+        LOGGER.debug("Token renewed via refresh_token grant for user '{}' ({})", username,
+                isCookieEndpoint ? "cookie" : "body");
     }
 
     /**

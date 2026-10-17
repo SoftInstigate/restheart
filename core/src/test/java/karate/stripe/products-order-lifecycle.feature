@@ -91,6 +91,15 @@ Background:
     When method DELETE
     * match [200, 204, 404] contains responseStatus
 
+    # The ledger entries of the events this feature sends. The seeded orders are recreated
+    # pending at every run, so without this each run appends one more payment to the ledger,
+    # and the scenarios that count them fail from the second run on a database that is kept.
+    Given path '/restheart-test/transactions/*'
+    And param filter = '{"stripe_event_id":{"$in":["evt_async_fail","evt_async_ok","evt_async_unpaid","evt_dispute_created","evt_dispute_paid","evt_expired_after","evt_expired_only","evt_paid_first","evt_refund_paid","evt_refund_partial","evt_replayed_once"]}}'
+    And header Authorization = adminAuth
+    When method DELETE
+    * match [200, 204, 404] contains responseStatus
+
 # ── the async-payment trap ───────────────────────────────────────────────────
 
 Scenario: checkout.session.completed with payment_status unpaid must NOT mark the order paid

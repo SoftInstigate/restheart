@@ -24,17 +24,72 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.BsonDocument;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.utils.BsonUtils;
 
 /**
- * Checks {@code how_to_call} args against an action's {@code params} declarations:
- * required/missing, type, and enum constraints. Does not know about {@code body} —
- * that argument is validated separately by {@link BodyValidator} against the
- * action's {@code body_schema}.
+ * Checks a call's args against an action's {@code params} declarations: required/missing, type,
+ * and enum constraints. Deliberately knows nothing about {@code body}: an action's
+ * {@code body_schema} describes the document the resource stores, not what a caller sends, so the
+ * body is left to the service that will store it — see {@code HowToCallTool.resolve}.
+ *
+ * <p><strong>It must never be stricter than the endpoint the call is dispatched to.</strong> An
+ * aggregation's variables can be sent flat ({@code ?status=A}) or bundled ({@code ?avars={...}}),
+ * and RESTHeart binds both, whichever shape the catalogue happens to declare. So both count as
+ * supplied here, in either direction: see {@link #suppliedFlat} for a param declared as an object
+ * and filled one property at a time, and {@link #suppliedInAvars} for a param declared on its own
+ * and sent inside the bundle. Refusing either would turn a request the server would have answered
+ * into a validation error, which is the one failure a validator has no business inventing.
  */
 public final class ParamValidator {
 
     private ParamValidator() {
+    }
+
+    /**
+     * Whether an object param with named sub-properties was supplied one property at a time,
+     * rather than as the object.
+     *
+     * <p>Both shapes are offered to the caller, so both must count as supplied. A resource
+     * template advertises the flat one and nothing else — an aggregation's is
+     * {@code .../byStatus{?status}}, not {@code {?avars}} — so a caller that fills in exactly what
+     * the template asked for would otherwise be told it is missing the object it was never shown.
+     * What each shape then binds to is the service's business, not this validator's.
+     */
+    private static boolean suppliedFlat(McpResource.Param param, Map<String, Object> args) {
+        return param.properties() != null
+                && param.properties().keySet().stream().anyMatch(args::containsKey);
+    }
+
+    /**
+     * Whether a variable declared as a param of its own was supplied the legacy way, inside
+     * {@code avars}.
+     *
+     * <p>The mirror of {@link #suppliedFlat}. Since 9.9 an aggregation's variables are declared
+     * one by one, because that is the shape RESTHeart binds from a bare query parameter — but it
+     * still binds them from {@code ?avars={"name":...}} too, and refusing that here would make the
+     * MCP layer stricter than the endpoint it dispatches to, turning a call the server would have
+     * answered into a validation error.
+     */
+    private static boolean suppliedInAvars(String name, Map<String, Object> args) {
+        var avars = args.get("avars");
+
+        if (avars instanceof Map<?, ?> asMap) {
+            return asMap.containsKey(name);
+        }
+
+        // From a resources/read URI the whole query string arrives as text, and `avars` is not a
+        // declared param any more, so nothing coerced it into an object on the way in.
+        if (avars instanceof String raw) {
+            try {
+                return BsonUtils.parse(raw) instanceof BsonDocument doc && doc.containsKey(name);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     /** @return human-readable error messages, empty if {@code args} satisfies every declared param */
@@ -46,7 +101,9 @@ public final class ParamValidator {
             var value = effectiveArgs.get(name);
 
             if (value == null) {
-                if (param.required() && param.defaultValue() == null) {
+                if (param.required() && param.defaultValue() == null
+                        && !suppliedFlat(param, effectiveArgs)
+                        && !suppliedInAvars(name, effectiveArgs)) {
                     errors.add("missing required param '" + name + "'");
                 }
                 return;

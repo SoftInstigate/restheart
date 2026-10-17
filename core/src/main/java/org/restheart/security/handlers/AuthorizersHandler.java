@@ -20,9 +20,6 @@
  */
 package org.restheart.security.handlers;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,9 +37,6 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
-import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
@@ -57,13 +51,6 @@ import io.undertow.util.Headers;
  * An Authorizer can be either a VETOER or an ALLOWER
  * A request is allowed when no VETOER denies it and any ALLOWER allows it
  *
- * <p>Additionally — see restheart#722 — if the {@link Service} handling this request overrides
- * {@link Service#operationsToAuthorize(HttpServerExchange)}, each {@link RequestDescriptor} it
- * returns is independently checked against every registered {@link DescriptorAwareAuthorizer}
- * with the same VETOER/ALLOWER semantics; a service that doesn't override it (the vast majority
- * — every ordinary REST service) never triggers this additional check at all. If no
- * {@link DescriptorAwareAuthorizer} is configured, a service that does override it fails closed
- * (denied) rather than allowing an operation no authorizer actually evaluated.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -71,7 +58,6 @@ public class AuthorizersHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthorizersHandler.class);
 
     private final Set<PluginRecord<Authorizer>> authorizers;
-    private final Service<?, ?> service;
     private final RequestInterceptorsExecutor failedAuthInterceptorsExecutor;
 
     /**
@@ -81,23 +67,21 @@ public class AuthorizersHandler extends PipelinedHandler {
      * @param next
      */
     public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, PipelinedHandler next) {
-        this(authorizers, null, next);
+        super(next);
+        this.authorizers = authorizers;
+        this.failedAuthInterceptorsExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_FAILED_AUTH);
     }
 
     /**
      * Creates a new instance of AuthorizersHandler
      *
      * @param authorizers
-     * @param service the {@link Service} handling requests routed through this handler, or
-     *                {@code null} when not applicable (e.g. an SSE service, which never overrides
-     *                {@code operationsToAuthorize}) — see restheart#722
+     * @param service the service handling these requests, kept for the callers that name it;
+     *                authorization itself reads only the request
      * @param next
      */
     public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, Service<?, ?> service, PipelinedHandler next) {
-        super(next);
-        this.authorizers = authorizers;
-        this.service = service;
-        this.failedAuthInterceptorsExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_FAILED_AUTH);
+        this(authorizers, next);
     }
 
     /**
@@ -117,7 +101,7 @@ public class AuthorizersHandler extends PipelinedHandler {
         RequestPhaseContext.setPhase(Phase.PHASE_START);
         LOGGER.debug("AUTHORIZATION for {} {} - User: {}", requestMethod, requestPath, userPrincipal);
 
-        var isAllowedResult = isAllowed(request) && isAllowedByDescriptors(exchange);
+        var isAllowedResult = isAllowed(request);
         var authorizationDuration = System.currentTimeMillis() - authorizationStartTime;
 
         if (isAllowedResult) {
@@ -254,115 +238,5 @@ public class AuthorizersHandler extends PipelinedHandler {
         }
 
         return vetoerResult && allowerResult;
-    }
-
-    /**
-     * See restheart#722. A no-op (always {@code true}) unless {@link #service} actually overrides
-     * {@link Service#operationsToAuthorize(HttpServerExchange)} <b>and</b> the override actually
-     * returns something other than the identity descriptor for this specific request — e.g.
-     * {@code McpService} overrides the method (so every {@code /mcp} request reaches here), but
-     * only a documents-mode {@code resources/read} call produces a non-identity descriptor; every
-     * other JSON-RPC method (tools, {@code initialize}, context-mode reads, ...) must keep
-     * behaving exactly like an ordinary REST service, not get funneled into the fail-closed
-     * {@link DescriptorAwareAuthorizer} check below just because the method happens to be
-     * overridden on the class.
-     */
-    private boolean isAllowedByDescriptors(HttpServerExchange exchange) {
-        if (service == null || !overridesOperationsToAuthorize(service)) {
-            return true;
-        }
-
-        var descriptors = service.operationsToAuthorize(exchange);
-
-        if (isIdentity(descriptors, exchange)) {
-            return true;
-        }
-
-        var descriptorAuthorizers = authorizers.stream()
-                .filter(PluginRecord::isEnabled)
-                .map(PluginRecord::getInstance)
-                .filter(DescriptorAwareAuthorizer.class::isInstance)
-                .map(DescriptorAwareAuthorizer.class::cast)
-                .toList();
-
-        if (descriptorAuthorizers.isEmpty()) {
-            LOGGER.debug("No DescriptorAwareAuthorizer configured — denying {} operation(s) to authorize for service '{}'",
-                    descriptors.size(), PluginUtils.name(service));
-            return false;
-        }
-
-        var vetoers = descriptorAuthorizers.stream().filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER).toList();
-        var allowers = descriptorAuthorizers.stream().filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER).toList();
-
-        var decisions = new ArrayList<Decision>(descriptors.size());
-
-        for (var descriptor : descriptors) {
-            for (var vetoer : vetoers) {
-                try {
-                    if (!vetoer.decide(descriptor).allowed()) {
-                        return false;
-                    }
-                } catch (Exception ex) {
-                    LOGGER.error("Error in VETOER {} evaluating a RequestDescriptor for service '{}'",
-                            PluginUtils.name(vetoer), PluginUtils.name(service), ex);
-                    return false;
-                }
-            }
-
-            Decision granted = null;
-            for (var allower : allowers) {
-                try {
-                    var decision = allower.decide(descriptor);
-                    if (decision.allowed()) {
-                        granted = decision;
-                        break;
-                    }
-                } catch (Exception ex) {
-                    LOGGER.error("Error in ALLOWER {} evaluating a RequestDescriptor for service '{}'",
-                            PluginUtils.name(allower), PluginUtils.name(service), ex);
-                }
-            }
-
-            if (granted == null) {
-                return false;
-            }
-
-            decisions.add(granted);
-        }
-
-        // Attached only once every descriptor is allowed, so a service can never read a decision
-        // for an operation that was ultimately denied. This is the handoff of restheart#722 point
-        // 5: whatever readFilter or projection the ACL resolved travels with the decision to
-        // whoever executes the operation in-process.
-        exchange.putAttachment(DescriptorAwareAuthorizer.AUTHORIZED_OPERATIONS, List.copyOf(decisions));
-
-        return true;
-    }
-
-    /**
-     * Package-visible for testability.
-     * @return {@code true} if {@code service} overrides the default (identity) {@code operationsToAuthorize()}.
-     */
-    static boolean overridesOperationsToAuthorize(Service<?, ?> service) {
-        try {
-            Method m = service.getClass().getMethod("operationsToAuthorize", HttpServerExchange.class);
-            return m.getDeclaringClass() != Service.class;
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
-    }
-
-    /**
-     * @return {@code true} if {@code descriptors} is exactly the identity case ({@link
-     *         RequestDescriptor#of(HttpServerExchange)} for the real exchange) — compared by
-     *         method + path only, not full record equality: {@code RequestDescriptor}'s query
-     *         parameters are backed by {@code Deque}s, which don't implement value-based {@code
-     *         equals()}, so two separately-built identity descriptors for the same exchange would
-     *         never compare equal as records.
-     */
-    static boolean isIdentity(List<RequestDescriptor> descriptors, HttpServerExchange exchange) {
-        return descriptors.size() == 1
-                && descriptors.get(0).method().equals(exchange.getRequestMethod().toString())
-                && descriptors.get(0).path().equals(exchange.getRequestPath());
     }
 }

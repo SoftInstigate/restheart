@@ -37,6 +37,7 @@ import java.util.Map;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import org.restheart.exchange.MongoRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +83,10 @@ public class MongoServiceConfiguration {
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
     private final boolean aggregationCheckOperators;
+    private final long changeStreamsKeepAliveMs;
+
+    private final String constraintsGuardCollection;
+    private final String schemaStore;
     private final int cursorBatchSize;
     private final int defaultPagesize;
     private final int maxPagesize;
@@ -97,6 +102,7 @@ public class MongoServiceConfiguration {
 
     public static MongoServiceConfiguration init(final Map<String, Object> confs, final boolean silent) {
         INSTANCE = new MongoServiceConfiguration(confs, silent);
+        MongoRequest.setSchemaStore(INSTANCE.getSchemaStore());
         return INSTANCE;
     }
 
@@ -170,6 +176,12 @@ public class MongoServiceConfiguration {
         queryTimeLimit = asLong(conf, QUERY_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationTimeLimit = asLong(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationCheckOperators = asBoolean(conf, AGGREGATION_CHECK_OPERATORS, true, silent);
+        changeStreamsKeepAliveMs = asLong(conf, CHANGE_STREAMS_KEEP_ALIVE_MS, DEFAULT_CHANGE_STREAMS_KEEP_ALIVE_MS, silent);
+
+        constraintsGuardCollection = asString(conf, CONSTRAINTS_GUARD_COLLECTION_KEY,
+                DEFAULT_CONSTRAINTS_GUARD_COLLECTION, silent);
+
+        schemaStore = asString(conf, SCHEMA_STORE_KEY, DEFAULT_SCHEMA_STORE, silent);
 
         localCacheEnabled = asBoolean(conf, LOCAL_CACHE_ENABLED_KEY, true, silent);
         localCacheTtl = asLong(conf, LOCAL_CACHE_TTL_KEY, (long) 1000, silent);
@@ -306,6 +318,43 @@ public class MongoServiceConfiguration {
      */
     public boolean getAggregationCheckOperators() {
         return aggregationCheckOperators;
+    }
+
+    /**
+     * How often an idle change stream is kept open, in milliseconds: a comment on SSE, a ping on WebSocket;
+     * {@code 0} or less sends none.
+     *
+     * <p>A stream that has nothing to report sends nothing at all, and a proxy or a load balancer
+     * in front of RESTHeart closes a connection that has been silent for its idle timeout — often
+     * a minute. The client then sees a stream that simply ends, and reconnects; a busy stream
+     * never hits this, which is why it surfaces on exactly the streams that matter least until
+     * they matter most.</p>
+     *
+     * @return the keep-alive interval in milliseconds
+     */
+    public long getChangeStreamsKeepAliveMs() {
+        return changeStreamsKeepAliveMs;
+    }
+
+    /**
+     * The collection holding the guard documents that serialize writes to collections declaring
+     * constraints. One document per guarded collection, in the same database as the collection, and
+     * incremented inside the write's transaction: it exists to be contended, its content is
+     * irrelevant.
+     *
+     * @return the constraintsGuardCollection
+     */
+    public String getConstraintsGuardCollection() {
+        return constraintsGuardCollection;
+    }
+
+    /**
+     * The name of the schema store, the collection of each database holding its JSON schemas.
+     *
+     * @return the schemaStore
+     */
+    public String getSchemaStore() {
+        return schemaStore;
     }
 
     /**

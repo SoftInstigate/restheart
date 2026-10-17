@@ -1,0 +1,45 @@
+{
+  "_id": "test-vars",
+  "descriptor": {
+    "name": "test-vars",
+    "description": "Exercises the @ variables available to a mapping (restheart#727)",
+    "enabled": true,
+    "uri": "test-vars"
+  },
+  "schema": "type Thing { name: String owner: String role: String } type Query { myThings: [Thing] myThingsAggr: [Thing] pastThings: [Thing] roleThings: [Thing] mistypedVar: [Thing] }",
+  "mappings": {
+    "Query": {
+      "myThings": {
+        "db": "test-graphql",
+        "collection": "test-vars",
+        "find": { "owner": { "$arg": "@user.userid" } },
+        "sort": { "name": 1 }
+      },
+      "myThingsAggr": {
+        "db": "test-graphql",
+        "collection": "test-vars",
+        "stages": [
+          { "$match": { "owner": { "$arg": "@user.userid" } } },
+          { "$sort": { "name": 1 } }
+        ]
+      },
+      "pastThings": {
+        "db": "test-graphql",
+        "collection": "test-vars",
+        "find": { "created": { "$lte": { "$arg": "@now" } } },
+        "sort": { "name": 1 }
+      },
+      "roleThings": {
+        "db": "test-graphql",
+        "collection": "test-vars",
+        "find": { "role": { "$in": { "$arg": "@roles" } } },
+        "sort": { "name": 1 }
+      },
+      "mistypedVar": {
+        "db": "test-graphql",
+        "collection": "test-vars",
+        "find": { "owner": { "$arg": "@usr.userid" } }
+      }
+    }
+  }
+}

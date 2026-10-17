@@ -49,23 +49,20 @@ public final class DescriptorRenderer {
     /**
      * What the descriptor's {@code Authorization} header carries in place of a credential.
      *
-     * <p>Names the tool that produces the real value, because the two are used minutes apart and by
-     * different reasoning steps: the agent asks <em>how</em> to call something once, then fetches a
-     * token when it is actually about to call it. A bare {@code <token>} left the second half of
-     * that to be guessed.
-     *
-     * <p>Public because it is a contract between {@code how_to_call} and {@code get_token} — the
-     * placeholder the first emits is what the second exists to replace, and both tool descriptions
-     * quote it.
+     * <p>A descriptor is documentation for code the agent writes <em>for the user</em>: the
+     * credential is the user's own (an API key, a token their app obtains), never something the
+     * MCP server hands out. Executing an action from the agent itself is {@code call_api}'s job,
+     * and that runs with the session's identity with no credential in sight. Public because the
+     * {@code how_to_call} tool description quotes it.
      */
-    public static final String TOKEN_PLACEHOLDER = "<token_from_get_token>";
+    public static final String CREDENTIAL_PLACEHOLDER = "<your-credential>";
 
     private DescriptorRenderer() {
     }
 
     /**
      * <p>The descriptor never carries a credential: its {@code Authorization} header always holds
-     * {@link #TOKEN_PLACEHOLDER}. That is what makes it stable — an agent can ask how to call a
+     * {@link #CREDENTIAL_PLACEHOLDER}. That is what makes it stable — an agent can ask how to call a
      * resource once and reuse the answer, instead of holding something that silently expires.
      *
      * @param resource   the resource being invoked
@@ -90,6 +87,11 @@ public final class DescriptorRenderer {
         var body = effectiveArgs.get("body");
         consumed.add("body");
 
+        // A parameter the action declares as a header is one: sending it in the query string would
+        // not be a different spelling of the same request, it would be a request missing a
+        // condition — dropping a collection without If-Match is refused with a 409.
+        var declaredHeaders = headersFrom(action, effectiveArgs, consumed);
+
         // an SSE/WebSocket subscription is still opened over a plain HTTP(S)/WS(S) URL that can
         // carry a query string exactly like any GET — a change-stream's own $var bindings
         // (avars) go through here identically to an aggregation's, so this must not be
@@ -99,12 +101,35 @@ public final class DescriptorRenderer {
         var url = baseUrl + path + queryString;
 
         return switch (transport) {
-            case HTTP -> renderHttp(action, url, body);
+            case HTTP -> renderHttp(action, url, body, declaredHeaders);
             case WEBSOCKET, SSE -> renderStreaming(transport, action, url);
         };
     }
 
-    private static Map<String, Object> renderHttp(McpResource.Action action, String url, Object body) {
+    /** The values of the action's header-carried parameters, by header name, marking them consumed. */
+    private static Map<String, Object> headersFrom(McpResource.Action action, Map<String, Object> args,
+                                                   Set<String> consumed) {
+        var headers = new LinkedHashMap<String, Object>();
+
+        action.params().forEach((name, param) -> {
+            if (param.header() == null) {
+                return;
+            }
+
+            consumed.add(name);
+
+            var value = args.get(name);
+
+            if (value != null) {
+                headers.put(param.header(), String.valueOf(value));
+            }
+        });
+
+        return headers;
+    }
+
+    private static Map<String, Object> renderHttp(McpResource.Action action, String url, Object body,
+                                                  Map<String, Object> declaredHeaders) {
         var descriptor = new LinkedHashMap<String, Object>();
         descriptor.put("transport", Transport.HTTP.wireName());
         if (action.method() != null) {
@@ -113,14 +138,23 @@ public final class DescriptorRenderer {
         descriptor.put("url", url);
 
         var headers = new LinkedHashMap<String, Object>();
-        headers.put("Authorization", "Bearer " + TOKEN_PLACEHOLDER);
+        headers.put("Authorization", "Bearer " + CREDENTIAL_PLACEHOLDER);
         if (body != null) {
             headers.put("Content-Type", "application/json");
         }
+        headers.putAll(declaredHeaders);
         descriptor.put("headers", headers);
 
         if (body != null) {
             descriptor.put("body", body);
+        }
+
+        // What the action says about itself travels with the request it describes. For a write to
+        // a collection with constraints that is how to read a 409 — retry it, or never retry it —
+        // which an agent needs at the moment it is about to send, not in the catalogue it read
+        // some minutes earlier.
+        if (action.description() != null) {
+            descriptor.put("notes", action.description());
         }
 
         return descriptor;
@@ -135,7 +169,7 @@ public final class DescriptorRenderer {
         descriptor.put("url", url);
 
         var headers = new LinkedHashMap<String, Object>();
-        headers.put("Authorization", "Bearer " + TOKEN_PLACEHOLDER);
+        headers.put("Authorization", "Bearer " + CREDENTIAL_PLACEHOLDER);
         if (transport == Transport.SSE) {
             headers.put("Accept", transport.mediaType());
         }

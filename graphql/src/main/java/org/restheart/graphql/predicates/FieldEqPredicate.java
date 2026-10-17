@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.commons.jxpath.JXPathContext;
 import org.bson.BsonValue;
+import org.restheart.security.EvaluationScope;
 import org.restheart.utils.BsonUtils;
 
 import io.undertow.predicate.Predicate;
@@ -59,7 +60,13 @@ public class FieldEqPredicate implements PredicateOverJxPathCtx {
         }
     }
 
-    public static class Builder implements PredicateBuilder {
+    public static class Builder implements PredicateBuilder, EvaluationScope {
+        /** Reads the request this listing cannot have yet, so it never discriminates in a catalog. */
+        @Override
+        public Scope scope() {
+            return Scope.CALL;
+        }
+
         @Override
         public String name() {
             return "field-eq";

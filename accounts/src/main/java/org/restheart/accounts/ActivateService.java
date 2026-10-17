@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import org.restheart.plugins.security.PasswordPolicy;
 
 /**
  * PATCH /auth/activate
@@ -58,6 +59,9 @@ import java.util.HashSet;
 public class ActivateService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActivateService.class);
+
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -94,6 +98,12 @@ public class ActivateService implements JsonService {
         }
         if (!req.isPatch()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
+
+        // asked for a cookie this server does not read: refused before anything is done
+        if (TokenDelivery.refused(req.getQueryParameterOrDefault("delivery", null), conf)) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, TokenDelivery.COOKIE_UNAVAILABLE);
             return;
         }
 
@@ -147,8 +157,14 @@ public class ActivateService implements JsonService {
         }
         var user = userOpt.get();
 
+        var weakPassword = passwordPolicy.rejection(password);
+        if (weakPassword != null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, weakPassword);
+            return;
+        }
+
         var setDoc = new BsonDocument();
-        setDoc.put("password", new BsonString(TokenUtils.hashPassword(password)));
+        setDoc.put("password", new BsonString(TokenUtils.hashPassword(password, passwordPolicy.bcryptComplexity())));
 
         // Assign system ACL role (user is now activated)
         var effectiveRole = RequestOverrides.defaultRole(req, conf);
@@ -189,7 +205,8 @@ public class ActivateService implements JsonService {
         // fetch()-based endpoint → cookie (default) or body (bearer).
         // Default preserves the previous cookie-only behavior.
         var delivery = TokenDelivery.resolve(
-                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,
+                TokenDelivery.Mode.BODY, conf);
 
         var responseBody = new com.google.gson.JsonObject();
         responseBody.addProperty("message", "Account activated");

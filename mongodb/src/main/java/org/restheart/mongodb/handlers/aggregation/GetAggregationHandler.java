@@ -91,7 +91,7 @@ public class GetAggregationHandler extends PipelinedHandler {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
-        if (request.isInError()) {
+        if (request.isInError() || Boolean.TRUE.equals(request.attachedParam(MongoRequest.AGGREGATION_ANSWERED))) {
             next(exchange);
             return;
         }
@@ -187,6 +187,13 @@ public class GetAggregationHandler extends PipelinedHandler {
                 } catch (QueryVariableNotBoundException qvnbe) {
                     response.setInError(HttpStatus.SC_BAD_REQUEST, "cannot execute aggregation", qvnbe);
                     LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, qvnbe);
+                    next(exchange);
+                    return;
+                } catch (IllegalArgumentException iae) {
+                    // a custom operator (e.g. $vectorize) that refuses what the pipeline or the
+                    // variables give it: the caller's error, not the server's
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "cannot execute aggregation: " + iae.getMessage());
+                    LOGGER.warn("error executing aggregation /{}/{}/_aggrs/{}: {}", request.getDBName(), request.getCollectionName(), queryUri, iae.getMessage());
                     next(exchange);
                     return;
                 }

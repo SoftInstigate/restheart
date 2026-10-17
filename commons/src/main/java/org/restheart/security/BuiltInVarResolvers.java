@@ -66,6 +66,12 @@ final class BuiltInVarResolvers {
 
     /** {@code @user}, {@code @user.<property>} — the authenticated account. */
     private static final class UserVarResolver implements VarResolver {
+        /** Reads the account of the session, which a listing already has. */
+        @Override
+        public EvaluationScope.Scope scope() {
+            return EvaluationScope.Scope.LISTING;
+        }
+
         @Override
         public String name() {
             return "user";
@@ -115,6 +121,8 @@ final class BuiltInVarResolvers {
      * is a document, via {@link AclVarsInterpolator#getRequestBodyDocument(Request)}.
      */
     private static final class RequestVarResolver implements VarResolver {
+        // scope() is left at its CALL default: this reads the request that has not been made yet, its body included.
+
         @Override
         public String name() {
             return "request";
@@ -199,6 +207,8 @@ final class BuiltInVarResolvers {
 
     /** {@code @filter} — the current MongoDB filter document. */
     private static final class FilterVarResolver implements VarResolver {
+        // scope() is left at its CALL default: this reads the `filter` query parameter of the call.
+
         @Override
         public String name() {
             return "filter";
@@ -212,6 +222,12 @@ final class BuiltInVarResolvers {
 
     /** {@code @now} — current timestamp. Cacheable: the same instant for the whole request. */
     private static final class NowVarResolver implements VarResolver {
+        /** Reads the clock, which a listing already has. */
+        @Override
+        public EvaluationScope.Scope scope() {
+            return EvaluationScope.Scope.LISTING;
+        }
+
         @Override
         public String name() {
             return "now";
@@ -225,6 +241,12 @@ final class BuiltInVarResolvers {
 
     /** {@code @mongoPermissions}, {@code @mongoPermissions.<property>}. */
     private static final class MongoPermissionsVarResolver implements VarResolver {
+        /** Reads the permission being evaluated, which a listing already has. */
+        @Override
+        public EvaluationScope.Scope scope() {
+            return EvaluationScope.Scope.LISTING;
+        }
+
         @Override
         public String name() {
             return "mongoPermissions";
@@ -265,6 +287,12 @@ final class BuiltInVarResolvers {
      * occurrence must yield an independent value.
      */
     private static final class RndVarResolver implements VarResolver {
+        /** Reads nothing at all — it makes one up, which a listing already has. */
+        @Override
+        public EvaluationScope.Scope scope() {
+            return EvaluationScope.Scope.LISTING;
+        }
+
         @Override
         public String name() {
             return "rnd";
@@ -338,6 +366,12 @@ final class BuiltInVarResolvers {
      * it.
      */
     private static final class RolesVarResolver implements VarResolver {
+        /** Reads the roles of the session, which a listing already has. */
+        @Override
+        public EvaluationScope.Scope scope() {
+            return EvaluationScope.Scope.LISTING;
+        }
+
         private static final String UNAUTHENTICATED = "$unauthenticated";
 
         @Override
@@ -387,6 +421,12 @@ final class BuiltInVarResolvers {
      * attributes, and every attribute is text.
      */
     private static final class AuthenticatedVarResolver implements VarResolver {
+        /** Reads whether the session is authenticated, which a listing already has. */
+        @Override
+        public EvaluationScope.Scope scope() {
+            return EvaluationScope.Scope.LISTING;
+        }
+
         @Override
         public String name() {
             return "authenticated";
@@ -399,6 +439,8 @@ final class BuiltInVarResolvers {
     }
 
     private static final class QparamsVarResolver implements VarResolver {
+        // scope() is left at its CALL default: this reads a query parameter of the call.
+
         @Override
         public String name() {
             return "qparams";

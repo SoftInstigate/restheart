@@ -24,8 +24,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -422,12 +422,10 @@ public class AclVarsInterpolator {
      * {@code resolveVar} returns the expression itself as a string, which is right for an ACL
      * predicate — that was the behaviour before the SPI existed and the comparison simply fails.
      * It is wrong anywhere the caller needs to distinguish "resolved to nothing" from "nobody
-     * knows this name": a mistyped {@code @usr._id} in a pipeline would silently become the
+     * knows this name": a mistyped {@code @usr._id} in a GraphQL mapping would silently become the
      * literal string {@code "@usr._id"} and match a document, instead of failing as an unbound
      * variable.
      *
-     * @param request the current request, or {@code null} where there is none
-     * @param var the {@code @} expression
      * @return the resolved value, or empty when {@code var} is not a {@code @} expression or no
      *         resolver claims its name
      */
@@ -441,12 +439,25 @@ public class AclVarsInterpolator {
     }
 
     /**
+     * When the value of {@code var} is already determined — before the call that will read it
+     * exists. Asked of the resolver that claims its name, which is the only thing that knows.
+     *
+     * @return the declared scope, or empty when no resolver claims the name — an ordinary name,
+     *         not a variable at all
+     * @see VarResolver#scope()
+     */
+    public static Optional<EvaluationScope.Scope> scopeOfVar(String var) {
+        if (var == null || !var.startsWith("@") || var.length() < 2) {
+            return Optional.empty();
+        }
+
+        return AclVarsRegistryImpl.getInstance().resolver(varName(var)).map(VarResolver::scope);
+    }
+
+    /**
      * Whether some {@link VarResolver} claims {@code var}'s name — asked without resolving it, so
      * a caller can tell "this is a server-resolved variable" from "this is an ordinary name" even
      * when it has no request to resolve against.
-     *
-     * @param var the name to check
-     * @return whether a resolver claims it
      */
     public static boolean isRegisteredVar(String var) {
         return var != null && var.startsWith("@") && var.length() > 1
@@ -534,6 +545,54 @@ public class AclVarsInterpolator {
      *            the classloader to resolve the predicates, see java.util.ServiceLoader
      * @return the interpolated predicate
      */
+    /**
+     * One ACL variable as it appears in a predicate, and the quoted regions it must not be found
+     * in. Deliberately the same shape {@link #interpolateResolverExpr} substitutes at request
+     * time, so validation and interpolation agree on what a variable is.
+     */
+    private static final Pattern ANY_ACL_VAR = Pattern.compile(
+            "\\\\\"|\"(?:\\\\\"|[^\"])*\"|'(?:\\\\'|[^'])*'|"
+                    + "(@[A-Za-z_][A-Za-z0-9_]*(?![A-Za-z0-9_])(?:\\.[A-Za-z0-9_.]+|\\([^)]*\\)|\\[[^\\]]*\\])?)");
+
+    /**
+     * Checks that a permission's predicate will parse, with its variables masked.
+     *
+     * <p>A permission is parsed twice: once when it loads, to reject a typo before it can refuse
+     * requests in production, and once per request, after its variables have been substituted.
+     * Only the second parse sees values. The first sees {@code @qparams['trader']} — and square
+     * brackets are the predicate language's own syntax for a parameter list, so Undertow's
+     * tokenizer refuses the string and the permission is discarded, silently, for a predicate that
+     * would have worked on every request.
+     *
+     * <p>So the load-time parse is given what the request-time parse will see: each variable
+     * replaced by a quoted placeholder, which is the shape a substituted value takes. Syntax
+     * errors around the variables are still caught; the variables themselves are no longer
+     * required to be valid predicate syntax, which they never were.
+     */
+    public static void validatePredicate(String predicate, ClassLoader classLoader) {
+        PredicateParser.parse(maskVars(normalizeQuotes(predicate)), classLoader);
+    }
+
+    /** Every ACL variable outside a quoted string replaced by a placeholder value. */
+    static String maskVars(String predicate) {
+        if (predicate == null) {
+            return null;
+        }
+
+        var m = ANY_ACL_VAR.matcher(predicate);
+        var sb = new StringBuilder();
+
+        while (m.find()) {
+            if (m.group(1) != null) {
+                m.appendReplacement(sb, Matcher.quoteReplacement("'x'"));
+            }
+        }
+
+        m.appendTail(sb);
+
+        return sb.toString();
+    }
+
     public static Predicate interpolatePredicate(Request<?> request, String predicate, ClassLoader classLoader) throws ConfigurationException {
         var a = getAccountDocument(request);
 
@@ -1024,6 +1083,26 @@ public class AclVarsInterpolator {
      */
     private static final String SINGLE_QUOTE_PLACEHOLDER = "___RESTHEART_SINGLE_QUOTE___";
     private static final String DOUBLE_QUOTE_PLACEHOLDER = "___RESTHEART_DOUBLE_QUOTE___";
+
+    /**
+     * Puts the quotes back in a value that went through {@link #normalizeQuotes}: the parameter
+     * of a predicate as Undertow hands it to its builder. The placeholders exist so that
+     * Undertow's parser does not stumble on quotes inside a quoted string; the predicate that
+     * reads the value as JSON or BSON needs the quotes themselves, as in
+     * {@code bson-request-array-is-subset(key=roles, values={'"user"','"admin"'})}, where each
+     * value must be a BSON string. Without this step the predicate received
+     * {@code ___RESTHEART_DOUBLE_QUOTE___user___RESTHEART_DOUBLE_QUOTE___} and refused it
+     * (issue #761).
+     *
+     * @param value a parameter value, possibly with placeholders; {@code null} is returned as is
+     * @return the value with its quotes
+     */
+    public static String restoreQuotes(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.replace(SINGLE_QUOTE_PLACEHOLDER, "'").replace(DOUBLE_QUOTE_PLACEHOLDER, "\"");
+    }
 
     /**
      * Wraps a string value in single quotes for use in predicates.

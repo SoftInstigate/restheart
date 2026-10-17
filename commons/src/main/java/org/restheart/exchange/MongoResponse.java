@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
@@ -84,6 +85,9 @@ public class MongoResponse extends BsonResponse {
 
     /** The result of the MongoDB database operation that generated this response. */
     private OperationResult dbOperationResult;
+
+    /** @see #isRollbackRequested() */
+    private boolean rollbackRequested = false;
 
     /** List of warning messages to be included in the response. */
     private final List<String> warnings = new ArrayList<>();
@@ -286,6 +290,44 @@ public class MongoResponse extends BsonResponse {
         setStatusCode(code);
         setInError(true);
         setContent(getErrorContent(code, HttpStatus.getStatusText(code), message, t, false));
+
+        // A write is often refused after the handler has already described the document it was
+        // about to create. The POST handler adds `Location` the moment it sets 201 — its own
+        // comment says the handlers after it may change the status — and a RESPONSE interceptor,
+        // a data constraint say, then rolls the write back and calls this. Left alone, a 409
+        // would carry `Location` and `ETag` pointing at a document that was never created, which
+        // is worse than carrying nothing: a client that follows them gets a 404 for a write it
+        // was told had a location.
+        getHeaders().remove(Headers.LOCATION);
+        getHeaders().remove(Headers.ETAG);
+    }
+
+    /**
+     * Name of the error property marking a failure the same request can recover from by being sent
+     * again, unchanged.
+     */
+    public static final String RETRYABLE_ELEMENT_NAME = "retryable";
+
+    /**
+     * Sets the response in an error state that the client can clear by simply retrying.
+     * <p>
+     * {@code 409 Conflict} is the honest status for a write that lost a race with a concurrent one,
+     * and it is also the status for a write that broke a rule — an ETag mismatch, a duplicate key,
+     * a violated data constraint. Those must not be retried: the answer would be the same. Since
+     * the status code cannot tell the two apart, the error carries
+     * {@code "retryable": true} and nothing else does, so a client's whole decision is
+     * {@code if (error.retryable) send it again}.
+     * </p>
+     *
+     * @param code the HTTP status code to set
+     * @param message the error message to include in the response, or null
+     */
+    public void setInRetryableError(int code, String message) {
+        setInError(code, message);
+
+        if (getContent() != null && getContent().isDocument()) {
+            getContent().asDocument().put(RETRYABLE_ELEMENT_NAME, BsonBoolean.TRUE);
+        }
     }
 
     /**
@@ -451,6 +493,16 @@ public class MongoResponse extends BsonResponse {
     }
 
     /**
+     * @return true if an interceptor called {@link #rollback(MongoClient)} on a request running in
+     * a transaction. The transaction is aborted once every {@code RESPONSE} interceptor has run,
+     * rather than on the spot: aborting immediately would leave any later interceptor working on a
+     * dead session, and no single interceptor can know whether another one also wants to abort.
+     */
+    public boolean isRollbackRequested() {
+        return this.rollbackRequested;
+    }
+
+    /**
      * Restores a document to its previous state, effectively rolling back changes.
      * <p>
      * This method can be used when verification of a document after being updated
@@ -460,13 +512,19 @@ public class MongoResponse extends BsonResponse {
      * original data if the updated document doesn't fulfill required conditions.
      * </p>
      * <p>
-     * The rollback operation:
-     * <ul>
-     *   <li>For updated documents: restores the original document using the old data</li>
-     *   <li>For created documents: deletes the newly created document</li>
-     *   <li>Updates response headers (ETag, Location) appropriately</li>
-     * </ul>
+     * How the write is undone depends on whether the request runs in a transaction, which an
+     * interceptor asks for at request time with {@link MongoRequest#startTxn()}:
      * </p>
+     * <ul>
+     *   <li><strong>In a transaction</strong>: the transaction is marked for abort and aborted once
+     *   every {@code RESPONSE} interceptor has run. Nothing was ever committed, so there is nothing
+     *   to compensate for and no change stream event to take back.</li>
+     *   <li><strong>Without one</strong> (no replica set, or no {@code startTxn()}): a compensating
+     *   write — the original document is restored for an update, the new one is deleted for an
+     *   insert, and the response headers (ETag, Location) are updated. Both are guarded by the ETag
+     *   the write produced, so a concurrent change to the same document in the meantime leaves the
+     *   refused write in place.</li>
+     * </ul>
      * <p>
      * <strong>Note:</strong> rollback() does not support bulk updates due to the
      * complexity of tracking multiple document states.
@@ -479,6 +537,19 @@ public class MongoResponse extends BsonResponse {
     public void rollback(MongoClient mclient) throws Exception {
         var request = MongoRequest.of(getExchange());
         var response = MongoResponse.of(getExchange());
+
+        // The request runs in a transaction, so there is nothing to compensate for: the write is
+        // not visible to anyone yet and undoing it means not committing it. Marked rather than
+        // aborted here — see isRollbackRequested().
+        //
+        // This covers a client-driven transaction (?sid=&txn=) too, and there aborting discards the
+        // client's whole transaction rather than this write alone. That is the only safe outcome:
+        // leaving the refused document in the client's uncommitted transaction would let the client
+        // commit it, which is exactly the write this rollback exists to prevent.
+        if (request.getClientSession() != null && request.getClientSession().hasActiveTransaction()) {
+            this.rollbackRequested = true;
+            return;
+        }
 
         if (request.isBulkDocuments() || (request.isPost() && request.getContent() != null && request.getContent().isArray())) {
             throw new UnsupportedOperationException("rollback() does not support bulk updates");

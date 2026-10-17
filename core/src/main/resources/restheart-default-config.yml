@@ -32,6 +32,13 @@ ajp-listener:
 tokenBasicAuthMechanism:
   enabled: true
 
+# In-process Authentication
+# Signs in a request RESTHeart dispatched to itself in-process (the MCP call_api tool runs an
+# action of a resource this way, as the MCP session's own account). Inert for every request
+# that arrives on a listener: it only acts on an exchange the in-process dispatcher marked.
+inProcessAuthMechanism:
+  enabled: true
+
 # Basic Authentication
 # See https://restheart.org/docs/security/authentication#basic-authentication
 basicAuthMechanism:
@@ -83,6 +90,15 @@ jwtAuthenticationMechanism:
   fixedRoles: []
   #  - jwt-role
 
+# On a 401 from the MCP server, adds WWW-Authenticate: Bearer resource_metadata="…" pointing at
+# the OAuth protected resource metadata, beside the other challenges (Basic stays). MCP 2025-06-18
+# requires it; 2025-11-25 clients also find the metadata at the well-known URI without it.
+# It never authenticates anybody, and it speaks only when oauthProtectedResourceMetadataService and
+# mcpService are both enabled, and only on the MCP server's own path: elsewhere it is inert.
+# See https://restheart.org/docs/security/oauth#the-challenge-on-a-refused-mcp-request
+oauthResourceChallengeMechanism:
+  enabled: true
+
 # Digest Authentication
 # See https://restheart.org/docs/security/authentication#digest-authentication
 digestAuthMechanism:
@@ -130,6 +146,12 @@ mongoApiKeyAuthenticator:
   cache-size: 1000
   cache-ttl: 60000
   cache-expire-policy: AFTER_WRITE
+  # Request parameters to copy onto the account, as mongoRealmAuthenticator's attached-props.
+  # A deployment that attaches per-request facts before authentication wants them on every
+  # account whatever the credential: they are what its guards compare, and what a token minted
+  # from the account carries.
+  # attached-props:
+  #   - srvNode
 
 # mongoRealmAuthenticator authenticates users defined in a MongoDB collection.
 # See https://restheart.org/docs/security/authentication#mongo-realm-authenticator
@@ -141,9 +163,15 @@ mongoRealmAuthenticator:
   prop-password: password
   json-path-roles: $.roles
   bcrypt-hashed-password: true
+  # Also the cost restheart-accounts hashes with, so a password set there is never
+  # weaker than one set here. Raising it does not invalidate existing passwords:
+  # BCrypt records the cost inside the hash.
   bcrypt-complexity: 12
-  # When true, API requests to create or update accounts will return HTTP 400
-  # (Bad Request) if the provided password fails strength validation
+  # When true, a password that fails strength validation is refused with HTTP 400
+  # (Bad Request). This covers both ways a password is set: writing a user document
+  # directly to the users collection, and the restheart-accounts endpoints
+  # (registration, activation, password change and reset), which read this same
+  # setting so the two cannot disagree.
   enforce-minimum-password-strength: false
   # Password strength levels: 0=Weak, 1=Fair, 2=Good, 3=Strong, 4=Very Strong
   minimum-password-strength: 3
@@ -297,6 +325,24 @@ jwtTokenManager:
 # See: https://restheart.org/docs/security/authentication#token-endpoint
 authTokenService:
   uri: /token
+  # How long after a token has expired POST /token with grant_type=refresh_token still accepts it,
+  # in seconds. RESTHeart has one token, renewed by presenting itself; an OAuth client keeps it and
+  # refreshes only once it has expired — many wait for the 401 — so without a window the standard
+  # grant would never succeed and the client would re-run the whole authorization flow instead.
+  # The window is for the client that went idle, not for the one that is busy. A busy client gets
+  # its 401 seconds after expiry and renews at once; the client that hits an expired token is
+  # usually one that stopped calling for a while, so what this really sets is how long it may stay
+  # away and still resume without sending the user through the sign-in flow again.
+  # It does not extend the power to read, only the power to renew — but a renewal yields a token
+  # that reads, so for anyone holding the token grace and ttl are the same thing one step apart.
+  # Moving seconds between the two changes little; their sum is what matters.
+  # That sum is the revocation latency. renew() re-reads the account, so a user disabled or stripped
+  # of a role keeps working for at most ttl + refresh-grace-seconds, and that is the number to
+  # choose deliberately: 15m + 5m means twenty minutes.
+  # It does not bound a stolen token, which is renewable in turn and so has no expiry at all today.
+  # Bound the chain with a permission on the renewals claim instead:
+  #   "predicate": "path('/token') and method(POST) and lte(@user.renewals, 9)"
+  refresh-grace-seconds: 300
   # Redirect target for GET /token/redirect. null (default) means the endpoint
   # returns 400 unless a per-request override-redirect-url is attached instead.
   # Example: https://app.example.com/callback
@@ -309,7 +355,8 @@ authTokenService:
 oauthAuthorizationServerMetadataService:
   enabled: false
   # Optional: specify scheme and host for absolute URLs in metadata responses.
-  # If null, the request Host header is used as fallback.
+  # When null: X-Forwarded-Proto and X-Forwarded-Host, each when present, else the request itself.
+  # A per-request override-ai-mcp-public-base-url wins over both.
   # Example: https://api.example.com
   base-url: null
   # URI of the authorization endpoint (included in AS metadata as authorization_endpoint).
@@ -327,16 +374,36 @@ oauthAuthorizationServerMetadataService:
 # See: https://restheart.org/docs/security/authentication#oauth-authorization-code
 oauthAuthorizationService:
   enabled: false
-  # URL of the frontend login page. On GET /authorize, the user-agent is redirected here
-  # with all OAuth parameters forwarded as query string.
-  # Example: https://myapp.example.com/login
-  login-url: null
+  # The login page GET /authorize redirects the user-agent to, with all OAuth parameters
+  # forwarded as query string. The default is the page RESTHeart itself serves at /login
+  # (see static-resources above). The path says what it is: the page only works inside the
+  # authorization flow — opened on its own it has no redirect_uri to send the user back to, and
+  # says so instead of showing a form that would go nowhere.
+  # Relative by design: the browser resolves it against the origin it is already on, which is
+  # what keeps it correct behind a TLS-terminating proxy, where an absolute URL built from the
+  # Host header would come out as http:// and break the flow.
+  # Point it at your own page to replace it, e.g. https://myapp.example.com/login
+  # An instance serving many tenants can set it per request instead, by attaching
+  # `override-oauth-login-url` from an interceptor — one page per node is the wrong shape when each
+  # tenant has its own sign-in page. `override-oauth-allowed-redirect-uris` does the same for the
+  # list below, for the same reason.
+  login-url: /oauth/login
   # Allowed redirect_uri values (supports * wildcard).
   # Example:
   #   - http://localhost:*
   #   - https://claude.ai/api/mcp/auth_callback
   allowed-redirect-uris:
     - http://localhost:*
+
+  # Which token the flow issues is decided by an OAuthTokenIssuer, when a deployment registers one
+  # (a Provider<OAuthTokenIssuer>, found by type: there is no key to set here, registering it is
+  # the switch). Without one, /token answers the authorization code with the account's own JWT,
+  # renewable without end. With one, the sign-in page gains a step: it asks GET /authorize/offer
+  # what this account may choose (204 nothing, 200 an offer, 403 a refusal), the person chooses,
+  # and the choices travel to POST /authorize as choice.<name> query parameters — preselected by
+  # the client's scope, one <name>:<value> entry per choice. What the issuer seals in the code is
+  # what it mints at /token, and that code is never answered with the JWT instead.
+  # See: https://restheart.org/docs/security/oauth#deciding-which-token-the-flow-issues
 
 # OAuth 2.0 Protected Resource Metadata (RFC 9728)
 # Endpoint: GET /.well-known/oauth-protected-resource[/{resource-path}]
@@ -346,7 +413,9 @@ oauthProtectedResourceMetadataService:
   enabled: false
   # Optional: explicit server base URL for absolute URLs in metadata responses.
   # Useful when RESTHeart is behind a TLS-terminating reverse proxy (Host header arrives as http://).
-  # Resolution order: base-url → X-Forwarded-Proto/Host headers → request Host header.
+  # Resolution order: the override-ai-mcp-public-base-url a multi-tenant deployment attaches →
+  # base-url → X-Forwarded-Proto and X-Forwarded-Host, each when present → the request itself.
+  # oauthResourceChallengeMechanism names this document with the same resolution.
   # Example: https://api.example.com
   base-url: null
 
@@ -379,7 +448,12 @@ accountsConfig:
   # JWT access token TTL in minutes. Key and issuer are sourced from jwtConfigProvider.
   jwt-ttl: 15
   cookie-domain: localhost
-  cookie-name: rh_auth
+  # The auth cookie's name; unset, the one authCookieSetter sets (/authCookieSetter/name).
+  # cookie-name: rh_auth
+  # Whether a token can be handed over as that cookie (delivery=cookie); unset, whether
+  # authCookieHandler is enabled. When false, delivery=cookie is refused with 400 and the
+  # endpoints that default to the cookie use the body or the URL fragment instead.
+  # cookie-delivery: true
   frontend-url: http://localhost:4200
   frontend-app-url: http://localhost:4200/app
   terms-version: "1.0"
@@ -683,24 +757,56 @@ vectorSearchIndexListInterceptor:
 vectorSearchIndexDeleteInterceptor:
   enabled: true
 
-# Extracts text (Apache Tika) from every file uploaded to any GridFS bucket, splits it
-# into overlapping chunks and stores them in target-collection. embedding-provider is
-# optional: leave blank to rely on MongoDB's own autoEmbed index type on the chunks
-# collection instead of restheart-ai embedding them itself. A filename with a recognized
-# source code extension (.java, .py, .go, ...) is chunked at function/class boundaries
-# instead, with no overlap between chunks -- see CodeAwareSplitter.
+# Splits the files uploaded to a GridFS bucket into text chunks (Apache Tika extracts the text) and
+# writes them to a collection, as the bucket's "chunking" metadata says: rules with a filter on the
+# file (contentType, extension, metadata), a target-collection, and optionally chunk-size,
+# chunk-overlap and splitter (auto, text, code); the first rule that matches is applied. A bucket
+# without "chunking" is never chunked. The chunker computes no vectors: the target collection embeds
+# the chunks with its own vectorSearch rules, e.g. { "textField": "text", "embeddingField": "vector",
+# "groupBy": "fileId" } to embed a file's chunks together with a contextual model. Prose is cut
+# as LangChain's RecursiveCharacterTextSplitter does: at paragraphs, then lines, sentences and words,
+# the pieces put back together up to chunk-size, the overlap made of whole pieces; a word is never
+# cut, a chunk of whitespace alone is not written, one with fewer than 20 letters and digits is joined
+# to its neighbour. See https://github.com/SoftInstigate/restheart/issues/754
 documentChunkingInterceptor:
   enabled: false
+  # defaults for a rule that sets none
   chunk-size: 1000
   chunk-overlap: 200
-  target-collection: _chunks
-  embedding-provider: ""
+  # true: the upload answers once the file is stored, and the file is chunked afterwards; what
+  # the chunker did is written on the file's document as "chunking": { status, rule, chunks,
+  # warnings, at }, pending first. Overridable per request: override-ai-chunking-async (#758)
+  async: false
+  # files chunked at once on this node, when async; a request may also cap its own database with
+  # override-ai-chunking-max-concurrent
+  max-concurrent: 2
+  # a file still pending or running after resume-after-minutes lost its job, when a node stopped:
+  # every resume-scan-minutes (0: never) such files are claimed, one node each, and chunked again
+  resume-after-minutes: 15
+  resume-scan-minutes: 5
+
+# Refuses malformed "chunking" rules in a bucket's metadata when it is written, with a 400 naming
+# the rule: no target-collection, an unknown key, a filter value of the wrong kind, an embedding key
+# that belongs to the target collection's vectorSearch rules. No options.
+chunkingMetadataChecker:
+  enabled: true
+
+# Before a bulk delete of files in a bucket with chunking rules, notes which files it may remove, so
+# documentChunkingInterceptor deletes their chunks afterwards. Acts on nothing else. No options.
+chunkedFilesDeleteCollector:
+  enabled: true
 
 # Embeds a text field automatically on write. Also requires the target collection to
 # declare { "vectorSearch": { "textField": "...", "embeddingField": "..." } } metadata.
 autoEmbeddingInterceptor:
   enabled: false
   embedding-provider: ""
+
+# Refuses malformed vectorSearch collection metadata (the embedding rules autoEmbeddingInterceptor
+# and $vectorize read) when it is written, with a 400 naming the rule: a rule without textField
+# or embeddingField, or two rules on the same embeddingField. No options.
+vectorSearchMetadataChecker:
+  enabled: true
 
 # Registers the $vectorize aggregation operator (embeds text to a vector inline, at
 # query time, anywhere in a pipeline).
@@ -723,9 +829,19 @@ rerankingInterceptor:
 # no vector search index of any kind. See https://github.com/SoftInstigate/restheart/issues/712
 vectorScanInterceptor:
   enabled: false
-  # Caps how many documents get scored per query, enforced via an injected $limit.
+  # Used when the stage omits maxCandidates: how many documents get scored per query,
+  # enforced via an injected $limit.
   default-max-candidates: 10000
+  # Used when the stage omits limit: how many results come back.
   default-limit: 10
+  # Hard caps no stage can exceed: the effective value is min(what the stage asks for, cap).
+  # Scoring runs in RESTHeart, not in MongoDB, so on a shared node they bound how many vectors
+  # one query may pull into memory. Unset means no cap. A capped response carries a
+  # "Warning: 299" header saying so. Per request, a multi-tenant deployment attaches
+  # override-ai-max-candidates-cap and override-ai-max-limit-cap instead (0 lifts the cap).
+  # See https://github.com/SoftInstigate/restheart/issues/755
+  # max-candidates-cap: 2000
+  # max-limit-cap: 100
 
 # Embedding providers (Provider<EmbeddingModel>) - enable the ones you use.
 openAIEmbeddingProvider:
@@ -733,12 +849,14 @@ openAIEmbeddingProvider:
   api-key: $(OPENAI_API_KEY)
   model: text-embedding-3-small
   base-url: https://api.openai.com/v1
+  # dimensions: 512          # a shorter vector (text-embedding-3 models); the model's default when omitted
 
 voyageEmbeddingProvider:
   enabled: false
   api-key: $(VOYAGE_API_KEY)
-  model: voyage-3.5
+  model: voyage-4
   base-url: https://api.voyageai.com/v1
+  # output-dimension: 1024   # 256, 512, 1024 or 2048 where the model allows it; the model's default when omitted
   # Optional: "query" or "document" - omitted entirely (not sent as "") when blank.
   # input-type: document
 
@@ -771,7 +889,7 @@ cohereRerankProvider:
 voyageRerankProvider:
   enabled: false
   api-key: $(VOYAGE_API_KEY)
-  model: rerank-2.5
+  model: rerank-3
   base-url: https://api.voyageai.com/v1
 
 # Provider the MongoClient via @Inject('mclient')
@@ -790,6 +908,13 @@ mongo:
   # every MongoDB resource from MCP regardless of that per-resource metadata.
   # See https://restheart.org/docs/ai/mcp
   mcp: true
+
+  # The URL the Location header of a created document, file or session starts with, including
+  # the mount of this service (e.g. https://api.example.com/mongo). Unset: the scheme comes from
+  # X-Forwarded-Proto and the host from X-Forwarded-Host, each when present, else from the
+  # request. A multi-tenant deployment overrides it per request by attaching the tenant's own
+  # value as override-mongo-instance-base-url.
+  instance-base-url: null
 
   # Expose MongoDB resources at specific URIs.
   # 'what': MongoDB resource (/db[/coll[/docid]]) or '*' for all databases
@@ -836,6 +961,11 @@ mongo:
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
 
+  # How often an idle change stream is kept in use: a comment on SSE, a ping on WebSocket.
+  # A stream with nothing to report sends nothing at all, and a proxy in front of RESTHeart
+  # closes a connection idle for its own timeout. Set to 0 to send none.
+  change-streams-keep-alive-ms: 20_000
+
   # default-pagesize is the number of documents returned when the pagesize query
   # parameter is not specified
   # See https://restheart.org/docs/read-docs#paging
@@ -862,6 +992,27 @@ mongo:
   query-time-limit: 0 # in milliseconds
   # The time limit in milliseconds for processing aggregations. Set to 0 for no time limit.
   aggregation-time-limit: 0 # in milliseconds
+
+  # Collections can declare integrity rules that span documents, as "constraints" metadata: an
+  # aggregation that must return no documents (or at least one, with holdsWhen: notEmpty). They are
+  # evaluated after the write and inside its transaction, so a broken rule aborts it and nothing was
+  # ever committed. See https://restheart.org/docs/mongodb-rest/constraints
+  #
+  # This names the collection holding their guard documents — one per guarded collection, in the
+  # same database as the collection, incremented inside the write's transaction. It exists to be
+  # contended and its content is irrelevant: without it two writes that are each valid on their own
+  # snapshot and invalid together would both commit, which is the anomaly an constraint exists to
+  # prevent. The cost is that writes to a collection declaring constraints serialize, which is why
+  # constraints are opt-in per collection.
+  #
+  # Declaring constraints requires MongoDB configured as a replica set: without transactions a write
+  # that breaks one could not be undone, and such writes are refused with 501 rather than let
+  # through unchecked.
+  constraints-guard-collection: _constraints
+
+  # The schema store: the collection of each database holding its JSON schemas, which collections
+  # name in their jsonSchema metadata. See https://restheart.org/docs/mongodb-rest/json-schema-validation
+  schema-store: _schemas
 
 # MongoDB GraphQL API
 # See https://restheart.org/docs/mongodb-graphql/
@@ -894,17 +1045,60 @@ mcpService:
   enabled: true
   uri: /mcp
 
+  # WHO SEES WHAT. A catalogue is composed per caller: for each MCP-enabled resource RESTHeart
+  # reads the caller's own ACL permissions and lists the resource as soon as one of them could
+  # allow a read of it. A rule that decides on something the call carries — a query parameter, the
+  # body — cannot be decided before the call exists, so it is left open and the resource is listed;
+  # the call itself is then authorized as usual and may answer 403.
+  #
+  # A resource can override that from its own "mcp" metadata block, for what the permissions
+  # cannot say:
+  #
+  #   "mcp": { "description": "...", "hide_from_roles": ["employee"] }
+  #   "mcp": { "description": "...", "show_if": "equals(@user.plan, 'gold')" }
+  #
+  # hide_from_roles wins over everything; show_if replaces the reading of the permissions and may
+  # only use conditions a listing can evaluate (the session, the resource), never the call.
+  # Neither grants nor denies access: they decide what is announced.
+  # See https://restheart.org/docs/ai/mcp
+
   # How long list_apis/how_to_call results are cached before refreshing. Trades instant
   # consistency for a bounded staleness window — see the "catalog cache" section of the docs.
   catalog-ttl-seconds: 300
 
+  # How often at most a client subscribed to a resource is told it changed
+  # (notifications/resources/updated). The notification carries no payload — it means "re-read" —
+  # so a subscriber already told once learns nothing from being told again before it reads, and a
+  # busy collection would otherwise turn every write into a message. The first change in a quiet
+  # period is sent immediately; further ones are collapsed into a single notification per interval.
+  subscription-notify-interval-seconds: 5
+
+  # How long an MCP session may go unused, with no open stream, before the server ends it.
+  # A session normally ends when the client sends DELETE, which most clients that go away
+  # never do; without a timeout their sessions stay in memory for the life of the process.
+  # A session subscribed to a resource is never ended this way. A client that comes back after
+  # its session ended is answered 404 and sends a new initialize, as the MCP specification
+  # prescribes. 0 keeps every session until DELETE.
+  session-idle-timeout-seconds: 1800
+
+  # How often an idle MCP stream (SSE) gets a comment line, to keep the connection in use: a
+  # proxy in front of RESTHeart drops a connection idle for its own timeout, and the client would
+  # wait forever. A comment that cannot be written ends the stream, and the client reconnects.
+  # 0 sends none.
+  stream-keep-alive-seconds: 20
+
   # Enables the MCP "resources" primitive (resources/list, resources/read,
-  # resources/templates/list) in addition to the list_apis/how_to_call tools — the official MCP
-  # SDK manages resources as a single server-wide registry, not per-request, so it needs one
-  # canonical externally-visible URL rather than whatever a given request's Host header says.
+  # resources/templates/list, resources/subscribe) in addition to the list_apis/how_to_call
+  # tools — the official MCP SDK manages resources as a single server-wide registry, not
+  # per-request, so it needs one canonical externally-visible URL rather than whatever a given
+  # request's Host header says.
+  # It is also what list_apis builds its URIs from, so both channels name a resource the same
+  # way. Only when this is commented out does list_apis fall back to deriving the base URL from
+  # the request, which a TLS-terminating proxy can make wrong by handing over an http:// Host for
+  # a site published over https://.
   # Defaults to the standard local setup; override to your real public URL for any other
-  # deployment (a reverse proxy, a custom host/port, ...). Comment out to disable the resources
-  # primitive entirely (list_apis/how_to_call keep working regardless).
+  # deployment (a reverse proxy, a tunnel such as ngrok, a custom host/port, ...). Comment out to
+  # disable the resources primitive entirely (list_apis/how_to_call keep working regardless).
   public-base-url: http://localhost:8080
 
 # Automatically creates indexes on {"descriptor.uri":1} and {"descriptor.name":1}
@@ -945,6 +1139,15 @@ static-resources:
   - what: static/metrics
     where: /metrics-ui
     welcome-file: restheart-metrics.html
+    embedded: true
+  # Sign-in page for the OAuth Authorization Code flow, served from restheart-security.jar.
+  # It is what oauthAuthorizationService redirects to (see its `login-url` below), and it is
+  # public — a login page behind a login is of no use. Serving it costs nothing when OAuth is
+  # disabled: it is a static form that posts to /authorize, which answers 404 until you enable
+  # the service. Replace it with your own by pointing `login-url` elsewhere.
+  - what: static/oauth
+    where: /oauth/login
+    welcome-file: login.html
     embedded: true
 
 # Simple ping service
@@ -987,12 +1190,17 @@ database-probe:
 roles:
   uri: /roles
 
-# A global blacklist for mongodb operators in filter query parameter
+# A global blacklist for mongodb operators in the filter and keys query parameters: the operators
+# that run JavaScript on the server. A request that uses one is refused with 403, nested anywhere
+# in them. The aggregation pipeline of a PATCH request is checked by updatePipelineSecurityChecker
+# against the aggregationSecurity blacklists below.
 filterOperatorsBlacklist:
-  blacklist: ["$where"]
+  blacklist: ["$where", "$function", "$accumulator"]
   enabled: true
 
-# Aggregation pipeline security settings
+# Aggregation pipeline security settings. They apply to the aggregations declared on collections,
+# to change streams, to GraphQL apps and, through updatePipelineSecurityChecker, to the aggregation
+# pipeline of a PATCH request
 aggregationSecurity:
   enabled: true
   # Block dangerous pipeline stages that can access other databases or execute code
@@ -1003,6 +1211,12 @@ aggregationSecurity:
   allowCrossDatabaseOperations: false
   # Control JavaScript execution in aggregation pipelines
   allowJavaScriptExecution: false
+
+# updatePipelineSecurityChecker refuses with 403 a PATCH whose body is an aggregation pipeline that
+# the aggregationSecurity blacklists forbid. Enabled by default; disable it only where
+# aggregationSecurity is disabled too
+# updatePipelineSecurityChecker:
+#   enabled: true
 
 # bruteForceAttackGuard defends from brute force password cracking attacks
 # by returning `429 Too Many Requests` when more than
@@ -1022,6 +1236,18 @@ bruteForceAttackGuard:
   # 0 -> k.k.k.k
   # 2 -> y.y.y.y
   x-forwarded-for-value-from-last-element: 0
+  # A server reached through more than one entry, each with its own chain of proxies, finds the
+  # client at a different position on each: the first override whose predicate matches decides.
+  # The predicate must tell the entries apart by something a client cannot forge, e.g. a host only
+  # one entry forwards.
+  # x-forwarded-for-overrides:
+  #   - predicate: regex[pattern='.*\.example\.app', value='%{i,Host}', full-match=true]
+  #     value-from-last-element: 1
+  # Mail an alarm when a source gets blocked, with the emails provider configured; at most one
+  # mail per source every notify-cooldown-minutes. The log has it anyway, on one line that starts
+  # with "Brute force guard:".
+  # notify-email: security@example.com
+  # notify-cooldown-minutes: 60
 
 # Sets the X-Powered-By: restheart.org response header
 xPoweredBy:
@@ -1093,6 +1319,28 @@ requestsMetricsCollector:
 
 jvmMetricsCollector:
   enabled: false
+
+# Logs a thread dump, virtual threads included, when blocking requests stop being served: every
+# interval-seconds a platform thread hands the request executor an empty task, and if it has not
+# started threshold-seconds later the dump goes to the log, once per episode. For containers with
+# no shell to run jcmd from, where the log is the only thing left to read.
+# halt-after-seconds > 0: still not serving that long after the probe, the process halts with
+# status 70 for its orchestrator to replace it (ECS, Kubernetes). A stuck process does not recover.
+# notify-email: also mail the report to this address, when the emails provider is configured.
+workersWatchdog:
+  enabled: false
+  interval-seconds: 10
+  threshold-seconds: 30
+  halt-after-seconds: 0
+  notify-email: null
+
+# Runs a request through this server's handler chain in-process, without a socket, for plugins
+# such as the MCP service and the document chunker. An in-process request gets the same
+# connection-options as a request from the network, MAX_ENTITY_SIZE and the timeouts included.
+# timeout-seconds: how long a caller waits for the whole response. The caller parks a virtual
+# thread, so waiting costs nothing; the timeout only drops a connection whose response never comes.
+in-process-dispatcher:
+  timeout-seconds: 600
 
 # Base configuration for core module
 core:

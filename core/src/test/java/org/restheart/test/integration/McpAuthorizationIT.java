@@ -32,21 +32,17 @@ import org.junit.jupiter.api.Test;
 import kong.unirest.Unirest;
 
 /**
- * Authorization parity between {@code resources/read} and the equivalent REST {@code GET}
- * (restheart#722).
+ * Authorization parity between {@code resources/read} and the equivalent REST {@code GET}.
  *
- * <p>Documents-mode reads execute in-process: no self-directed HTTP call, therefore no real
- * exchange for the ACL engine to match against. {@code McpService.operationsToAuthorize()}
- * bridges that by describing the equivalent REST operation as a {@code RequestDescriptor}, which
- * {@code core}'s {@code AuthorizersHandler} evaluates against every {@code
- * DescriptorAwareAuthorizer} using the same voting algorithm real requests go through.
+ * <p>A read through MCP runs the composed request through the whole pipeline in-process, so the
+ * ACL engine matches a real exchange and decides exactly as it would for the REST call. This suite
+ * proves the two answer the same way.
  *
- * <p>This is the suite that proves the bridge holds, and it is deliberately written as a
- * <b>parity</b> check rather than a list of expected outcomes: each test asks REST and MCP the
- * same question and asserts they answer the same way. A test that merely hard-coded "MCP denies
- * this" would still pass if MCP started denying everything — which is precisely the bug that
- * shipped once already, when overriding {@code operationsToAuthorize()} made every {@code /mcp}
- * request 403 regardless of what it was asking for.
+ * <p>It is deliberately written as a <b>parity</b> check rather than a list of expected outcomes:
+ * each test asks REST and MCP the same question and asserts they agree. A test that merely
+ * hard-coded "MCP denies this" would still pass if MCP started denying everything — which is
+ * precisely the bug that shipped once, when every {@code /mcp} request answered 403 regardless of
+ * what it was asking for.
  *
  * <p>The {@code mcpuser} role (see {@code conf-overrides.yml}) may reach {@code /mcp} and may
  * {@code GET} exactly one database, so both the allowed and the denied side are exercised by the
@@ -71,11 +67,9 @@ public class McpAuthorizationIT extends AbstactIT {
         seedCollection(ALLOWED_DB, ALLOWED_COLL, "visible");
         seedCollection(DENIED_DB, DENIED_COLL, "classified");
 
-        // past CachedResourceLookup's TTL, so both collections are in the catalog
-        Thread.sleep(1_500);
-
         asMcpUser = new McpTestClient(BASE, MCPUSER_BASIC);
         asMcpUser.initialize();
+        asMcpUser.awaitResource(ALLOWED_COLL);
     }
 
     @Test
@@ -94,24 +88,25 @@ public class McpAuthorizationIT extends AbstactIT {
         var restStatus = restGetStatus(DENIED_COLL + "?page=1");
         assertEquals(403, restStatus, "precondition: mcpuser should be refused the denied collection over REST");
 
-        var response = asMcpUser.rawRpc("resources/read", """
+        var envelope = asMcpUser.rpc("resources/read", """
                 {"uri":"%s?page=1"}
                 """.formatted(DENIED_COLL));
 
-        // the denial lands at the HTTP layer, before JSON-RPC: authorization runs on the
-        // descriptor McpService derives, so the whole call is refused rather than answered with
-        // an error payload
-        assertEquals(403, response.statusCode(),
-                "REST denied this read but MCP did not — the ACL bridge is not holding: " + response.body());
-        assertFalse(response.body().contains("classified"),
-                "denied data leaked through resources/read: " + response.body());
+        // the read runs through the handler chain in-process (#741), so the ACL refuses it there
+        // exactly as it refuses the GET, and the refusal comes back as a JSON-RPC error: no
+        // descriptor is derived, nothing is replicated, and nothing at the HTTP layer knows
+        assertTrue(envelope.containsKey("error"),
+                "REST denied this read but MCP did not — the in-process ACL is not holding: " + envelope.toJson());
+        assertEquals(-32003, envelope.getDocument("error").getInt32("code").getValue(),
+                "a refused read must say it was refused, not that the resource is missing: " + envelope.toJson());
+        assertFalse(envelope.toJson().contains("classified"),
+                "denied data leaked through resources/read: " + envelope.toJson());
     }
 
     @Test
     public void denialIsAboutTheData_notAboutReachingMcp() throws Exception {
-        // the regression that shipped once: overriding operationsToAuthorize() made the handler
-        // deny every /mcp request, so nothing worked. Tools must keep working for a caller whose
-        // data permissions are narrow.
+        // the regression that shipped once: the handler denied every /mcp request, so nothing
+        // worked. Tools must keep working for a caller whose data permissions are narrow.
         var catalog = asMcpUser.callTool("list_apis", "{}");
 
         assertTrue(catalog.containsKey("resources"),
@@ -119,21 +114,30 @@ public class McpAuthorizationIT extends AbstactIT {
     }
 
     @Test
-    public void catalogIsNotAclFiltered_butReadingStillIs() throws Exception {
-        // #616's deliberate choice: visibility is per-resource mcp.enabled, not per-caller ACL.
-        // Worth pinning, because "the catalog hides it" is a tempting but false substitute for
-        // enforcement — the guarantee is that reading is refused, not that listing is.
+    public void catalogIsAclFiltered_andReadingStillIs() throws Exception {
+        // This used to assert the opposite, on #616's reasoning that visibility is per-resource
+        // mcp.enabled rather than per-caller ACL, and that hiding is no substitute for refusing.
+        // The refusing half still holds and is asserted below. The hiding half was reconsidered:
+        // a catalog entry carries the resource's URI, its actions including the writing ones, its
+        // parameter names and its mcp.description — prose written to explain what the data is —
+        // so an unfiltered catalog let any caller who could reach /mcp enumerate the server.
+        // Filtering is now an addition to enforcement, not a substitute for it: both are pinned
+        // here, in the same test, so neither can be dropped in favour of the other.
         var uris = asMcpUser.callTool("list_apis", "{}").getArray("resources").stream()
                 .map(r -> r.asDocument().getString("uri").getValue())
                 .toList();
 
-        assertTrue(uris.contains(DENIED_COLL),
-                "the catalog is not ACL-filtered by design; got " + uris);
+        assertFalse(uris.contains(DENIED_COLL),
+                "a resource this caller cannot read was listed in the catalog; got " + uris);
 
-        var response = asMcpUser.rawRpc("resources/read", """
+        // the positive control: a filter that hid everything would satisfy the assertion above
+        assertTrue(uris.contains(ALLOWED_COLL),
+                "the catalog hid a resource this caller may read, so it is denying rather than filtering; got " + uris);
+
+        var envelope = asMcpUser.rpc("resources/read", """
                 {"uri":"%s?page=1"}
                 """.formatted(DENIED_COLL));
-        assertEquals(403, response.statusCode(), "listed, but reading it must still be refused");
+        assertTrue(envelope.containsKey("error"), "hidden from the catalog, and reading it must still be refused: " + envelope.toJson());
     }
 
     @Test
@@ -149,17 +153,32 @@ public class McpAuthorizationIT extends AbstactIT {
     }
 
     @Test
-    public void tokenIssuedForANarrowCaller_carriesOnlyThatCallersRoles() throws Exception {
-        // get_token must never widen privilege: the token is usable exactly where the session is
-        var accessToken = asMcpUser.callTool("get_token", "{}").getString("access_token").getValue();
+    public void callApiForANarrowCaller_runsWithExactlyThatCallersGrants() throws Exception {
+        // call_api must never widen privilege: the in-process request is authorized as the
+        // session's own identity, so it can do exactly what the session can do over REST
+        var size = asMcpUser.callTool("call_api", """
+                {"resource":"%s","action":"size","args":{}}
+                """.formatted(ALLOWED_COLL));
+        assertEquals(200, size.getInt32("status").getValue(), "the caller's own read grant was lost in-process: " + size.toJson());
+        assertTrue(size.getDocument("body").containsKey("_size"), "the API's own body comes back: " + size.toJson());
 
-        var allowed = Unirest.get(ALLOWED_COLL).header("Authorization", "Bearer " + accessToken)
-                .queryString("page", "1").asString();
-        var denied = Unirest.get(DENIED_COLL).header("Authorization", "Bearer " + accessToken)
-                .queryString("page", "1").asString();
+        // mcpuser may GET the allowed collection and nothing else: the write is refused by the
+        // ACL, and the refusal is a result the agent reads, not a tool error
+        var create = asMcpUser.callTool("call_api", """
+                {"resource":"%s","action":"create","args":{"body":{"marker":"smuggled"}}}
+                """.formatted(ALLOWED_COLL));
+        assertEquals(403, create.getInt32("status").getValue(), "call_api granted more than the caller had: " + create.toJson());
 
-        assertEquals(200, allowed.getStatus(), "the issued token lost the caller's own grants");
-        assertEquals(403, denied.getStatus(), "the issued token granted more than the caller had");
+        // the denied collection is hidden from this caller's catalog, but call_api never refuses on
+        // catalogue visibility (#743): it dispatches, and the ACL that would refuse the GET refuses
+        // this too, so the agent reads the real status instead of being told the resource is absent
+        var denied = asMcpUser.callTool("call_api", """
+                {"resource":"%s","action":"size","args":{}}
+                """.formatted(DENIED_COLL));
+        assertEquals(403, denied.getInt32("status").getValue(),
+                "call_api reached a collection this caller may not read: " + denied.toJson());
+        assertFalse(denied.toJson().contains("classified"),
+                "denied data leaked through call_api: " + denied.toJson());
     }
 
     // ----------------------------------------------------------------- helpers

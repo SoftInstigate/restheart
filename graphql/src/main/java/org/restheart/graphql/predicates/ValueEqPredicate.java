@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.bson.BsonValue;
+import org.restheart.security.EvaluationScope;
 import org.restheart.utils.BsonUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
@@ -48,7 +49,13 @@ public class ValueEqPredicate implements PredicateOverBsonValue {
         return this.value.equals(value);
     }
 
-    public static class Builder implements PredicateBuilder {
+    public static class Builder implements PredicateBuilder, EvaluationScope {
+        /** Reads the request this listing cannot have yet, so it never discriminates in a catalog. */
+        @Override
+        public Scope scope() {
+            return Scope.CALL;
+        }
+
         @Override
         public String name() {
             return "value-eq";

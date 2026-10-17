@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
+import org.restheart.plugins.security.PasswordPolicy;
 
 /**
  * PATCH /auth/reset-password
@@ -59,6 +60,9 @@ public class ResetPasswordService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResetPasswordService.class);
     private static final int PASSWORD_MIN_LENGTH = 8;
+
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -96,6 +100,12 @@ public class ResetPasswordService implements JsonService {
 
         if (!req.isPatch()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
+
+        // asked for a cookie this server does not read: refused before anything is done
+        if (TokenDelivery.refused(req.getQueryParameterOrDefault("delivery", null), conf)) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, TokenDelivery.COOKIE_UNAVAILABLE);
             return;
         }
 
@@ -164,8 +174,14 @@ public class ResetPasswordService implements JsonService {
             return;
         }
 
+        var weakPassword = passwordPolicy.rejection(password);
+        if (weakPassword != null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, weakPassword);
+            return;
+        }
+
         // 6a. Persist the new hashed password
-        var hashed = TokenUtils.hashPassword(password);
+        var hashed = TokenUtils.hashPassword(password, passwordPolicy.bcryptComplexity());
         var updates = new BsonDocument("password", new BsonString(hashed));
         try {
             db(req).updateUser(storedEmail, updates);
@@ -193,7 +209,8 @@ public class ResetPasswordService implements JsonService {
         // 7b. Auto-login: deliver the token per the `delivery` query parameter.
         // fetch()-based endpoint → cookie (default) or body (bearer).
         var delivery = TokenDelivery.resolve(
-                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,
+                TokenDelivery.Mode.BODY, conf);
 
         // 8. Success response
         var responseBody = new JsonObject();

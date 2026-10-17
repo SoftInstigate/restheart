@@ -22,9 +22,15 @@ package org.restheart.security.authenticators;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.when;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonArray;
@@ -34,9 +40,20 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonNull;
 import org.bson.BsonString;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.restheart.exchange.Request;
 import org.restheart.security.ApiKeyCredential;
+import org.restheart.security.MongoRealmAccount;
+import org.restheart.security.tokens.JwtTokenManager;
+
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 
 public class MongoApiKeyAuthenticatorTest {
 
@@ -91,6 +108,34 @@ public class MongoApiKeyAuthenticatorTest {
     }
 
     // ── roles ────────────────────────────────────────────────────────────────
+
+    // ── attached props ───────────────────────────────────────────────────────
+
+    @Test
+    void attachedPropsAreCopiedOntoACopyOfTheAccount() throws Exception {
+        set("attachedProps", java.util.List.of("srvNode", "missing"));
+
+        final var cached = this.authenticator.accountOf("tenant", key());
+        final var req = mock(Request.class);
+        when(req.attachedParams()).thenReturn(Map.of("srvNode", "a1b2c3.eu-central-1-free-1.restheart.com", "ignored", "x"));
+
+        final var account = this.authenticator.withAttachedParams(req, cached);
+
+        assertEquals("a1b2c3.eu-central-1-free-1.restheart.com", account.properties().getString("srvNode").getValue());
+        assertFalse(account.properties().containsKey("ignored"), "only the configured names are copied");
+        assertFalse(account.properties().containsKey("missing"), "a parameter that is not there is skipped");
+        assertEquals("robot", account.getPrincipal().getName());
+        assertEquals("tenant", account.db());
+        assertFalse(cached.properties().containsKey("srvNode"), "the cached account is left as it was");
+    }
+
+    @Test
+    void withNoAttachedPropsTheAccountIsHandedBackAsIs() throws Exception {
+        final var cached = this.authenticator.accountOf("tenant", key());
+        final var req = mock(Request.class);
+
+        assertTrue(cached == this.authenticator.withAttachedParams(req, cached));
+    }
 
     @Test
     void rolesComeFromTheKey() {
@@ -151,26 +196,29 @@ public class MongoApiKeyAuthenticatorTest {
         // the principal name. With an empty document they resolve to null, a
         // query matching on null matches nothing, and the caller authenticates,
         // is authorised, gets a 200 and sees no data.
-        set("keysDb", "restheart");
-
-        final var account = this.authenticator.accountOf(key());
+        final var account = this.authenticator.accountOf("restheart", key());
 
         assertEquals("robot", account.getPrincipal().getName());
         assertEquals(new BsonString("robot"), account.properties().get("_id"));
     }
 
     @Test
-    void theAccountCarriesNothingBeyondIdentity() throws Exception {
+    void theAccountCarriesNothingBeyondIdentityTenantAndTheApiKeyMarker() throws Exception {
         // The key document holds the hash, and is the tenant's to shape — what
-        // else is in it was not written with an ACL predicate in mind.
-        set("keysDb", "restheart");
-
-        final var account = this.authenticator.accountOf(key()
+        // else is in it was not written with an ACL predicate in mind, so `_id`
+        // is all of it that reaches the account.
+        //
+        // The two additions do not come from the document. `apiKey` is stamped
+        // so JwtTokenManager can refuse to renew a token minted from a key
+        // (#729). `authDb` is the database the key was found in, so the token
+        // names its tenant as one from a password login does (#738).
+        final var account = this.authenticator.accountOf("tenant_a", key()
                 .append("hash", new BsonString("d41d8cd9"))
                 .append("name", new BsonString("CI deploy"))
                 .append("roles", new BsonArray(java.util.List.of(new BsonString("cli")))));
 
-        assertEquals(Set.of("_id"), account.properties().keySet());
+        assertEquals(Set.of("_id", "authDb", JwtTokenManager.FROM_API_KEY), account.properties().keySet());
+        assertEquals(new BsonString("tenant_a"), account.properties().get("authDb"));
         assertEquals(Set.of("cli"), account.getRoles());
     }
 
@@ -179,10 +227,9 @@ public class MongoApiKeyAuthenticatorTest {
         // prop-principal says where to read the principal from in this
         // collection. What to call it once it is on the account is a different
         // question, and the answer is what consumers write: _id.
-        set("keysDb", "restheart");
         set("propPrincipal", "owner");
 
-        final var account = this.authenticator.accountOf(
+        final var account = this.authenticator.accountOf("restheart",
                 new BsonDocument("owner", new BsonString("robot")));
 
         assertEquals(new BsonString("robot"), account.properties().get("_id"));
@@ -191,12 +238,153 @@ public class MongoApiKeyAuthenticatorTest {
 
     @Test
     void aKeyThatNamesNoPrincipalYieldsNoAccount() throws Exception {
-        set("keysDb", "restheart");
+        assertNull(this.authenticator.accountOf("restheart", new BsonDocument()));
+        assertNull(this.authenticator.accountOf("restheart", new BsonDocument("user", BsonNull.VALUE)));
+        assertNull(this.authenticator.accountOf("restheart", new BsonDocument("user", new BsonString("  "))));
+        assertNull(this.authenticator.accountOf("restheart", new BsonDocument("user", new BsonInt32(7))));
+    }
 
-        assertNull(this.authenticator.accountOf(new BsonDocument()));
-        assertNull(this.authenticator.accountOf(new BsonDocument("user", BsonNull.VALUE)));
-        assertNull(this.authenticator.accountOf(new BsonDocument("user", new BsonString("  "))));
-        assertNull(this.authenticator.accountOf(new BsonDocument("user", new BsonInt32(7))));
+    // ── the database, per request (#738) ─────────────────────────────────────
+
+    private static final String KEY = "rhak_7f2c9a";
+
+    /** A keys collection holding {@code doc}, or nothing when it is null. */
+    @SuppressWarnings("unchecked")
+    private static MongoCollection<BsonDocument> keysIn(final MongoClient mclient, final String db, final BsonDocument doc) {
+        final var database = mock(MongoDatabase.class);
+        final MongoCollection<Document> coll = mock(MongoCollection.class);
+        final MongoCollection<BsonDocument> keys = mock(MongoCollection.class);
+        final FindIterable<BsonDocument> found = mock(FindIterable.class);
+
+        when(mclient.getDatabase(db)).thenReturn(database);
+        when(database.getCollection("apiKeys")).thenReturn(coll);
+        when(coll.withDocumentClass(BsonDocument.class)).thenReturn(keys);
+        when(keys.find(any(Bson.class))).thenReturn(found);
+        when(found.first()).thenReturn(doc);
+
+        return keys;
+    }
+
+    private static Request<?> requestFor(final String keysDb) {
+        final Request<?> req = mock(Request.class);
+        when(req.<String>attachedParam(MongoApiKeyAuthenticator.OVERRIDE_KEYS_DB)).thenReturn(keysDb);
+        return req;
+    }
+
+    /** Initialised as the plugin would be with an empty configuration: keys cache on. */
+    private MongoClient initialised() throws Exception {
+        final var mclient = mock(MongoClient.class);
+        set("config", Map.of());
+        this.authenticator.init();
+        set("mclient", mclient);
+        return mclient;
+    }
+
+    @Test
+    void aKeyWorksOnlyOnTheTenantItsDatabaseBelongsTo() throws Exception {
+        final var mclient = initialised();
+        keysIn(mclient, "tenant_a", key().append("roles", new BsonArray(java.util.List.of(new BsonString("cli")))));
+        keysIn(mclient, "tenant_b", null);
+
+        final var account = this.authenticator.verify(requestFor("tenant_a"), new ApiKeyCredential(KEY));
+
+        assertNotNull(account);
+        assertEquals(new BsonString("tenant_a"), ((MongoRealmAccount) account).properties().get("authDb"));
+
+        // Asked second, and with the cache on, on purpose: keyed on the hash
+        // alone, tenant_a's verification would be served for tenant_b.
+        assertNull(this.authenticator.verify(requestFor("tenant_b"), new ApiKeyCredential(KEY)));
+    }
+
+    @Test
+    void aKeyWorksOnlyOnItsTenantAlsoWithTheCacheOff() throws Exception {
+        // The same property without the cache, so that it is the lookup itself
+        // being tested and not only the cache key.
+        final var mclient = mock(MongoClient.class);
+        set("config", Map.of("cache-enabled", false));
+        this.authenticator.init();
+        set("mclient", mclient);
+
+        keysIn(mclient, "tenant_a", key());
+        keysIn(mclient, "tenant_b", null);
+
+        assertNull(this.authenticator.verify(requestFor("tenant_b"), new ApiKeyCredential(KEY)));
+        assertNotNull(this.authenticator.verify(requestFor("tenant_a"), new ApiKeyCredential(KEY)));
+        assertNull(this.authenticator.verify(requestFor("tenant_b"), new ApiKeyCredential(KEY)));
+    }
+
+    @Test
+    void theSameKeyInTwoTenantsYieldsEachTenantsOwnAccount() throws Exception {
+        // The worst case for a cache keyed on the hash alone: the key exists in
+        // both databases, so a leak would not be a refusal turning into an
+        // acceptance but one tenant's roles and principal handed to the other —
+        // and nothing would look wrong.
+        final var mclient = initialised();
+        keysIn(mclient, "tenant_a", new BsonDocument("user", new BsonString("alice"))
+                .append("roles", new BsonArray(java.util.List.of(new BsonString("admin")))));
+        keysIn(mclient, "tenant_b", new BsonDocument("user", new BsonString("bob"))
+                .append("roles", new BsonArray(java.util.List.of(new BsonString("reader")))));
+
+        for (int i = 0;i < 2;i++) {
+            final var a = (MongoRealmAccount) this.authenticator.verify(requestFor("tenant_a"), new ApiKeyCredential(KEY));
+            final var b = (MongoRealmAccount) this.authenticator.verify(requestFor("tenant_b"), new ApiKeyCredential(KEY));
+
+            assertEquals("alice", a.getPrincipal().getName());
+            assertEquals(Set.of("admin"), a.getRoles());
+            assertEquals(new BsonString("tenant_a"), a.properties().get("authDb"));
+
+            assertEquals("bob", b.getPrincipal().getName());
+            assertEquals(Set.of("reader"), b.getRoles());
+            assertEquals(new BsonString("tenant_b"), b.properties().get("authDb"));
+        }
+    }
+
+    @Test
+    void anUnusableOverrideIsRefusedNeverReadAsAbsent() throws Exception {
+        // Fail closed. A resolver that attached the param but failed to name a
+        // tenant must not fall back to keys-db: that would accept the default
+        // tenant's keys on a request meant for some other tenant.
+        final var mclient = initialised();
+        keysIn(mclient, "restheart", key());
+
+        assertNull(this.authenticator.verify(requestFor(""), new ApiKeyCredential(KEY)));
+        assertNull(this.authenticator.verify(requestFor("   "), new ApiKeyCredential(KEY)));
+
+        final Request<?> notAString = mock(Request.class);
+        when(notAString.<Object>attachedParam(MongoApiKeyAuthenticator.OVERRIDE_KEYS_DB)).thenReturn(7);
+        assertNull(this.authenticator.verify(notAString, new ApiKeyCredential(KEY)));
+
+        Mockito.verify(mclient, never()).getDatabase(any());
+    }
+
+    @Test
+    void aDatabaseNameMongoRejectsIsARefusalNotAnError() throws Exception {
+        final var mclient = initialised();
+        when(mclient.getDatabase("bad.name")).thenThrow(new IllegalArgumentException("invalid database name"));
+
+        assertNull(this.authenticator.verify(requestFor("bad.name"), new ApiKeyCredential(KEY)));
+    }
+
+    @Test
+    void withoutTheOverrideTheConfiguredDatabaseIsUsed() throws Exception {
+        final var mclient = initialised();
+        keysIn(mclient, "restheart", key());
+
+        assertNotNull(this.authenticator.verify(requestFor(null), new ApiKeyCredential(KEY)));
+        assertNotNull(this.authenticator.verify(new ApiKeyCredential(KEY)));
+        assertEquals("restheart", this.authenticator.getKeysDb(requestFor(null)));
+    }
+
+    @Test
+    void lastUsedAtIsWrittenWhereTheKeyWasFound() throws Exception {
+        final var mclient = initialised();
+        final var tenantKeys = keysIn(mclient, "tenant_a", key());
+        final var defaultKeys = keysIn(mclient, "restheart", null);
+
+        assertNotNull(this.authenticator.verify(requestFor("tenant_a"), new ApiKeyCredential(KEY)));
+
+        Mockito.verify(tenantKeys).updateOne(any(Bson.class), any(Bson.class));
+        Mockito.verify(defaultKeys, never()).updateOne(any(Bson.class), any(Bson.class));
     }
 
     // ── the SPI's other verify() forms ───────────────────────────────────────

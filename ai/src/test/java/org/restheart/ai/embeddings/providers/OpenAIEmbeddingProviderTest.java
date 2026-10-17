@@ -22,7 +22,11 @@ package org.restheart.ai.embeddings.providers;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.util.List;
+
+import org.bson.BsonDocument;
 import org.junit.jupiter.api.Test;
 
 public class OpenAIEmbeddingProviderTest {
@@ -60,5 +64,15 @@ public class OpenAIEmbeddingProviderTest {
     public void emptyDataArray_returnsEmptyList() {
         var embeddings = OpenAIEmbeddingProvider.parseEmbeddings("{\"data\":[]}");
         assertEquals(0, embeddings.size());
+    }
+
+    @Test
+    public void dimensions_sentOnlyWhenSet() {
+        var withIt = BsonDocument.parse(OpenAIEmbeddingProvider.buildPayload("text-embedding-3-small", List.of("a"), 512));
+        var without = BsonDocument.parse(OpenAIEmbeddingProvider.buildPayload("text-embedding-3-small", List.of("a"), 0));
+
+        assertEquals(512, withIt.getInt32("dimensions").getValue());
+        assertFalse(without.containsKey("dimensions"));
+        assertEquals(1, withIt.getArray("input").size());
     }
 }

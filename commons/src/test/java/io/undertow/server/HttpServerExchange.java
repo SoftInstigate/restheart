@@ -161,6 +161,17 @@ public class HttpServerExchange extends AbstractAttachable {
         return ret;
     }
 
+    private String requestScheme = "http";
+
+    public String getRequestScheme() {
+        return requestScheme;
+    }
+
+    public HttpServerExchange setRequestScheme(String requestScheme) {
+        this.requestScheme = requestScheme;
+        return this;
+    }
+
     public SecurityContext getSecurityContext() {
         return null;
     }

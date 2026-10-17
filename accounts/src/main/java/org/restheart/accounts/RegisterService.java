@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import org.restheart.plugins.security.PasswordPolicy;
 
 /**
  * POST /auth/register
@@ -138,6 +139,9 @@ public class RegisterService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegisterService.class);
 
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
+
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
 
@@ -228,6 +232,12 @@ public class RegisterService implements JsonService {
             return;
         }
 
+        var weakPassword = passwordPolicy.rejection(password);
+        if (weakPassword != null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, weakPassword);
+            return;
+        }
+
         // ── 3. Check email uniqueness ────────────────────────────────────────
         if (db(req).findUser(email).isPresent()) {
             Errors.error(res, HttpStatus.SC_CONFLICT, "Email already registered");
@@ -251,7 +261,7 @@ public class RegisterService implements JsonService {
 
         var userDoc = new BsonDocument()
                 .append("_id", new BsonString(email))
-                .append("password", new BsonString(TokenUtils.hashPassword(password)))
+                .append("password", new BsonString(TokenUtils.hashPassword(password, passwordPolicy.bcryptComplexity())))
                 .append("roles", rolesArray)
                 .append("profile", profile)
                 .append("emailVerificationToken", new BsonString(verificationToken))

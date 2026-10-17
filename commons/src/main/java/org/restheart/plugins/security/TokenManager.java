@@ -171,6 +171,36 @@ public interface TokenManager extends Authenticator {
     }
 
     /**
+     * Issues a <em>new</em> token for the account, replacing whatever the manager currently holds
+     * for it.
+     *
+     * <p>This is not what {@link #get(Account, Request)} does. That one answers "what is this
+     * account's token", and a manager that caches will hand back the same one — with the same
+     * expiry — for as long as it holds it. Renewal is the other question: mint a fresh token,
+     * starting its lifetime now.
+     *
+     * <p>The distinction has always existed in RESTHeart, but only as a side effect of the
+     * {@code ?renew} query parameter, read inside the token manager where no caller could reach it.
+     * Anything issuing a token outside a request to {@code /token} — the OAuth
+     * {@code grant_type=refresh_token} being the first — needs to ask for it explicitly.
+     *
+     * <p>An implementation that re-reads the account from its store should do so here, so that a
+     * renewed token carries current roles and claims, and an account that has since been disabled
+     * stops being renewable. That is what makes token expiry a revocation point rather than a
+     * formality.
+     *
+     * <p>The default delegates to {@link #get(Account, Request)}, so a manager with no distinct
+     * notion of renewal keeps working unchanged.
+     *
+     * @param account the authenticated user account to issue a new token for
+     * @param request the request being served; may be {@code null} when no request is in scope
+     * @return a PasswordCredential containing the new token, or null if issuance fails
+     */
+    default PasswordCredential renew(final Account account, final Request<?> request) {
+        return get(account, request);
+    }
+
+    /**
      * Invalidates any tokens associated with the specified user account.
      * <p>
      * This method is called when a user logs out, when their account is disabled,

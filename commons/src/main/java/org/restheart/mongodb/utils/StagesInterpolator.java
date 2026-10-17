@@ -144,7 +144,7 @@ public class StagesInterpolator {
 
         var stagesWithoutUnboundOptionalStages = stagesWithUnescapedOperators.stream()
                 .map(BsonValue::asDocument)
-                .map(stage -> _stage(stageOperator, stage, values))
+                .map(stage -> _stage(stageOperator, stage, values, request))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(BsonArray::new));
 
@@ -259,7 +259,15 @@ public class StagesInterpolator {
      * @param avars the available aggregation variables
      * @return {@code true} if the stage should be included, {@code false} otherwise
      */
-    private static boolean stageApplies(STAGE_OPERATOR stageOperator, BsonDocument stage, BsonDocument avars) {
+    /**
+     * Whether an optional stage's variables are all bound.
+     *
+     * <p>Bound means the same thing here as it does when the stage is interpolated a moment later
+     * (restheart#727): the caller's own values, or a registered {@code @} variable resolver. Asking
+     * a different question at each step would drop a stage whose variables the interpolation could
+     * have supplied — {@code {"$ifarg": ["@user._id", ...]}} would never apply.
+     */
+    private static boolean stageApplies(STAGE_OPERATOR stageOperator, BsonDocument stage, BsonDocument avars, Request<?> request) {
         // false if request does not include the ?avars qparam
         // see issue https://github.com/SoftInstigate/restheart/issues/500
         if (avars == null) {
@@ -269,9 +277,10 @@ public class StagesInterpolator {
         var vars = stage.get(stageOperator.name()).asArray().getFirst();
 
         if (vars.isString()) {
-            return BsonUtils.get(avars, vars.asString().getValue()).isPresent();
+            return VarsInterpolator.lookup(avars, vars.asString().getValue(), request).isPresent();
         } else {
-            return vars.asArray().stream().map(s -> s.asString().getValue()).allMatch(key -> BsonUtils.get(avars, key).isPresent());
+            return vars.asArray().stream().map(s -> s.asString().getValue())
+                    .allMatch(key -> VarsInterpolator.lookup(avars, key, request).isPresent());
         }
     }
 
@@ -309,10 +318,10 @@ public class StagesInterpolator {
      * @param avars the available aggregation variables
      * @return the resolved stage document, or null if the stage should be excluded
      */
-    private static BsonDocument _stage(STAGE_OPERATOR stageOperator, BsonDocument stage, BsonDocument avars) {
+    private static BsonDocument _stage(STAGE_OPERATOR stageOperator, BsonDocument stage, BsonDocument avars, Request<?> request) {
         if (!optional(stageOperator, stage)) {
             return stage;
-        } else if (stageApplies(stageOperator, stage, avars)) {
+        } else if (stageApplies(stageOperator, stage, avars, request)) {
             return stage.get(stageOperator.name()).asArray().get(1).asDocument();
         } else {
             return elseStage(stageOperator, stage); // null, if no else stage specified

@@ -1,0 +1,6 @@
+[
+  { "_id": "a1", "name": "alpha",   "owner": "aclowner1", "role": "aclreader", "created": { "$date": "2020-01-01T00:00:00Z" } },
+  { "_id": "a2", "name": "bravo",   "owner": "aclowner1", "role": "nobody",    "created": { "$date": "2020-01-02T00:00:00Z" } },
+  { "_id": "b1", "name": "charlie", "owner": "aclowner2", "role": "nobody",    "created": { "$date": "2020-01-03T00:00:00Z" } },
+  { "_id": "f1", "name": "future",  "owner": "aclowner2", "role": "nobody",    "created": { "$date": "2999-01-01T00:00:00Z" } }
+]

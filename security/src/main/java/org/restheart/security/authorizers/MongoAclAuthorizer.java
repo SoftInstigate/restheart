@@ -38,14 +38,13 @@ import org.restheart.cache.LoadingCache;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.Request;
 import static org.restheart.mongodb.ConnectionChecker.connected;
+import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.security.PermissionEnumerator;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
 import org.restheart.security.BaseAclPermission;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
-import org.restheart.plugins.security.RequestDescriptor;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import static org.restheart.security.MongoPermissions.ALLOW_ALL_MONGO_PERMISSIONS;
 import org.restheart.security.utils.MongoUtils;
@@ -68,7 +67,7 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongoAclAuthorizer", description = "authorizes requests against acl stored in mongodb")
-public class MongoAclAuthorizer implements DescriptorAwareAuthorizer {
+public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoAclAuthorizer.class);
 
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
@@ -238,23 +237,6 @@ public class MongoAclAuthorizer implements DescriptorAwareAuthorizer {
         }
     }
 
-    /**
-     * See restheart#722. Delegates to the exact same {@link #isAllowed(Request)} above — this is
-     * purely an adapter at the boundary: {@link SyntheticRequestFactory} builds a {@link Request}
-     * whose predicate/role evaluation reads identically to a real one, so there is exactly one
-     * implementation of the actual authorization algorithm, never two.
-     */
-    @Override
-    public Decision decide(RequestDescriptor descriptor) {
-        // The synthetic request is kept, not discarded: isAllowed() attaches the permission it
-        // matched to that request's exchange, and an ACL readFilter/projectResponse has to be
-        // interpolated against the very request it was matched against (see Decision).
-        var request = SyntheticRequestFactory.from(descriptor);
-        return isAllowed(request)
-                ? Decision.allowed(BaseAclPermission.of(request), request)
-                : Decision.DENIED;
-    }
-
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAuthenticationRequired(Request request) {
@@ -285,6 +267,29 @@ public class MongoAclAuthorizer implements DescriptorAwareAuthorizer {
         }
     }
 
+
+    /**
+     * The permissions of the caller's roles, in the order {@code isAllowed} would consider them.
+     *
+     * <p>Handed over unevaluated: what the MCP catalog needs to know is whether some call could
+     * satisfy one of them, which is a question about the rule and not about this request.
+     */
+    @Override
+    public Set<BaseAclPermission> permissions(Request<?> req) {
+        var exchange = req.getExchange();
+
+        if (exchange == null) {
+            return Set.of();
+        }
+
+        var applicable = new LinkedHashSet<BaseAclPermission>();
+
+        roles(exchange)
+                .map(role -> new CacheKey(role, aclDb(req)))
+                .forEachOrdered(key -> applicable.addAll(rolePermissions(key)));
+
+        return applicable;
+    }
 
     private String aclDb(Request<?> req) {
         String overrideAclDb = req.attachedParam("override-acl-db");
@@ -341,7 +346,6 @@ public class MongoAclAuthorizer implements DescriptorAwareAuthorizer {
         }
     }
 
-    private static final BsonDocument PROJECTION = BsonDocument.parse("{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1,\"mongo\":1}");
     private static final BsonDocument SORT = BsonDocument.parse("{\"priority\":-1,\"_id\":-1}");
 
     private LinkedHashSet<MongoAclPermission> findRolePermissions(final CacheKey key) {
@@ -349,12 +353,15 @@ public class MongoAclAuthorizer implements DescriptorAwareAuthorizer {
             LOGGER.error("Cannot find acl: mongo service is not enabled.");
             return null;
         } else {
+            // The whole document, not a projection of the fields this authorizer reads: it becomes
+            // the permission's raw data, which plugins reach through BaseAclPermission.of(request)
+            // .getRaw() to carry their own settings on a permission ("tenant-isolated", a service's
+            // allowed roles, ...). A projection here silently dropped every such field.
             var permissions = new LinkedHashSet<BsonDocument>();
             this.mclient.getDatabase(key.db)
                     .getCollection(this.aclCollection)
                     .withDocumentClass(BsonDocument.class)
                     .find(eq("roles", key.role))
-                    .projection(PROJECTION)
                     .sort(SORT)
                     .into(permissions);
 

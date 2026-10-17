@@ -25,6 +25,7 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 import com.codahale.metrics.Timer;
 import com.google.common.net.HttpHeaders;
 
@@ -36,6 +37,7 @@ import java.util.function.Supplier;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.security.Authenticator;
 import io.undertow.attribute.ExchangeAttributes;
+import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HttpString;
@@ -108,6 +110,19 @@ public class Metrics {
     private static int xffReverseIndex = 0;
 
     /**
+     * The reverse index for the requests that match a predicate, the first match wins: a server
+     * reached through more than one entry, each with its own chain of proxies, finds the client at a
+     * different position on each.
+     *
+     * @param predicate     which requests
+     * @param valueFromLast the reverse index for them
+     */
+    public record XffOverride(Predicate predicate, int valueFromLast) {
+    }
+
+    private static List<XffOverride> xffOverrides = List.of();
+
+    /**
      * Generates a metric name for tracking failed authentication attempts.
      * 
      * <p>The generated name includes the authentication failure tracking strategy
@@ -135,7 +150,7 @@ public class Metrics {
                 var xff = ExchangeAttributes.requestHeader(_X_FORWARDED_FOR).readAttribute(exchange);
                 yield xff == null
                         ? MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", "not-set")
-                        : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", xffValue(xff, xffReverseIndex));
+                        : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", xffValue(xff, xffValueRIndex(exchange)));
             }
         };
     }
@@ -264,6 +279,67 @@ public class Metrics {
      */
     public static void xffValueRIndex(int ridx) {
         xffReverseIndex = ridx;
+    }
+
+    /** The registry of the failed authentication histograms, shared by whoever counts and whoever blocks. */
+    private static final MetricRegistry AUTH_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
+
+    /** The window the failed authentications are counted in. */
+    public static final int FAILED_AUTH_WINDOW_SECONDS = 10;
+
+    /**
+     * Counts one failed authentication for the source of a request, the one
+     * {@link #failedAuthHistogramName(HttpServerExchange)} names. Each failure is one entry in a
+     * sliding time window, which Dropwizard keeps safely under concurrent updates: none is lost,
+     * however many arrive together.
+     *
+     * @param exchange the request that failed to authenticate
+     */
+    public static void failedAuth(HttpServerExchange exchange) {
+        failedAuthHistogram(exchange).update(1);
+    }
+
+    /**
+     * The failed authentications of the source of a request in the last
+     * {@link #FAILED_AUTH_WINDOW_SECONDS} seconds: the entries in its window.
+     *
+     * @param exchange the request
+     * @return how many times its source failed to authenticate in the window
+     */
+    public static int failedAuthCount(HttpServerExchange exchange) {
+        return failedAuthHistogram(exchange).getSnapshot().size();
+    }
+
+    private static Histogram failedAuthHistogram(HttpServerExchange exchange) {
+        return AUTH_REGISTRY.histogram(failedAuthHistogramName(exchange),
+                () -> new Histogram(new SlidingTimeWindowArrayReservoir(FAILED_AUTH_WINDOW_SECONDS, TimeUnit.SECONDS)));
+    }
+
+    /**
+     * Sets the reverse indexes that apply to the requests matching a predicate, before the one of
+     * {@link #xffValueRIndex(int)}; the first matching predicate wins.
+     *
+     * @param overrides the overrides, in order
+     */
+    public static void xffOverrides(List<XffOverride> overrides) {
+        xffOverrides = overrides == null ? List.of() : List.copyOf(overrides);
+    }
+
+    /**
+     * The reverse index for a request: the one of the first override whose predicate matches it,
+     * else the one of {@link #xffValueRIndex(int)}. Counting failures and blocking both use it, so
+     * they always agree on the address.
+     *
+     * @param exchange the request
+     * @return the reverse index to use in its X-Forwarded-For
+     */
+    public static int xffValueRIndex(HttpServerExchange exchange) {
+        for (var override : xffOverrides) {
+            if (override.predicate().resolve(exchange)) {
+                return override.valueFromLast();
+            }
+        }
+        return xffReverseIndex;
     }
 
 

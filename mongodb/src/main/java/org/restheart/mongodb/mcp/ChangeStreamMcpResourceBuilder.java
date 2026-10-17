@@ -30,6 +30,9 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.CatalogCondition;
+import org.restheart.plugins.mcp.BsonJava;
+import org.restheart.exchange.ExchangeKeys;
 import org.restheart.plugins.mcp.McpResource;
 
 /**
@@ -46,9 +49,10 @@ import org.restheart.plugins.mcp.McpResource;
  * declares a single {@code subscribe} action over both the {@code WEBSOCKET} and {@code SSE}
  * transports rather than {@code execute} over {@code HTTP}.
  *
- * <p>As with {@link AggregationMcpResourceBuilder}, declared variable types surface as a single
- * {@code avars} object param (one {@code properties} entry per variable), matching how RESTHeart
- * actually binds {@code $var} references — {@code ?avars={"name":"value",...}}.
+ * <p>As with {@link AggregationMcpResourceBuilder}, each declared variable surfaces as a param of
+ * its own: RESTHeart binds any non-reserved query parameter as a {@code $var}, through the same
+ * {@code StagesInterpolator} a pipeline uses. A name that collides with a reserved parameter keeps
+ * the legacy {@code avars} form.
  */
 public final class ChangeStreamMcpResourceBuilder {
 
@@ -78,18 +82,32 @@ public final class ChangeStreamMcpResourceBuilder {
                 .uri(collectionUri + pathTemplate)
                 .kind("change-stream")
                 .description(description(mcp))
+                .showIf(CatalogCondition.showIf(mcp))
+                .hideFromRoles(CatalogCondition.hideFromRoles(mcp))
                 .transport(McpResource.Transport.WEBSOCKET, "subscribe")
                 .transport(McpResource.Transport.SSE, "subscribe");
 
-        var avarsProperties = new LinkedHashMap<String, McpResource.Param>();
+        var flatParams = new LinkedHashMap<String, McpResource.Param>();
+        var reservedNameParams = new LinkedHashMap<String, McpResource.Param>();
+
         referencedNames.forEach(name -> {
             var requiredByShape = scanResult.isRequired(name);
+            final McpResource.Param param;
+
             if (declaredParams.get(name) instanceof BsonDocument paramDef) {
-                avarsProperties.put(name, toParam(paramDef, requiredByShape));
+                param = toParam(paramDef, requiredByShape);
             } else {
-                avarsProperties.put(name, new McpResource.Param("string", null, requiredByShape, null, null));
+                param = new McpResource.Param("string", null, requiredByShape, null, null);
                 warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to a "
                         + (requiredByShape ? "required" : "optional") + " string");
+            }
+
+            if (ExchangeKeys.RESERVED_QPARAM_KEYS.contains(name)) {
+                reservedNameParams.put(name, param);
+                warnings.add("$var '" + name + "' has the name of a reserved query parameter, so it can only be "
+                        + "passed inside avars");
+            } else {
+                flatParams.put(name, param);
             }
         });
 
@@ -104,18 +122,22 @@ public final class ChangeStreamMcpResourceBuilder {
             a.pathTemplate("");
             a.description(description(mcp));
 
-            // same avars convention as AggregationMcpResourceBuilder: RESTHeart's change-stream
-            // handler binds $var references via StagesInterpolator, identically to aggregations
-            if (!avarsProperties.isEmpty()) {
-                var required = avarsProperties.values().stream().anyMatch(McpResource.Param::required);
-                a.param("avars", new McpResource.Param("object", "MongoDB $var bindings for this pipeline.", required, null, null, avarsProperties));
+            // same convention as AggregationMcpResourceBuilder: RESTHeart's change-stream handler
+            // binds $var references via StagesInterpolator, identically to aggregations
+            flatParams.forEach(a::param);
+
+            if (!reservedNameParams.isEmpty()) {
+                var required = reservedNameParams.values().stream().anyMatch(McpResource.Param::required);
+                a.param("avars", new McpResource.Param("object",
+                        "MongoDB $var bindings whose names are reserved query parameters, so they cannot be sent flat.",
+                        required, null, null, reservedNameParams));
             }
         });
 
         examples(mcp).forEach(ex -> builder.example(
                 stringOrNull(ex, "description"),
                 "subscribe",
-                ex.get("args") instanceof BsonDocument args ? BsonJavaConverter.toMap(args) : Map.of()));
+                ex.get("args") instanceof BsonDocument args ? BsonJava.toMap(args) : Map.of()));
 
         builder.extra("pipeline_summary", pipelineSummary(mcp, stages));
         if (stringOrNull(mcp, "event_type") != null) {
@@ -160,9 +182,9 @@ public final class ChangeStreamMcpResourceBuilder {
         var description = stringOrNull(def, "description");
         var required = def.get("required") instanceof BsonBoolean b ? b.getValue() : defaultRequired;
         List<Object> enumValues = def.get("enum") instanceof BsonArray arr
-                ? arr.stream().map(BsonJavaConverter::toJava).toList()
+                ? arr.stream().map(BsonJava::toJava).toList()
                 : null;
-        var defaultValue = def.get("default") != null ? BsonJavaConverter.toJava(def.get("default")) : null;
+        var defaultValue = def.get("default") != null ? BsonJava.toJava(def.get("default")) : null;
         return new McpResource.Param(type, description, required, enumValues, defaultValue);
     }
 }

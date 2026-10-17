@@ -20,7 +20,7 @@ import java.util.List;
  *   </tr>
  *   <tr>
  *     <td>{@code override-cookie-domain}</td>
- *     <td>Domain attribute of the {@code rh_auth} cookie</td>
+ *     <td>Domain attribute of the auth cookie</td>
  *     <td>{@link AccountsConfigData#cookieDomain()}</td>
  *   </tr>
  *   <tr>

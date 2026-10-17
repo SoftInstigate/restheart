@@ -27,6 +27,7 @@ class RequestOverridesTest {
             "example.com",          // cookieDomain
             "rh_auth",              // cookieName
             true,                   // cookieSecure
+            true,                   // cookieDelivery
             "https://example.com",  // frontendUrl
             "https://example.com/app", // frontendAppUrl
             "1.0",                  // termsVersion

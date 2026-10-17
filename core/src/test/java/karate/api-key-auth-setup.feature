@@ -93,6 +93,27 @@ Scenario: Create the test-apikeys db and seed the keys
   When method PUT
   Then assert responseStatus == 201 || responseStatus == 200
 
+  # Belongs to `admin`, but names a role admin does not otherwise need. The test
+  # ACL grants aclreader path-prefix /mcp, so this key can open an MCP session —
+  # and what call_api then executes must run as `aclreader`, not with admin's own
+  # roles. That is what mcp-api-key-auth.feature uses to show the key's roles
+  # travel all the way through the session into the in-process request.
+  #
+  #   printf 'rhak_mcpreader' | shasum -a 256
+  * header Authorization = admin
+  Given path 'test-apikeys/keys/mcpreader'
+  And param wm = 'upsert'
+  And request
+  """
+  {
+    "hash": "912396c41907467434cc28f6d1ef2f615028c87c3fea8900a4b0f26d8072ab8c",
+    "user": "admin",
+    "roles": ["aclreader"]
+  }
+  """
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
+
   # A narrower role. The test ACL grants poweruser only GET /testdb, so this key
   # is what shows that the *specific* roles on the key document drive
   # authorization — not merely that some role arrived.
@@ -105,6 +126,38 @@ Scenario: Create the test-apikeys db and seed the keys
     "hash": "ca8dcb2d445daf0ce1415b6e3a87c5da3bf5811281dfd87592d61569e8d9f994",
     "user": "admin",
     "roles": ["poweruser"]
+  }
+  """
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
+
+Scenario: Create a second tenant's keys db and seed its key
+
+  # A tenant of its own, reached with ?_keys-db-override=test-apikeys-tenant
+  # (keysDbOverrideInterceptor). Its key is found only there, so it works only
+  # on requests resolving to this tenant — and rhak_valid, which lives in
+  # test-apikeys, works only on requests that don't (#738).
+  #
+  #   printf 'rhak_tenant' | shasum -a 256
+  * header Authorization = admin
+  Given path 'test-apikeys-tenant'
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
+
+  * header Authorization = admin
+  Given path 'test-apikeys-tenant/keys'
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
+
+  * header Authorization = admin
+  Given path 'test-apikeys-tenant/keys/tenant'
+  And param wm = 'upsert'
+  And request
+  """
+  {
+    "hash": "574a55275d8106e6b21471c52601c004de68813cfccf5f3d2c6d668a66800c7b",
+    "user": "admin",
+    "roles": ["admin"]
   }
   """
   When method PUT

@@ -104,6 +104,26 @@ public class MongoRequestTest {
     }
 
     /**
+     * The schema store is the collection the configuration names: under another name, the
+     * default one is an ordinary collection.
+     */
+    @Test
+    public void theSchemaStoreIsTheConfiguredCollection() {
+        try {
+            assertEquals(ExchangeKeys.TYPE.SCHEMA_STORE, MongoRequest.selectRequestType("/db/_schemas".split("/")));
+
+            MongoRequest.setSchemaStore("schemas");
+
+            assertEquals(ExchangeKeys.TYPE.SCHEMA_STORE, MongoRequest.selectRequestType("/db/schemas".split("/")));
+            assertEquals(ExchangeKeys.TYPE.SCHEMA, MongoRequest.selectRequestType("/db/schemas/todo".split("/")));
+            assertEquals(ExchangeKeys.TYPE.SCHEMA_STORE_META, MongoRequest.selectRequestType("/db/schemas/_meta".split("/")));
+            assertEquals(ExchangeKeys.TYPE.COLLECTION, MongoRequest.selectRequestType("/db/_schemas".split("/")));
+        } finally {
+            MongoRequest.setSchemaStore(ExchangeKeys._SCHEMAS);
+        }
+    }
+
+    /**
      *
      */
     @Test

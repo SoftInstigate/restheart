@@ -26,12 +26,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Utility to set the thread context classloader to the PluginsClassloader
- * before calling GraalVM's Source.findLanguage().
+ * Sets the {@code PluginsClassloader} as the thread's context classloader for the duration of
+ * an action.
  *
- * <p>Source.findLanguage() discovers languages via ServiceLoader using the
- * thread context classloader. The js-language JAR lives in plugins/lib/,
- * which is only visible to the PluginsClassloader, not the system classloader.</p>
+ * <p>Truffle discovers languages through the context classloader, both when
+ * {@code ServiceLoader} looks for a {@code TruffleLanguageProvider} and when it resolves the
+ * fast-thread-local slot of a language class. The js-language JAR lives in {@code plugins/lib},
+ * which only the {@code PluginsClassloader} sees, so every Truffle operation runs inside one of
+ * these wrappers; see {@link PolyglotThreadUtils}.</p>
  */
 public final class PolyglotClassloaderHelper {
 

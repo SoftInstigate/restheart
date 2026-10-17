@@ -28,6 +28,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonInt32;
+import org.restheart.ai.util.RequestOverrides;
 import org.restheart.ai.vectorscan.VectorSimilarity;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -45,6 +46,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
+
+import io.undertow.util.Headers;
 
 /**
  * Executes {@code $vectorScan}: brute-force (exact, unindexed) vector similarity
@@ -86,6 +89,29 @@ import com.mongodb.client.MongoClient;
  *       {@code default-limit}, itself defaulting to 10).</li>
  * </ul>
  *
+ * <h2>Caps the stage cannot exceed</h2>
+ * <p>The stage belongs to the collection owner; the node belongs to its operator. Scoring
+ * happens here, not in MongoDB, so on a shared node one aggregation asking for
+ * {@code maxCandidates: 500000} pulls half a million vectors into memory that every
+ * tenant shares. {@code max-candidates-cap} and {@code max-limit-cap} bound what any
+ * stage may ask for: the effective value is {@code min(requested, cap)}, where
+ * {@code requested} is the stage's value or the default. Unset (the default) means no
+ * cap, so nothing changes for existing deployments. A multi-tenant deployment attaches
+ * {@link RequestOverrides#MAX_CANDIDATES_CAP} and {@link RequestOverrides#MAX_LIMIT_CAP}
+ * per request to make the cap a property of the plan; an attached value wins over the
+ * configured one, and {@code 0} lifts it. See restheart/#755.
+ *
+ * <p>A capped request is told so: the response carries a {@code Warning: 299} header
+ * naming the requested and the effective value (the body of an aggregation is a plain
+ * array, so there is no {@code _warnings} field to put it in), the same text is added to
+ * the response's warnings for the representations that render them, and it is logged at
+ * {@code debug}. An owner comparing results with and without the cap should not have to
+ * guess why they differ.
+ *
+ * <p>One {@code $vectorScan} per pipeline: the stages after it are bridged back to MongoDB,
+ * which does not know the stage, so a second one is refused with a {@code 400} up front
+ * rather than failing there with an error that names nothing.
+ *
  * <h2>Filtering: real MongoDB stages, not a restricted sub-object</h2>
  * <p>Unlike {@code $vectorSearch}'s own {@code filter} (a limited operator subset),
  * anything placed <em>before</em> {@code $vectorScan} in the pipeline — {@code $match},
@@ -108,14 +134,12 @@ import com.mongodb.client.MongoClient;
  *       ...stages[i+1..end]]} ({@code $documents}, MongoDB 6.0+, runs a pipeline
  *       against a literal array instead of a collection). Otherwise the winners are
  *       the response directly.</li>
- *   <li>Sets {@code request.setInError(true)} after building the response — same trick
- *       {@code vectorSearchIndexCreateInterceptor} uses — to skip the standard
- *       {@code GetAggregationHandler} execution (which would otherwise send the
- *       unresolved {@code $vectorScan} stage to MongoDB and get a real error back) while
- *       leaving {@code response.isInError() = false}, so {@code RESPONSE}-phase
- *       interceptors — {@code rerankingInterceptor} included — still run normally on
- *       whatever this produced. Reranking composes for free: it only looks at the
- *       final result array, never at how it was produced.</li>
+ *   <li>Attaches the param {@link MongoRequest#AGGREGATION_ANSWERED} to the request after
+ *       building the response, so that {@code GetAggregationHandler} leaves it as it is
+ *       (it would otherwise send the unresolved {@code $vectorScan} stage to MongoDB and get
+ *       a real error back). The request is not marked in error: that would skip the
+ *       {@code RESPONSE} interceptors too, and {@code rerankingInterceptor} and the
+ *       representation must run on the result as on any other aggregation.</li>
  * </ol>
  *
  * <h2>Known limitation</h2>
@@ -130,13 +154,19 @@ import com.mongodb.client.MongoClient;
  *   enabled: false                 # must be explicitly enabled
  *   default-max-candidates: 10000  # used when a stage omits maxCandidates
  *   default-limit: 10              # used when a stage omits limit
+ *   # max-candidates-cap: 2000     # no stage may score more than this; unset = no cap
+ *   # max-limit-cap: 100           # no stage may return more than this; unset = no cap
  * }</pre>
  */
 @RegisterPlugin(
         name = "vectorScanInterceptor",
         description = "Executes $vectorScan: brute-force vector similarity search requiring no mongot or index",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-        priority = Integer.MIN_VALUE,
+        // early in the phase, but after the db and collection properties injectors (MIN_VALUE and
+        // MIN_VALUE + 1, in this phase since 9.10.0), which resolve() reads, and leaving room
+        // (MIN_VALUE + 2 .. + 9) to interceptors that declare an aggregation for the request:
+        // resolve() must see the stages they add
+        priority = Integer.MIN_VALUE + 10,
         enabledByDefault = false
 )
 public class VectorScanInterceptor implements MongoInterceptor {
@@ -153,11 +183,25 @@ public class VectorScanInterceptor implements MongoInterceptor {
 
     private int defaultMaxCandidates;
     private int defaultLimit;
+    // 0 means no cap; see class javadoc, "Caps the stage cannot exceed"
+    private int maxCandidatesCap;
+    private int maxLimitCap;
 
     @OnInit
     public void setup() {
         this.defaultMaxCandidates = argOrDefault(config, "default-max-candidates", 10000);
         this.defaultLimit = argOrDefault(config, "default-limit", 10);
+        this.maxCandidatesCap = capOrNone(config, "max-candidates-cap");
+        this.maxLimitCap = capOrNone(config, "max-limit-cap");
+    }
+
+    /**
+     * A cap from the configuration: {@code 0} (no cap) when the key is absent, blank or not a
+     * positive number, so a commented-out or emptied key behaves like a missing one.
+     */
+    static int capOrNone(Map<String, Object> config, String key) {
+        var v = config == null ? null : config.get(key);
+        return v instanceof Number n && n.intValue() > 0 ? n.intValue() : 0;
     }
 
     @Override
@@ -198,6 +242,13 @@ public class VectorScanInterceptor implements MongoInterceptor {
             return;
         }
 
+        var second = secondVectorScanStage(stages, scanIndex);
+        if (second >= 0) {
+            // the stages after the first are bridged back to MongoDB, which does not know this one
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "$vectorScan: one per pipeline; a second one is at stage " + second);
+            return;
+        }
+
         var scanConfig = stages.get(scanIndex).get(STAGE_NAME);
         if (scanConfig == null || !scanConfig.isDocument()) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "$vectorScan must be a document");
@@ -229,13 +280,19 @@ public class VectorScanInterceptor implements MongoInterceptor {
                 ? scanArgs.getString("similarity").getValue()
                 : VectorSimilarity.COSINE;
 
-        var maxCandidates = scanArgs.containsKey("maxCandidates") && scanArgs.get("maxCandidates").isNumber()
+        var requestedMaxCandidates = scanArgs.containsKey("maxCandidates") && scanArgs.get("maxCandidates").isNumber()
                 ? scanArgs.get("maxCandidates").asNumber().intValue()
                 : defaultMaxCandidates;
 
-        var limit = scanArgs.containsKey("limit") && scanArgs.get("limit").isNumber()
+        var requestedLimit = scanArgs.containsKey("limit") && scanArgs.get("limit").isNumber()
                 ? scanArgs.get("limit").asNumber().intValue()
                 : defaultLimit;
+
+        // the caps are the operator's, per node or per request (plan), and the stage cannot exceed them
+        var maxCandidates = bound(request, response, "maxCandidates", requestedMaxCandidates,
+                RequestOverrides.intVal(request, RequestOverrides.MAX_CANDIDATES_CAP, maxCandidatesCap));
+        var limit = bound(request, response, "limit", requestedLimit,
+                RequestOverrides.intVal(request, RequestOverrides.MAX_LIMIT_CAP, maxLimitCap));
 
         var beforeStages = new ArrayList<>(stages.subList(0, scanIndex));
         beforeStages.add(new BsonDocument("$limit", new BsonInt32(maxCandidates)));
@@ -279,12 +336,36 @@ public class VectorScanInterceptor implements MongoInterceptor {
         response.setContentTypeAsJson();
         response.setStatusCode(HttpStatus.SC_OK);
 
-        // let RESPONSE-phase interceptors (e.g. rerankingInterceptor) still run, but
-        // skip the standard GetAggregationHandler execution -- see class javadoc
-        request.setInError(true);
+        // the result is written: GetAggregationHandler must leave it as it is -- see class javadoc
+        request.attachParam(MongoRequest.AGGREGATION_ANSWERED, true);
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * The value the scan runs with: {@code requested} unless a cap is set and it is above it.
+     * When it is, the response says so in a {@code Warning: 299} header and in its warnings,
+     * and the debug log records it.
+     */
+    private static int bound(MongoRequest request, MongoResponse response, String option, int requested, int cap) {
+        var effective = capped(requested, cap);
+        if (effective != requested) {
+            var message = cappedMessage(option, requested, effective);
+            response.addWarning(message);
+            response.getHeaders().add(Headers.WARNING, "299 - \"" + message + "\"");
+            LOGGER.debug("vectorScanInterceptor: {} for {}/{}", message, request.getDBName(), request.getCollectionName());
+        }
+        return effective;
+    }
+
+    /** {@code min(requested, cap)}; a cap of zero or less is no cap. */
+    static int capped(int requested, int cap) {
+        return cap > 0 && requested > cap ? cap : requested;
+    }
+
+    static String cappedMessage(String option, int requested, int effective) {
+        return "$vectorScan " + option + " " + requested + " exceeds the cap of this deployment, capped to " + effective;
+    }
 
     static BsonArray scoreAndRank(List<BsonDocument> candidates, String path, float[] queryVector, String similarity, int limit) {
         record Scored(BsonDocument doc, double score) {
@@ -371,6 +452,12 @@ public class VectorScanInterceptor implements MongoInterceptor {
             }
         }
         return -1;
+    }
+
+    /** The index of a {@code $vectorScan} after the one at {@code first}, or -1: a pipeline gets one. */
+    static int secondVectorScanStage(List<BsonDocument> stages, int first) {
+        var after = indexOfVectorScanStage(stages.subList(first + 1, stages.size()));
+        return after < 0 ? -1 : first + 1 + after;
     }
 
     static int indexOfVectorScanStage(BsonArray stages) {

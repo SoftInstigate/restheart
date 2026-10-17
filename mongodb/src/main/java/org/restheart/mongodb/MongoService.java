@@ -29,7 +29,6 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WH
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -52,11 +51,11 @@ import org.restheart.mongodb.utils.MongoMountResolverImpl;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
-import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.HttpStatus;
@@ -95,6 +94,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     @Inject("mclient")
     private MongoClient mclient;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     /**
      * PathMatcher is used by the root PathHandler to route the call. Here we
      * use the same logic to identify the correct MongoMount in order to
@@ -126,7 +128,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
             getMongoMounts().stream().forEachOrdered(mm -> templateMongoMounts.add(mm.uri, mm));
         }
 
-        this.mcpAware = MongoMcpAwareImpl.create();
+        this.mcpAware = MongoMcpAwareImpl.create(registry);
     }
 
     @Override
@@ -140,8 +142,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     // default (no templates). See MongoMcpAwareImpl's comment for the full reasoning.
 
     @Override
-    public Optional<McpReadResult> readResource(McpContext ctx, String resource, String action, Map<String, Object> args) {
-        return mcpAware.readResource(ctx, resource, action, args);
+    public Optional<AutoCloseable> watch(McpContext ctx, String resourceUri, Runnable onChange) {
+        return mcpAware.watch(ctx, resourceUri, onChange);
     }
 
     @Override
@@ -393,6 +395,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     }
 
     private final static String LOCATION_ETAG = LOCATION_STRING + ", " + ETAG_STRING;
+    // an aggregation may answer with Warning: 299 when a plugin bounded what its stage asked for
+    // ($vectorScan's max-candidates-cap, restheart/#755); a browser reads it only if exposed
+    private final static String ETAG_WARNING = ETAG_STRING + ", Warning";
 
     // Optimized: only non-CORS-safelisted headers
     // Note: Content-Type is safelisted only for form values, not for application/json
@@ -431,6 +436,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
 
             case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS ->
                 mr.isPost() ? LOCATION_ETAG : ETAG_STRING;
+
+            case AGGREGATION -> ETAG_WARNING;
 
             default -> ETAG_STRING;
         };

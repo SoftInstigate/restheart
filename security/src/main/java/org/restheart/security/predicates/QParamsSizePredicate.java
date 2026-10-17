@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import org.restheart.security.EvaluationScope;
+
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
 import io.undertow.server.HttpServerExchange;
@@ -46,7 +48,13 @@ public class QParamsSizePredicate implements Predicate {
                 (qparamsInExchange != null && qparamsInExchange.keySet().size() == this.size);
     }
 
-    public static class Builder implements PredicateBuilder {
+    public static class Builder implements PredicateBuilder, EvaluationScope {
+        /** Reads the request this listing cannot have yet, so it never discriminates in a catalog. */
+        @Override
+        public Scope scope() {
+            return Scope.CALL;
+        }
+
         @Override
         public String name() {
             return "qparams-size";

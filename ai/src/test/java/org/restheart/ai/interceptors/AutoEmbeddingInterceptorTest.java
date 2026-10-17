@@ -20,12 +20,9 @@
  */
 package org.restheart.ai.interceptors;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.bson.BsonArray;
@@ -36,37 +33,7 @@ import org.junit.jupiter.api.Test;
 
 public class AutoEmbeddingInterceptorTest {
 
-    // -- findVectorSearchConfig --------------------------------------------
-
-    @Test
-    public void nullCollectionProps_returnsNull() {
-        assertNull(AutoEmbeddingInterceptor.findVectorSearchConfig(null));
-    }
-
-    @Test
-    public void noVectorSearchBlock_returnsNull() {
-        var collProps = new BsonDocument("someOtherField", new BsonString("x"));
-        assertNull(AutoEmbeddingInterceptor.findVectorSearchConfig(collProps));
-    }
-
-    @Test
-    public void vectorSearchMissingEmbeddingField_returnsNull() {
-        var vs = new BsonDocument("textField", new BsonString("description"));
-        var collProps = new BsonDocument("vectorSearch", vs);
-        assertNull(AutoEmbeddingInterceptor.findVectorSearchConfig(collProps));
-    }
-
-    @Test
-    public void validVectorSearchBlock_isReturned() {
-        var vs = new BsonDocument("textField", new BsonString("description"))
-                .append("embeddingField", new BsonString("embedding"));
-        var collProps = new BsonDocument("vectorSearch", vs);
-
-        var found = AutoEmbeddingInterceptor.findVectorSearchConfig(collProps);
-
-        assertEquals("description", found.getString("textField").getValue());
-        assertEquals("embedding", found.getString("embeddingField").getValue());
-    }
+    // the vectorSearch metadata is read by CollectionEmbeddingConfig, tested in its own class
 
     // -- asDocumentList ------------------------------------------------------
 
@@ -91,61 +58,5 @@ public class AutoEmbeddingInterceptorTest {
         var docs = AutoEmbeddingInterceptor.asDocumentList(arr);
 
         assertEquals(List.of(doc1, doc2), docs);
-    }
-
-    // -- collectEmbeddableTexts -----------------------------------------------
-
-    @Test
-    public void collectEmbeddableTexts_skipsDocumentsWithoutStringTextField() {
-        var withText = new BsonDocument("description", new BsonString("hello world"));
-        var withoutText = new BsonDocument("other", new BsonInt32(1));
-        var withNonStringText = new BsonDocument("description", new BsonInt32(42));
-
-        var targets = new ArrayList<BsonDocument>();
-        var texts = new ArrayList<String>();
-        AutoEmbeddingInterceptor.collectEmbeddableTexts(
-                List.of(withText, withoutText, withNonStringText), "description", targets, texts);
-
-        assertEquals(List.of(withText), targets);
-        assertEquals(List.of("hello world"), texts);
-    }
-
-    // -- applyEmbeddings -------------------------------------------------------
-
-    @Test
-    public void applyEmbeddings_appendsVectorAsBsonDoubleArray() {
-        var doc = new BsonDocument("description", new BsonString("hello"));
-        AutoEmbeddingInterceptor.applyEmbeddings(List.of(doc), List.of(new float[]{0.1f, 0.2f}), "embedding");
-
-        var arr = doc.getArray("embedding");
-        assertEquals(2, arr.size());
-        assertEquals(0.1, arr.get(0).asDouble().getValue(), 1e-6);
-        assertEquals(0.2, arr.get(1).asDouble().getValue(), 1e-6);
-    }
-
-    @Test
-    public void applyEmbeddings_skipsTargetWithNullVector() {
-        var doc1 = new BsonDocument("description", new BsonString("hello"));
-        var doc2 = new BsonDocument("description", new BsonString("world"));
-        var vectors = new ArrayList<float[]>();
-        vectors.add(null);
-        vectors.add(new float[]{1.0f});
-
-        AutoEmbeddingInterceptor.applyEmbeddings(List.of(doc1, doc2), vectors, "embedding");
-
-        assertTrue(!doc1.containsKey("embedding"));
-        assertArrayEquals(new double[]{1.0}, new double[]{doc2.getArray("embedding").get(0).asDouble().getValue()});
-    }
-
-    @Test
-    public void applyEmbeddings_fewerVectorsThanTargets_leavesExtraTargetsUntouched() {
-        var doc1 = new BsonDocument("description", new BsonString("hello"));
-        var doc2 = new BsonDocument("description", new BsonString("world"));
-
-        AutoEmbeddingInterceptor.applyEmbeddings(
-                List.of(doc1, doc2), List.of(new float[]{1.0f}), "embedding");
-
-        assertTrue(doc1.containsKey("embedding"));
-        assertTrue(!doc2.containsKey("embedding"));
     }
 }

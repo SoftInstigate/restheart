@@ -50,7 +50,7 @@ class ChangeStreamPermissionsTest {
         var stage = ChangeStreamPermissions.readFilterStage(filter);
 
         assertEquals(BsonDocument.parse(
-                "{\"$match\": {\"$or\": [{\"fullDocument.owner\": \"alice\"}, {\"$and\": [{\"fullDocument.public\": true}, {\"fullDocument.status\": {\"$ne\": \"draft\"}}]}]}}"),
+                        "{\"$match\": {\"$or\": [{\"fullDocument.owner\": \"alice\"}, {\"$and\": [{\"fullDocument.public\": true}, {\"fullDocument.status\": {\"$ne\": \"draft\"}}]}]}}"),
                 stage);
     }
 
@@ -80,7 +80,7 @@ class ChangeStreamPermissionsTest {
 
         assertEquals(2, stages.size());
         assertEquals(BsonDocument.parse(
-                "{\"$project\": {\"fullDocument.secret\": 0, \"fullDocumentBeforeChange.secret\": 0, \"updateDescription.updatedFields.secret\": 0}}"),
+                        "{\"$project\": {\"fullDocument.secret\": 0, \"fullDocumentBeforeChange.secret\": 0, \"updateDescription.updatedFields.secret\": 0}}"),
                 stages.get(0));
         // updatedFields keys are paths: the literal "secret" and "secret.<nested>" are filtered out
         var set = stages.get(1).toJson();
@@ -93,7 +93,7 @@ class ChangeStreamPermissionsTest {
         var stages = ChangeStreamPermissions.projectResponseStages(BsonDocument.parse("{\"profile\": 0, \"profile.ssn\": 0}"));
 
         assertEquals(BsonDocument.parse(
-                "{\"$project\": {\"fullDocument.profile\": 0, \"fullDocumentBeforeChange.profile\": 0, \"updateDescription.updatedFields.profile\": 0}}"),
+                        "{\"$project\": {\"fullDocument.profile\": 0, \"fullDocumentBeforeChange.profile\": 0, \"updateDescription.updatedFields.profile\": 0}}"),
                 stages.get(0));
     }
 

@@ -30,6 +30,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -92,6 +93,15 @@ public class DeleteDocumentHandler extends PipelinedHandler {
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             response.setInError(HttpStatus.SC_CONFLICT, "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+            next(exchange);
+            return;
+        }
+
+        // a write mode that does not create answers 404 for a missing document; say which one, as a
+        // GET does, rather than an empty body an agent reads as nothing at all
+        if (result.getHttpCode() == HttpStatus.SC_NOT_FOUND) {
+            response.setInError(HttpStatus.SC_NOT_FOUND,
+                    "document " + BsonUtils.getIdAsString(request.getDocumentId(), true) + " does not exist");
             next(exchange);
             return;
         }

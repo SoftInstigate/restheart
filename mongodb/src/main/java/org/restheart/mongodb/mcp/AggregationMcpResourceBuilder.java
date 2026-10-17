@@ -30,6 +30,9 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.plugins.mcp.CatalogCondition;
+import org.restheart.plugins.mcp.BsonJava;
+import org.restheart.exchange.ExchangeKeys;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.security.AggregationPipelineSecurityChecker;
 
@@ -42,10 +45,12 @@ import org.restheart.security.AggregationPipelineSecurityChecker;
  * otherwise auto-generated {@link PipelineSummarizer} heuristic, which can't meaningfully
  * describe non-linear pipelines ({@code $lookup}/{@code $facet}/...).
  *
- * <p>The declared per-variable types surface as a single {@code avars} object param (with a
- * {@code properties} entry per variable), not one param per variable name — RESTHeart binds
- * {@code $var} references from one JSON query param, {@code ?avars={"name":"value",...}}, so
- * that's the shape {@code how_to_call} must render.
+ * <p>Each declared variable surfaces as a param of its own. Since 9.9 RESTHeart binds any query
+ * parameter it does not reserve for itself as a {@code $var}, so {@code ?status=A} is all a caller
+ * needs, and an agent filling one field per variable has an easier job than one assembling a JSON
+ * blob. A variable whose name collides with a reserved parameter ({@code page}, {@code sort},
+ * {@code filter}, ...) cannot travel that way and keeps the legacy form, bundled into
+ * {@code avars} — which still works, for every variable, against any version.
  */
 public final class AggregationMcpResourceBuilder {
 
@@ -84,23 +89,46 @@ public final class AggregationMcpResourceBuilder {
         var builder = McpResource.builder()
                 .uri(collectionUri + pathTemplate)
                 .kind("aggregation")
-                .description(description(mcp));
+                // Watched through the collection it reads from: MongoDB cannot say when a
+                // pipeline's result changes, but a notification only means "re-read", and the
+                // source collection changing is exactly when re-reading is worth it.
+                .subscribable(true)
+                .description(description(mcp))
+                .showIf(CatalogCondition.showIf(mcp))
+                .hideFromRoles(CatalogCondition.hideFromRoles(mcp));
 
-        var avarsProperties = new LinkedHashMap<String, McpResource.Param>();
+        // one entry per variable, split by whether its name can travel as a query parameter
+        var flatParams = new LinkedHashMap<String, McpResource.Param>();
+        var reservedNameParams = new LinkedHashMap<String, McpResource.Param>();
+
         referencedNames.forEach(name -> {
             var requiredByShape = scanResult.isRequired(name);
+            final McpResource.Param param;
+
             if (declaredParams.get(name) instanceof BsonDocument paramDef) {
-                avarsProperties.put(name, toParam(paramDef, requiredByShape));
+                param = toParam(paramDef, requiredByShape);
             } else {
-                avarsProperties.put(name, new McpResource.Param("string", null, requiredByShape, null, null));
+                param = new McpResource.Param("string", null, requiredByShape, null, null);
                 warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to a "
                         + (requiredByShape ? "required" : "optional") + " string");
+            }
+
+            if (ExchangeKeys.RESERVED_QPARAM_KEYS.contains(name)) {
+                reservedNameParams.put(name, param);
+                warnings.add("$var '" + name + "' has the name of a reserved query parameter, so it can only be "
+                        + "passed inside avars");
+            } else {
+                flatParams.put(name, param);
             }
         });
 
         declaredParams.keySet().stream()
                 .filter(name -> !referencedNames.contains(name))
                 .forEach(name -> warnings.add("mcp.params declares '" + name + "' but the pipeline does not reference it"));
+
+        // one check, two uses: whether the read side is offered at all, and — when it is not —
+        // what to tell an agent that would otherwise learn it only from a 403
+        var refusal = pipelineRefusal(stages, dbName, securityChecker);
 
         builder.action("execute", a -> {
             a.method("GET");
@@ -109,24 +137,40 @@ public final class AggregationMcpResourceBuilder {
             // action.pathTemplate(), so the action's own path_template must be relative (empty),
             // not repeat pathTemplate, or the rendered URL doubles up "/_aggrs/<uri>"
             a.pathTemplate("");
-            a.description(description(mcp));
-            a.readable(isPipelineSafeToRead(stages, dbName, securityChecker));
-            a.param("jsonMode", "string", false);
+            a.description(describeWithRefusal(description(mcp), refusal));
+            a.readable(refusal == null);
+            a.param("jsonMode", CollectionMcpResourceBuilder.JSON_MODE);
 
-            // RESTHeart binds $var references from a single JSON query param named "avars"
-            // (e.g. ?avars={"status":"A"}), not one query param per variable name — declaring
-            // them individually here would make how_to_call render "?status=A", which RESTHeart
-            // rejects with QueryVariableNotBoundException
-            if (!avarsProperties.isEmpty()) {
-                var required = avarsProperties.values().stream().anyMatch(McpResource.Param::required);
-                a.param("avars", new McpResource.Param("object", "MongoDB $var bindings for this pipeline.", required, null, null, avarsProperties));
+            // A pipeline that pages itself with @skip/@limit answers to ?page and ?pagesize —
+            // RESTHeart computes those variables from them. Declared here because they are the
+            // caller's half of that: without them an agent reads page one and has no way to learn
+            // there is a second, and @skip itself is not something it can set.
+            if (PipelineParamScanner.paginates(scanResult)) {
+                a.param("page", new McpResource.Param("integer",
+                        "Which page of results to return, starting at 1.", false, null, 1));
+                a.param("pagesize", new McpResource.Param("integer",
+                        "How many results per page.", false, null, null));
+            }
+
+            // Since 9.9 every non-reserved query parameter is bound as a $var, so each one is
+            // declared on its own: how_to_call renders "?status=A", and an agent has a field to
+            // fill rather than a JSON object to compose.
+            flatParams.forEach(a::param);
+
+            // The exceptions keep the legacy shape, because a parameter named `page` or `sort`
+            // would be read by RESTHeart itself before the pipeline ever saw it.
+            if (!reservedNameParams.isEmpty()) {
+                var required = reservedNameParams.values().stream().anyMatch(McpResource.Param::required);
+                a.param("avars", new McpResource.Param("object",
+                        "MongoDB $var bindings whose names are reserved query parameters, so they cannot be sent flat.",
+                        required, null, null, reservedNameParams));
             }
         });
 
         examples(mcp).forEach(ex -> builder.example(
                 stringOrNull(ex, "description"),
                 "execute",
-                ex.get("args") instanceof BsonDocument args ? BsonJavaConverter.toMap(args) : Map.of()));
+                ex.get("args") instanceof BsonDocument args ? BsonJava.toMap(args) : Map.of()));
 
         builder.extra("pipeline_summary", pipelineSummary(mcp, stages));
         if (!warnings.isEmpty()) {
@@ -146,11 +190,32 @@ public final class AggregationMcpResourceBuilder {
      * one) or a pipeline that isn't a well-formed stage array defaults to {@code false} — never
      * {@code readable} on anything we can't positively clear.
      */
-    private static boolean isPipelineSafeToRead(BsonValue stages, String dbName, AggregationPipelineSecurityChecker securityChecker) {
-        if (securityChecker == null || !(stages instanceof BsonArray stagesArray)) {
-            return false;
+    private static String pipelineRefusal(BsonValue stages, String dbName, AggregationPipelineSecurityChecker securityChecker) {
+        if (securityChecker == null) {
+            return "the deployment's aggregation security is unavailable";
         }
-        return securityChecker.validatePipeline(stagesArray, dbName).isEmpty();
+        if (!(stages instanceof BsonArray stagesArray)) {
+            return "the pipeline is not a well-formed array of stages";
+        }
+        return securityChecker.validatePipeline(stagesArray, dbName)
+                .map(v -> "the deployment's aggregation security refuses this pipeline (" + v.type() + " '" + v.operator() + "' at " + v.location() + ")")
+                .orElse(null);
+    }
+
+    /**
+     * An aggregation whose pipeline the security checker refuses cannot be read <em>or</em>
+     * executed: the REST endpoint behind it answers {@code 403}, so both {@code resources/read}
+     * and {@code call_api} fail. Saying so in the action's own description is the only place an
+     * agent finds out before trying — the resource stays in the catalogue, because it is the
+     * owner's own opt-in and hiding it would leave them wondering where it went, but it no longer
+     * looks callable.
+     */
+    private static String describeWithRefusal(String description, String refusal) {
+        if (refusal == null) {
+            return description;
+        }
+        var note = "Not callable: " + refusal + ". Reading or invoking it answers 403.";
+        return description == null || description.isBlank() ? note : description + " " + note;
     }
 
     private static boolean isExplicitlyDisabled(BsonDocument mcp) {
@@ -179,15 +244,33 @@ public final class AggregationMcpResourceBuilder {
         return v != null && v.isString() ? v.asString().getValue() : null;
     }
 
+    /**
+     * The BSON types a parameter can be declared with, by MongoDB's own {@code $type} aliases, and
+     * the Extended JSON an agent sends for each. JSON has no date: declared as a plain type, a
+     * {@code $var} compared with a date field was a string, and the pipeline matched nothing.
+     * Published as {@code object}, the JSON type the value has, with its shape in the description.
+     */
+    static final Map<String, String> BSON_TYPES = Map.of(
+            "date", "A date: {\"$date\": <epoch millis>}.",
+            "objectId", "An ObjectId: {\"$oid\": \"<24 hex digits>\"}.",
+            "long", "A 64-bit integer: {\"$numberLong\": \"<digits>\"}.",
+            "decimal", "A decimal: {\"$numberDecimal\": \"<digits>\"}.");
+
     /** @param defaultRequired required-ness derived from the pipeline's own shape (see {@link PipelineParamScanner}), used unless {@code def} explicitly overrides it with its own {@code required} field */
     private static McpResource.Param toParam(BsonDocument def, boolean defaultRequired) {
         var type = stringOrNull(def, "type");
         var description = stringOrNull(def, "description");
+
+        if (type != null && BSON_TYPES.containsKey(type)) {
+            description = BSON_TYPES.get(type) + (description == null ? "" : " " + description);
+            type = "object";
+        }
+
         var required = def.get("required") instanceof BsonBoolean b ? b.getValue() : defaultRequired;
         List<Object> enumValues = def.get("enum") instanceof BsonArray arr
-                ? arr.stream().map(BsonJavaConverter::toJava).toList()
+                ? arr.stream().map(BsonJava::toJava).toList()
                 : null;
-        var defaultValue = def.get("default") != null ? BsonJavaConverter.toJava(def.get("default")) : null;
+        var defaultValue = def.get("default") != null ? BsonJava.toJava(def.get("default")) : null;
         return new McpResource.Param(type, description, required, enumValues, defaultValue);
     }
 }

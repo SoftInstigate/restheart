@@ -25,8 +25,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 
 /**
@@ -56,7 +58,17 @@ final class McpTestClient {
     private String sessionId;
 
     McpTestClient(String baseUrl, String basicAuth) {
-        this.mcpUrl = baseUrl + "/mcp";
+        this(baseUrl, basicAuth, "");
+    }
+
+    /**
+     * Same, with a query string appended to every call on {@code /mcp} — for the test
+     * interceptors that stand in for a deployment layer attaching per-request overrides.
+     *
+     * @param query e.g. {@code "?_mcp-baseurl-override=http://svc-a.local:8080"}, or empty
+     */
+    McpTestClient(String baseUrl, String basicAuth, String query) {
+        this.mcpUrl = baseUrl + "/mcp" + query;
         this.basicAuth = basicAuth;
     }
 
@@ -131,6 +143,60 @@ final class McpTestClient {
      * Reads one MCP resource and returns the text of its single content entry — for
      * documents-mode reads (#617), where that text is the JSON the resource actually produced.
      */
+    /**
+     * The documents in what a collection or aggregation read returned, in whichever representation
+     * the deployment answered: a plain array ({@code rep=s}), or HAL's {@code _embedded} with its
+     * {@code rh:doc} or {@code rh:result} list. A read runs in-process through the same pipeline as
+     * a GET, so it honours the configured representation — the ITs run with HAL — and a bare
+     * resource (a parameterless aggregation) takes no query string to ask for another.
+     */
+    static BsonArray documentsIn(String payload) {
+        var trimmed = payload.trim();
+        if (trimmed.startsWith("[")) {
+            return BsonArray.parse(trimmed);
+        }
+        var embedded = BsonDocument.parse(trimmed).get("_embedded");
+        if (embedded == null) {
+            return new BsonArray();
+        }
+        if (embedded.isArray()) {
+            return embedded.asArray();
+        }
+        for (var key : List.of("rh:doc", "rh:result")) {
+            if (embedded.asDocument().containsKey(key)) {
+                return embedded.asDocument().getArray(key);
+            }
+        }
+        return new BsonArray();
+    }
+
+    /**
+     * Waits until the resources registry of this session's scope lists {@code uri} (as a concrete
+     * resource or as the base of a template), polling briefly. A fixture's metadata write drops
+     * the catalogue at once (mcpCatalogInvalidatorOnMetadataWrite) and the registry is re-synced
+     * on a virtual thread right after: this is the few milliseconds a test has to give that, in
+     * place of sleeping past the cache TTL.
+     *
+     * @throws AssertionError if the resource is still not listed after five seconds
+     */
+    void awaitResource(String uri) throws Exception {
+        var deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
+        var seen = "";
+        while (System.nanoTime() < deadline) {
+            var resources = rpc("resources/list", null).getDocument("result").getArray("resources").stream()
+                    .map(r -> r.asDocument().getString("uri").getValue()).toList();
+            var templates = rpc("resources/templates/list", null).getDocument("result").getArray("resourceTemplates").stream()
+                    .map(t -> t.asDocument().getString("uriTemplate").getValue()).toList();
+            if (resources.stream().anyMatch(u -> u.equals(uri) || u.startsWith(uri + "/"))
+                    || templates.stream().anyMatch(t -> t.startsWith(uri))) {
+                return;
+            }
+            seen = resources + " " + templates;
+            Thread.sleep(25);
+        }
+        throw new AssertionError("the resources registry never listed " + uri + "; it lists " + seen);
+    }
+
     String readResource(String uri) throws Exception {
         var contents = rpc("resources/read", """
                 {"uri":"%s"}
@@ -202,6 +268,100 @@ final class McpTestClient {
         }
 
         return BsonDocument.parse(text);
+    }
+
+    /**
+     * Opens the server-to-client stream and collects the notifications that arrive on it.
+     *
+     * <p>{@code GET /mcp} is the channel the MCP spec gives a server for messages nobody asked
+     * for — {@code notifications/resources/updated} among them — so a test that wants to see one
+     * has to hold it open, which request/response calls cannot do.
+     */
+    Notifications openNotificationStream() throws Exception {
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(mcpUrl))
+                .header("Accept", "text/event-stream")
+                .header("Authorization", basicAuth)
+                .header("Mcp-Session-Id", sessionId)
+                .header("Mcp-Protocol-Version", "2025-03-26")
+                .GET()
+                .build();
+
+        var received = new java.util.concurrent.CopyOnWriteArrayList<BsonDocument>();
+
+        var stream = http.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
+                .thenAccept(response -> response.body()
+                        .filter(line -> line.startsWith("data:"))
+                        .forEach(line -> {
+                            try {
+                                received.add(BsonDocument.parse(line.substring("data:".length()).strip()));
+                            } catch (Exception ignored) {
+                                // a frame that is not a JSON-RPC message is not this test's business
+                            }
+                        }));
+
+        return new Notifications(received, stream);
+    }
+
+    /** The notifications seen so far on the server-to-client stream. */
+    record Notifications(java.util.List<BsonDocument> received, java.util.concurrent.CompletableFuture<Void> stream) {
+
+        /** Waits for a notification with this method, returning it, or fails once {@code timeout} has passed. */
+        BsonDocument await(String method, java.time.Duration timeout) throws Exception {
+            var deadline = System.currentTimeMillis() + timeout.toMillis();
+
+            while (System.currentTimeMillis() < deadline) {
+                var found = matching(method);
+                if (!found.isEmpty()) {
+                    return found.get(0);
+                }
+                Thread.sleep(50);
+            }
+
+            throw new AssertionError("no " + method + " within " + timeout + "; saw " + received);
+        }
+
+        /** Asserts none arrives in {@code window} — for proving a subscription really ended. */
+        void awaitNone(String method, java.time.Duration window) throws Exception {
+            Thread.sleep(window.toMillis());
+
+            var found = matching(method);
+            if (!found.isEmpty()) {
+                throw new AssertionError("unexpected " + method + ": " + found);
+            }
+        }
+
+        java.util.List<BsonDocument> matching(String method) {
+            return received.stream()
+                    .filter(n -> method.equals(n.getString("method", new org.bson.BsonString("")).getValue()))
+                    .toList();
+        }
+
+        void close() {
+            stream.cancel(true);
+        }
+    }
+
+    /**
+     * Ends this client's session, as a client closing down does — {@code DELETE /mcp} with the
+     * session header, per the Streamable HTTP transport.
+     */
+    HttpResponse<String> endSession() throws Exception {
+        if (sessionId == null) {
+            throw new IllegalStateException("call initialize() first");
+        }
+
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(mcpUrl))
+                .header("Authorization", basicAuth)
+                .header("Mcp-Session-Id", sessionId)
+                .header("Mcp-Protocol-Version", "2025-03-26")
+                .DELETE()
+                .build();
+
+        var response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        sessionId = null;
+        return response;
     }
 
     private HttpResponse<String> send(String jsonRpcBody, String sessionIdHeader) throws Exception {

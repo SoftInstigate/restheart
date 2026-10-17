@@ -88,10 +88,6 @@ public class McpMongoChangeStreamIT extends AbstactIT {
                 .asEmpty();
         assertTrue(resp.getStatus() == 200 || resp.getStatus() == 201, "collection setup failed with status " + resp.getStatus());
 
-        // see McpGraphqlAppIT: wait past CachedResourceLookup's TTL so this class's own
-        // just-created resource isn't served from a stale cache entry
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, ADMIN_BASIC);
         mcp.initialize();
     }
@@ -168,7 +164,9 @@ public class McpMongoChangeStreamIT extends AbstactIT {
             try (var reader = new BufferedReader(new InputStreamReader(is))) {
                 String line;
                 while ((line = reader.readLine()) != null && lines.size() < count) {
-                    if (!line.isBlank()) {
+                    // ": ..." is a keep-alive comment, not part of an event: it must not
+                    // eat into the fixed budget of lines this reader captures
+                    if (!line.isBlank() && !line.startsWith(":")) {
                         lines.add(line);
                     }
                 }

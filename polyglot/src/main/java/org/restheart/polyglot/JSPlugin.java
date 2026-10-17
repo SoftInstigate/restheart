@@ -38,23 +38,17 @@ public abstract class JSPlugin {
     private static volatile Engine engine;
 
     /**
-     * Returns the shared polyglot Engine, creating it on the dedicated
-     * platform thread on first access.  Lazy initialization avoids the
-     * deadlock that would occur if we created the Engine in a static
-     * initializer (the main thread holds the class-init lock while
-     * waiting for the platform thread).
+     * Returns the shared polyglot Engine, created on first access with the plugins classloader
+     * (see {@link PolyglotThreadUtils}). Lazy rather than a static initializer: with the
+     * platform-thread escape hatch on, creating it in {@code <clinit>} would deadlock, the
+     * caller holding the class-init lock while the dedicated thread waits for it.
      */
     public static Engine engine() {
         if (engine == null) {
             synchronized (JSPlugin.class) {
                 if (engine == null) {
                     try {
-                        if (PolyglotThreadUtils.isAlreadyOnPlatformThread()) {
-                            engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
-                        } else {
-                            engine = PolyglotThreadUtils.onPlatformThread(
-                                    () -> PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create));
-                        }
+                        engine = PolyglotThreadUtils.run(Engine::create);
                     } catch (Exception e) {
                         throw new IllegalStateException("Error creating polyglot Engine", e);
                     }

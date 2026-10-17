@@ -39,6 +39,15 @@
             ]
         },
         {
+            "uri": "scanTwice",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": { "path": "vector", "queryVector": { "$var": "q" } } },
+                { "$project": { "vector": 0 } },
+                { "$vectorScan": { "path": "vector", "queryVector": { "$var": "q" } } }
+            ]
+        },
+        {
             "uri": "scanMissingPath",
             "type": "pipeline",
             "stages": [
@@ -46,6 +55,21 @@
                     "queryVector": { "$var": "q" }
                 }}
             ]
+        },
+        {
+            "uri": "scanReranked",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": {
+                    "path": "vector",
+                    "queryVector": { "$var": "q" },
+                    "similarity": "cosine",
+                    "limit": 10
+                }},
+                { "$set": { "text": "$category" } },
+                { "$project": { "vector": 0 } }
+            ],
+            "rerank": { "query": { "$var": "question" }, "topK": 10 }
         }
     ]
 }

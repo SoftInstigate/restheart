@@ -16,6 +16,7 @@ import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import org.restheart.plugins.security.PasswordPolicy;
 
 /**
  * POST /auth/invite
@@ -58,11 +60,18 @@ public class InviteService implements JsonService {
     private static final Logger LOGGER = LoggerFactory.getLogger(InviteService.class);
     private static final long INVITE_TTL_MS = 7L * 24 * 60 * 60 * 1000;
 
+    @Inject("passwordPolicy")
+    private PasswordPolicy passwordPolicy;
+
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
 
     @Inject("mclient")
     private MongoClient mclient;
+
+    // the user documents written here are validated by the users collection's JSON Schema, when it has one
+    @Inject(value = "json-schemas", required = false)
+    private JsonSchemas jsonSchemas;
 
     @Inject("accountsConfig")
     private AccountsConfigData conf;
@@ -164,7 +173,7 @@ public class InviteService implements JsonService {
 
         if (isNewUser) {
             // New user: create with $unauthenticated role (no inviteToken on user doc)
-            var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken());
+            var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken(), passwordPolicy.bcryptComplexity());
             var rolesArr = new BsonArray();
             rolesArr.add(new BsonString("$unauthenticated"));
 
@@ -240,7 +249,7 @@ public class InviteService implements JsonService {
     // -------------------------------------------------------------------------
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     /** Loads the team display name for the given teamId, falling back to its extended JSON form. */

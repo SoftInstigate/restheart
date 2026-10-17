@@ -6,6 +6,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.plugins.PluginsRegistry;
+import org.restheart.security.tokens.JwtTokenManager;
 import org.restheart.security.AuthCookie;
 import org.restheart.security.tokens.JwtConfigProvider;
 import org.restheart.security.tokens.DefaultJwtIssuer;
@@ -26,7 +27,7 @@ import java.util.Set;
  * <pre>
  *   Authorization: Bearer &lt;jwt&gt;
  * </pre>
- * or via the {@code rh_auth=Bearer_&lt;jwt&gt;} cookie (authCookieHandler).
+ * or via the {@code <authCookieSetter name>=Bearer_&lt;jwt&gt;} cookie (authCookieHandler).
  *
  * <p>Instances are thread-safe: {@link Algorithm} is immutable and {@link JWT} is a static
  * factory.
@@ -225,6 +226,13 @@ public class JwtHelper {
         var builder = jwtIssuer.newBuilder(email, roles, Date.from(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES)))
                 .withIssuedAt(Instant.now());
 
+        // This is a session token: the caller signed in, activated an account or switched team, and
+        // carries this until it expires. jwtTokenManager renews only what is marked, so without
+        // this the holder would be sent back through the whole flow at every expiry. The
+        // single-use tokens behind an activation or reset link are issued by the deprecated method
+        // below, which deliberately does not carry the mark.
+        builder = jwtIssuer.withClaim(builder, JwtTokenManager.RENEWABLE, true);
+
         builder = jwtIssuer.applyAccountClaims(builder, properties, effectiveClaims);
 
         for (var e : extra.entrySet()) {
@@ -259,13 +267,13 @@ public class JwtHelper {
     }
 
     /**
-     * Builds the {@code rh_auth} cookie value compatible with RESTHeart's
+     * Builds the auth cookie value compatible with RESTHeart's
      * {@code authCookieHandler}.
      *
      * <p>Format: {@code Bearer_<jwt>}
      *
      * @param jwt the JWT issued by {@link #issueToken}
-     * @return the value to assign to the {@code rh_auth} cookie
+     * @return the value to assign to the auth cookie
      */
     public static String cookieValue(String jwt) {
         return AuthCookie.bearerValue(jwt);
@@ -309,14 +317,6 @@ public class JwtHelper {
     @Deprecated
     public static String setCookieHeader(String jwt, String cookieName, String domain) {
         return setCookieHeader(jwt, cookieName, domain, 0, true);
-    }
-
-    /**
-     * @deprecated Use {@link #setCookieHeader(String, String, String)} with explicit cookie name.
-     */
-    @Deprecated
-    public static String setCookieHeader(String jwt, String domain) {
-        return setCookieHeader(jwt, "rh_auth", domain);
     }
 
     private static Object bsonValueToObject(BsonValue value) {

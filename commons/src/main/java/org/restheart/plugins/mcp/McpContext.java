@@ -22,13 +22,15 @@ package org.restheart.plugins.mcp;
 
 import java.util.Map;
 
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.security.BaseAccount;
 
 /**
- * Passed to {@link McpAware#describeMcp(McpContext)}. Carries everything a
- * plugin needs to build its {@link McpResource}s without depending on
- * {@code HttpServerExchange} or any other transport-level type.
+ * Passed to {@link McpAware#describeMcp(McpContext)} and {@link McpAware#execute}. Carries
+ * everything a plugin needs to build its {@link McpResource}s, or to know who is calling one,
+ * without depending on {@code HttpServerExchange} or any other transport-level type.
+ *
+ * <p>It carries no authorization decision: an action runs through RESTHeart's handler chain
+ * in-process, where the ACL judges it exactly as it judges the same call over REST.
  *
  * @param principal the authenticated account of the MCP session — {@link BaseAccount}
  *                  rather than the bare JDK {@code Principal}, since ACL-aware filtering
@@ -38,6 +40,14 @@ import org.restheart.security.BaseAccount;
  *                  call, if the deployment allows one
  * @param baseUrl the public base URL of the RESTHeart instance (no trailing slash),
  *                used to build absolute resource URIs
+ * @param scope which partition of the catalogue is being described — an opaque token whose
+ *              meaning is the plugin's own to decide (the MongoDB service reads it as a database
+ *              name). {@link McpScopeProvider#UNPARTITIONED} when the deployment partitions
+ *              nothing, which is the default and what every plugin sees unless a
+ *              {@code McpScopeProvider} is registered. A plugin whose content does not depend on
+ *              the caller ignores this and contributes the same resources to every scope; a
+ *              plugin whose content does depend on the caller <strong>must</strong> filter by it,
+ *              or it exposes one caller's resources to another
  * @param pluginName the name the plugin registered with ({@code @RegisterPlugin(name = ...)})
  * @param pluginUri the URI the plugin is mounted at ({@code uri} config, falling back to
  *                  {@code defaultURI}), used together with {@code baseUrl} to build the
@@ -48,20 +58,32 @@ import org.restheart.security.BaseAccount;
 public record McpContext(
         BaseAccount principal,
         String baseUrl,
+        String scope,
         String pluginName,
         String pluginUri,
-        Map<String, Object> pluginConfiguration,
-        Decision authorization) {
+        Map<String, Object> pluginConfiguration) {
 
     public McpContext {
         if (pluginConfiguration == null) {
             pluginConfiguration = Map.of();
         }
+
+        // An absent scope is not an error and not a missing value: it is the ordinary case of a
+        // deployment that partitions nothing. Normalising it here means no plugin has to
+        // null-check before comparing.
+        if (scope == null || scope.isBlank()) {
+            scope = McpScopeProvider.UNPARTITIONED;
+        }
     }
 
-    /** Without an authorization decision — for describing a resource, which reads no data. */
+    /** Whether this context describes the whole catalogue rather than one partition of it. */
+    public boolean unpartitioned() {
+        return McpScopeProvider.UNPARTITIONED.equals(scope);
+    }
+
+    /** Unpartitioned. */
     public McpContext(BaseAccount principal, String baseUrl, String pluginName, String pluginUri,
                       Map<String, Object> pluginConfiguration) {
-        this(principal, baseUrl, pluginName, pluginUri, pluginConfiguration, null);
+        this(principal, baseUrl, McpScopeProvider.UNPARTITIONED, pluginName, pluginUri, pluginConfiguration);
     }
 }

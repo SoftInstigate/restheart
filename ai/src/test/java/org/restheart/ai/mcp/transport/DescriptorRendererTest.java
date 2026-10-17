@@ -83,7 +83,7 @@ public class DescriptorRendererTest {
 
         @SuppressWarnings("unchecked")
         var headers = (Map<String, Object>) descriptor.get("headers");
-        assertEquals("Bearer " + DescriptorRenderer.TOKEN_PLACEHOLDER, headers.get("Authorization"));
+        assertEquals("Bearer " + DescriptorRenderer.CREDENTIAL_PLACEHOLDER, headers.get("Authorization"));
     }
 
     @Test
@@ -97,14 +97,15 @@ public class DescriptorRendererTest {
 
         @SuppressWarnings("unchecked")
         var headers = (Map<String, Object>) descriptor.get("headers");
-        assertEquals("Bearer " + DescriptorRenderer.TOKEN_PLACEHOLDER, headers.get("Authorization"));
+        assertEquals("Bearer " + DescriptorRenderer.CREDENTIAL_PLACEHOLDER, headers.get("Authorization"));
     }
 
     @Test
-    public void placeholder_namesTheToolThatFillsItIn() {
-        // the descriptor and the token are fetched by different reasoning steps, minutes apart —
-        // a bare "<token>" left the agent to guess where the value comes from
-        assertTrue(DescriptorRenderer.TOKEN_PLACEHOLDER.contains("get_token"));
+    public void placeholder_saysWhoseCredentialGoesThere() {
+        // the descriptor is documentation for code the agent writes for the user: the placeholder
+        // must read as "the user's own", never as something the MCP server would hand out
+        assertTrue(DescriptorRenderer.CREDENTIAL_PLACEHOLDER.contains("your"));
+        assertFalse(DescriptorRenderer.CREDENTIAL_PLACEHOLDER.contains("token"));
     }
 
     @Test
@@ -205,4 +206,27 @@ public class DescriptorRendererTest {
         var headers = (Map<String, Object>) descriptor.get("headers");
         assertFalse(headers.containsKey("Content-Type"));
     }
+
+    @Test
+    public void httpDescriptor_carriesTheActionDescriptionAsNotes() {
+        // The one place an agent is guaranteed to look right before it sends: what the action
+        // says about itself must travel with the request, not only sit in the catalogue.
+        var resource = McpResource.builder()
+                .uri("https://host/market_events")
+                .action("create", a -> a.method("POST").description("409 Conflict means one of three things"))
+                .action("query", a -> a.method("GET"))
+                .build();
+
+        var create = DescriptorRenderer.render(resource, "create", Map.of("body", Map.of("type", "offer")), null);
+        assertEquals("409 Conflict means one of three things", create.get("notes"));
+
+        var query = DescriptorRenderer.render(resource, "query", Map.of(), null);
+        assertFalse(query.containsKey("notes"), "an action with nothing to say adds no key");
+    }
+
+    /**
+     * What a call will actually send, asked before it is sent. The ACL may decide on a query
+     * parameter, so a check made beforehand has to see the same parameters the request carries —
+     * decoded, as Undertow holds them, and without the ones the path template swallowed.
+     */
 }

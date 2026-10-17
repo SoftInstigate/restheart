@@ -20,13 +20,11 @@
  */
 package org.restheart.ai.mcp;
 
-import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -36,10 +34,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
+import org.restheart.ai.util.RequestOverrides;
 import org.restheart.ai.mcp.tools.CachedResourceLookup;
+import org.restheart.ai.mcp.tools.CallApiTool;
 import org.restheart.ai.mcp.tools.HowToCallTool;
 import org.restheart.ai.mcp.tools.ListApisTool;
 import org.restheart.ai.mcp.tools.UnknownActionException;
@@ -47,7 +49,6 @@ import org.restheart.ai.mcp.tools.UnknownResourceException;
 import org.restheart.ai.mcp.tools.ValidationFailedException;
 import org.restheart.ai.mcp.transport.DescriptorRenderer;
 import org.restheart.ai.mcp.validation.ParamValidator;
-import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.exchange.Request;
@@ -56,39 +57,51 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.mcp.McpCatalogInvalidator;
 import org.restheart.plugins.mcp.McpContext;
-import org.restheart.plugins.mcp.McpReadResult;
+import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer;
-import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
-import org.restheart.plugins.security.JwtIssuer;
-import org.restheart.plugins.security.RequestDescriptor;
+import org.restheart.plugins.mcp.McpResult;
+import org.restheart.plugins.security.AclPermissions;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.URLUtils;
+import org.restheart.utils.InProcessDispatcher;
+import org.restheart.utils.PluginUtils;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapperSupplier;
+import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
 import io.modelcontextprotocol.json.schema.jackson3.JacksonJsonSchemaValidatorSupplier;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.spec.HttpHeaders;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import io.modelcontextprotocol.spec.McpSchema.ToolAnnotations;
 import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 import io.undertow.server.HttpServerExchange;
 
 /**
  * RESTHeart's MCP server: exposes exactly three tools — {@code list_apis} (what exists),
- * {@code how_to_call} (how to invoke it) and {@code get_token} (a short-lived credential to
- * invoke it with) — over the MCP Streamable HTTP transport (restheart#615 design principles —
- * "one tool, one model", no per-resource tools: three concerns, not three per resource).
+ * {@code call_api} (execute an action of it, server-side, as the session) and
+ * {@code how_to_call} (a credential-free descriptor, for code the agent writes for the user) —
+ * over the MCP Streamable HTTP transport (restheart#615 design principles — "one tool, one
+ * model", no per-resource tools: three concerns, not three per resource).
+ *
+ * <p>There is one executable road, {@code call_api} (restheart#741): the request runs through
+ * RESTHeart's whole handler chain in-process, with the session's own identity, so no credential
+ * is ever handed to an agent and no agent needs a network path to the API.
  *
  * <p>Transport is {@link UndertowStreamableServerTransportProvider}, ported from
  * Sophia (already running there in production) — session lifecycle, SSE for
@@ -114,56 +127,164 @@ public class McpService implements ByteArrayService {
     private static final String CTX_PRINCIPAL = "principal";
     private static final String CTX_BASE_URL = "baseUrl";
     private static final String CTX_REQUEST = "request";
+    private static final String CTX_SCOPE = "scope";
 
     private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
 
     /**
-     * Lifetime of a token issued by {@code get_token} — see {@link #callGetToken}. Deliberately
-     * short and not operator-configurable: the whole point is bounding the blast radius of a
-     * leaked token by expiry, not by trusting the agent (or whatever it hands the token to next)
-     * to handle it carefully. It is short enough that it must be fetched right before use, which
-     * is why it is a tool of its own rather than something baked into a descriptor.
+     * How long an MCP session may go unused, with no open stream, before it is ended: see
+     * {@code SessionActivity}. {@code 0} keeps sessions until the client sends {@code DELETE}.
      */
-    private static final Duration EPHEMERAL_TOKEN_TTL = Duration.ofSeconds(60);
+    private static final int DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS = 1800;
+    private static final int DEFAULT_STREAM_KEEP_ALIVE_SECONDS = 20;
+
+    /**
+     * What the client is told at initialize, before it asks anything.
+     *
+     * <p>It says where the catalog is, because the client's own view of it is partial and the
+     * agent has no way to know that: a resource that takes parameters is published as a resource
+     * template, and a client that lists resources without also calling
+     * {@code resources/templates/list} — most of them — simply does not see it. An agent that
+     * read the short list concluded the resource did not exist and played around its absence.
+     *
+     * <p>Kept to what cannot be worked out from the tools themselves. Everything else an agent
+     * needs is in the tool descriptions and in the catalog entries, which is where it stays
+     * accurate; this text is written once, for every deployment, and cannot know any of it.
+     */
+    static final String INSTRUCTIONS = """
+            A RESTHeart deployment. Each API is a resource; each resource has actions.
+
+            1. Catalog: list_apis. It is complete. resources/list is not: a resource that takes \
+            parameters is a template, listed only by resources/templates/list.
+            2. Execution: call_api(resource, action, args), for every action, reads included. It \
+            runs on the server with this session's identity and permissions.
+            3. The catalog lists what this session's permissions could allow; the call is \
+            authorized when it is made.\
+            """;
 
     @Inject("registry")
     private PluginsRegistry pluginsRegistry;
 
+    /** The framework's own answer to "could this caller perform this operation?" — see {@link #visibleTo}. */
+    @Inject("acl-permissions")
+    private AclPermissions permissions;
+
     @Inject("config")
     private Map<String, Object> config;
 
-    private UndertowStreamableServerTransportProvider provider;
+    /** Runs a {@code call_api} request through this server's own handler chain — see {@link CallApiTool}. */
+    @Inject("in-process-dispatcher")
+    private InProcessDispatcher inProcessDispatcher;
+
     private ListApisTool listApisTool;
     private HowToCallTool howToCallTool;
+    private CallApiTool callApiTool;
     private McpJsonMapper jsonMapper;
     private CachedResourceLookup resourceLookup;
-    private McpSyncServer server;
+    private JsonSchemaValidator schemaValidator;
 
-    /** Resolved lazily via {@link PluginModelResolver}, not in {@code @OnInit} — see its own javadoc on plugin init ordering. */
-    private final Map<String, JwtIssuer> resolvedJwtIssuers = new ConcurrentHashMap<>();
+    /**
+     * Decides which partition of the catalogue a request belongs to. Never {@code null}: with no
+     * implementation registered this answers {@link McpScopeProvider#UNPARTITIONED} for
+     * everything, which is what makes partitioning opt-in with no configuration switch.
+     */
+    private McpScopeProvider scopeProvider;
+
+    /**
+     * One MCP server per scope, created on that scope's first request.
+     *
+     * <p>Not one server with a per-request view: {@code resources/list} is answered from the SDK's
+     * own registry, which belongs to the server, so a request-scoped value can never reach it.
+     * And not one server per (scope, service) either — a session talks to exactly one server, and
+     * the catalogue is aggregated across every {@code McpAware}, so splitting by service would
+     * leave a client seeing part of it with no way to know.
+     *
+     * <p>One provider each, not one shared: {@code setSessionFactory} is singular, and
+     * {@code McpServer.sync(provider)} installs the server as that provider's session factory —
+     * one provider can only ever serve one server.
+     */
+    private final Map<String, ScopedServer> scopes = new ConcurrentHashMap<>();
+
+    /**
+     * An MCP server, its transport, whether its registry has been populated, and how many requests
+     * are currently inside it.
+     *
+     * <p>{@code inFlight} exists for disposal. Without it there is a window between a thread
+     * taking a scope out of the map and that thread's request creating its session, in which the
+     * scope looks unused: a session ending on another thread would dispose it, and the first
+     * request would then land on a closed transport.
+     */
+    private record ScopedServer(String scope,
+                                UndertowStreamableServerTransportProvider provider,
+                                McpSyncServer server,
+                                AtomicBoolean resourcesInitialized,
+                                AtomicInteger inFlight) {
+    }
+
 
     /**
      * Absolute base URL used for the MCP {@code resources} primitive (#617) — {@code null}
-     * disables it entirely. Unlike {@code list_apis}/{@code how_to_call}, which resolve
-     * {@code baseUrl} fresh per request (see {@link #resolveBaseUrl}), the official MCP SDK's
-     * resources API (verified against its bytecode: {@code McpSyncServer.addResource}/
-     * {@code removeResource}) is a single mutable registry for the whole server, not a
-     * per-request computation — so it needs one canonical, operator-configured URL rather than
-     * whatever a given request's {@code Host}/{@code X-Forwarded-*} headers happen to say.
+     * disables it entirely. The official MCP SDK's resources API (verified against its bytecode:
+     * {@code McpSyncServer.addResource}/{@code removeResource}) is a single mutable registry per
+     * server, not a per-request computation — so it needs one canonical, operator-configured URL
+     * rather than whatever a given request's {@code Host}/{@code X-Forwarded-*} headers happen
+     * to say.
+     *
+     * <p>A deployment serving many hosts attaches {@link RequestOverrides#MCP_PUBLIC_BASE_URL}
+     * per request instead, and then every channel — the registry, {@code list_apis},
+     * {@code how_to_call}, authorization — reads that one value: see {@link #requestBaseUrl}.
      */
     private String publicBaseUrl;
 
-    /** Guards the one-time initial resource-registry population — see {@link #handle} and {@link #init()}'s comment on why it can't happen in {@code init()} itself. */
-    private final AtomicBoolean resourcesInitialized = new AtomicBoolean(false);
+    /** See the transport provider's streamKeepAlive; from stream-keep-alive-seconds. */
+    private int streamKeepAliveSeconds = DEFAULT_STREAM_KEEP_ALIVE_SECONDS;
+
+    /**
+     * The running service, so {@link McpCatalogFilterInterceptor} can reuse this catalog and this
+     * visibility rule instead of building its own. There is exactly one instance: RESTHeart plugins
+     * are singletons.
+     */
+    private static volatile McpService instance;
+
+    /** The running service, or {@code null} when MCP is not enabled on this instance. */
+    public static McpService instance() {
+        return instance;
+    }
+
+    /**
+     * Forgets the catalogue of the partition this request belongs to — see
+     * {@link McpCatalogInvalidator}.
+     *
+     * <p>The scope is resolved here and not by the caller: which partition a request belongs to is
+     * one question with one answer, and that answer is the scope provider's. A request whose scope
+     * cannot be resolved invalidates nothing; there is no partition to name, and dropping every
+     * catalogue because one request was unattributable would let any caller empty the cache for
+     * everyone.
+     */
+    public void invalidateCatalog(Request<?> request) {
+        if (resourceLookup == null || request == null) {
+            return;
+        }
+
+        var scope = resolveScope(request);
+
+        if (McpScopeProvider.UNRESOLVED.equals(scope)) {
+            return;
+        }
+
+        LOGGER.debug("Dropping the MCP catalogue of scope '{}': something it describes changed", scope);
+        resourceLookup.invalidate(scope);
+    }
 
     @OnInit
     public void init() {
+        instance = this;
+
         var mcpAwareRegistry = McpAwareRegistry.discover(pluginsRegistry);
 
         jsonMapper = new JacksonMcpJsonMapperSupplier().get();
-        var schemaValidator = new JacksonJsonSchemaValidatorSupplier().get();
-
-        provider = new UndertowStreamableServerTransportProvider(jsonMapper);
+        schemaValidator = new JacksonJsonSchemaValidatorSupplier().get();
+        scopeProvider = discoverScopeProvider();
 
         publicBaseUrl = config != null && config.get("public-base-url") instanceof String s && !s.isBlank() ? s : null;
 
@@ -171,29 +292,14 @@ public class McpService implements ByteArrayService {
         // McpAware implementation's own data source (a MongoDB write, a config change, ...) —
         // one uniform mechanism for all of them, trading instant consistency for a bounded
         // staleness window. On expiry, connected agents are told to refetch.
+        var notifyIntervalSeconds = argOrDefault(config, "subscription-notify-interval-seconds", DEFAULT_NOTIFY_INTERVAL_SECONDS);
+        subscriptions = new ResourceSubscriptions(Duration.ofSeconds(notifyIntervalSeconds), this::notifyResourceUpdated);
+
         var catalogTtlSeconds = argOrDefault(config, "catalog-ttl-seconds", DEFAULT_CATALOG_TTL_SECONDS);
         resourceLookup = new CachedResourceLookup(mcpAwareRegistry, Duration.ofSeconds(catalogTtlSeconds), this::onCatalogExpired);
         listApisTool = new ListApisTool(resourceLookup);
         howToCallTool = new HowToCallTool(resourceLookup);
-
-        var serverBuilder = McpServer.sync(provider)
-                .serverInfo("restheart-mcp", "1.0.0")
-                .jsonMapper(jsonMapper)
-                .jsonSchemaValidator(schemaValidator)
-                .capabilities(capabilities())
-                .toolCall(listApisToolDefinition(), this::callListApis)
-                .toolCall(howToCallToolDefinition(), this::callHowToCall)
-                .toolCall(getTokenToolDefinition(), this::callGetToken);
-
-        // Neither resources nor templates are registered here: both are built by calling
-        // describeMcp()/describeTemplates() on every registered McpAware plugin, and @OnInit
-        // methods run in an unspecified cross-plugin order (see OnInit's own javadoc) — another
-        // plugin's own @OnInit (e.g. GraphQLService's) may not have run yet, leaving its internal
-        // state null and throwing (confirmed live). list_apis/how_to_call avoid this by only ever
-        // calling describeMcp() from an actual incoming request, which can't happen before every
-        // plugin's @OnInit has completed — resources and templates must be seeded the same way,
-        // in handle() on first real traffic, not here.
-        server = serverBuilder.build();
+        callApiTool = new CallApiTool(resourceLookup, howToCallTool, inProcessDispatcher, jsonMapper);
 
         // Without this, a client's open GET/SSE stream (or an in-flight tool-call's SSE
         // response) blocks its worker thread forever inside
@@ -203,10 +309,17 @@ public class McpService implements ByteArrayService {
         // (and so every associated queue), which is what actually lets the pending
         // request complete. Same fix Sophia's own MCP service applies for the same reason.
         Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
-            LOGGER.info("MCP shutdown: closing transport provider...");
-            provider.closeGracefully().block();
-            LOGGER.info("MCP shutdown: transport provider closed.");
+            LOGGER.info("MCP shutdown: closing {} transport provider(s)...", scopes.size());
+            scopes.values().forEach(scoped -> scoped.provider().closeGracefully().block());
+            LOGGER.info("MCP shutdown: transport providers closed.");
         }));
+
+        streamKeepAliveSeconds = argOrDefault(config, "stream-keep-alive-seconds", DEFAULT_STREAM_KEEP_ALIVE_SECONDS);
+
+        var idleTimeoutSeconds = argOrDefault(config, "session-idle-timeout-seconds", DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS);
+        if (idleTimeoutSeconds > 0) {
+            startIdleSessionSweeper(Duration.ofSeconds(idleTimeoutSeconds));
+        }
 
         LOGGER.info("MCP service initialized on {} (Streamable HTTP transport)", "/mcp");
         if (publicBaseUrl != null) {
@@ -214,11 +327,425 @@ public class McpService implements ByteArrayService {
         }
     }
 
+    /**
+     * The deployment's {@link McpScopeProvider}, or one answering
+     * {@link McpScopeProvider#UNPARTITIONED} for everything when none is registered.
+     *
+     * <p>Found by the type it provides rather than by an agreed name: a deployment that
+     * partitions should not also have to match a string, and nothing else in RESTHeart provides
+     * this type.
+     */
+    private McpScopeProvider discoverScopeProvider() {
+        var self = pluginsRegistry.getServices().stream()
+                .filter(r -> r.getInstance() == this)
+                .findFirst()
+                .orElse(null);
+
+        for (var record : pluginsRegistry.getProviders()) {
+            var instance = record.getInstance();
+            if (!McpScopeProvider.class.isAssignableFrom(instance.rawType())) {
+                continue;
+            }
+
+            if (instance.get(self) instanceof McpScopeProvider resolved) {
+                LOGGER.info("MCP catalogue partitioned by scope, resolved by '{}'", record.getName());
+                return resolved;
+            }
+
+            LOGGER.warn("Provider '{}' declares McpScopeProvider but supplied nothing — the MCP catalogue stays unpartitioned", record.getName());
+        }
+
+        return request -> McpScopeProvider.UNPARTITIONED;
+    }
+
+    /**
+     * The scope this request belongs to, resolved once per request.
+     *
+     * <p>A provider that throws is treated as one that could not decide, not as one that said
+     * "no partitioning": on a shared process the difference between those two is the difference
+     * between refusing a request and handing over everybody's catalogue.
+     */
+    /**
+     * The scope, for the authorization paths that run outside {@link #handle}'s own resolution and
+     * need a value rather than a refusal. A provider that fails answers {@link
+     * McpScopeProvider#UNRESOLVED} here, which matches no catalogue and so hides everything — the
+     * safe answer when visibility cannot be decided. {@code handle} does its own resolution, and
+     * tells the two failures apart.
+     */
+    private String resolveScope(Request<?> req) {
+        try {
+            var scope = scopeProvider.scopeOf(req);
+            return scope == null || scope.isBlank() ? McpScopeProvider.UNRESOLVED : scope;
+        } catch (Exception e) {
+            LOGGER.error("McpScopeProvider failed; hiding every resource rather than showing what nobody checked", e);
+            return McpScopeProvider.UNRESOLVED;
+        }
+    }
+
+    /**
+     * Refuses a request before the JSON-RPC layer, with a body a client can act on.
+     *
+     * <p>Not a JSON-RPC error: the scope is resolved before the body is parsed — it has to be,
+     * since it chooses which server parses it — and a {@code GET} opening the notification stream
+     * carries no body at all. There is no request id to answer, so this answers at the transport
+     * level, where an MCP client already handles HTTP failures.
+     */
+    private void refuse(ByteArrayResponse res, int status, String error, String message) {
+        res.setStatusCode(status);
+        res.setContentType("application/json");
+        res.setContent("{\"error\":\"%s\",\"message\":\"%s\"}".formatted(error, message));
+    }
+
+    /**
+     * The server serving {@code scope}, created on that scope's first request, with this request
+     * counted as inside it. The caller must {@link #release} it when done.
+     *
+     * <p>{@code compute}, not {@code computeIfAbsent}: taking the scope and marking it busy has to
+     * happen under the map's own lock, or disposal can slip between the two.
+     */
+    private ScopedServer acquire(String scope) {
+        return scopes.compute(scope, (k, existing) -> {
+            var scoped = existing != null ? existing : newScopedServer(k);
+            scoped.inFlight().incrementAndGet();
+            return scoped;
+        });
+    }
+
+    /**
+     * Ends, every so often, the sessions of every scope that clients left behind without a
+     * {@code DELETE}. Without it they stay in memory for the life of the process, and every
+     * catalog expiry tries to notify each of them.
+     *
+     * <p>Checked four times per timeout, at most once a minute: a session outlives its timeout
+     * by a quarter of it at worst, which is what an idle timeout is allowed to mean.
+     */
+    private void startIdleSessionSweeper(Duration timeout) {
+        var every = timeout.dividedBy(4);
+        if (every.compareTo(Duration.ofMinutes(1)) > 0) {
+            every = Duration.ofMinutes(1);
+        } else if (every.compareTo(Duration.ofSeconds(1)) < 0) {
+            every = Duration.ofSeconds(1);
+        }
+
+        var interval = every;
+        ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(interval);
+                    var expired = scopes.values().stream()
+                            .mapToInt(scoped -> scoped.provider().expireIdle(timeout))
+                            .sum();
+                    if (expired > 0) {
+                        LOGGER.debug("MCP: ended {} session(s) idle for more than {}", expired, timeout);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Throwable t) {
+                    LOGGER.warn("MCP: ending idle sessions failed: {}", t.getMessage());
+                }
+            }
+        });
+    }
+
+    private void release(ScopedServer scoped) {
+        scoped.inFlight().decrementAndGet();
+    }
+
+    /**
+     * Drops a scope once nothing is using it: no live session, and no request inside it.
+     *
+     * <p>Called when a session ends. Without this the number of scopes grows with the services
+     * that have <em>ever</em> connected rather than with those connected now — on a long-running
+     * shared process, that only ever goes up.
+     *
+     * <p>Both conditions are re-checked inside {@code computeIfPresent}, so the decision and the
+     * removal are one step as far as {@link #acquire} is concerned.
+     */
+    private void disposeIfUnused(String scope) {
+        var removed = new java.util.concurrent.atomic.AtomicReference<ScopedServer>();
+
+        scopes.computeIfPresent(scope, (k, scoped) -> {
+            if (scoped.inFlight().get() > 0 || scoped.provider().hasSessions()) {
+                return scoped;
+            }
+
+            removed.set(scoped);
+            return null;
+        });
+
+        var gone = removed.get();
+        if (gone == null) {
+            return;
+        }
+
+        // Outside the map's mapping function: closeGracefully blocks, and blocking there holds a
+        // lock every other request for any scope may be waiting on.
+        try {
+            gone.provider().closeGracefully().block();
+        } catch (Exception e) {
+            LOGGER.warn("failed to close the transport of scope '{}'", scope, e);
+        }
+
+        LOGGER.debug("MCP server disposed for scope '{}'", scope);
+    }
+
+    private ScopedServer newScopedServer(String scope) {
+        var scopedProvider = new UndertowStreamableServerTransportProvider(jsonMapper);
+        scopedProvider.keepAlive(demand::hasSubscriptions);
+        scopedProvider.streamKeepAlive(streamKeepAliveSeconds * 1000L);
+        scopedProvider.expiredSessions(expiredSessions);
+        scopedProvider.onSessionEnded(sessionId -> {
+            sessionEnded(sessionId);
+            disposeIfUnused(scope);
+        });
+
+        // Neither resources nor templates are registered here: both are built by calling
+        // describeMcp()/describeTemplates() on every registered McpAware plugin, and @OnInit
+        // methods run in an unspecified cross-plugin order (see OnInit's own javadoc) — another
+        // plugin's own @OnInit (e.g. GraphQLService's) may not have run yet, leaving its internal
+        // state null and throwing (confirmed live). list_apis/how_to_call avoid this by only ever
+        // calling describeMcp() from an actual incoming request, which can't happen before every
+        // plugin's @OnInit has completed — resources and templates must be seeded the same way,
+        // on this scope's first real traffic, not here.
+        var scopedSrv = McpServer.sync(scopedProvider)
+                // Keeps handlers on the caller's virtual thread: without it the SDK wraps every one in subscribeOn(Schedulers.boundedElastic()), a pool of up to 10x CPU platform threads — a default meant for event-loop callers, and the opposite of RESTHeart's threading model
+                .immediateExecution(true)
+                .serverInfo("restheart-mcp", "1.0.0")
+                .instructions(INSTRUCTIONS)
+                .jsonMapper(jsonMapper)
+                .jsonSchemaValidator(schemaValidator)
+                .capabilities(capabilities())
+                .toolCall(listApisToolDefinition(), this::callListApis)
+                .toolCall(callApiToolDefinition(), this::callCallApi)
+                .toolCall(howToCallToolDefinition(), this::callHowToCall)
+                .build();
+
+        LOGGER.debug("MCP server created for scope '{}'", scope);
+
+        return new ScopedServer(scope, scopedProvider, scopedSrv, new AtomicBoolean(false), new AtomicInteger());
+    }
+
+    /**
+     * Starts watching a resource the client is subscribing to, if nothing watches it yet.
+     *
+     * <p>Read off the request rather than from the SDK, which keeps its subscription map private.
+     * Unsubscribes are read here too, and the transport reports a session ending, so a watch lives
+     * exactly as long as somebody wants the resource. The one case that escapes this is a client
+     * that vanishes without the {@code DELETE} that closes its session: its watch survives until
+     * the resource leaves the catalog or the server stops.
+     */
+    private boolean watchIfSubscribing(ByteArrayRequest req, ByteArrayResponse res, McpTransportContext ctx) {
+        try {
+            var body = req.getContent();
+            if (body == null || body.length == 0) {
+                return true;
+            }
+
+            if (!(McpSchema.deserializeJsonRpcMessage(jsonMapper, new String(body, StandardCharsets.UTF_8))
+                    instanceof McpSchema.JSONRPCRequest rpc)
+                    || !(rpc.params() instanceof Map<?, ?> params)
+                    || !(params.get("uri") instanceof String uri)) {
+                return true;
+            }
+
+            var sessionId = req.getHeader(HttpHeaders.MCP_SESSION_ID);
+            if (sessionId == null || sessionId.isBlank()) {
+                return true;
+            }
+
+            if (McpSchema.METHOD_RESOURCES_SUBSCRIBE.equals(rpc.method())) {
+                var resource = resourceLookup.find(principal(ctx), effectiveBaseUrl(ctx), effectiveScope(ctx), uri);
+
+                if (resource.isEmpty() || !resource.get().subscribable()) {
+                    refuseSubscription(res, rpc, uri, resource.map(McpResource::kind).orElse(null));
+                    return false;
+                }
+
+                if (!canReceiveNotifications(ctx)) {
+                    refuseUndeliverableSubscription(res, rpc, uri);
+                    return false;
+                }
+
+                demand.subscribed(uri, sessionId);
+
+                // On every subscribe, not only the first: a change stream can die on its own —
+                // its collection dropped, a primary stepping down, a network blip — and
+                // CollectionWatchers drops the watch when it does. Keying this on "is anyone
+                // already subscribed" would then leave the resource unwatched for good, with the
+                // subscribers still recorded and never told anything again. startWatching is a
+                // no-op when a live watch is already there.
+                startWatching(principal(ctx), effectiveBaseUrl(ctx), effectiveScope(ctx), uri);
+            } else if (McpSchema.METHOD_RESOURCES_UNSUBSCRIBE.equals(rpc.method())
+                    && demand.unsubscribed(uri, sessionId)) {
+                releaseWatchesFor(List.of(uri));
+            }
+        } catch (Exception e) {
+            LOGGER.warn("could not inspect a /mcp request for a resource subscription", e);
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether this caller could open the stream notifications are delivered on.
+     *
+     * <p>The transport splits the endpoint by method: {@code POST} carries the client's JSON-RPC
+     * messages, and {@code GET} opens the long-lived stream the server pushes on. A subscription is
+     * server-initiated later, when no request is pending, so it has nowhere to go without that
+     * stream — and an ACL granting only {@code POST} on the endpoint is enough to produce a
+     * subscription that succeeds, opens a change stream, generates notifications, and drops every
+     * one of them.
+     *
+     * <p>Asking here, before accepting, turns a silent forever-wait into an answer. It is the same
+     * reading of the caller's permissions the catalog uses, so a rule that grants {@code POST} on
+     * the endpoint and nothing else is seen for what it is, while a rule this cannot read leaves
+     * the subscription accepted rather than refused.
+     */
+    private boolean canReceiveNotifications(McpTransportContext ctx) {
+        var request = request(ctx);
+
+        if (request == null || permissions == null) {
+            return true;
+        }
+
+        return CatalogVisibility.isReadable(permissions, request,
+                PluginUtils.actualUri(config, McpService.class), "GET");
+    }
+
+    /** @see #canReceiveNotifications */
+    private void refuseUndeliverableSubscription(ByteArrayResponse res, McpSchema.JSONRPCRequest rpc, String uri) {
+        var endpoint = PluginUtils.actualUri(config, McpService.class);
+
+        writeJsonRpcError(res, rpc, """
+                cannot subscribe to %s: notifications are delivered on the stream a client opens with \
+                GET %s, and this caller is not authorized to open it. Grant GET (and DELETE, which \
+                ends the session) on %s, not POST alone.\
+                """.formatted(uri, endpoint, endpoint));
+    }
+
+    /**
+     * Answers a {@code resources/subscribe} the server can never honour, instead of letting it
+     * through to succeed and stay silent.
+     *
+     * <p>The SDK owns {@code resources/subscribe}: it registers a private handler that only records
+     * the subscription, and offers no hook to decline one (see java-sdk#1128). But this service
+     * sees the message first, so the refusal happens here — before {@code handlePost} hands it to
+     * the SDK, which is why {@link #watchIfSubscribing} reports whether to continue.
+     *
+     * <p>It is a JSON-RPC error rather than an HTTP status because it is a protocol-level answer to
+     * a well-formed request, and because the client needs to read the reason: the message names the
+     * collection to subscribe to instead, which is the thing that is actually not obvious.
+     */
+    private void refuseSubscription(ByteArrayResponse res, McpSchema.JSONRPCRequest rpc, String uri, String kind) {
+        var reason = kind == null
+                ? "no such resource: %s".formatted(uri)
+                : """
+                a resource of kind '%s' cannot be subscribed to: %s. Notifications come from a change \
+                stream on a collection, and this resource has none to watch. Collections and aggregations \
+                over them are subscribable — list_apis marks those with "subscribable": true.\
+                """.formatted(kind, uri);
+
+        writeJsonRpcError(res, rpc, reason);
+    }
+
+    /**
+     * Answers one JSON-RPC request with an error, in place of dispatching it to the SDK.
+     *
+     * <p>HTTP stays {@code 200}: the request was well-formed and this is the protocol's own answer
+     * to it, not a transport failure — and the client needs to read the reason.
+     */
+    private void writeJsonRpcError(ByteArrayResponse res, McpSchema.JSONRPCRequest rpc, String reason) {
+        var error = new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS, reason);
+
+        try {
+            res.setContentType("application/json");
+            res.setContent(jsonMapper.writeValueAsString(McpSchema.JSONRPCResponse.error(rpc.id(), error)));
+            res.setStatusCode(HttpStatus.SC_OK);
+        } catch (Exception e) {
+            LOGGER.error("could not write a JSON-RPC error answering {}", rpc.method(), e);
+            res.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Releases what a session was keeping alive. Called by the transport, which is where a session
+     * actually ends — the SDK drops its own subscriptions for it without saying so, and a watch
+     * left behind would keep a change stream open for a client that has gone.
+     */
+    void sessionEnded(String sessionId) {
+        releaseWatchesFor(demand.sessionEnded(sessionId));
+    }
+
+    /** One watch per resource URI; the owning plugin decides what that costs — for a collection, one shared change stream. */
+    private synchronized void startWatching(BaseAccount principal, String baseUrl, String scope, String uri) {
+        if (watches.containsKey(uri)) {
+            return;
+        }
+
+        var owner = resourceLookup.findOwner(principal, baseUrl, scope, uri);
+        if (owner.isEmpty()) {
+            return;
+        }
+
+        var watchCtx = new McpContext(principal, baseUrl, scope, owner.get().pluginName(),
+                owner.get().pluginUri(), owner.get().pluginConfiguration());
+
+        owner.get().instance().watch(watchCtx, uri, () -> subscriptions.changed(uri))
+                .ifPresentOrElse(handle -> watches.put(uri, new Watch(scope, handle)),
+                        () -> LOGGER.debug("resource {} cannot be watched; subscribers to it are never notified", uri));
+    }
+
+    /**
+     * Stops watching what is no longer in the catalog — a collection that lost its {@code mcp}
+     * block, or was dropped — and what the last subscriber has left.
+     *
+     * <p>Synchronized on the same monitor as {@link #startWatching}, and re-checking demand under
+     * it, because neither alone is enough. The caller decided to release when the last subscriber
+     * left; a new subscriber arriving in between would find the watch still in the map, skip
+     * opening one of its own, and then have it closed underneath. It would stay subscribed to
+     * something nobody is watching, and hear nothing for the life of its session.
+     */
+    private synchronized void releaseWatchesFor(Collection<String> goneUris) {
+        goneUris.forEach(uri -> {
+            if (demand.hasSubscribers(uri)) {
+                LOGGER.debug("keeping the watch on {}: somebody subscribed while the last one was leaving", uri);
+                return;
+            }
+
+            var watch = watches.remove(uri);
+            if (watch != null) {
+                subscriptions.forget(uri);
+                try {
+                    watch.handle().close();
+                } catch (Exception e) {
+                    LOGGER.warn("failed to stop watching {}", uri, e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Only the scope that watches this URI is told. Its clients are the only ones that could have
+     * subscribed to it, and on a shared process a notification is itself information — that
+     * something, somewhere, changed.
+     */
+    private void notifyResourceUpdated(String uri) {
+        var watch = watches.get(uri);
+        if (watch == null) {
+            return;
+        }
+
+        var scoped = scopes.get(watch.scope());
+        if (scoped != null) {
+            scoped.server().notifyResourcesUpdated(new McpSchema.ResourcesUpdatedNotification(uri));
+        }
+    }
+
     private McpSchema.ServerCapabilities capabilities() {
         var builder = McpSchema.ServerCapabilities.builder().tools(true);
         if (publicBaseUrl != null) {
-            // subscribe not yet implemented (#617 phase 5) — listChanged only for now
-            builder.resources(false, true);
+            builder.resources(true, true);
         }
         return builder.build();
     }
@@ -228,15 +755,26 @@ public class McpService implements ByteArrayService {
      * already-connected agents to refetch tools, and — if the resources primitive is enabled —
      * re-syncs the MCP SDK's resource registry against the same fresh catalog.
      */
-    private void onCatalogExpired() {
-        notifyToolsListChanged();
+    /**
+     * The expired key names one scope's catalogue, and only that scope is rebuilt and notified.
+     * Waking every connected client because some other partition changed is work they cannot use
+     * and news they should not have.
+     */
+    private void onCatalogExpired(CachedResourceLookup.CatalogKey key) {
+        var scoped = scopes.get(key.scope());
+        if (scoped == null) {
+            return;
+        }
+
+        notifyToolsListChanged(scoped);
+
         if (publicBaseUrl != null) {
-            syncResourceRegistry();
+            syncResourceRegistry(scoped, key.baseUrl());
         }
     }
 
-    private void notifyToolsListChanged() {
-        provider.notifyClients("notifications/tools/list_changed", null)
+    private void notifyToolsListChanged(ScopedServer scoped) {
+        scoped.provider().notifyClients("notifications/tools/list_changed", null)
                 .subscribe(v -> {
                 }, err -> LOGGER.warn("Failed to notify clients of tools/list_changed: {}", err.getMessage()));
     }
@@ -250,7 +788,11 @@ public class McpService implements ByteArrayService {
     // database container, a change stream, an aggregation a security check
     // rejected, ...) is therefore never registered as an MCP resource — it
     // stays reachable through list_apis/how_to_call only.
-    // resources/subscribe is still a later phase.
+    //
+    // resources/subscribe: the SDK owns the protocol side — it keeps uri -> sessions, cleans it
+    // up when a session ends, and delivers notifyResourcesUpdated only to subscribers. What is
+    // ours is knowing when a resource's data changed, which the owning plugin answers through
+    // McpAware.watch(), and rate-limiting the result (ResourceSubscriptions).
     // -------------------------------------------------------------------------
 
     /**
@@ -259,6 +801,32 @@ public class McpService implements ByteArrayService {
      * otherwise argument-free resource into template-only registration below.
      */
     private static final Set<String> COSMETIC_PARAMS = Set.of("jsonMode");
+
+    /**
+     * How often at most a subscriber hears that one resource changed. The notification carries no
+     * payload — it says "re-read" — so telling a client again before it has read teaches it
+     * nothing, and a busy collection would otherwise turn every write into a message.
+     */
+    private static final int DEFAULT_NOTIFY_INTERVAL_SECONDS = 5;
+
+    /** Rate-limits resources/updated; one entry per URI something is subscribed to. */
+    private ResourceSubscriptions subscriptions;
+
+    /** Open watches, by resource URI — see {@link #startWatching}. */
+    private final Map<String, Watch> watches = new ConcurrentHashMap<>();
+
+    /**
+     * An open watch, and the scope whose clients asked for it — needed to send the change
+     * notification to that scope's server and no other.
+     */
+    private record Watch(String scope, AutoCloseable handle) {
+    }
+
+    /** Who still wants each resource, so a watch outlives no one — see {@link ResourceDemand}. */
+    private final ResourceDemand demand = new ResourceDemand();
+
+    /** The sessions ended for being idle, across every scope: see the transport's {@code expired}. */
+    private final org.restheart.cache.Cache<String, Boolean> expiredSessions = UndertowStreamableServerTransportProvider.newExpiredSessions();
 
     private static final Pattern PATH_VARIABLE = Pattern.compile("\\{([^?][^}]*)\\}");
 
@@ -297,7 +865,11 @@ public class McpService implements ByteArrayService {
      * collection registers as a template only, and every real call necessarily satisfies the
      * matcher.
      */
-    private void syncResourceRegistry() {
+    // synchronized: two syncs of one registry, each started by its own invalidation, used to
+    // interleave — and the one built from the older catalogue could finish last and remove what
+    // the other had just added. Serialized, each reads the catalogue when it runs, and the last
+    // to run reflects the last invalidation.
+    private synchronized void syncResourceRegistry(ScopedServer scoped, String baseUrl) {
         // The desired state is computed first, before anything is touched. Rebuilding it is the
         // slow part — this runs on catalog expiry, so resourceLookup is always a miss here and
         // goes out to every McpAware plugin (a MongoDB round trip for Mongo's). Clearing the
@@ -307,7 +879,7 @@ public class McpService implements ByteArrayService {
         var desiredResources = new LinkedHashMap<String, ConcreteEntry>();
         var desiredTemplates = new LinkedHashMap<String, McpResourceTemplate>();
 
-        resourceLookup.all(null, publicBaseUrl).forEach(r -> r.actions().forEach((actionName, action) -> {
+        resourceLookup.all(null, baseUrl, scoped.scope()).forEach(r -> r.actions().forEach((actionName, action) -> {
             if (!action.readable()) {
                 return;
             }
@@ -363,23 +935,30 @@ public class McpService implements ByteArrayService {
             }
         }));
 
-        resourceLookup.templates(publicBaseUrl).forEach(t -> desiredTemplates.putIfAbsent(t.uriTemplate(), t));
+        resourceLookup.templates(baseUrl, scoped.scope()).forEach(t -> desiredTemplates.putIfAbsent(t.uriTemplate(), t));
 
-        var currentResourceUris = server.listResources().stream().map(McpSchema.Resource::uri).toList();
-        var currentTemplateUris = server.listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList();
+        var currentResourceUris = scoped.server().listResources().stream().map(McpSchema.Resource::uri).toList();
+        var currentTemplateUris = scoped.server().listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList();
 
         var changed = false;
 
+        var gone = new ArrayList<String>();
+
         for (var uri : currentResourceUris) {
             if (!desiredResources.containsKey(uri)) {
-                server.removeResource(uri);
+                scoped.server().removeResource(uri);
+                gone.add(uri);
                 changed = true;
             }
         }
 
+        // a resource that left the catalog — its collection dropped, or its mcp block removed —
+        // has nothing left to watch, and nobody to tell about it
+        releaseWatchesFor(gone);
+
         for (var uriTemplate : currentTemplateUris) {
             if (!desiredTemplates.containsKey(uriTemplate)) {
-                server.removeResourceTemplate(uriTemplate);
+                scoped.server().removeResourceTemplate(uriTemplate);
                 changed = true;
             }
         }
@@ -391,7 +970,7 @@ public class McpService implements ByteArrayService {
         for (var e : desiredResources.entrySet()) {
             if (!currentResourceUris.contains(e.getKey())) {
                 var hasTemplate = desiredTemplates.keySet().stream().anyMatch(t -> t.startsWith(e.getKey() + "{?"));
-                server.addResource(toResourceSpec(e.getKey(), e.getValue(), concreteName(e.getValue()),
+                scoped.server().addResource(toResourceSpec(e.getKey(), e.getValue(), concreteName(e.getValue()),
                         concreteTitle(e.getValue(), hasTemplate)));
                 changed = true;
             }
@@ -399,7 +978,7 @@ public class McpService implements ByteArrayService {
 
         for (var e : desiredTemplates.entrySet()) {
             if (!currentTemplateUris.contains(e.getKey())) {
-                server.addResourceTemplate(toTemplateSpec(e.getValue()));
+                scoped.server().addResourceTemplate(toTemplateSpec(e.getValue()));
                 changed = true;
             }
         }
@@ -407,7 +986,7 @@ public class McpService implements ByteArrayService {
         // Only when something actually moved: this runs every catalog TTL, and notifying on an
         // unchanged catalog wakes every connected client for nothing.
         if (changed) {
-            server.notifyResourcesListChanged();
+            scoped.server().notifyResourcesListChanged();
         }
     }
 
@@ -552,7 +1131,7 @@ public class McpService implements ByteArrayService {
     private McpSchema.ReadResourceResult readBareResource(McpTransportContext ctx, String uri, ConcreteEntry entry) {
         var principal = principal(ctx);
         return readOperation(ctx, principal, entry.resource().uri(), entry.actionName(), Map.of())
-                .orElseGet(() -> errorResourceResult(uri, "failed to read resource"));
+                .orElseThrow(() -> readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "failed to read resource"));
     }
 
     /** {@code query} is preferred (the natural "give me the collection" action) over any other {@code readable} action a future kind might declare. */
@@ -632,21 +1211,24 @@ public class McpService implements ByteArrayService {
      */
     private McpSchema.ReadResourceResult readTemplateMatch(McpTransportContext ctx, String uri) {
         var principal = principal(ctx);
+        var baseUrl = effectiveBaseUrl(ctx);
+        var scope = effectiveScope(ctx);
 
         var queryIdx = uri.indexOf('?');
         var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
         var queryArgs = queryIdx >= 0 ? parseQueryArgs(uri.substring(queryIdx + 1)) : Map.<String, Object>of();
 
-        var resource = resourceLookup.find(principal, publicBaseUrl, base);
+        var resource = resourceLookup.find(principal, baseUrl, scope, base);
         if (resource.isPresent()) {
             var actionName = defaultReadableAction(resource.get());
             if (actionName == null) {
                 // a real catalog entry (e.g. an aggregation whose pipeline didn't clear the
                 // security checker), but nothing document-shaped to read — resources/read must
                 // always mean "here is data", never a description; use how_to_call for this one
-                return errorResourceResult(base, "resource has no readable data; use how_to_call to invoke its actions");
+                throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS,
+                        "resource has no readable data; use call_api to invoke its actions");
             }
-            return readOperation(ctx, principal, base, actionName, queryArgs).orElseGet(() -> unknownResourceResult(uri));
+            return readOperation(ctx, principal, base, actionName, queryArgs).orElseThrow(() -> unknownResource(uri));
         }
 
         var lastSlash = base.lastIndexOf('/');
@@ -657,9 +1239,9 @@ public class McpService implements ByteArrayService {
             // An action with a literal path of its own — /_size — addresses something else on the
             // same resource, and has to be recognized before the single-document reading, or
             // ".../inventory/_size?filter={...}" looks for a document whose _id is "_size".
-            var byPath = readableActionAtPath(principal, parent, "/" + segment);
+            var byPath = readableActionAtPath(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), parent, "/" + segment);
             if (byPath != null) {
-                return readOperation(ctx, principal, parent, byPath, queryArgs).orElseGet(() -> unknownResourceResult(uri));
+                return readOperation(ctx, principal, parent, byPath, queryArgs).orElseThrow(() -> unknownResource(uri));
             }
 
             var args = new LinkedHashMap<String, Object>(queryArgs);
@@ -670,12 +1252,12 @@ public class McpService implements ByteArrayService {
             }
         }
 
-        return unknownResourceResult(uri);
+        throw unknownResource(uri);
     }
 
     /** The name of {@code resourceUri}'s readable action whose {@code pathTemplate} is exactly {@code path}, or {@code null} if it has none. */
-    private String readableActionAtPath(BaseAccount principal, String resourceUri, String path) {
-        return resourceLookup.find(principal, publicBaseUrl, resourceUri)
+    private String readableActionAtPath(BaseAccount principal, String baseUrl, String scope, String resourceUri, String path) {
+        return resourceLookup.find(principal, baseUrl, scope, resourceUri)
                 .flatMap(r -> r.actions().entrySet().stream()
                         .filter(e -> e.getValue().readable() && path.equals(e.getValue().pathTemplate()))
                         .map(Map.Entry::getKey)
@@ -688,28 +1270,39 @@ public class McpService implements ByteArrayService {
         return TextResourceContents.builder(uri, text).mimeType(mimeType).build();
     }
 
-    private static McpSchema.ReadResourceResult unknownResourceResult(String uri) {
-        return McpSchema.ReadResourceResult
-                .builder(List.of(textContents(uri, "text/plain", "Error: unknown or not MCP-enabled resource: " + uri)))
-                .build();
+    /**
+     * A read that cannot be served is a JSON-RPC error, not a successful result whose text begins
+     * with "Error:".
+     *
+     * <p>The old shape was indistinguishable from data: an agent asked for documents and got back
+     * a content block, and nothing in the envelope said the read had failed — it had to notice a
+     * prefix in prose. Clients have a branch for a JSON-RPC error and no branch for that.
+     */
+    private static McpError readFailed(int code, String message) {
+        return McpError.builder(code).message(message).build();
+    }
+
+    private static McpError unknownResource(String uri) {
+        return readFailed(McpSchema.ErrorCodes.RESOURCE_NOT_FOUND, "unknown or not MCP-enabled resource: " + uri);
     }
 
     /**
      * Documents-mode dispatch for one candidate base resource URI (#617 Phase 2/2b) — {@code
      * Optional.empty()} only when {@code resourceUri} itself matches no catalog resource at all
      * (so the caller can try a different URI-shape interpretation, or finally report "unknown
-     * resource"). Every other outcome — no such {@code readable} action, failed validation, the
-     * plugin declining, or the plugin actually returning content — is a definite result: real
-     * data, or a hard error (never a description of the resource — that's never what {@code
-     * resources/read} returns; use {@code list_apis}/{@code how_to_call} for that).
+     * resource"). Every other outcome — no such {@code readable} action, failed validation, or
+     * what the read answered — is a definite result: real data, or a hard error (never a
+     * description of the resource — that's never what {@code resources/read} returns; use {@code
+     * list_apis} for that).
      *
-     * <p>The decision that authorized this very operation travels into {@link McpContext}, so the
-     * executing plugin applies the same ACL {@code readFilter}/{@code projectResponse} the REST
-     * path would (restheart#722): this read never touches the HTTP interceptor chain, so nothing
-     * else would apply them.
+     * <p>The read runs through {@link CallApiTool#execute}, that is through RESTHeart's whole
+     * handler chain in-process as the session's own account (restheart#741): the ACL, its
+     * {@code readFilter}/{@code projectResponse}, and every interceptor apply exactly as they do
+     * to the same {@code GET} over REST, because it <em>is</em> that request. Nothing is
+     * replicated here.
      */
     private Optional<McpSchema.ReadResourceResult> readOperation(McpTransportContext ctx, BaseAccount principal, String resourceUri, String actionName, Map<String, Object> rawArgs) {
-        var resourceOpt = resourceLookup.find(principal, publicBaseUrl, resourceUri);
+        var resourceOpt = resourceLookup.find(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), resourceUri);
         if (resourceOpt.isEmpty()) {
             return Optional.empty();
         }
@@ -717,57 +1310,69 @@ public class McpService implements ByteArrayService {
 
         var action = resource.actions().get(actionName);
         if (action == null || !action.readable()) {
-            return Optional.of(errorResourceResult(resourceUri, "resource has no readable data; use how_to_call to invoke its actions"));
+            throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS,
+                    "resource has no readable data; use call_api to invoke its actions");
         }
 
         var args = coerceArgs(rawArgs, action);
         var errors = ParamValidator.validate(action, args);
         if (!errors.isEmpty()) {
-            return Optional.of(errorResourceResult(resourceUri, String.join("; ", errors)));
+            throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS, String.join("; ", errors));
         }
 
-        var owner = resourceLookup.findOwner(principal, publicBaseUrl, resourceUri);
+        var owner = resourceLookup.findOwner(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), resourceUri);
         if (owner.isEmpty()) {
-            return Optional.of(errorResourceResult(resourceUri, "internal error: resource owner not found"));
+            throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "resource owner not found");
         }
-
-        var readCtx = new McpContext(principal, publicBaseUrl, owner.get().pluginName(), owner.get().pluginUri(),
-                owner.get().pluginConfiguration(), authorization(ctx));
 
         try {
-            return Optional.of(owner.get().instance().readResource(readCtx, resourceUri, actionName, args)
-                    .map(result -> toReadResourceResult(resourceUri, result))
-                    .orElseGet(() -> errorResourceResult(resourceUri, "failed to read resource")));
+            var result = callApiTool.execute(principal, effectiveBaseUrl(ctx), effectiveScope(ctx), resource, owner.get(), actionName, args, attachedParamsOf(ctx));
+            return Optional.of(toReadResourceResult(resourceUri, result));
+        } catch (McpError e) {
+            // Already the answer the client gets — rethrown so the catch below does not turn a
+            // precise error into a generic one.
+            throw e;
+        } catch (ValidationFailedException e) {
+            throw readFailed(McpSchema.ErrorCodes.INVALID_PARAMS, e.getMessage());
+        } catch (java.util.concurrent.TimeoutException e) {
+            throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, "the read did not complete in time");
         } catch (Exception e) {
-            LOGGER.error("readResource failed for {} action {}", resourceUri, actionName, e);
-            return Optional.of(errorResourceResult(resourceUri, "internal error: " + e.getMessage()));
+            LOGGER.error("resources/read failed for {} action {}", resourceUri, actionName, e);
+            throw readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, e.getMessage());
         }
     }
 
     /**
-     * {@link McpReadResult.RawJson} content is embedded verbatim — it's already correctly
-     * rendered JSON from the plugin's own native format (e.g. {@code MongoMcpAwareImpl} uses
-     * MongoDB Extended JSON, which a generic Jackson mapper can't reproduce for types like {@code
-     * ObjectId}). Anything else is a plain Java object graph the framework's own mapper serializes.
+     * A JSON-RPC error code for a read the ACL refused: not in the MCP list, which has no
+     * "forbidden", and in the range JSON-RPC reserves for a server's own codes. An agent that
+     * sees it knows the resource exists and its session may not read it — the same thing a
+     * {@code 403} tells a REST client — rather than mistaking it for a missing resource or a
+     * malformed request.
      */
-    private McpSchema.ReadResourceResult toReadResourceResult(String uri, McpReadResult result) {
-        try {
-            String text;
-            if (result.content() instanceof McpReadResult.RawJson raw) {
-                text = raw.json();
-            } else {
-                Object payload = result.meta() == null ? result.content() : Map.of("content", result.content(), "meta", result.meta());
-                text = jsonMapper.writeValueAsString(payload);
-            }
-            return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, "application/json", text))).build();
-        } catch (Exception e) {
-            LOGGER.error("Failed to serialize documents-mode read result for {}", uri, e);
-            return errorResourceResult(uri, "internal error: " + e.getMessage());
-        }
-    }
+    static final int FORBIDDEN = -32003;
 
-    private static McpSchema.ReadResourceResult errorResourceResult(String uri, String message) {
-        return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, "text/plain", "Error: " + message))).build();
+    /**
+     * What the in-process read answered, as the resource's content — or as the JSON-RPC error
+     * its status stands for. A read is a {@code GET}: its body is the resource, its status says
+     * whether there was one to give, and the two never mix.
+     */
+    private McpSchema.ReadResourceResult toReadResourceResult(String uri, McpResult result) {
+        var status = result.status();
+
+        if (status >= 200 && status < 300) {
+            var mimeType = result.header("Content-Type");
+            mimeType = mimeType == null ? "application/json" : mimeType.split(";", 2)[0].trim();
+            return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, mimeType, result.bodyAsString()))).build();
+        }
+
+        var reason = result.body().length == 0 ? "HTTP " + status : result.bodyAsString();
+
+        throw switch (status) {
+            case 404 -> readFailed(McpSchema.ErrorCodes.RESOURCE_NOT_FOUND, "unknown or not MCP-enabled resource: " + uri);
+            case 400, 422 -> readFailed(McpSchema.ErrorCodes.INVALID_PARAMS, reason);
+            case 401, 403 -> readFailed(FORBIDDEN, "forbidden: this session may not read " + uri);
+            default -> readFailed(McpSchema.ErrorCodes.INTERNAL_ERROR, reason);
+        };
     }
 
     /** Parses a raw {@code key=value&...} query string into string-valued args — types are coerced afterward, once the target action's declared param types are known. */
@@ -798,40 +1403,22 @@ public class McpService implements ByteArrayService {
      * {@code page} to an integer, {@code filter} to a parsed JSON object) so {@link ParamValidator}
      * sees the right Java type.
      *
-     * <p>Also synthesizes any declared object-typed param that has named sub-properties (e.g. an
-     * aggregation's {@code avars}, one property per {@code $var} it references) from flat
-     * top-level keys, when the object itself wasn't explicitly provided — so {@code
-     * ?status=A&limit=5} works exactly like {@code ?avars=\{"status":"A","limit":5\}}. Fully
-     * generic — not aggregation-specific: any resource kind whose schema declares an object param
-     * with {@code properties} benefits from this. {@code how_to_call}'s own composed URL still
-     * needs the nested form (real RESTHeart REST API requirement, unrelated to this in-process
-     * dispatch), so this only matters for {@code resources/read}.
+     * <p>Nothing is restructured. A caller that passes an object param one property at a time
+     * ({@code ?status=A} for an aggregation's {@code avars}) has them carried through as they came:
+     * the request goes to the service in-process, and binding a flat query parameter to what the
+     * pipeline declared is that service's own rule, applied on the real request path. Building the
+     * nested object here instead would be a second answer to the same question, and the two would
+     * drift the day the first one changed.
      */
     private Map<String, Object> coerceArgs(Map<String, Object> rawArgs, McpResource.Action action) {
         var coerced = new LinkedHashMap<>(rawArgs);
-        action.params().forEach((name, param) -> {
-            // Only when the object param is entirely absent — not when it's present but not yet
-            // coerced (e.g. a raw "?avars={...}" JSON string still awaiting the coercion step
-            // below): checking `instanceof Map` here instead would run synthesis before that
-            // string is parsed, clobbering an explicitly-provided nested value with the
-            // synthesized one.
-            if ("object".equals(param.type()) && param.properties() != null && !param.properties().isEmpty()
-                    && !coerced.containsKey(name)) {
-                var synthesized = new LinkedHashMap<String, Object>();
-                param.properties().forEach((propName, propParam) -> {
-                    if (coerced.containsKey(propName)) {
-                        synthesized.put(propName, coerceScalar(coerced.get(propName), propParam.type()));
-                    }
-                });
-                if (!synthesized.isEmpty()) {
-                    coerced.put(name, synthesized);
-                }
-            }
 
+        action.params().forEach((name, param) -> {
             if (coerced.get(name) instanceof String) {
                 coerced.put(name, coerceScalar(coerced.get(name), param.type()));
             }
         });
+
         return coerced;
     }
 
@@ -857,136 +1444,6 @@ public class McpService implements ByteArrayService {
     }
 
     // -------------------------------------------------------------------------
-    // Authorization for documents-mode reads (restheart#722)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Overrides the default (identity) — see {@code Service#operationsToAuthorize} — for exactly
-     * one case: a {@code resources/read} JSON-RPC call whose URI resolves to a documents-mode
-     * read (a {@code readable} action on a known resource — which, since only such resources are
-     * ever registered with the resources primitive, is every successful {@code resources/read}).
-     * Every other request handled by {@code /mcp} (tools, {@code initialize}, ...) returns the
-     * identity descriptor unchanged, since none of them execute a real, in-process data operation
-     * server-side that a REST-shaped ACL rule could meaningfully apply to.
-     *
-     * <p>Reads the request body via {@link ByteArrayRequest#getContent()} — safe to do this early
-     * (before {@code handle()} itself parses the same body): {@code ServiceRequest} caches the
-     * parsed content on the exchange after the first read, so this doesn't consume the channel a
-     * second time or interfere with the real dispatch that follows once authorization passes.
-     */
-    @Override
-    public List<RequestDescriptor> operationsToAuthorize(HttpServerExchange exchange) {
-        if (publicBaseUrl != null) {
-            try {
-                var descriptor = documentsModeDescriptor(exchange);
-                if (descriptor != null) {
-                    return List.of(descriptor);
-                }
-            } catch (Exception e) {
-                LOGGER.warn("operationsToAuthorize: failed to inspect /mcp request body, treating as non-documents-mode", e);
-            }
-        }
-        return List.of(RequestDescriptor.of(exchange));
-    }
-
-    /** @return a descriptor for the underlying REST-equivalent operation, or {@code null} if this request isn't a documents-mode-eligible {@code resources/read}. */
-    private RequestDescriptor documentsModeDescriptor(HttpServerExchange exchange) throws Exception {
-        var body = ByteArrayRequest.of(exchange).getContent();
-        if (body == null || body.length == 0) {
-            return null;
-        }
-
-        if (!(McpSchema.deserializeJsonRpcMessage(jsonMapper, new String(body, StandardCharsets.UTF_8))
-                instanceof McpSchema.JSONRPCRequest rpcReq) || !"resources/read".equals(rpcReq.method())) {
-            return null;
-        }
-
-        var params = rpcReq.params() instanceof Map<?, ?> m ? m : Map.of();
-        if (!(params.get("uri") instanceof String uri)) {
-            return null;
-        }
-
-        var identity = RequestDescriptor.of(exchange);
-        var principal = identity.principal();
-
-        // Mirrors readTemplateMatch's own resolution exactly (see its javadoc): split the query
-        // string off first, then try an exact resource match before a single-document fallback,
-        // so a combined shape (.../inventory/<id>?jsonMode=...) is still recognized as one
-        // documents-mode operation to authorize, not silently skipped.
-        var queryIdx = uri.indexOf('?');
-        var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
-        var queryParameters = queryIdx >= 0 ? parseQueryParameters(uri.substring(queryIdx + 1)) : Map.<String, Deque<String>>of();
-
-        var resource = resourceLookup.find(principal, publicBaseUrl, base);
-        if (resource.isPresent()) {
-            // A bare or filtered resource read defaults to documents-mode whenever the resource
-            // has a readable action (McpService.readBareResource/readTemplateMatch, #617) — a
-            // real backend read that must be authorized exactly like its REST-equivalent GET.
-            // defaultReadableAction, not a hardcoded "query": an aggregation's readable action is
-            // "execute", not "query" — hardcoding it here previously meant an aggregation's
-            // documents-mode read skipped this check entirely, always falling back to identity.
-            var actionName = defaultReadableAction(resource.get());
-            return actionName == null ? null : withMethodPathAndQuery(identity, pathOf(base), queryParameters);
-        }
-
-        // Same two fallbacks readTemplateMatch uses, in the same order — this descriptor must
-        // describe the operation that will actually run, so what counts as reachable here and
-        // what counts as reachable there cannot drift apart.
-        var lastSlash = base.lastIndexOf('/');
-        if (lastSlash > 0) {
-            var parent = base.substring(0, lastSlash);
-            if (readableActionAtPath(principal, parent, base.substring(lastSlash)) != null
-                    || isReadableAction(principal, parent, "get")) {
-                return withMethodPathAndQuery(identity, pathOf(base), queryParameters);
-            }
-        }
-
-        return null;
-    }
-
-    private boolean isReadableAction(BaseAccount principal, String resourceUri, String actionName) {
-        return resourceLookup.find(principal, publicBaseUrl, resourceUri)
-                .map(McpResource::actions)
-                .map(actions -> actions.get(actionName))
-                .map(McpResource.Action::readable)
-                .orElse(false);
-    }
-
-    private static RequestDescriptor withMethodPathAndQuery(RequestDescriptor identity, String path, Map<String, Deque<String>> queryParameters) {
-        return new RequestDescriptor(identity.principal(), "GET", path, queryParameters,
-                identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme());
-    }
-
-    private static String pathOf(String absoluteUri) {
-        try {
-            return new URI(absoluteUri).getPath();
-        } catch (Exception e) {
-            return absoluteUri;
-        }
-    }
-
-    private static Map<String, Deque<String>> parseQueryParameters(String queryString) {
-        var result = new LinkedHashMap<String, Deque<String>>();
-        for (var pair : queryString.split("&")) {
-            if (pair.isEmpty()) {
-                continue;
-            }
-            var eq = pair.indexOf('=');
-            var key = URLDecoder.decode(eq >= 0 ? pair.substring(0, eq) : pair, StandardCharsets.UTF_8);
-            var value = URLDecoder.decode(eq >= 0 ? pair.substring(eq + 1) : "", StandardCharsets.UTF_8);
-
-            // Dropped for the same reason as in parseQueryArgs, and it has to be the same reason:
-            // this builds the descriptor an ACL is evaluated against, so it must describe the
-            // operation that will actually run. A parameter ignored at execution but present here
-            // would let a predicate match on something the request does not really carry.
-            if (!value.isEmpty()) {
-                result.computeIfAbsent(key, k -> new ArrayDeque<>()).add(value);
-            }
-        }
-        return result;
-    }
-
-    // -------------------------------------------------------------------------
     // ByteArrayService contract
     // -------------------------------------------------------------------------
 
@@ -997,26 +1454,69 @@ public class McpService implements ByteArrayService {
         // init finishes), so it's the earliest SAFE point to call describeMcp() on other
         // plugins. See init()'s comment: doing this inside mcpService's own @OnInit crashed on
         // GraphQLService's not-yet-initialized state (cross-plugin @OnInit order is unspecified).
-        if (publicBaseUrl != null && resourcesInitialized.compareAndSet(false, true)) {
-            syncResourceRegistry();
-        }
-
+        // Before the scope is resolved: a CORS preflight carries no credentials and no session,
+        // so there is nothing to resolve a scope from and nothing it could leak.
         if (req.isOptions()) {
             handleOptions(req);
             return;
         }
 
-        var ctx = buildContext(req);
+        // Refused either way, never served an empty catalogue: empty is indistinguishable from
+        // "you have not created anything yet". But the two failures are not the same failure, and
+        // the status says which — a request that does not carry what the provider needs is the
+        // caller's to fix, a provider that broke is ours.
+        String scope;
 
-        if (req.isPost()) {
-            provider.handlePost(req, res, ctx);
-        } else if (req.isGet()) {
-            provider.handleGet(req, res, ctx);
-        } else if (req.isDelete()) {
-            provider.handleDelete(req, res, ctx);
-        } else {
-            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+        try {
+            scope = scopeProvider.scopeOf(req);
+        } catch (Exception e) {
+            LOGGER.error("McpScopeProvider failed; refusing the request rather than serving the whole catalogue", e);
+            refuse(res, HttpStatus.SC_INTERNAL_SERVER_ERROR, "scope_provider_failed",
+                    "the server could not determine which scope serves this request");
+            return;
         }
+
+        if (scope == null || scope.isBlank() || McpScopeProvider.UNRESOLVED.equals(scope)) {
+            LOGGER.warn("Refusing an MCP request whose scope could not be resolved");
+            refuse(res, HttpStatus.SC_BAD_REQUEST, "scope_unresolved",
+                    "this request does not carry what is needed to determine its scope");
+            return;
+        }
+
+        var scoped = acquire(scope);
+
+        try {
+            var ctx = buildContext(req, scope);
+
+            // Per scope, not per process: one flag for the whole instance would let whichever scope
+            // arrived first switch initialisation off for every other, leaving the second caller a
+            // registry that is never populated.
+            if (publicBaseUrl != null && scoped.resourcesInitialized().compareAndSet(false, true)) {
+                syncResourceRegistry(scoped, effectiveBaseUrl(req.getExchange()));
+            }
+
+            if (req.isPost()) {
+                // Opened on demand, before the SDK records the subscription: the SDK keeps that map
+                // private, so this is how we learn a resource is wanted. Watching every exposed
+                // collection instead would pay for streams nobody asked for.
+                if (watchIfSubscribing(req, res, ctx)) {
+                    scoped.provider().handlePost(req, res, ctx);
+                }
+            } else if (req.isGet()) {
+                scoped.provider().handleGet(req, res, ctx);
+            } else if (req.isDelete()) {
+                scoped.provider().handleDelete(req, res, ctx);
+            } else {
+                res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+        } finally {
+            release(scoped);
+        }
+
+        // A DELETE ends the session the client was holding; a GET stream ending may have been the
+        // last thing keeping the scope alive. Either way the check belongs after the request has
+        // left, when inFlight no longer counts it.
+        disposeIfUnused(scope);
     }
 
     @Override
@@ -1038,33 +1538,57 @@ public class McpService implements ByteArrayService {
     // Per-request context: principal + public base URL
     // -------------------------------------------------------------------------
 
-    private McpTransportContext buildContext(ByteArrayRequest req) {
+    private McpTransportContext buildContext(ByteArrayRequest req, String scope) {
         var ctx = new HashMap<String, Object>();
-        ctx.put(CTX_BASE_URL, resolveBaseUrl(req));
+        ctx.put(CTX_BASE_URL, requestBaseUrl(req));
         ctx.put(CTX_REQUEST, req);
+        // Carried, not recomputed: the scope decided which server serves this request, and a
+        // second resolution could disagree with the first.
+        ctx.put(CTX_SCOPE, scope);
         if (req.getAuthenticatedAccount() instanceof BaseAccount principal) {
             ctx.put(CTX_PRINCIPAL, principal);
         }
         return McpTransportContext.create(ctx);
     }
 
-    /** Mirrors {@code OAuthProtectedResourceMetadataService.resolveServerUrl} (restheart-security). */
-    private static String resolveBaseUrl(ByteArrayRequest req) {
-        var exchange = req.getExchange();
-        var headers = exchange.getRequestHeaders();
+    /**
+     * The base URL this request's resources are named by, on every channel.
+     *
+     * <p>The per-request override first, when a deployment attached one; the configured
+     * {@code public-base-url} next; the request's own headers last (see {@link #resolveBaseUrl}).
+     * The same order as {@link #effectiveBaseUrl}, which the registry and authorization use, so
+     * that no channel names a resource differently from another.
+     *
+     * <p>It used to be two answers. The transport context carried {@link #resolveBaseUrl} — the
+     * configured value, never the override — and {@code list_apis} and {@code how_to_call} read it
+     * from there, while the registry and authorization honoured the override. On a node serving
+     * many hosts, whose configured value is by necessity a placeholder, {@code list_apis} then
+     * advertised the placeholder, and a URI taken from {@code resources/list} and handed to a tool
+     * named a resource that lookup, under the other base, could not find.
+     */
+    private String requestBaseUrl(ByteArrayRequest req) {
+        return RequestOverrides.str(req, RequestOverrides.MCP_PUBLIC_BASE_URL, resolveBaseUrl(req));
+    }
 
-        var forwardedProto = headers.getFirst("X-Forwarded-Proto");
-        var forwardedHost = headers.getFirst("X-Forwarded-Host");
-        if (forwardedProto != null && forwardedHost != null) {
-            return forwardedProto + "://" + forwardedHost;
-        }
-
-        var host = headers.getFirst("Host");
-        if (host != null) {
-            return exchange.getRequestScheme() + "://" + host;
-        }
-
-        return "";
+    /**
+     * The base URL every resource URI this request produces is built from, when no override is
+     * attached — the fallback of {@link #requestBaseUrl}.
+     *
+     * <p>{@code public-base-url} wins whenever it is configured. The alternative — deriving it from
+     * the request — is a guess that a proxy can make wrong: a TLS-terminating one hands RESTHeart
+     * an {@code http://} {@code Host} for a site published over {@code https://}. Worse, only
+     * {@code list_apis} could do the guessing at all: the {@code resources} primitive is served
+     * from a registry the SDK builds once for the whole server, so it has always used the
+     * configured value. Preferring the configured value here is what stops the two channels from
+     * naming the same resource differently — which is exactly what a client noticed, offered a
+     * {@code localhost} URI by one and an external one by the other.
+     *
+     * <p>Falling back to the request keeps a deployment that never configured it working as before,
+     * including the one where {@code public-base-url} is commented out to switch the {@code
+     * resources} primitive off entirely.
+     */
+    private String resolveBaseUrl(ByteArrayRequest req) {
+        return URLUtils.externalBaseUrl(publicBaseUrl, req.getExchange());
     }
 
     private static BaseAccount principal(McpTransportContext ctx) {
@@ -1072,32 +1596,160 @@ public class McpService implements ByteArrayService {
     }
 
     /**
-     * The {@code /mcp} request being served, for the one thing that needs it: resolving the
-     * per-request {@code account-properties-claims} override (attached by an interceptor, which
-     * runs on {@code /mcp} like on any other request) when {@code get_token} mints a token. A
-     * multi-tenant deployment selects a different claim set per tenant that way, and a token
-     * missing those claims would fail ACL rules written against them.
+     * The base URL this request's resource URIs are built from: the tenant's own when an
+     * interceptor attached one, the configured value otherwise.
+     *
+     * <p>Separate from the {@link #publicBaseUrl} field, which keeps its other job — being
+     * non-null is what says the resources primitive is enabled on this node. That is a property of
+     * the deployment; which host the URIs name is a property of the caller.
      */
+    /** The scope this request was routed to — put there by {@link #buildContext}, never recomputed. */
+    private static String effectiveScope(McpTransportContext ctx) {
+        return ctx.get(CTX_SCOPE) instanceof String s && !s.isBlank() ? s : McpScopeProvider.UNPARTITIONED;
+    }
+
+    private String effectiveBaseUrl(McpTransportContext ctx) {
+        return RequestOverrides.str(request(ctx), RequestOverrides.MCP_PUBLIC_BASE_URL, publicBaseUrl);
+    }
+
+    /**
+     * The same, from the exchange: for {@link #catalogVisibility}, which runs outside the MCP
+     * transport context. Resolving with the wrong base would fail to identify the resource the URI
+     * names.
+     */
+    private String effectiveBaseUrl(HttpServerExchange exchange) {
+        try {
+            return RequestOverrides.str(Request.of(exchange), RequestOverrides.MCP_PUBLIC_BASE_URL, publicBaseUrl);
+        } catch (final Exception e) {
+            LOGGER.debug("could not read the base URL override from the exchange; using the configured one", e);
+            return publicBaseUrl;
+        }
+    }
+
     private static Request<?> request(McpTransportContext ctx) {
         return ctx.get(CTX_REQUEST) instanceof Request<?> r ? r : null;
     }
 
-    /**
-     * The decision {@code AuthorizersHandler} took for this request's documents-mode operation.
-     *
-     * <p>{@code null} whenever the request wasn't authorized through a descriptor — a {@code
-     * secured: false} deployment, or an authorizer that resolves no permissions. That is not a
-     * gap: there is no ACL entry behind such a request, so there is no filter to apply either.
-     */
-    private static Decision authorization(McpTransportContext ctx) {
+    /** the parameters interceptors attached to the {@code /mcp} request, to travel with an in-process one — see {@link CallApiTool} */
+    private static Map<String, Object> attachedParamsOf(McpTransportContext ctx) {
         var request = request(ctx);
-        if (request == null) {
-            return null;
+        return request == null ? null : request.attachedParams();
+    }
+
+    /**
+     * The catalog filter for whoever is asking: a resource is listed only if a read of it would be
+     * authorized, decided by the very rule that authorizes the read
+     * ({@code acl-permissions}).
+     *
+     * <p>Everything is visible when there is no request to derive an identity from — which happens
+     * only for calls that do not come from a client, and never for a real one.
+     */
+    /**
+     * Whether the caller of {@code exchange} should see the resource at {@code uri} in a listing —
+     * the same question {@link #visibleTo} answers, asked by URI because that is all a listing
+     * carries. Returns a predicate rather than a boolean so the authorizers and the caller's
+     * identity are resolved once for a whole list, not once per entry.
+     *
+     * <p>A listing carries URIs the catalog has no resource for — {@code /coll/_size} and
+     * {@code /coll/{id}} are entries in their own right, synthesized from a collection's actions.
+     * Those are decided too, on their own path: the catalog is consulted only to learn which HTTP
+     * method the read uses, falling back to the owning resource's and then to {@code GET}. Not
+     * finding a URI is never a reason to show it.
+     *
+     * <p><strong>Undecidable means not visible.</strong> With no catalog and no permissions to
+     * read — the service not initialized yet — this hides everything rather than showing
+     * everything. On a process serving one tenant that costs an empty listing and a warning; on a
+     * shared one, answering "visible" to a question it cannot answer hands a caller the names of
+     * resources belonging to someone else. In practice this branch is unreachable: the interceptor
+     * that calls it only runs on a response {@code mcpService} itself produced.
+     */
+    static Predicate<String> catalogVisibility(HttpServerExchange exchange) {
+        var self = instance;
+
+        if (self == null || self.resourceLookup == null || self.publicBaseUrl == null || self.permissions == null) {
+            LOGGER.warn("Catalog visibility asked before mcpService is ready — hiding every entry rather than showing entries nobody has checked");
+            return uri -> false;
         }
-        var decisions = request.getExchange().getAttachment(DescriptorAwareAuthorizer.AUTHORIZED_OPERATIONS);
-        // exactly one, since operationsToAuthorize() returns a single descriptor for the single
-        // documents-mode read this request performs
-        return decisions != null && decisions.size() == 1 ? decisions.get(0) : null;
+
+        // The same base URL the rest of the request uses, not the static one. Two different
+        // values here mean two catalogue cache entries for one scope, and whichever expires last
+        // decides which host the scope's resource registry is rebuilt with.
+        var request = Request.of(exchange);
+        var baseUrl = self.effectiveBaseUrl(exchange);
+        var scope = self.resolveScope(request);
+        var principal = request.getAuthenticatedAccount() instanceof BaseAccount account ? account : null;
+
+        return uri -> {
+            var owner = self.resourceOwning(principal, baseUrl, scope, uri);
+            var method = owner.map(r -> CatalogVisibility.methodOf(CatalogVisibility.readAction(r))).orElse("GET");
+
+            return CatalogVisibility.isEntryVisible(self.permissions, request, owner.orElse(null),
+                    CatalogVisibility.pathOf(uri), method);
+        };
+    }
+
+    /**
+     * The catalog resource a listing entry belongs to: the one named by that URI, or the one it
+     * hangs off — {@code /coll/_size} and {@code /coll/{id}} are entries of their own, synthesized
+     * from a collection's actions, and what that collection declares about itself is theirs too.
+     */
+    private Optional<McpResource> resourceOwning(BaseAccount principal, String baseUrl, String scope, String uri) {
+        var exact = resourceLookup.find(principal, baseUrl, scope, uri);
+
+        if (exact.isPresent()) {
+            return exact;
+        }
+
+        var lastSlash = uri.lastIndexOf('/');
+
+        return lastSlash > 0
+                ? resourceLookup.find(principal, baseUrl, scope, uri.substring(0, lastSlash))
+                : Optional.empty();
+    }
+
+    private Predicate<McpResource> visibleTo(McpTransportContext ctx) {
+        var request = request(ctx);
+
+        if (request == null) {
+            return r -> true;
+        }
+
+        return resource -> CatalogVisibility.isVisible(permissions, request, resource);
+    }
+
+    /**
+     * What each action of a described resource says about this caller.
+     *
+     * <p>Computed per request, like the listing it decorates, and resolved once for the whole
+     * description rather than once per action.
+     */
+    private ListApisTool.Verdicts verdictsFor(McpTransportContext ctx) {
+        var request = request(ctx);
+
+        if (request == null || permissions == null) {
+            return ListApisTool.Verdicts.NONE;
+        }
+
+        return (resource, actionName) -> CatalogVisibility.verdict(permissions, request, resource, actionName);
+    }
+
+    /**
+     * Whether this caller may be handed the descriptor of one particular call.
+     *
+     * <p>{@code how_to_call} follows the catalog: a resource in your listing hands you its
+     * descriptor, one that is not does not. The two cannot disagree, which they could when the gate
+     * asked its own question — and what the descriptor discloses is what the listing already
+     * disclosed. {@code call_api} has no gate at all, because it executes, and execution is
+     * authorized by the pipeline it runs through.
+     */
+    private HowToCallTool.Gate descriptorGate(McpTransportContext ctx) {
+        var request = request(ctx);
+
+        if (request == null) {
+            return HowToCallTool.Gate.OPEN;
+        }
+
+        return (resource, actionName, args) -> CatalogVisibility.isVisible(permissions, request, resource);
     }
 
     private static String baseUrl(McpTransportContext ctx) {
@@ -1110,7 +1762,7 @@ public class McpService implements ByteArrayService {
 
     static McpSchema.Tool listApisToolDefinition() {
         var properties = new LinkedHashMap<String, Object>();
-        properties.put("resource", schemaProp("string", "Optional. Omit for the catalog."));
+        properties.put("resource", schemaProp("string", "A resource uri, to describe it in full. Omit for the catalog."));
         properties.put("query", schemaProp("string",
                 "Optional. Case-insensitive substring match against each resource's uri/kind/description. Ignored if `resource` is given."));
         properties.put("kind", schemaProp("string",
@@ -1120,12 +1772,65 @@ public class McpService implements ByteArrayService {
         properties.put("cursor", schemaProp("string", "Optional. Continues a previous paged catalog call."));
 
         return McpSchema.Tool.builder("list_apis", inputSchema(properties, null))
-                .description("Lists or describes MCP-enabled APIs exposed by RESTHeart. Without arguments, returns the "
-                        + "catalog (URIs, kinds, short descriptions) — optionally narrowed with `query`/`kind` and "
-                        + "paged with `limit`/`cursor`. With a resource URI, returns full context: kind, supported "
-                        + "transports, actions with parameter types, auth requirements, examples. On a deployment "
-                        + "with many resources, prefer a filtered call over an unfiltered one. Call this before "
-                        + "how_to_call to learn what you can do with a resource.")
+                .description("""
+                        The catalog of the APIs this session may use.
+
+                        list_apis() → every resource: uri, kind, description, actions.
+                          actions = {name: [arguments the action requires]}.
+                        list_apis(resource=<uri>) → that resource in full: each action with its \
+                        params, body_schema, notes and examples.
+                        query, kind filter the catalog; limit, cursor page it.
+
+                        In a resource's actions:
+                          depends_on: arguments the permission reads from the call; without them the \
+                        call is refused.
+                          filtered_by: arguments the server's filter reads from the call; without them \
+                        nothing matches.
+                          server_sets: body fields the server writes; do not send them.
+                          note: what the action depends on, or how it behaves.
+
+                        The catalog is complete. A client's resource list is not: it omits resources \
+                        listed only by resources/templates/list. Execute any action with call_api.\
+                        """)
+                .build();
+    }
+
+    static McpSchema.Tool callApiToolDefinition() {
+        var properties = new LinkedHashMap<String, Object>();
+        properties.put("resource", schemaProp("string", "Resource URI, as listed by list_apis."));
+        properties.put("action", schemaProp("string", "Action name as declared in the resource's actions map."));
+        properties.put("args", schemaProp("object", "Each argument by name; the request body as `body`."));
+
+        return McpSchema.Tool.builder("call_api", inputSchema(properties, List.of("resource", "action")))
+                .outputSchema(callApiOutputSchema())
+                .description("""
+                        Executes an action of a resource, on the server, with this session's identity \
+                        and permissions.
+
+                        Input: resource (uri from list_apis), action (name from list_apis), args.
+                          args = each argument by name, the request body as `body`. Validate `body` \
+                        against the action's body_schema, when it has one; the action's description \
+                        says what the body is.
+                        Output: status (the HTTP status code), headers, body (parsed when JSON).
+
+                        Reads: `query` (collection), `get` (document), `execute` \
+                        (aggregation), with their params in args.
+                        Writes: create → 201, headers.Location = URI of the new document, no body. \
+                        create with an array body → 200, body = {inserted, links: [path of each new \
+                        document]}; not atomic: each document is written or refused on its own, a \
+                        partial failure → 207. \
+                        update, delete → 200 or 204, no body. A write never returns the stored data: \
+                        read it afterwards.
+                        A non-2xx status is a result, not a tool error; body states the reason. \
+                        403: not permitted to this session. 409: a rule of the resource refused the \
+                        write; the action's description or note says which 409s to retry.
+                        Change streams (SSE, WebSocket) cannot be opened here: subscribe to the \
+                        collection with resources/subscribe and re-read on \
+                        notifications/resources/updated, or describe the stream with how_to_call.\
+                        """)
+                // one tool for every action, so the annotations state the worst case: a host that asks the
+                // user before a destructive tool call asks before every call_api, which is the point
+                .annotations(new ToolAnnotations("Call an API", false, true, false, false, null))
                 .build();
     }
 
@@ -1133,34 +1838,51 @@ public class McpService implements ByteArrayService {
         var properties = new LinkedHashMap<String, Object>();
         properties.put("resource", schemaProp("string", "Resource URI."));
         properties.put("action", schemaProp("string", "Action name as declared in the resource's actions map."));
-        properties.put("args", schemaProp("object", "Action arguments — values for params and body declared by the resource."));
+        properties.put("args", schemaProp("object", "Each argument by name; the request body as `body`."));
         properties.put("transport", schemaProp("string",
                 "Optional transport preference (e.g. websocket vs sse for streams). If omitted, the resource's default transport is used."));
 
         return McpSchema.Tool.builder("how_to_call", inputSchema(properties, List.of("resource", "action")))
-                .description("Returns a request descriptor (transport, URL, headers, body) for invoking a known MCP resource. "
-                        + "The tool COMPOSES the request — it does NOT execute it. After receiving the response, "
-                        + "choose any client appropriate to the descriptor's transport and your host environment "
-                        + "(HTTP libraries, WebSocket libraries, OS shells with curl/httpie/wscat, generated code in "
-                        + "any language). The MCP server does not prescribe the tool.\n\nDispatch by action — the "
-                        + "set of valid actions for a given resource is declared in the resource's list_apis output. "
-                        + "Validate args against the declared params and body_schema before calling.\n\nThe descriptor "
-                        + "is stable and safe to reuse: it carries no credential. Its Authorization header holds the "
-                        + "placeholder `" + DescriptorRenderer.TOKEN_PLACEHOLDER + "` — call get_token to obtain a token and substitute "
-                        + "it just before sending the request, not when you receive this descriptor.")
+                .description("""
+                        Describes the HTTP request behind an action; does not execute it. To act, use \
+                        call_api.
+
+                        Output: transport, method, URL, headers, body — for code the user runs outside \
+                        MCP. The only way MCP offers to open a change stream (websocat, curl -N, a \
+                        browser).
+                        Authorization holds the placeholder `%s`; the user's code replaces it with \
+                        their own credential. No credential is ever included.\
+                        """.formatted(DescriptorRenderer.CREDENTIAL_PLACEHOLDER))
                 .build();
     }
 
-    static McpSchema.Tool getTokenToolDefinition() {
-        return McpSchema.Tool.builder("get_token", inputSchema(new LinkedHashMap<>(), null))
-                .description("Issues a short-lived access token for the current session, to fill in the `"
-                        + DescriptorRenderer.TOKEN_PLACEHOLDER + "` placeholder of a descriptor returned by how_to_call.\n\nThe token "
-                        + "expires within seconds (see `expires_in` in the response), so call this immediately before "
-                        + "sending the request — not in advance, and do not store it. Getting a fresh one costs "
-                        + "nothing; reusing a stale one fails with 401. One token can serve several requests made "
-                        + "within its window.\n\nIt carries the identity and roles of the current session and no more, "
-                        + "so it can do exactly what this session can do. Requires an authenticated session.")
-                .build();
+    /**
+     * The shape of every {@code call_api} answer, declared so the result can come back structured
+     * rather than as a string the model has to parse again.
+     *
+     * <p>{@code body} is whatever the API returned: an object for one document, an array for a
+     * collection or an aggregation, a string when the response was not JSON. It is an
+     * {@code anyOf} of every JSON type, one {@code type} per branch: a schema with no validation
+     * keyword, or a {@code type} array, accepts the same values, but some MCP clients refuse them
+     * or read them wrongly (a single-{@code type} dialect such as Gemini's cannot map an array),
+     * and {@code "object"} alone would make a client that validates {@code structuredContent}
+     * reject every collection.
+     */
+    private static Map<String, Object> callApiOutputSchema() {
+        var properties = new LinkedHashMap<String, Object>();
+        properties.put("status", schemaProp("integer", "The HTTP status the API answered with."));
+        properties.put("headers", schemaProp("object", "Response headers, each as name to its first value."));
+        properties.put("body", Map.of(
+                "anyOf", Stream.of("object", "array", "string", "number", "boolean", "null").map(t -> Map.of("type", t)).toList(),
+                "description", "The response body, parsed when the API returned JSON."));
+        properties.put("truncated", schemaProp("boolean", "Present and true when the body was too large and was cut."));
+        properties.put("body_bytes", schemaProp("integer", "The body's real size, when it was truncated."));
+
+        var schema = new LinkedHashMap<String, Object>();
+        schema.put("type", "object");
+        schema.put("properties", properties);
+        schema.put("required", List.of("status", "headers"));
+        return schema;
     }
 
     private static Map<String, Object> inputSchema(Map<String, Object> properties, List<String> required) {
@@ -1187,9 +1909,9 @@ public class McpService implements ByteArrayService {
 
         try {
             var result = listApisTool.list(
-                    principal(ctx), baseUrl(ctx),
+                    principal(ctx), baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "query"), stringArg(args, "kind"),
-                    intArg(args, "limit"), stringArg(args, "cursor"));
+                    intArg(args, "limit"), stringArg(args, "cursor"), visibleTo(ctx), verdictsFor(ctx));
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());
@@ -1207,9 +1929,9 @@ public class McpService implements ByteArrayService {
         try {
             var actionArgs = args.get("args") instanceof Map<?, ?> m ? (Map<String, Object>) m : null;
             var result = howToCallTool.call(
-                    principal(ctx), baseUrl(ctx),
+                    principal(ctx), baseUrl(ctx), effectiveScope(ctx),
                     stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
-                    stringArg(args, "transport"));
+                    stringArg(args, "transport"), descriptorGate(ctx));
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());
@@ -1220,62 +1942,79 @@ public class McpService implements ByteArrayService {
     }
 
     /**
-     * Issues the short-lived credential that fills in {@code how_to_call}'s
-     * {@link DescriptorRenderer#TOKEN_PLACEHOLDER}.
+     * Executes an action through {@link CallApiTool} and answers with status, headers and body.
      *
-     * <p>A tool of its own rather than something embedded in the descriptor, because the two are
-     * needed at different moments: a descriptor answers "how do I call this", is stable, and is
-     * worth reusing; a token is worth seconds. Minting it with the descriptor started the clock at
-     * the wrong time — an agent that reasoned, or asked its user, between receiving the descriptor
-     * and sending the request could find the token already dead. Here the window opens when the
-     * caller is about to use it.
+     * <p>A non-2xx status is a result, not an {@code isError} tool failure: the agent has to see
+     * the status and the body the API answered with, exactly as a REST client would. Only a
+     * failure to execute at all (unknown resource or action, invalid arguments, a dispatch
+     * error) is a tool error.
      *
-     * <p>Deliberately never falls back to a token from another source (the configured {@code
-     * TokenManager}'s own, say): those are session-length by design, and quietly handing one over
-     * would reintroduce exactly the long-lived-secret risk this exists to avoid. No issuer or no
-     * authenticated session is an error the caller is told about, not a weaker credential.
+     * <p>A session with no account is a session the ACL let in as {@code $unauthenticated}: its
+     * actions run the same way, dispatched with no identity, and the ACL decides each of them as it
+     * decides an anonymous request from a listener ({@code InProcessAuthMechanism} does not sign
+     * in a request that carries no principal). A deployment that has no permission for
+     * {@code $unauthenticated} on {@code /mcp} never gets here: the handshake is refused.
      */
-    private CallToolResult callGetToken(McpSyncServerExchange exchange, CallToolRequest request) {
+    @SuppressWarnings("unchecked")
+    private CallToolResult callCallApi(McpSyncServerExchange exchange, CallToolRequest request) {
         var ctx = exchange.transportContext();
+        var args = request.arguments();
         var principal = principal(ctx);
 
-        if (principal == null) {
-            return errorResult("no authenticated session: get_token issues a token for the caller's own identity, "
-                    + "so the MCP session must itself be authenticated");
-        }
-
-        var issuer = PluginModelResolver.resolve(pluginsRegistry, resolvedJwtIssuers, "jwtIssuer", JwtIssuer.class);
-
-        if (issuer.isEmpty()) {
-            return errorResult("token issuance is not available on this deployment: the 'jwtIssuer' provider is "
-                    + "disabled, or the 'jwtConfigProvider' it builds on is not configured");
-        }
-
         try {
-            // request(ctx), not the bare overload: it carries the per-request claim-set override a
-            // multi-tenant deployment attaches, without which the token would miss the very claims
-            // that deployment's ACL rules match on
-            var token = issuer.get().issue(principal, EPHEMERAL_TOKEN_TTL, request(ctx));
-
-            var result = new LinkedHashMap<String, Object>();
-            // same field names as RESTHeart's own /token endpoint (and OAuth): an agent that has
-            // seen either recognizes this without being told, and expires_in is what tells it
-            // whether the token it holds is still worth sending
-            result.put("access_token", token);
-            result.put("token_type", "Bearer");
-            result.put("expires_in", EPHEMERAL_TOKEN_TTL.toSeconds());
-            result.put("username", principal.getPrincipal().getName());
-            result.put("roles", principal.getRoles());
-
-            return textResult(jsonMapper.writeValueAsString(result));
+            var actionArgs = args.get("args") instanceof Map<?, ?> m ? (Map<String, Object>) m : null;
+            var result = callApiTool.call(
+                    principal, baseUrl(ctx), effectiveScope(ctx),
+                    stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
+                    attachedParamsOf(ctx));
+            return structuredResult(callApiResult(result));
+        } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
+            return errorResult(e.getMessage());
+        } catch (java.util.concurrent.TimeoutException e) {
+            return errorResult("the action did not complete in time");
         } catch (Exception e) {
-            LOGGER.error("get_token failed", e);
+            LOGGER.error("call_api failed", e);
             return errorResult("internal error: " + e.getMessage());
         }
     }
 
+    /** the tool's answer: status, headers as name → first value, body parsed when JSON, truncated past the cap */
+    private Map<String, Object> callApiResult(McpResult result) {
+        var out = new LinkedHashMap<String, Object>();
+        out.put("status", result.status());
+
+        var headers = new LinkedHashMap<String, String>();
+        result.headers().forEach((name, values) -> {
+            if (!values.isEmpty()) {
+                headers.put(name, values.get(0));
+            }
+        });
+        out.put("headers", headers);
+
+        if (result.body().length > CallApiTool.MAX_BODY_BYTES) {
+            out.put("body", new String(result.body(), 0, CallApiTool.MAX_BODY_BYTES, StandardCharsets.UTF_8));
+            out.put("truncated", true);
+            out.put("body_bytes", result.body().length);
+        } else {
+            callApiTool.bodyOf(result).ifPresent(body -> out.put("body", body));
+        }
+
+        return out;
+    }
+
     private static CallToolResult textResult(String text) {
         return new CallToolResult(List.of(TextContent.builder(text).build()), false, null, null);
+    }
+
+    /**
+     * A tool answer given twice: once as {@code structuredContent}, which is what a client that
+     * knows the tool's {@code outputSchema} reads, and once serialized in a text block, which is
+     * all an older client understands. The protocol asks for both, and they are the same map, so
+     * they cannot disagree.
+     */
+    private CallToolResult structuredResult(Map<String, Object> result) throws java.io.IOException {
+        return new CallToolResult(List.of(TextContent.builder(jsonMapper.writeValueAsString(result)).build()),
+                false, result, null);
     }
 
     private static CallToolResult errorResult(String message) {

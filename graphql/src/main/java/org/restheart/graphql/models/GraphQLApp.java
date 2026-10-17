@@ -21,6 +21,9 @@
 package org.restheart.graphql.models;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map.Entry;
 import java.util.Optional;
 
@@ -51,6 +54,12 @@ public class GraphQLApp {
     private GraphQLSchema executableSchema;
     private BsonValue etag;
 
+    /** Whether the schema decorates any field with {@code @visible} — the fast path out of the whole mechanism. */
+    private boolean usesFieldVisibility;
+
+    /** One schema per distinct set of roles, built on first use. */
+    private final Map<Set<String>, GraphQLSchema> schemasByRoles = new ConcurrentHashMap<>();
+
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -63,6 +72,7 @@ public class GraphQLApp {
         this.schema = schema;
         this.objectsMappings = objectsMappings;
         this.executableSchema = executableSchema;
+        this.usesFieldVisibility = executableSchema != null && RoleFieldVisibility.isUsedIn(executableSchema);
         this.etag = etag;
     }
 
@@ -94,8 +104,32 @@ public class GraphQLApp {
         return executableSchema;
     }
 
+    /**
+     * The schema {@code roles} may see — the full one with every field its {@code @visible}
+     * directive excludes removed (restheart#478).
+     *
+     * <p>Built per distinct set of roles and cached, because field visibility is a property of the
+     * schema, not of the execution: graphql-java decides what exists before a resolver ever runs,
+     * which is what makes a hidden field invisible to introspection too. The number of variants is
+     * bounded by the role sets that actually call the app.
+     *
+     * <p>An app whose schema decorates no field never enters any of this and keeps sharing one
+     * schema instance.
+     */
+    public GraphQLSchema getExecutableSchema(Set<String> roles) {
+        if (!usesFieldVisibility) {
+            return executableSchema;
+        }
+
+        var key = roles == null ? Set.<String>of() : new TreeSet<>(roles);
+
+        return schemasByRoles.computeIfAbsent(key, r -> RoleFieldVisibility.forRoles(executableSchema, r));
+    }
+
     public void setExecutableSchema(GraphQLSchema executableSchema) {
         this.executableSchema = executableSchema;
+        this.usesFieldVisibility = executableSchema != null && RoleFieldVisibility.isUsedIn(executableSchema);
+        this.schemasByRoles.clear();
     }
 
     public BsonValue getEtag() {
@@ -168,7 +202,7 @@ public class GraphQLApp {
                 throw new IllegalStateException("mappings for type Query are mandatory");
             }
 
-            var schemaWithBsonScalars = BsonScalars.getBsonScalarHeader() + this.schema;
+            var schemaWithBsonScalars = BsonScalars.getSchemaHeader() + this.schema;
 
             try {
                 var typeRegistry = new SchemaParser().parse(schemaWithBsonScalars);

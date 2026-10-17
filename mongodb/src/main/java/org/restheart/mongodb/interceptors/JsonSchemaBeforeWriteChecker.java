@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
@@ -48,9 +47,10 @@ import org.slf4j.LoggerFactory;
  * This intercetor is able to check PUT and POST requests that don't use update
  * operators. PATCH requests are checked by jsonSchemaAfterWrite
  * <br><br>
- * Note that checking bulk PATCH, i.e. PATCH /coll/*, is not supported. In this
- * case the optional metadata property 'skipNotSuppored' controls the behaviour:
- * if true, the request is not checked and executed, if false the request fails.
+ * Bulk PATCH, i.e. PATCH /coll/*, is checked by jsonSchemaAfterWrite too, where the
+ * write runs in a transaction — on a standalone MongoDB it cannot be checked, and
+ * the optional metadata property 'skipNotSupported' controls the behaviour: if
+ * true, the request is not checked and executed, if false the request fails.
  *
  * It checks the request content against the JSON schema specified by the
  * 'jsonSchema' collection metadata:
@@ -122,22 +122,8 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
                 .get("jsonSchema")
                 .asDocument();
 
-        // this request is not supported by jsonSchema checkers
-        //
-        if (request.isPatch() && request.isBulkDocuments()) {
-            BsonValue skipNotSupported = args.get(SKIP_NOT_SUPPORTED_PROPERTY);
-
-            if (skipNotSupported != null
-                    && skipNotSupported.isBoolean()
-                    && skipNotSupported.asBoolean().getValue()) {
-                LOGGER.debug("skipping jsonSchema checking since the request is a bulk PATCH and skipNotSupported=true");
-                return;
-            } else {
-                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
-                        "'jsonSchema' checker does not support bulk PATCH requests. "
-                                + "Set 'skipNotSupported:true' to allow them.");
-                return;
-            }
+        if (handledElsewhere(request, response, args)) {
+            return;
         }
 
         BsonValue _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);
@@ -180,7 +166,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         } catch (JsonSchemaNotFoundException ex) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': schema "
-                            + schemaStoreDb + "/" + _SCHEMAS + "/"
+                            + schemaStoreDb + "/" + MongoRequest.schemaStore() + "/"
                             + BsonUtils.getIdAsString(schemaId, false)
                             + " not found");
         } catch (SchemaValidationException sve) {
@@ -190,6 +176,51 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
                             + ": "
                             + String.join(", ", sve.getViolations()));
         }
+    }
+
+    /**
+     * Whether this request is not this interceptor's to check, and what to do about it.
+     *
+     * <p>A bulk {@code PATCH} carries update operators, so before the write there is no resulting
+     * document to validate. Where the write runs in a transaction it is checked afterwards instead,
+     * by {@code jsonSchemaAfterWrite}, and this pass simply lets it past. Where it does not — no
+     * replica set, so nothing could undo it — it is refused, unless the collection has opted out
+     * with {@code skipNotSupported}.
+     *
+     * <p>Overridden by {@link JsonSchemaAfterWriteChecker}, which inherits this {@code handle} and
+     * for which none of the above applies: checking a bulk {@code PATCH} after the write is exactly
+     * its job, and returning early here would skip the one case it exists for.
+     *
+     * @return true if the caller must stop, having either refused the request or deliberately let
+     * it through
+     */
+    boolean handledElsewhere(MongoRequest request, MongoResponse response, BsonDocument args) {
+        if (!(request.isPatch() && request.isBulkDocuments())) {
+            return false;
+        }
+
+        if (request.isTxnRequested()) {
+            // jsonSchemaAfterWriteTxn asked for the transaction, and only asks where one is
+            // available; jsonSchemaAfterWrite validates the outcome and aborts it if it fails
+            return true;
+        }
+
+        var skipNotSupported = args.get(SKIP_NOT_SUPPORTED_PROPERTY);
+
+        if (skipNotSupported != null
+                && skipNotSupported.isBoolean()
+                && skipNotSupported.asBoolean().getValue()) {
+            LOGGER.debug("skipping jsonSchema checking since the request is a bulk PATCH and skipNotSupported=true");
+            return true;
+        }
+
+        response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
+                "'jsonSchema' checker does not support bulk PATCH requests on a standalone "
+                        + "MongoDB. Use a replica set, where the write runs in a transaction "
+                        + "and is validated after it, or set 'skipNotSupported:true' to allow "
+                        + "them unvalidated.");
+
+        return true;
     }
 
     List<BsonDocument> documentsToCheck(MongoRequest request, MongoResponse response) {
@@ -215,9 +246,12 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
+                // a bulk PATCH is not a "write document": its resource type is BULK_DOCUMENTS, so
+                // isWriteDocument() is false for it. Repeating that condition outside the || — as
+                // this did — silently cancelled the branch that had just admitted it, and the 501
+                // below never fired: bulk PATCH went through unvalidated.
                 && ((request.isWriteDocument() && !request.isPatch())
                 || (request.isPatch() && request.isBulkDocuments()))
-                && request.isWriteDocument()
                 && request.getCollectionProps() != null
                 && request.getCollectionProps().containsKey("jsonSchema")
                 && request.getCollectionProps().get("jsonSchema").isDocument();

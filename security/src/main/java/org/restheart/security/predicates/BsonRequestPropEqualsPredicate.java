@@ -29,6 +29,8 @@ import com.google.common.collect.Sets;
 import org.bson.BsonDocument;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.Request;
+import org.restheart.security.EvaluationScope;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.utils.BsonUtils;
 
 import io.undertow.attribute.ExchangeAttribute;
@@ -77,7 +79,8 @@ public class BsonRequestPropEqualsPredicate implements Predicate {
                 var _value = BsonUtils.get(contentDoc, this.key);
 
                 if (_value.isPresent()) {
-                    var expected = BsonUtils.parse(this.value.readAttribute(exchange));
+                    // the quotes of the value come back from the placeholders of the ACL parser
+                    var expected = BsonUtils.parse(AclVarsInterpolator.restoreQuotes(this.value.readAttribute(exchange)));
                     return _value.get().equals(expected);
 
                 } else {
@@ -94,7 +97,13 @@ public class BsonRequestPropEqualsPredicate implements Predicate {
         }
     }
 
-    public static class Builder implements PredicateBuilder {
+    public static class Builder implements PredicateBuilder, EvaluationScope {
+        /** Reads the request this listing cannot have yet, so it never discriminates in a catalog. */
+        @Override
+        public Scope scope() {
+            return Scope.CALL;
+        }
+
         @Override
         public String name() {
             return "bson-request-prop-equals";

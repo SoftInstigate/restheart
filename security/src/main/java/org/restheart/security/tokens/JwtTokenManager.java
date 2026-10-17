@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -321,6 +322,65 @@ public class JwtTokenManager implements TokenManager {
         return get(account, null);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Mints a new token instead of returning the cached one, and re-reads the account first —
+     * the same two steps {@code GET /token?renew} performs, which until now were reachable only
+     * through that query parameter. The cache is updated so the rest of the request sees the new
+     * token rather than the one it replaces.
+     */
+    /**
+     * Whether the token this account came from was issued to carry a session, and may therefore be
+     * renewed. True for an account that did not come from a token at all — a caller presenting
+     * username and password is authenticating, not renewing.
+     */
+    private static boolean renewable(final Account account) {
+        if (!(account instanceof JwtAccount jwt)) {
+            return true;
+        }
+
+        var marker = jwt.propertiesAsMap().get(RENEWABLE);
+
+        return marker instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(marker));
+    }
+
+    @Override
+    public PasswordCredential renew(final Account account, final Request<?> request) {
+        if (!enabled) {
+            LOGGER.debug("JwtTokenManager is disabled - cannot renew token");
+            return null;
+        }
+
+        // The same key signs more than one kind of JWT, and they all verify. Only the ones issued
+        // to carry a session may be renewed: an authorization code redeemed here would become an
+        // access token without its PKCE verifier, and a one-off activation token would become a
+        // login. Refusing by default is what makes a kind of JWT added later safe.
+        if (!renewable(account)) {
+            LOGGER.warn("Refusing to renew a token that was not issued to carry a session, for '{}'",
+                    account.getPrincipal() == null ? "?" : account.getPrincipal().getName());
+            return null;
+        }
+
+        try {
+            final var claims = DefaultJwtIssuer.claimsOverride(request);
+            final var ca = new ComparableAccount(account, claims);
+
+            final var renewedAccount = accountForRenew(request, account);
+            final var newToken = renewToken(account, renewedAccount, claims);
+
+            this.jwtCache.put(ca, newToken);
+
+            return new PwdCredentialAccount(
+                    account.getPrincipal().getName(),
+                    newToken.raw(),
+                    Sets.newTreeSet(renewedAccount.getRoles())).getCredentials();
+        } catch (Exception ex) {
+            LOGGER.error("Error renewing JWT token for user '{}'", account.getPrincipal().getName(), ex);
+            return null;
+        }
+    }
+
     @Override
     public PasswordCredential get(final Account account, final Request<?> request) {
         var tokenStartTime = System.currentTimeMillis();
@@ -404,6 +464,16 @@ public class JwtTokenManager implements TokenManager {
             }
 
             final var name = account.getPrincipal().getName();
+
+            // An API key carries the roles written on the key document, never the user's: it is
+            // meant to be narrower than the person holding it. Re-reading the account here would
+            // hand back the user's own roles and silently widen it.
+            if (fromApiKey(account)) {
+                LOGGER.debug("Not re-reading account '{}' on renew: the token came from an API key, "
+                        + "whose roles are deliberately not the user's", name);
+                return account;
+            }
+
             final var tokenAuthDb = getAuthDb(account);
             final var requestUsersDb = mra.getUsersDb(request);
 
@@ -451,6 +521,16 @@ public class JwtTokenManager implements TokenManager {
             properties = jwtIssuer.accountClaims(awp.propertiesAsMap(), claims);
         } else {
             properties = null;
+        }
+
+        // a token minted outside a renewal follows a real authentication, so the session starts now
+        // and has been renewed no times
+        builder = jwtIssuer.withClaim(builder, AUTH_TIME, Instant.now().getEpochSecond());
+        builder = jwtIssuer.withClaim(builder, RENEWALS, 0L);
+        builder = jwtIssuer.withClaim(builder, RENEWABLE, true);
+
+        if (fromApiKey(account)) {
+            builder = jwtIssuer.withClaim(builder, FROM_API_KEY, true);
         }
 
         final var raw = jwtIssuer.sign(builder);
@@ -507,6 +587,27 @@ public class JwtTokenManager implements TokenManager {
             properties = null;
         }
 
+        // Step 3: the session, as opposed to the token. Step 1 already carried both claims over when
+        // renewing from a JWT, which is what keeps them meaningful across a chain of renewals. They
+        // are absent when the caller authenticated afresh instead — basic auth on /token?renew —
+        // and then a new session starts here: it began now and has been renewed no times.
+        final var carried = carriedAuthTime(originalAccount);
+
+        builder = jwtIssuer.withClaim(builder, AUTH_TIME,
+                carried != null ? carried : Instant.now().getEpochSecond());
+        builder = jwtIssuer.withClaim(builder, RENEWALS,
+                carried != null ? carriedRenewals(originalAccount) + 1 : 0L);
+
+        // Step 1 already copied both of these over from the token being renewed. Set again here so
+        // a renewal that started from basic auth — where there is no previous token to copy from —
+        // still produces a renewable one, and so that neither depends on the copy rule staying as
+        // it is.
+        builder = jwtIssuer.withClaim(builder, RENEWABLE, true);
+
+        if (fromApiKey(originalAccount) || fromApiKey(renewedAccount)) {
+            builder = jwtIssuer.withClaim(builder, FROM_API_KEY, true);
+        }
+
         final var raw = jwtIssuer.sign(builder);
         return new Token(
                 raw.toCharArray(),
@@ -514,6 +615,121 @@ public class JwtTokenManager implements TokenManager {
                 renewedAccount.getRoles().toArray(new String[renewedAccount.getRoles().size()]),
                 properties);
     }
+
+    /**
+     * The session start carried by the token being renewed, or {@code null} when there is none —
+     * either because the caller authenticated afresh, or because the token predates the claim. Both
+     * cases are treated the same: there is no session age to continue, so a new session begins.
+     */
+    private static Long carriedAuthTime(final Account originalAccount) {
+        return originalAccount instanceof JwtAccount awp
+                ? asLong(awp.propertiesAsMap().get(AUTH_TIME))
+                : null;
+    }
+
+    /**
+     * Whether this account was authenticated by an API key, either because it says so directly (the
+     * authenticator marks the account it builds) or because the token it came from carries the
+     * claim (a renewal, where the original authentication is long past).
+     */
+    private static boolean fromApiKey(final Account account) {
+        if (!(account instanceof WithProperties<?> wp)) {
+            return false;
+        }
+
+        var marker = wp.propertiesAsMap().get(FROM_API_KEY);
+
+        return marker instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(marker));
+    }
+
+    /** The renewal count carried by the token being renewed; zero when it carries none. */
+    private static long carriedRenewals(final Account originalAccount) {
+        if (originalAccount instanceof JwtAccount awp) {
+            var carried = asLong(awp.propertiesAsMap().get(RENEWALS));
+
+            if (carried != null) {
+                return carried;
+            }
+        }
+
+        return 0L;
+    }
+
+    /** Reads a numeric claim, tolerating the string form a JSON round-trip can produce. */
+    private static Long asLong(final Object value) {
+        return value == null ? null : switch (value) {
+            case final Number n -> n.longValue();
+            case final String str -> {
+                try {
+                    yield Long.valueOf(str);
+                } catch (NumberFormatException e) {
+                    yield null;
+                }
+            }
+            default -> null;
+        };
+    }
+
+    /**
+     * When the user actually authenticated, in epoch seconds — the OIDC {@code auth_time} claim.
+     *
+     * <p>Distinct from {@code iat}, which is rewritten on every issuance and so says only when
+     * <em>this</em> token was minted. {@code auth_time} is carried through renewals unchanged, so
+     * it survives a chain of them and answers "how old is this session", not "how old is this
+     * token".
+     *
+     * <p>Recorded now, checked later: nothing refuses a renewal on its account yet. It has to be in
+     * tokens before any limit built on it can mean anything, since a token issued before this claim
+     * existed has no session age to judge.
+     */
+    public static final String AUTH_TIME = "auth_time";
+
+    /**
+     * How many times this token has been renewed since {@link #AUTH_TIME}: {@code 0} on a token
+     * that follows a real authentication, one more on each renewal.
+     *
+     * <p>Together with {@code auth_time} it describes the session rather than the token. It is a
+     * claim rather than a check so that a deployment can bound the renewal chain with an ACL
+     * permission and no code:
+     *
+     * <pre>
+     * "predicate": "path('/token') and method(POST) and lte(@user.renewals, 9)"
+     * </pre>
+     *
+     * <p>Two consequences of that being a permission rather than a check. It only applies to
+     * requests authenticated by a JWT: the claim is a property of the token, so a request that
+     * arrived with basic auth has none and the comparison is false. And a token issued before this
+     * claim existed also compares false — {@code lte} refuses an operand it cannot read rather than
+     * granting on it — which expires such tokens' renewal chain at the upgrade instead of letting
+     * it run on unbounded.
+     */
+    public static final String RENEWALS = "renewals";
+
+    /**
+     * Marks a token that may be renewed — one issued to carry a session.
+     *
+     * <p>An allowlist, not a denylist, and deliberately so. RESTHeart signs more than one kind of
+     * JWT with the same key: session tokens, the OAuth authorization code, the one-off tokens
+     * behind an activation or password-reset link. They verify identically, so a renewal endpoint
+     * that accepts "a valid JWT" accepts all of them — and turns a stolen authorization code into a
+     * session without its PKCE verifier, which is the one thing PKCE exists to prevent.
+     *
+     * <p>Stated the other way round, a new kind of JWT added later is not renewable until somebody
+     * decides it should be. The cost of forgetting is a token that cannot be renewed, not one that
+     * should not have been.
+     */
+    public static final String RENEWABLE = "renewable";
+
+    /**
+     * Marks a token issued to an account authenticated by an API key.
+     *
+     * <p>Such a key is deliberately narrower than the person holding it: {@code
+     * mongoApiKeyAuthenticator} builds the account with the roles named on the key document, never
+     * the user's. Renewal re-reads the account from the users store, which would hand back the
+     * user's full roles and quietly widen a credential that was issued narrow. This is what stops
+     * that, and it is checked rather than assumed.
+     */
+    public static final String FROM_API_KEY = "apiKey";
 
     private String getAuthDb(Account account) {
         return account instanceof WithProperties<?> wp ? DefaultJwtIssuer.authDb(wp.propertiesAsMap()) : null;
@@ -704,6 +920,29 @@ record ComparableAccount(Account wrapped, List<String> claims) {
             return false;
         }
 
+        // Same name, different roles -> different token. Two accounts for one principal are not
+        // hypothetical: an API key is built with the roles named on the key document and never the
+        // user's, deliberately narrower than its owner.
+        //
+        // What used to keep those apart was authDb: mongoRealmAuthenticator always sets it and the
+        // API key authenticator did not, so the two keys differed there. (It now sets the database
+        // the key was found in, #738, which often is the users db.) That is a coincidence of
+        // where the accounts come from, not a statement about what makes a token different, and it
+        // does not hold for a realm that sets no authDb — a file realm, or an external issuer. There
+        // the two shared an entry, and a key could be served the full-privilege token its owner had
+        // just been issued for a password login.
+        if (!Objects.equals(rolesOf(this.wrapped), rolesOf(that.wrapped))) {
+            return false;
+        }
+
+        // And where the account came from, which is a claim of the issued token and decides
+        // whether a renewal may re-read it. A key naming exactly the roles its owner already has
+        // would otherwise still share an entry with them, and one of the two would be handed a
+        // token whose apiKey claim describes the other.
+        if (fromApiKeyAccount(this.wrapped) != fromApiKeyAccount(that.wrapped)) {
+            return false;
+        }
+
         // Compare authDb if present in account properties
         String thisAuthDb = getAuthDb(this.wrapped);
         String thatAuthDb = getAuthDb(that.wrapped);
@@ -714,7 +953,23 @@ record ComparableAccount(Account wrapped, List<String> claims) {
     public int hashCode() {
         String username = wrapped.getPrincipal() == null ? null : wrapped.getPrincipal().getName();
         String authDb = getAuthDb(wrapped);
-        return Objects.hash(username, authDb, claims);
+        return Objects.hash(username, authDb, claims, rolesOf(wrapped), fromApiKeyAccount(wrapped));
+    }
+
+    /** Mirrors JwtTokenManager.fromApiKey: what the token will say about where the account came from. */
+    private static boolean fromApiKeyAccount(Account account) {
+        if (!(account instanceof WithProperties<?> wp) || wp.propertiesAsMap() == null) {
+            return false;
+        }
+
+        var marker = wp.propertiesAsMap().get(JwtTokenManager.FROM_API_KEY);
+
+        return marker instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(marker));
+    }
+
+    /** Order must not matter: the same roles in a different order are the same account. */
+    private static Set<String> rolesOf(Account account) {
+        return account == null || account.getRoles() == null ? Set.of() : Set.copyOf(account.getRoles());
     }
 
     private String getAuthDb(Account account) {

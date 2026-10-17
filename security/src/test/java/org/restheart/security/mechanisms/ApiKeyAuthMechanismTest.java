@@ -25,17 +25,24 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.restheart.exchange.PipelineInfo;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.security.ApiKeyCredential;
 import org.restheart.security.BaseAccount;
+import org.restheart.security.authenticators.MongoApiKeyAuthenticator;
 
 import io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismOutcome;
 import io.undertow.security.api.SecurityContext;
@@ -161,6 +168,35 @@ public class ApiKeyAuthMechanismTest {
         // truthful answer with a confusing one.
         assertEquals(AuthenticationMechanismOutcome.NOT_AUTHENTICATED, authenticate("Bearer " + PREFIX + "unknown"));
         assertEquals(PREFIX + "unknown", this.authenticator.seen);
+    }
+
+    @Test
+    void mongoApiKeyAuthenticatorIsGivenTheRequestSoTheOverrideReachesIt() throws Exception {
+        // Without the request the authenticator cannot see override-keys-db and
+        // looks every key up in keys-db, so a key would work on every tenant.
+        // The request-less verify() must not be the one called (#738).
+        final var mauth = mock(MongoApiKeyAuthenticator.class);
+        final var account = new BaseAccount("robot", Set.of("cli"));
+        when(mauth.verify(ArgumentMatchers.<Request<?>>any(), ArgumentMatchers.any(Credential.class))).thenReturn(account);
+        set(this.mechanism, "authenticator", mauth);
+
+        // A spy of this module's test stub of HttpServerExchange: its attachments are real, which
+        // Request.of() and the attached params need, but it has no request headers of its own.
+        final var exchange = spy(new HttpServerExchange());
+        final var headers = new HeaderMap();
+        headers.put(Headers.AUTHORIZATION, "Bearer " + GOOD_KEY);
+        when(exchange.getRequestHeaders()).thenReturn(headers);
+        // PROXY so Request.of() can build the request here; a SERVICE one must already have
+        // been initialised by the pipeline. The end-to-end path is api-key-auth.feature's.
+        Request.setPipelineInfo(exchange, new PipelineInfo(PipelineInfo.PIPELINE_TYPE.PROXY, "/anything", "anything"));
+        exchange.putAttachment(Request.ATTACHED_PARAMS_KEY, new HashMap<>(Map.of(MongoApiKeyAuthenticator.OVERRIDE_KEYS_DB, "tenant_a")));
+
+        assertEquals(AuthenticationMechanismOutcome.AUTHENTICATED, this.mechanism.authenticate(exchange, this.securityContext));
+
+        final var captor = ArgumentCaptor.forClass(Request.class);
+        verify(mauth).verify(captor.capture(), ArgumentMatchers.any(Credential.class));
+        assertEquals("tenant_a", captor.getValue().attachedParam(MongoApiKeyAuthenticator.OVERRIDE_KEYS_DB));
+        verify(mauth, never()).verify(ArgumentMatchers.any(Credential.class));
     }
 
     @Test

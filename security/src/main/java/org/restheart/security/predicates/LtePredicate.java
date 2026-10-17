@@ -23,6 +23,8 @@ package org.restheart.security.predicates;
 import java.util.Map;
 import java.util.Set;
 
+import org.restheart.security.EvaluationScope;
+
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -47,7 +49,13 @@ public class LtePredicate extends NumericComparisonPredicate {
         return left <= right;
     }
 
-    public static class Builder implements PredicateBuilder {
+    public static class Builder implements PredicateBuilder, EvaluationScope {
+        /** Takes the class of the exchange attributes it compares. */
+        @Override
+        public Scope scope() {
+            return Scope.ARGUMENTS;
+        }
+
         @Override
         public String name() {
             return "lte";

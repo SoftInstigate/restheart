@@ -21,6 +21,7 @@
 package org.restheart.ai.util;
 
 import org.restheart.exchange.Request;
+import org.restheart.utils.URLUtils;
 
 /**
  * Reads per-request override parameters and returns the effective value, falling back
@@ -54,12 +55,14 @@ public final class RequestOverrides {
     public static final String OPENAI_API_KEY = "override-ai-openai-api-key";
     public static final String OPENAI_MODEL = "override-ai-openai-model";
     public static final String OPENAI_BASE_URL = "override-ai-openai-base-url";
+    public static final String OPENAI_DIMENSIONS = "override-ai-openai-dimensions";
 
     // ── voyageEmbeddingProvider overrides ────────────────────────────────────
     public static final String VOYAGE_API_KEY = "override-ai-voyage-api-key";
     public static final String VOYAGE_MODEL = "override-ai-voyage-model";
     public static final String VOYAGE_BASE_URL = "override-ai-voyage-base-url";
     public static final String VOYAGE_INPUT_TYPE = "override-ai-voyage-input-type";
+    public static final String VOYAGE_OUTPUT_DIMENSION = "override-ai-voyage-output-dimension";
 
     // ── voyageContextualEmbeddingProvider overrides ──────────────────────────
     // (kept distinct from VOYAGE_API_KEY etc. above — a tenant may use a different
@@ -90,10 +93,13 @@ public final class RequestOverrides {
     /** Overrides which {@code Provider<EmbeddingModel>} plugin name to use for this request. */
     public static final String EMBEDDING_PROVIDER = "override-ai-embedding-provider";
 
-    // ── documentChunkingInterceptor overrides ────────────────────────────────
+    // ── documentChunkingInterceptor overrides: the defaults of a tenant, for a rule that sets none ──
     public static final String CHUNK_SIZE = "override-ai-chunk-size";
     public static final String CHUNK_OVERLAP = "override-ai-chunk-overlap";
-    public static final String TARGET_COLLECTION = "override-ai-target-collection";
+    /** Whether the chunker runs after the upload has answered; wins over the static {@code async} (#758). */
+    public static final String CHUNKING_ASYNC = "override-ai-chunking-async";
+    /** How many files of the request's database are chunked at once; the static {@code max-concurrent} stays the node-wide cap (#758). */
+    public static final String CHUNKING_MAX_CONCURRENT = "override-ai-chunking-max-concurrent";
 
     // ── rerankingInterceptor overrides ───────────────────────────────────────
     public static final String ATLAS_API_KEY = "override-ai-atlas-api-key";
@@ -104,7 +110,31 @@ public final class RequestOverrides {
      * (no override, no static {@code rerank-provider} configured), reranking falls back
      * to the Atlas Reranking API directly — Phase 1 behavior, unchanged.
      */
+    /**
+     * The base URL the MCP {@code resources} primitive builds resource URIs from, per tenant.
+     *
+     * <p>A tenant is a hostname, and every URI the catalogue advertises has to carry the tenant's
+     * own. Without this the whole server answers with one host: an agent served the catalogue of
+     * tenant A receives URIs pointing at tenant B, and a request composed from one of them arrives
+     * somewhere it was never meant to.
+     *
+     * <p>The static {@code mcpService.public-base-url} still decides whether the resources
+     * primitive is on at all, which is a property of the node and not of a tenant.
+     */
+    public static final String MCP_PUBLIC_BASE_URL = URLUtils.PUBLIC_BASE_URL_OVERRIDE;
+
     public static final String RERANK_PROVIDER = "override-ai-rerank-provider";
+
+    // ── vectorScanInterceptor overrides ──────────────────────────────────────
+    /**
+     * A hard cap on {@code $vectorScan}'s {@code maxCandidates} for this request, whatever the
+     * stage asks for. Wins over the static {@code max-candidates-cap}; {@code 0} or a negative
+     * value means no cap. The stage is the collection owner's, the cap is the node operator's:
+     * on a shared node a plan decides how many vectors one query may pull in memory (#755).
+     */
+    public static final String MAX_CANDIDATES_CAP = "override-ai-max-candidates-cap";
+    /** Same as {@link #MAX_CANDIDATES_CAP}, for the stage's {@code limit}; static key {@code max-limit-cap}. */
+    public static final String MAX_LIMIT_CAP = "override-ai-max-limit-cap";
 
     private RequestOverrides() {
     }
@@ -118,6 +148,23 @@ public final class RequestOverrides {
         }
         var v = req.attachedParam(key);
         return (v instanceof String s && !s.isBlank()) ? s : defaultValue;
+    }
+
+    /** Effective boolean value: an attached {@code Boolean}, or the String {@code true} or {@code false}; else {@code defaultValue}. */
+    public static boolean boolVal(Request<?> req, String key, boolean defaultValue) {
+        if (req == null) {
+            return defaultValue;
+        }
+        var v = req.attachedParam(key);
+        if (v instanceof Boolean b) {
+            return b;
+        }
+        if (v instanceof String s && !s.isBlank()) {
+            var t = s.strip();
+            if (t.equalsIgnoreCase("true")) return true;
+            if (t.equalsIgnoreCase("false")) return false;
+        }
+        return defaultValue;
     }
 
     /**

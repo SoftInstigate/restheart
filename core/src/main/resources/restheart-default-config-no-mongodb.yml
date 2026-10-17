@@ -32,6 +32,13 @@ ajp-listener:
 tokenBasicAuthMechanism:
   enabled: true
 
+# In-process Authentication
+# Signs in a request RESTHeart dispatched to itself in-process (the MCP call_api tool runs an
+# action of a resource this way, as the MCP session's own account). Inert for every request
+# that arrives on a listener: it only acts on an exchange the in-process dispatcher marked.
+inProcessAuthMechanism:
+  enabled: true
+
 # Basic Authentication
 # See https://restheart.org/docs/security/authentication#basic-authentication
 basicAuthMechanism:
@@ -70,6 +77,15 @@ jwtAuthenticationMechanism:
   usernameClaim: sub
   rolesClaim: roles
   fixedRoles: []
+
+# On a 401 from the MCP server, adds WWW-Authenticate: Bearer resource_metadata="…" pointing at
+# the OAuth protected resource metadata, beside the other challenges (Basic stays). MCP 2025-06-18
+# requires it; 2025-11-25 clients also find the metadata at the well-known URI without it.
+# It never authenticates anybody, and it speaks only when oauthProtectedResourceMetadataService and
+# mcpService are both enabled, and only on the MCP server's own path: elsewhere it is inert.
+# See https://restheart.org/docs/security/oauth#the-challenge-on-a-refused-mcp-request
+oauthResourceChallengeMechanism:
+  enabled: true
 
 # Digest Authentication
 # See https://restheart.org/docs/security/authentication#digest-authentication
@@ -256,7 +272,8 @@ authTokenService:
 oauthAuthorizationServerMetadataService:
   enabled: false
   # Optional: specify scheme and host for absolute URLs in metadata responses.
-  # If null, the request Host header is used as fallback.
+  # When null: X-Forwarded-Proto and X-Forwarded-Host, each when present, else the request itself.
+  # A per-request override-ai-mcp-public-base-url wins over both.
   # Example: https://api.example.com
   base-url: null
   # URI of the authorization endpoint (included in AS metadata as authorization_endpoint).
@@ -284,6 +301,16 @@ oauthAuthorizationService:
   #   - https://claude.ai/api/mcp/auth_callback
   allowed-redirect-uris:
     - http://localhost:*
+
+  # Which token the flow issues is decided by an OAuthTokenIssuer, when a deployment registers one
+  # (a Provider<OAuthTokenIssuer>, found by type: there is no key to set here, registering it is
+  # the switch). Without one, /token answers the authorization code with the account's own JWT,
+  # renewable without end. With one, the sign-in page gains a step: it asks GET /authorize/offer
+  # what this account may choose (204 nothing, 200 an offer, 403 a refusal), the person chooses,
+  # and the choices travel to POST /authorize as choice.<name> query parameters — preselected by
+  # the client's scope, one <name>:<value> entry per choice. What the issuer seals in the code is
+  # what it mints at /token, and that code is never answered with the JWT instead.
+  # See: https://restheart.org/docs/security/oauth#deciding-which-token-the-flow-issues
 
 # OAuth 2.0 Protected Resource Metadata (RFC 9728)
 # Endpoint: GET /.well-known/oauth-protected-resource[/{resource-path}]
@@ -347,6 +374,9 @@ mongo:
   #
   #   - what: /db
   #     where: /database
+
+  # The schema store: the collection of each database holding its JSON schemas.
+  schema-store: _schemas
   #
   # The following binds the URI /api to the collection 'db.coll'
   # In this case the URI of a document is /api/docid
@@ -488,6 +518,15 @@ ollamaEmbeddingProvider:
 # McpService itself doesn't strictly require MongoDB (it can serve any McpAware plugin, e.g.
 # PingService), but it ships as part of restheart-ai like everything else above, so it's off
 # here too for consistency — enable it manually via an override if you want MCP without Mongo.
+# WHO SEES WHAT. A catalogue is composed per caller: for each MCP-enabled resource RESTHeart reads
+# the caller's own ACL permissions and lists the resource as soon as one of them could allow a read
+# of it. A rule deciding on something the call carries cannot be decided before the call exists, so
+# it is left open and the resource is listed; the call is then authorized as usual and may answer
+# 403. A resource overrides that from its own "mcp" metadata block with "hide_from_roles" (a list
+# of roles it is not announced to, which wins over everything) or "show_if" (a predicate replacing
+# the reading of the permissions, restricted to what a listing can evaluate). Neither grants nor
+# denies access: they decide what is announced.
+# See https://restheart.org/docs/ai/mcp
 mcpService:
   enabled: false
 cohereRerankProvider:
@@ -546,12 +585,17 @@ stripeInitTracker:
 roles:
   uri: /roles
 
-# A global blacklist for mongodb operators in filter query parameter
+# A global blacklist for mongodb operators in the filter and keys query parameters: the operators
+# that run JavaScript on the server. A request that uses one is refused with 403, nested anywhere
+# in them. The aggregation pipeline of a PATCH request is checked by updatePipelineSecurityChecker
+# against the aggregationSecurity blacklists below.
 filterOperatorsBlacklist:
-  blacklist: ["$where"]
+  blacklist: ["$where", "$function", "$accumulator"]
   enabled: true
 
-# Aggregation pipeline security settings
+# Aggregation pipeline security settings. They apply to the aggregations declared on collections,
+# to change streams, to GraphQL apps and, through updatePipelineSecurityChecker, to the aggregation
+# pipeline of a PATCH request
 aggregationSecurity:
   enabled: true
   # Block dangerous pipeline stages that can access other databases or execute code
@@ -562,6 +606,12 @@ aggregationSecurity:
   allowCrossDatabaseOperations: false
   # Control JavaScript execution in aggregation pipelines
   allowJavaScriptExecution: false
+
+# updatePipelineSecurityChecker refuses with 403 a PATCH whose body is an aggregation pipeline that
+# the aggregationSecurity blacklists forbid. Enabled by default; disable it only where
+# aggregationSecurity is disabled too
+# updatePipelineSecurityChecker:
+#   enabled: true
 
 # bruteForceAttackGuard defends from brute force password cracking attacks
 # by returning `429 Too Many Requests` when more than
@@ -581,6 +631,18 @@ bruteForceAttackGuard:
   # 0 -> k.k.k.k
   # 2 -> y.y.y.y
   x-forwarded-for-value-from-last-element: 0
+  # A server reached through more than one entry, each with its own chain of proxies, finds the
+  # client at a different position on each: the first override whose predicate matches decides.
+  # The predicate must tell the entries apart by something a client cannot forge, e.g. a host only
+  # one entry forwards.
+  # x-forwarded-for-overrides:
+  #   - predicate: regex[pattern='.*\.example\.app', value='%{i,Host}', full-match=true]
+  #     value-from-last-element: 1
+  # Mail an alarm when a source gets blocked, with the emails provider configured; at most one
+  # mail per source every notify-cooldown-minutes. The log has it anyway, on one line that starts
+  # with "Brute force guard:".
+  # notify-email: security@example.com
+  # notify-cooldown-minutes: 60
 
 # Sets the X-Powered-By: restheart.org response header
 xPoweredBy:
@@ -651,6 +713,28 @@ requestsMetricsCollector:
 
 jvmMetricsCollector:
   enabled: false
+
+# Logs a thread dump, virtual threads included, when blocking requests stop being served: every
+# interval-seconds a platform thread hands the request executor an empty task, and if it has not
+# started threshold-seconds later the dump goes to the log, once per episode. For containers with
+# no shell to run jcmd from, where the log is the only thing left to read.
+# halt-after-seconds > 0: still not serving that long after the probe, the process halts with
+# status 70 for its orchestrator to replace it (ECS, Kubernetes). A stuck process does not recover.
+# notify-email: also mail the report to this address, when the emails provider is configured.
+workersWatchdog:
+  enabled: false
+  interval-seconds: 10
+  threshold-seconds: 30
+  halt-after-seconds: 0
+  notify-email: null
+
+# Runs a request through this server's handler chain in-process, without a socket, for plugins
+# such as the MCP service. An in-process request gets the same connection-options as a request
+# from the network, MAX_ENTITY_SIZE and the timeouts included.
+# timeout-seconds: how long a caller waits for the whole response. The caller parks a virtual
+# thread, so waiting costs nothing; the timeout only drops a connection whose response never comes.
+in-process-dispatcher:
+  timeout-seconds: 600
 
 # Base configuration for core module
 core:

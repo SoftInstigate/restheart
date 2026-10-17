@@ -29,9 +29,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -39,10 +41,12 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.configuration.ConfigurationException;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
+import org.restheart.security.tokens.JwtTokenManager;
 import org.restheart.security.ApiKeyCredential;
 import org.restheart.security.MongoRealmAccount;
 import org.slf4j.Logger;
@@ -83,6 +87,30 @@ import io.undertow.security.idm.Credential;
  * <p>A key document naming no roles produces an account with no roles. It must
  * never fall back to the user's.
  *
+ * <h2>The database is chosen per request</h2>
+ *
+ * <p>The {@value #OVERRIDE_KEYS_DB} attached parameter, set by an interceptor at
+ * {@code REQUEST_BEFORE_AUTH}, names the database to look the key up in, as
+ * {@code override-users-db} does for {@code mongoRealmAuthenticator}. A key is
+ * then found only in its own tenant's database, and works only there.
+ *
+ * <p>There is no fallback to {@code override-users-db}: keys living apart from
+ * users is a supported layout, and a fallback would silently move them. Nor is
+ * there an override for the collection, for the reason
+ * {@code mongoRealmAuthenticator} has none for {@code users-collection}: the
+ * collection is part of the schema, the database is the tenant.
+ *
+ * <h2>Attached properties, as for a password login</h2>
+ * <p>{@code attached-props} names request parameters to copy onto the account,
+ * exactly as {@code mongoRealmAuthenticator} does. A deployment that attaches
+ * per-request facts before authentication — a multi-tenant one attaches the
+ * node the request arrived on — needs them on every account it authenticates,
+ * whatever the credential: they are what its guards compare, and what a token
+ * minted from the account has to carry. Left off, an account from a key would
+ * be the one kind that lacks them.
+ * <p>They are copied onto a copy. The account built from the key document is
+ * what the cache holds, and a property that came from one request must not be
+ * found on the account by the next.
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongoApiKeyAuthenticator",
@@ -93,6 +121,17 @@ public class MongoApiKeyAuthenticator implements Authenticator {
 
     private static final String SHA_256 = "SHA-256";
     private static final char[] HEX = "0123456789abcdef".toCharArray();
+
+    /** The attached parameter naming the database to look a key up in. */
+    public static final String OVERRIDE_KEYS_DB = "override-keys-db";
+
+    /**
+     * What a verification is cached under. The hash alone is not enough: the
+     * same key checked against two databases is two different questions, and
+     * answering the second from the first would make the override cosmetic.
+     */
+    record KeyRef(String db, String hash) {
+    }
 
     @Inject("config")
     private Map<String, Object> config;
@@ -107,8 +146,9 @@ public class MongoApiKeyAuthenticator implements Authenticator {
     private String propRoles;
     private String propExpires;
     private boolean trackLastUsed;
+    private List<String> attachedProps = null;
 
-    private LoadingCache<String, MongoRealmAccount> keysCache = null;
+    private LoadingCache<KeyRef, MongoRealmAccount> keysCache = null;
 
     @OnInit
     public void init() throws ConfigurationException {
@@ -119,6 +159,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
         this.propRoles = argOrDefault(config, "prop-roles", "roles");
         this.propExpires = argOrDefault(config, "prop-expires", "expiresAt");
         this.trackLastUsed = argOrDefault(config, "track-last-used", true);
+        this.attachedProps = argOrDefault(config, "attached-props", null);
 
         final boolean cacheEnabled = argOrDefault(config, "cache-enabled", true);
 
@@ -142,9 +183,91 @@ public class MongoApiKeyAuthenticator implements Authenticator {
         }
     }
 
+    /**
+     * Verifies the key against the configured {@code keys-db}, ignoring any
+     * per-request override. Use {@link #verify(Request, Credential)} where the
+     * request is at hand.
+     */
     @Override
     public Account verify(final Credential credential) {
+        return verifyIn(this.keysDb, credential);
+    }
+
+    /**
+     * Verifies the key against the database the request resolves to: the
+     * {@value #OVERRIDE_KEYS_DB} attached parameter when present, the
+     * configured {@code keys-db} otherwise.
+     */
+    public Account verify(final Request<?> req, final Credential credential) {
+        final var account = verifyIn(getKeysDb(req), credential);
+
+        return account instanceof MongoRealmAccount mra ? withAttachedParams(req, mra) : account;
+    }
+
+    /**
+     * The account with the configured {@code attached-props} copied from the
+     * request, or the account itself when there is nothing to copy.
+     *
+     * <p>A new account, not the given one: the given one may be the cache's,
+     * shared by every request that presents the same key.
+     */
+    // package-private so the rule can be pinned by a test
+    MongoRealmAccount withAttachedParams(final Request<?> req, final MongoRealmAccount account) {
+        if (this.attachedProps == null || this.attachedProps.isEmpty() || req == null || account.properties() == null) {
+            return account;
+        }
+
+        final var attached = req.attachedParams();
+
+        if (attached == null) {
+            return account;
+        }
+
+        final var props = account.properties().clone();
+
+        for (final var name : this.attachedProps) {
+            final var value = attached.get(name);
+
+            if (value == null) {
+                continue;
+            }
+
+            props.put(name, value instanceof BsonValue bv ? bv : new BsonString(value.toString()));
+        }
+
+        return new MongoRealmAccount(account.db(), account.getPrincipal().getName(), new char[0], account.getRoles(), props);
+    }
+
+    /**
+     * The database a key is looked up in for this request.
+     *
+     * <p>An override that is present but unusable — blank, or not a string —
+     * yields {@code null}, and the key is refused. It is never read as absent:
+     * that would look the key up in the configured {@code keys-db}, and a
+     * resolver that failed to name a tenant would silently accept the keys of
+     * the default one.
+     *
+     * @param req the request
+     * @return the keys database, taking into account the {@value #OVERRIDE_KEYS_DB}
+     *         attached parameter; {@code null} when the override is unusable
+     */
+    public String getKeysDb(final Request<?> req) {
+        final Object override = req == null ? null : req.attachedParam(OVERRIDE_KEYS_DB);
+
+        if (override == null) {
+            return this.keysDb;
+        }
+
+        return override instanceof final String db && !db.isBlank() ? db : null;
+    }
+
+    private Account verifyIn(final String db, final Credential credential) {
         if (!(credential instanceof final ApiKeyCredential apiKey)) {
+            return null;
+        }
+
+        if (db == null) {
+            LOGGER.warn("Refusing API key: {} is set but names no usable database", OVERRIDE_KEYS_DB);
             return null;
         }
 
@@ -159,17 +282,19 @@ public class MongoApiKeyAuthenticator implements Authenticator {
             return null;
         }
 
+        final var ref = new KeyRef(db, hash);
+
         final var account = this.keysCache == null
-                ? findKey(hash)
-                : this.keysCache.getLoading(hash).orElse(null);
+                ? findKey(ref)
+                : this.keysCache.getLoading(ref).orElse(null);
 
         if (account == null) {
-            LOGGER.debug("API key not found");
+            LOGGER.debug("API key not found in {}.{}", db, this.keysCollection);
             return null;
         }
 
         if (this.trackLastUsed) {
-            touch(hash);
+            touch(ref);
         }
 
         return account;
@@ -194,17 +319,19 @@ public class MongoApiKeyAuthenticator implements Authenticator {
      * Loads the key document and builds the account, or {@code null} when the
      * key is unknown or spent.
      */
-    private MongoRealmAccount findKey(final String hash) {
-        final var coll = mclient.getDatabase(this.keysDb)
-                .getCollection(this.keysCollection)
-                .withDocumentClass(BsonDocument.class);
-
+    private MongoRealmAccount findKey(final KeyRef ref) {
         final BsonDocument key;
 
+        // getDatabase() inside the try: it throws for a name MongoDB rejects,
+        // and a per-request override can carry one. That is a refusal, not a 500.
         try {
-            key = coll.find(eq(this.propHash, hash)).first();
+            key = mclient.getDatabase(ref.db())
+                    .getCollection(this.keysCollection)
+                    .withDocumentClass(BsonDocument.class)
+                    .find(eq(this.propHash, ref.hash()))
+                    .first();
         } catch (final Throwable t) {
-            LOGGER.error("Error finding API key in {}.{}", this.keysDb, this.keysCollection, t);
+            LOGGER.error("Error finding API key in {}.{}", ref.db(), this.keysCollection, t);
             return null;
         }
 
@@ -219,7 +346,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
             return null;
         }
 
-        return accountOf(key);
+        return accountOf(ref.db(), key);
     }
 
     /**
@@ -254,8 +381,17 @@ public class MongoApiKeyAuthenticator implements Authenticator {
      * {@code prop-principal} says where to read the principal <em>from</em> in
      * this collection, which is a different question from what to call it once
      * it is on the account.
+     *
+     * <h3>And the database the key was found in, as {@code authDb}</h3>
+     *
+     * <p>That is what tells a tenant's key from another's once it has become a
+     * JWT: the token carries {@code authDb} as one from a password login does,
+     * so a deployment can check it against the tenant the request is for, and
+     * the token cache does not hand one tenant's token to another. It is safe
+     * on renewal because the {@code apiKey} marker stops the account being
+     * re-read from the users store before {@code authDb} is ever looked at.
      */
-    MongoRealmAccount accountOf(final BsonDocument key) {
+    MongoRealmAccount accountOf(final String db, final BsonDocument key) {
         final var principal = key.get(this.propPrincipal);
 
         if (principal == null || !principal.isString() || principal.asString().getValue().isBlank()) {
@@ -265,11 +401,18 @@ public class MongoApiKeyAuthenticator implements Authenticator {
 
         final var name = principal.asString().getValue();
 
-        return new MongoRealmAccount(this.keysDb,
+        // The apiKey marker travels with the account so that a token issued to it can be told
+        // apart later. Renewal re-reads the account from the users store, which would replace the
+        // roles this key was deliberately given with the user's own — widening a credential whose
+        // whole point is being narrower than its owner. The marker is the rule: authDb, which the
+        // account now carries too, says which tenant the key belongs to, not what may be re-read.
+        return new MongoRealmAccount(db,
                 name,
                 new char[0],
                 rolesOf(key),
-                new BsonDocument("_id", new BsonString(name)));
+                new BsonDocument("_id", new BsonString(name))
+                        .append("authDb", new BsonString(db))
+                        .append(JwtTokenManager.FROM_API_KEY, BsonBoolean.TRUE));
     }
 
     /**
@@ -318,12 +461,12 @@ public class MongoApiKeyAuthenticator implements Authenticator {
      * <p>Deliberately fire-and-forget: this is bookkeeping, and a failure to
      * write it must never turn a valid key into a rejected one.
      */
-    private void touch(final String hash) {
+    private void touch(final KeyRef ref) {
         try {
-            mclient.getDatabase(this.keysDb)
+            mclient.getDatabase(ref.db())
                     .getCollection(this.keysCollection)
                     .withDocumentClass(BsonDocument.class)
-                    .updateOne(eq(this.propHash, hash), currentDate("lastUsedAt"));
+                    .updateOne(eq(this.propHash, ref.hash()), currentDate("lastUsedAt"));
         } catch (final Throwable t) {
             LOGGER.warn("Could not update lastUsedAt for an API key", t);
         }

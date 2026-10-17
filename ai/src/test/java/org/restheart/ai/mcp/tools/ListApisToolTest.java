@@ -21,24 +21,31 @@
 package org.restheart.ai.mcp.tools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.ai.mcp.RegisteredMcpAware;
+import org.restheart.plugins.mcp.McpScopeProvider;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
 
 public class ListApisToolTest {
 
+    /** These tests are about listing, not about who may see what — everything is visible. */
+    private static final Predicate<McpResource> VISIBLE = r -> true;
+
     private static CachedResourceLookup lookup(RegisteredMcpAware... entries) {
-        return new CachedResourceLookup(McpAwareRegistry.of(List.of(entries)), Duration.ofMinutes(5), () -> {
+        return new CachedResourceLookup(McpAwareRegistry.of(List.of(entries)), Duration.ofMinutes(5), key -> {
         });
     }
 
@@ -51,6 +58,45 @@ public class ListApisToolTest {
         };
     }
 
+    /**
+     * An action the caller's rules refuse is not offered — the same rule the resource itself is
+     * listed by — while one they might allow is, with what the catalogue knows about it.
+     */
+    @Test
+    public void refusedActionsAreWithheld_andTheTransportsAgree() {
+        var resource = McpResource.builder()
+                .uri("https://host/ledger").kind("collection").description("A ledger.")
+                .action("query", a -> a.method("GET").pathTemplate("").readable(true))
+                .action("create", a -> a.method("POST"))
+                .action("drop", a -> a.method("DELETE").pathTemplate(""))
+                .transport(McpResource.Transport.HTTP)
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/ledger", Map.of()));
+
+        var described = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/ledger",
+                null, null, null, null, VISIBLE,
+                (r, action) -> switch (action) {
+                    case "drop" -> Map.of("permitted", "no", "note", "no rule of yours covers it");
+                    case "create" -> Map.of("permitted", "unknown", "note", "depends on what the call carries");
+                    default -> Map.of("permitted", "yes");
+                });
+
+        @SuppressWarnings("unchecked")
+        var actions = (Map<String, Object>) described.get("actions");
+        assertEquals(Set.of("query", "create"), actions.keySet(), "a refused action must not be offered");
+
+        @SuppressWarnings("unchecked")
+        var create = (Map<String, Object>) actions.get("create");
+        assertEquals("depends on what the call carries", create.get("note"),
+                "an undetermined action is offered with what is known about it");
+        assertFalse(create.containsKey("permitted"), "being offered is the answer; repeating it is noise");
+
+        @SuppressWarnings("unchecked")
+        var transports = (List<Map<String, Object>>) described.get("transports");
+        assertFalse(transports.get(0).get("actions").toString().contains("drop"),
+                "the transports must not name an action the description withheld: " + transports);
+    }
+
     private static McpResource resource(String uri, String kind, String description) {
         return McpResource.builder().uri(uri).kind(kind).description(description).build();
     }
@@ -59,13 +105,52 @@ public class ListApisToolTest {
         return new ListApisTool(lookup(entries));
     }
 
+    /**
+     * With nothing known about the caller, every action the kind affords is described.
+     *
+     * <p>Withholding needs a reason, and the only reason is a rule of that caller's that refuses
+     * the action. No verdicts means no rules were read, and nothing is taken away on a hunch.
+     */
+    @Test
+    public void withNothingKnownAboutTheCallerEveryActionIsDescribed() {
+        var resource = McpResource.builder()
+                .uri("https://host/ledger")
+                .action("query", a -> a.method("GET").readable(true))
+                .action("create", a -> a.method("POST"))
+                .action("delete", a -> a.method("DELETE").pathTemplate("/{id}"))
+                .example("append an event", "create", Map.of("body", Map.of("type", "offer")))
+                .example("drop one", "delete", Map.of("id", "x"))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+
+        var described = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/ledger",
+                null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
+
+        @SuppressWarnings("unchecked")
+        var actions = (Map<String, Object>) described.get("actions");
+        assertEquals(Set.of("query", "create", "delete"), actions.keySet());
+
+        @SuppressWarnings("unchecked")
+        var examples = (List<Map<String, Object>>) described.get("examples");
+        assertEquals(2, examples.size(), "an example belongs to its action, and every action is listed");
+
+        @SuppressWarnings("unchecked")
+        var transports = (List<Map<String, Object>>) described.get("transports");
+        transports.forEach(t -> {
+            @SuppressWarnings("unchecked")
+            var names = (List<String>) t.get("actions");
+            assertEquals(Set.copyOf(names), actions.keySet(),
+                    "the transports and the actions map cannot say different things");
+        });
+    }
+
     @Test
     public void catalog_flattensResourcesAcrossPlugins() {
         var tool = toolWith(
                 new RegisteredMcpAware(fixed(resource("https://host/a", "service", "A")), "p1", "/a", Map.of()),
                 new RegisteredMcpAware(fixed(resource("https://host/b", "service", "B"), resource("https://host/c", "service", "C")), "p2", "/b", Map.of()));
 
-        var result = tool.list(null, "https://host", null, null, null, null, null);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -78,10 +163,110 @@ public class ListApisToolTest {
     }
 
     @Test
+    public void catalog_namesEachActionWithTheParamsItCannotDoWithout() {
+        // from the catalogue to call_api in one step: which action, and what it needs
+        var resource = McpResource.builder()
+                .uri("https://host/ledger/_aggrs/myState")
+                .kind("aggregation")
+                .description("where you stand")
+                .action("execute", a -> a.method("GET").param("trader", "string", true).param("secret", "string", true)
+                        .param("jsonMode", "string", false))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
+
+        @SuppressWarnings("unchecked")
+        var entry = ((List<Map<String, Object>>) result.get("resources")).get(0);
+        assertEquals(Map.of("execute", List.of("trader", "secret")), entry.get("actions"));
+    }
+
+    @Test
+    public void catalog_aWriteNeedsWhatItsRuleReadsAndABody() {
+        // 11 players of 12 read "create": [] as "takes nothing" on a ledger that needed trader,
+        // secret and a body for every write
+        var resource = McpResource.builder()
+                .uri("https://host/ledger")
+                .kind("collection")
+                .action("create", a -> a.method("POST"))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+        ListApisTool.Verdicts signed = (r, name) -> Map.of("permitted", "unknown", "depends_on", List.of("trader", "secret"));
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, signed);
+
+        @SuppressWarnings("unchecked")
+        var entry = ((List<Map<String, Object>>) result.get("resources")).get(0);
+        assertEquals(Map.of("create", List.of("trader", "secret", "body")), entry.get("actions"));
+    }
+
+    @Test
+    public void catalog_namesTheArgumentsTheFilterReads() {
+        var resource = McpResource.builder()
+                .uri("https://host/objectives")
+                .kind("collection")
+                .action("query", a -> a.method("GET").readable(true))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+        ListApisTool.Verdicts filtered = (r, name) -> Map.of("permitted", "yes", "filtered_by", List.of("trader", "secret"));
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, filtered);
+
+        @SuppressWarnings("unchecked")
+        var entry = ((List<Map<String, Object>>) result.get("resources")).get(0);
+        assertEquals(Map.of("query", List.of("trader", "secret")), entry.get("actions"));
+    }
+
+    @Test
+    public void catalog_leavesOutWhatTheCallersRulesRefuse_asTheResourceDoes() {
+        var resource = McpResource.builder()
+                .uri("https://host/ledger")
+                .kind("collection")
+                .action("query", a -> a.method("GET").readable(true))
+                .action("drop", a -> a.method("DELETE"))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+        ListApisTool.Verdicts refuseDrop = (r, name) -> "drop".equals(name) ? Map.of("permitted", "no") : Map.of("permitted", "yes");
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, refuseDrop);
+
+        @SuppressWarnings("unchecked")
+        var entry = ((List<Map<String, Object>>) result.get("resources")).get(0);
+        assertEquals(Map.of("query", List.of()), entry.get("actions"));
+    }
+
+    @Test
+    public void describe_takesWhatTheServerSetsOutOfTheRequiredFields_inEveryBranch() {
+        // the collection's schema is the stored document's: it requires what a mergeRequest writes
+        var schema = Map.<String, Object>of("oneOf", List.of(
+                Map.of("properties", Map.of("type", Map.of("const", "offer")), "required", List.of("_id", "type", "actor", "give")),
+                Map.of("properties", Map.of("type", Map.of("const", "claim")), "required", List.of("_id", "type", "actor"))));
+        var resource = McpResource.builder()
+                .uri("https://host/ledger")
+                .kind("collection")
+                .action("create", a -> a.method("POST").bodySchema(schema))
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of()));
+        ListApisTool.Verdicts serverSetsActor = (r, name) -> Map.of("permitted", "yes", "server_sets", List.of("actor", "ts"));
+
+        var described = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/ledger",
+                null, null, null, null, VISIBLE, serverSetsActor);
+
+        @SuppressWarnings("unchecked")
+        var create = (Map<String, Object>) ((Map<String, Object>) described.get("actions")).get("create");
+        assertEquals(List.of("actor", "ts"), create.get("server_sets"), "said, so the agent knows why they are not required");
+
+        @SuppressWarnings("unchecked")
+        var branches = (List<Map<String, Object>>) ((Map<String, Object>) create.get("body_schema")).get("oneOf");
+        assertEquals(List.of("_id", "type", "give"), branches.get(0).get("required"));
+        assertEquals(List.of("_id", "type"), branches.get(1).get("required"));
+    }
+
+    @Test
     public void resourceMode_returnsFullContext_ignoresOtherFilters() {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/a", "collection", "A")), "p1", "/a", Map.of()));
 
-        var result = tool.list(null, "https://host", "https://host/a", "irrelevant", "irrelevant", 1, "irrelevant");
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/a", "irrelevant", "irrelevant", 1, "irrelevant", VISIBLE, ListApisTool.Verdicts.NONE);
 
         assertEquals("https://host/a", result.get("uri"));
         assertEquals("collection", result.get("kind"));
@@ -90,7 +275,7 @@ public class ListApisToolTest {
     @Test
     public void resourceMode_unknownUri_throws() {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/a", "service", "A")), "p1", "/a", Map.of()));
-        assertThrows(UnknownResourceException.class, () -> tool.list(null, "https://host", "https://host/does-not-exist", null, null, null, null));
+        assertThrows(UnknownResourceException.class, () -> tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/does-not-exist", null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE));
     }
 
     @Test
@@ -100,7 +285,7 @@ public class ListApisToolTest {
                         resource("https://host/products", "collection", "Catalog items")),
                 "p1", "/x", Map.of()));
 
-        var result = tool.list(null, "https://host", null, "ORDER", null, null, null);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, "ORDER", null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -114,7 +299,7 @@ public class ListApisToolTest {
                 fixed(resource("https://host/a", "collection", "A"), resource("https://host/b", "graphql-app", "B")),
                 "p1", "/x", Map.of()));
 
-        var result = tool.list(null, "https://host", null, null, "GraphQL-App", null, null);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, "GraphQL-App", null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");
@@ -128,14 +313,14 @@ public class ListApisToolTest {
                 fixed(resource("https://host/a", "s", null), resource("https://host/b", "s", null), resource("https://host/c", "s", null)),
                 "p1", "/x", Map.of()));
 
-        var firstPage = tool.list(null, "https://host", null, null, null, 2, null);
+        var firstPage = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, 2, null, VISIBLE, ListApisTool.Verdicts.NONE);
         @SuppressWarnings("unchecked")
         var firstResources = (List<Map<String, Object>>) firstPage.get("resources");
         assertEquals(2, firstResources.size());
         assertEquals("https://host/a", firstResources.get(0).get("uri"));
         assertEquals("2", firstPage.get("next_cursor"));
 
-        var secondPage = tool.list(null, "https://host", null, null, null, 2, (String) firstPage.get("next_cursor"));
+        var secondPage = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, 2, (String) firstPage.get("next_cursor"), VISIBLE, ListApisTool.Verdicts.NONE);
         @SuppressWarnings("unchecked")
         var secondResources = (List<Map<String, Object>>) secondPage.get("resources");
         assertEquals(1, secondResources.size());
@@ -144,9 +329,36 @@ public class ListApisToolTest {
     }
 
     @Test
+    public void catalog_omitsWhatTheCallerCannotSee() {
+        var tool = toolWith(new RegisteredMcpAware(
+                fixed(resource("https://host/allowed", "collection", "A"), resource("https://host/denied", "collection", "B")),
+                "p1", "/x", Map.of()));
+
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null,
+                r -> r.uri().endsWith("/allowed"), ListApisTool.Verdicts.NONE);
+
+        @SuppressWarnings("unchecked")
+        var resources = (List<Map<String, Object>>) result.get("resources");
+        assertEquals(1, resources.size());
+        assertEquals("https://host/allowed", resources.get(0).get("uri"));
+    }
+
+    /**
+     * Asking for one resource by URI must obey the same filter as the catalog: otherwise the
+     * drill-down hands back in full what the listing was careful to leave out.
+     */
+    @Test
+    public void resourceMode_hiddenResourceIsUnknown() {
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/denied", "collection", "B")), "p1", "/x", Map.of()));
+
+        assertThrows(UnknownResourceException.class,
+                () -> tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/denied", null, null, null, null, r -> false, ListApisTool.Verdicts.NONE));
+    }
+
+    @Test
     public void emptyRegistry_emptyCatalog() {
         var tool = new ListApisTool(lookup());
-        var result = tool.list(null, "https://host", null, null, null, null, null);
+        var result = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, null, null, null, null, null, VISIBLE, ListApisTool.Verdicts.NONE);
 
         @SuppressWarnings("unchecked")
         var resources = (List<Map<String, Object>>) result.get("resources");

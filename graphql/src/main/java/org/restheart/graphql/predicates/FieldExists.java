@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.jxpath.JXPathContext;
+import org.restheart.security.EvaluationScope;
 import org.restheart.utils.BsonUtils;
 
 import com.google.common.collect.Sets;
@@ -51,7 +52,13 @@ public class FieldExists implements PredicateOverJxPathCtx {
         return this.fields.stream().allMatch(f -> BsonUtils.get(ctx, f).isPresent());
     }
 
-    public static class Builder implements PredicateBuilder {
+    public static class Builder implements PredicateBuilder, EvaluationScope {
+        /** Reads the request this listing cannot have yet, so it never discriminates in a catalog. */
+        @Override
+        public Scope scope() {
+            return Scope.CALL;
+        }
+
         @Override
         public String name() {
             return "field-exists";

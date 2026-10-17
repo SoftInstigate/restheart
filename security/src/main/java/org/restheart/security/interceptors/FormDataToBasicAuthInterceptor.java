@@ -47,7 +47,7 @@ import io.undertow.util.Headers;
  */
 @RegisterPlugin(
         name = "formDataToBasicAuthInterceptor",
-        description = "Converts OAuth 2.0 form data to Basic Auth header for /token endpoints",
+        description = "Converts OAuth 2.0 form data to an Authorization header for /token and /authorize",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT,
         enabledByDefault = true
 )
@@ -65,6 +65,7 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
     private static final String GRANT_TYPE_PASSWORD = "password";
     private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
     private static final String GRANT_TYPE_AUTHORIZATION_CODE = "authorization_code";
+    private static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
     private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().build();
 
     @Override
@@ -108,6 +109,20 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                 // POST /authorize: extract username+password, inject Basic Auth, mark attachment
                 if (AUTHORIZE_ENDPOINT.equals(path)) {
                     e.putAttachment(FORM_CREDENTIALS_FOR_AUTHORIZE, Boolean.TRUE);
+
+                    // A person who signed in with a social provider has a token, not a password:
+                    // the callback delivered it to the sign-in page, which puts it in the form
+                    // because completing the flow must be a browser navigation (the response is a
+                    // 302 the browser has to follow), and a navigation cannot carry a header.
+                    var accessToken = getFormValue(formData, "access_token");
+
+                    if (accessToken != null && !accessToken.isEmpty()) {
+                        e.getRequestHeaders().put(Headers.AUTHORIZATION, "Bearer " + accessToken);
+                        LOGGER.debug("Converted the form's access_token to a Bearer header for /authorize");
+                        ByteArrayRequest.init(e);
+                        return;
+                    }
+
                     var username = getFormValue(formData, "username");
                     var password = getFormValue(formData, "password");
                     if (username != null && !username.isEmpty() && password != null && !password.isEmpty()) {
@@ -128,16 +143,19 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                     var grantType = getFormValue(formData, "grant_type");
 
                     // Validate grant_type
-                    if (grantType == null || (!GRANT_TYPE_PASSWORD.equals(grantType) && !GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType) && !GRANT_TYPE_AUTHORIZATION_CODE.equals(grantType))) {
-                        LOGGER.debug("Invalid or missing grant_type for {}, expected 'password', 'client_credentials', or 'authorization_code', got '{}'",
+                    if (grantType == null || (!GRANT_TYPE_PASSWORD.equals(grantType) && !GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType)
+                            && !GRANT_TYPE_AUTHORIZATION_CODE.equals(grantType) && !GRANT_TYPE_REFRESH_TOKEN.equals(grantType))) {
+                        LOGGER.debug("Invalid or missing grant_type for {}, expected 'password', 'client_credentials', 'authorization_code' or 'refresh_token', got '{}'",
                                 path, grantType);
-                        throw new IllegalArgumentException("Invalid grant_type. Must be 'password', 'client_credentials', or 'authorization_code'");
+                        throw new IllegalArgumentException("Invalid grant_type. Must be 'password', 'client_credentials', 'authorization_code' or 'refresh_token'");
                     }
 
                     // authorization_code grant: no Basic Auth conversion needed.
                     // FormData attachment is already stored by the parser; AuthTokenService will read it.
-                    if (GRANT_TYPE_AUTHORIZATION_CODE.equals(grantType)) {
-                        LOGGER.debug("authorization_code grant for {}: skipping Basic Auth conversion", path);
+                    // Neither grant carries user credentials: one presents an authorization code,
+                    // the other the token being renewed. Both are read from the form by AuthTokenService.
+                    if (GRANT_TYPE_AUTHORIZATION_CODE.equals(grantType) || GRANT_TYPE_REFRESH_TOKEN.equals(grantType)) {
+                        LOGGER.debug("{} grant for {}: skipping Basic Auth conversion", grantType, path);
                         ByteArrayRequest.init(e);
                         return;
                     }

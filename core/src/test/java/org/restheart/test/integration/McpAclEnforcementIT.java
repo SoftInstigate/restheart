@@ -87,16 +87,14 @@ public class McpAclEnforcementIT extends AbstactIT {
         post("{\"item\":\"journal\",\"owner\":\"aclowner1\",\"secret\":\"n2\"}");
         post("{\"item\":\"stapler\",\"owner\":\"aclowner2\",\"secret\":\"n3\"}");
 
-        // past CachedResourceLookup's TTL (conf-overrides sets it to 1s)
-        Thread.sleep(1_500);
-
         mcp = new McpTestClient(BASE, OWNER1_BASIC);
         mcp.initialize();
+        mcp.awaitResource(TEST_COLL);
     }
 
     @Test
     public void collectionRead_surfacesTheSameRowsAsTheEquivalentRestGet() throws Exception {
-        var viaMcp = itemsIn(mcp.readResource(TEST_COLL));
+        var viaMcp = itemsIn(mcp.readResource(TEST_COLL + "?rep=s"));
         var viaRest = itemsIn(restGet(TEST_COLL));
 
         assertEquals(viaRest, viaMcp, "MCP and REST disagree on which rows this principal may read");
@@ -131,7 +129,7 @@ public class McpAclEnforcementIT extends AbstactIT {
 
     @Test
     public void count_countsOnlyTheRowsTheReadFilterAllows() throws Exception {
-        var viaMcp = BsonDocument.parse(mcp.readResource(TEST_COLL + "/_size")).getNumber("size").intValue();
+        var viaMcp = BsonDocument.parse(mcp.readResource(TEST_COLL + "/_size")).getNumber("_size").intValue();
         var viaRest = BsonDocument.parse(restGet(TEST_COLL + "/_size")).getNumber("_size").intValue();
 
         assertEquals(viaRest, viaMcp, "MCP and REST disagree on how many rows this principal may read");
@@ -139,13 +137,20 @@ public class McpAclEnforcementIT extends AbstactIT {
     }
 
     @Test
-    public void singleDocumentRead_ofAnotherOwnersDocument_returnsNothing() throws Exception {
+    public void singleDocumentRead_ofAnotherOwnersDocument_isNotFound() throws Exception {
         var id = idOfStapler();
 
-        var text = mcp.readResource(TEST_COLL + "/" + id);
+        // the read runs as the GET it stands for: a document the readFilter excludes is a 404 on
+        // REST, indistinguishable from one that does not exist, and so it is here — a
+        // resource-not-found error, never the document
+        var envelope = mcp.rpc("resources/read", """
+                {"uri":"%s/%s"}
+                """.formatted(TEST_COLL, id));
 
-        assertFalse(text.contains("stapler"),
-                "the read filter did not apply to a single-document read: " + text);
+        assertTrue(envelope.containsKey("error"), "the read filter did not apply to a single-document read: " + envelope.toJson());
+        assertEquals(-32002, envelope.getDocument("error").getInt32("code").getValue(),
+                "an excluded document must look like a missing one: " + envelope.toJson());
+        assertFalse(envelope.toJson().contains("stapler"), "the read filter did not apply: " + envelope.toJson());
     }
 
     @Test
@@ -155,8 +160,11 @@ public class McpAclEnforcementIT extends AbstactIT {
         // does not (no aggregation handler consults request.getFilter()), so both readers return
         // every owner's rows with "secret" removed. Asserted as an equivalence rather than as a
         // fixed expectation, so if REST's behaviour ever changes this fails instead of drifting.
+        // a parameterless aggregation is a bare resource: its URI takes no query string, so the
+        // read answers in the deployment's representation (HAL here), and so does the GET it is
+        // compared with
         var viaMcp = mcp.readResource(TEST_COLL + "/_aggrs/everything");
-        var viaRest = restGet(TEST_COLL + "/_aggrs/everything");
+        var viaRest = Unirest.get(TEST_COLL + "/_aggrs/everything").basicAuth("aclowner1", "secret").asString().getBody();
 
         assertEquals(itemsIn(viaRest), itemsIn(viaMcp),
                 "MCP and REST disagree on an aggregation's rows");
@@ -176,16 +184,9 @@ public class McpAclEnforcementIT extends AbstactIT {
         return Unirest.get(url).basicAuth("aclowner1", "secret").queryString("rep", "s").asString().getBody();
     }
 
-    /** The {@code item} values in a payload, sorted — the shape-independent way to compare two readers. */
+    /** The {@code item} values in a payload, a plain array ({@code rep=s}) or HAL's {@code _embedded}, sorted — the shape-independent way to compare two readers. */
     private static List<String> itemsIn(String payload) {
-        var trimmed = payload.trim();
-        BsonArray docs;
-        if (trimmed.startsWith("[")) {
-            docs = BsonArray.parse(trimmed);
-        } else {
-            docs = BsonDocument.parse(trimmed).getArray("content");
-        }
-        return docs.stream()
+        return McpTestClient.documentsIn(payload).stream()
                 .map(d -> d.asDocument().getString("item").getValue())
                 .sorted()
                 .toList();

@@ -20,6 +20,8 @@
 package org.restheart.exchange;
 
 import static org.restheart.exchange.ExchangeKeys.*;
+import org.restheart.utils.BsonUtils;
+
 import static org.restheart.utils.BsonUtils.array;
 import static org.restheart.utils.BsonUtils.document;
 import static org.restheart.utils.URLUtils.removeTrailingSlashes;
@@ -102,6 +104,14 @@ import io.undertow.util.PathTemplateMatch;
  */
 public class MongoRequest extends BsonRequest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoRequest.class);
+
+    /**
+     * Name of the request attached param that an interceptor sets when it has already written
+     * the result of an aggregation: the aggregation handler then leaves the response as it is,
+     * and the RESPONSE interceptors run on it as on any other aggregation. Setting the request
+     * in error instead would skip them too.
+     */
+    public static final String AGGREGATION_ANSWERED = "aggregation-answered";
 
     /** The URI pattern that matches this request (from path template matching). */
     private final String whereUri;
@@ -186,6 +196,12 @@ public class MongoRequest extends BsonRequest {
 
     /** Client session for multi-document transactions. */
     private ClientSessionImpl clientSession = null;
+
+    /**
+     * Set by {@link #startTxn()}. Read by the MongoDB service before the write, to decide whether
+     * this request needs a session with a transaction on it.
+     */
+    private boolean txnRequested = false;
 
     /** The HAL (Hypertext Application Language) formatting mode. */
     private HAL_MODE halMode = HAL_MODE.FULL;
@@ -440,6 +456,25 @@ public class MongoRequest extends BsonRequest {
         return type;
     }
 
+    private static volatile String schemaStore = _SCHEMAS;
+
+    /**
+     * Sets the name of the schema store, the collection holding the JSON schemas. Called once,
+     * from the MongoDB service's {@code schema-store} configuration.
+     *
+     * @param name the collection name
+     */
+    public static void setSchemaStore(String name) {
+        schemaStore = name;
+    }
+
+    /**
+     * @return the name of the schema store, the collection holding the JSON schemas
+     */
+    public static String schemaStore() {
+        return schemaStore;
+    }
+
     static TYPE selectRequestType(String[] pathTokens) {
         TYPE type;
 
@@ -450,7 +485,7 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.DB_SIZE;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
                 type = TYPE.FILES_BUCKET_SIZE;
-            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
+            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(schemaStore)) {
                 type = TYPE.SCHEMA_STORE_SIZE;
             } else if (pathTokens.length == 4) {
                 type = TYPE.COLLECTION_SIZE;
@@ -462,7 +497,7 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.DB_META;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
                 type = TYPE.FILES_BUCKET_META;
-            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
+            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(schemaStore)) {
                 type = TYPE.SCHEMA_STORE_META;
             } else if (pathTokens.length == 4) {
                 type = TYPE.COLLECTION_META;
@@ -506,7 +541,7 @@ public class MongoRequest extends BsonRequest {
             } else {
                 type = TYPE.DOCUMENT;
             }
-        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
+        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(schemaStore)) {
             if (pathTokens.length == 3) {
                 type = TYPE.SCHEMA_STORE;
             } else if (pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
@@ -908,24 +943,13 @@ public class MongoRequest extends BsonRequest {
      * @return the $and composed filter qparam values
      */
     public BsonDocument getFiltersDocument() throws JsonParseException {
-        final var filterQuery = new BsonDocument();
-
-        if (filter != null) {
-            if (filter.size() > 1) {
-                var _filters = new BsonArray();
-
-                filter.stream().forEach(f -> _filters.add(BsonDocument.parse(f)));
-
-                filterQuery.put("$and", _filters);
-            } else if (filter.size() == 1) {
-                // this can throw JsonParseException for invalid filter parameters
-                filterQuery.putAll(BsonDocument.parse(filter.getFirst()));
-            } else {
-                return filterQuery;
-            }
+        if (filter == null) {
+            return new BsonDocument();
         }
 
-        return filterQuery;
+        // parse can throw JsonParseException for an invalid filter parameter — the caller's
+        // problem to report, so it is not caught here
+        return BsonUtils.and(filter.stream().map(BsonDocument::parse).toList());
     }
 
     /**
@@ -1149,6 +1173,35 @@ public class MongoRequest extends BsonRequest {
         } else {
             return documentId;
         }
+    }
+
+    /**
+     * Declares that this request may need to be undone after it has been written, i.e. that a
+     * {@code RESPONSE} interceptor may call {@link MongoResponse#rollback(com.mongodb.client.MongoClient)}.
+     *
+     * <p>Call it at request time, before the write: a transaction cannot be opened around a write
+     * that already happened. The decision is therefore taken on what the request looks like rather
+     * than on its outcome, and is necessarily conservative — a transaction is opened whenever an
+     * undo <em>might</em> be needed, and most of them commit with nothing to undo.
+     *
+     * <p>Where the deployment supports transactions the write runs in one, and the undo is its
+     * abort: nothing is ever written, no change stream event is emitted, and the undo cannot fail
+     * halfway. Where it does not — no replica set — this is a no-op and {@code rollback()} falls
+     * back to a compensating write, with the limits documented there.
+     *
+     * <p>Idempotent. The caller never commits: the transaction is committed for it once every
+     * {@code RESPONSE} interceptor has run, unless one of them asked for the rollback.
+     */
+    public void startTxn() {
+        this.txnRequested = true;
+    }
+
+    /**
+     * @return true if an interceptor asked, with {@link #startTxn()}, to be able to undo this
+     * request's write
+     */
+    public boolean isTxnRequested() {
+        return this.txnRequested;
     }
 
     /**
