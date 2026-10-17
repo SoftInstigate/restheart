@@ -68,7 +68,7 @@ public class FilterOperatorsBlacklist implements Initializer {
         this.registry.registerVeto(req -> {
             if (req instanceof MongoRequest mreq) {
                 return contains(mreq.getFiltersDocument(), blacklist)
-                    || contains(mreq.getProjectionDocument(), blacklist);
+                        || contains(mreq.getProjectionDocument(), blacklist);
             } else {
                 return false; // don't veto
             }

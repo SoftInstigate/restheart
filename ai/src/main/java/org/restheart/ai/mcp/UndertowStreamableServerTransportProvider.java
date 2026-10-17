@@ -509,7 +509,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
      * the call itself runs on a virtual thread of its own.
      */
     private void streamToolCall(McpStreamableServerSession activeSession, McpSchema.JSONRPCRequest rpcReq,
-            UndertowStreamableSessionTransport transport, ByteArrayResponse res, McpTransportContext ctx, String sessionId) {
+                                UndertowStreamableSessionTransport transport, ByteArrayResponse res, McpTransportContext ctx, String sessionId) {
         var exchange = res.getExchange();
         setSseHeaders(exchange);
         exchange.startBlocking();

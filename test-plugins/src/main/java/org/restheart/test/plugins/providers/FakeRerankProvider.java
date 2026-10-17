@@ -24,7 +24,7 @@ public class FakeRerankProvider implements Provider<RerankModel> {
     public RerankModel get(final PluginRecord<?> caller) {
         return (query, documents, topK, request) -> {
             var ranked = new ArrayList<RankedResult>();
-            for (int i = documents.size() - 1, rank = 0; i >= 0 && rank < topK; i--, rank++) {
+            for (int i = documents.size() - 1, rank = 0;i >= 0 && rank < topK;i--, rank++) {
                 ranked.add(new RankedResult(i, 1.0 - rank * 0.1));
             }
             return ranked;

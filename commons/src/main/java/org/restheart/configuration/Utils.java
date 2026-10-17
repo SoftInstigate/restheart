@@ -726,7 +726,7 @@ public class Utils {
      * @param configuration the configuration containing connection options
      * @return the options
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static OptionMap connectionOptions(Configuration configuration) {
         Map<String, Object> options = configuration.getConnectionOptions();
         var builder = OptionMap.builder();

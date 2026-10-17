@@ -84,8 +84,8 @@ public class UpdatePipelineSecurityChecker implements MongoInterceptor {
         // only an update with an aggregation pipeline: a document body is a classic update, where
         // MongoDB evaluates no expression
         return request.isHandledBy("mongo")
-            && request.isPatch()
-            && request.getContent() != null
-            && request.getContent().isArray();
+                && request.isPatch()
+                && request.getContent() != null
+                && request.getContent().isArray();
     }
 }

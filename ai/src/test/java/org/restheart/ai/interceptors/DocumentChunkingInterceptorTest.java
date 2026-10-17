@@ -108,8 +108,8 @@ public class DocumentChunkingInterceptorTest {
                 + "del territorio comunale, le caratteristiche degli edifici, delle loro pertinenze e degli spazi "
                 + "aperti, pubblici e privati, nel rispetto della normativa nazionale e regionale vigente.";
         var words = new java.util.HashSet<>(java.util.List.of(text.split("\\s+")));
-        for (int size : new int[] {15, 30, 47, 100}) {
-            for (int overlap : new int[] {0, 5, 13, 40}) {
+        for (int size : new int[]{15, 30, 47, 100}) {
+            for (int overlap : new int[]{0, 5, 13, 40}) {
                 for (var chunk : DocumentChunkingInterceptor.splitIntoChunks(text, size, overlap)) {
                     for (var word : chunk.split("\\s+")) {
                         assertTrue(words.contains(word), "size " + size + ", overlap " + overlap + ": '" + word + "' is not a word of the text, in [" + chunk + "]");

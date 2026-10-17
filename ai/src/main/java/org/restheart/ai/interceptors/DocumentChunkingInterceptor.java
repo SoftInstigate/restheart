@@ -285,7 +285,7 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
     /** A file to chunk, with all it needs once the upload has answered; {@code job} only when in the background. */
     record Upload(Caller caller, String db, String filesColl, BsonValue fileId, boolean replaced, List<ChunkingRule> rules,
-            List<String> targets, int chunkSize, int chunkOverlap, ObjectId job) {
+                  List<String> targets, int chunkSize, int chunkOverlap, ObjectId job) {
         String bucket() {
             return filesColl.endsWith(".files") ? filesColl.substring(0, filesColl.length() - 6) : filesColl;
         }
@@ -509,7 +509,7 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
         ChunkingRule rule;
         String text;
         try (var in = GridFSBuckets.create(mclient.getDatabase(dbName), bucketName).openDownloadStream(fileId);
-                var tis = TikaInputStream.get(in)) {
+             var tis = TikaInputStream.get(in)) {
             filename = in.getGridFSFile().getFilename();
             var md = in.getGridFSFile().getMetadata();
             fileMetadata = md == null ? null : BsonDocument.parse(md.toJson());
@@ -830,10 +830,10 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
      * pieces put back together are the text as it was.
      */
     private static final java.util.regex.Pattern[] SEPARATORS = {
-        java.util.regex.Pattern.compile("(?<=\\n\\n)"),
-        java.util.regex.Pattern.compile("(?<=\\n)"),
-        java.util.regex.Pattern.compile("(?<=[.!?\u2026]\\s)"),
-        java.util.regex.Pattern.compile("(?<=\\s)")
+            java.util.regex.Pattern.compile("(?<=\\n\\n)"),
+            java.util.regex.Pattern.compile("(?<=\\n)"),
+            java.util.regex.Pattern.compile("(?<=[.!?\u2026]\\s)"),
+            java.util.regex.Pattern.compile("(?<=\\s)")
     };
 
     /**

@@ -49,7 +49,7 @@ public class FailedAuthMetricsCollectorTest {
 
         var counting = registry.histogram(busy, FailedAuthMetricsCollectorTest::window);
         // one entry per failure, as Metrics.failedAuth writes them
-        for (var i = 1; i <= 99; i++) {
+        for (var i = 1;i <= 99;i++) {
             counting.update(1);
         }
         registry.histogram(idle, FailedAuthMetricsCollectorTest::window);

@@ -117,7 +117,8 @@ public class Metrics {
      * @param predicate     which requests
      * @param valueFromLast the reverse index for them
      */
-    public record XffOverride(Predicate predicate, int valueFromLast) {}
+    public record XffOverride(Predicate predicate, int valueFromLast) {
+    }
 
     private static List<XffOverride> xffOverrides = List.of();
 

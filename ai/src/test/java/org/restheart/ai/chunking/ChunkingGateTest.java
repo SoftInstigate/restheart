@@ -82,7 +82,7 @@ public class ChunkingGateTest {
         var gate = new ChunkingGate(2);
         var release = new CountDownLatch(1);
         var two = new CountDownLatch(2);
-        for (var key : new String[] {"a", "b"}) {
+        for (var key : new String[]{"a", "b"}) {
             holder(gate, key, 5, two, release);
         }
         assertTrue(two.await(2, TimeUnit.SECONDS));
