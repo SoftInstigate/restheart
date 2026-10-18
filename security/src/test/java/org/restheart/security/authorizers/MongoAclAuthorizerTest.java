@@ -66,7 +66,7 @@ class MongoAclAuthorizerTest {
         var collection = client.getDatabase("db").getCollection("acl").withDocumentClass(BsonDocument.class);
         for (var permission : List.of(admin, user)) {
             when(collection.find(eq("roles", permission.getString("_id").getValue()))
-                    .projection(any()).sort(any()).into(anyCollection())).thenAnswer(invocation -> {
+                    .sort(any()).into(anyCollection())).thenAnswer(invocation -> {
                 Collection<BsonDocument> result = invocation.getArgument(0);
                 result.add(permission);
                 return result;
