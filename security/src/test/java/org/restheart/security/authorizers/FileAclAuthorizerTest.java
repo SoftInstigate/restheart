@@ -48,9 +48,9 @@ class FileAclAuthorizerTest {
 
     @Test
     void highestPriorityPermissionWinsRegardlessOfRoleOrder() throws Exception {
-        var admin = permission(ADMIN, 110, Map.of(
+        var admin = permission(ADMIN, 112, Map.of(
                 "allowManagementRequests", false, "allowWriteMode", false));
-        var user = permission(USER, 112, Map.of(
+        var user = permission(USER, 110, Map.of(
                 "allowManagementRequests", false, "allowWriteMode", false,
                 "writeFilter", "{\"owner\": \"@user.userid\"}"));
         var authorizer = authorizer(List.of(admin, user));

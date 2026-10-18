@@ -193,7 +193,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
         if (machedPermissions.isEmpty()) {
             return false;
         } else {
-            machedPermissions.sort(Comparator.comparingInt(FileAclPermission::getPriority));
+            machedPermissions.sort(Comparator.comparingInt(FileAclPermission::getPriority).reversed());
             exchange.putAttachment(MATCHING_ACL_PERMISSION, machedPermissions.get(0));
             return true;
         }
