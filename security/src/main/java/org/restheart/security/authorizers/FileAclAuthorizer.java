@@ -156,10 +156,10 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
 
                             String marker;
 
-                            // to highlight the first matching permission for this role
+                            // to highlight the candidate permission for this role
                             if (resolved && matched.isEmpty()) {
                                 matched.add(permission);
-                                marker = "<-- first match for role";
+                                marker = "<-- candidate for role";
                             } else {
                                 marker = "";
                             }
@@ -194,6 +194,10 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
             return false;
         } else {
             machedPermissions.sort(Comparator.comparingInt(FileAclPermission::getPriority).reversed());
+            LOGGER.debug("effective permission (roles={},predicate={},priority={})",
+                    machedPermissions.get(0).getRoles(),
+                    machedPermissions.get(0).getRequestPredicate(),
+                    machedPermissions.get(0).getPriority());
             exchange.putAttachment(MATCHING_ACL_PERMISSION, machedPermissions.get(0));
             return true;
         }

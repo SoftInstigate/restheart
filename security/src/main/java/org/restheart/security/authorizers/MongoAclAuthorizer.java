@@ -191,10 +191,10 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
 
                     String marker;
 
-                    // to highlight the first matching permission for this role
+                    // to highlight the candidate permission for this role
                     if (resolved && matched.isEmpty()) {
                         matched.add(permission);
-                        marker = " <-- first match for role";
+                        marker = " <-- candidate for role";
                     } else {
                         marker = "";
                     }
@@ -234,6 +234,9 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
             return false;
         } else {
             permissions.sort(Comparator.comparingInt(MongoAclPermission::getPriority).reversed());
+            LOGGER.debug("effective permission id {}, priority {}",
+                    BsonUtils.toJson(permissions.get(0).getId()),
+                    permissions.get(0).getPriority());
             exchange.putAttachment(MATCHING_ACL_PERMISSION, permissions.get(0));
             return true;
         }
