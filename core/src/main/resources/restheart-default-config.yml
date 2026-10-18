@@ -303,14 +303,8 @@ jwtTokenManager:
   # Deprecated: configure account-properties-claims in jwtConfigProvider instead, once for every
   # token path; the active team is best carried by its "@team" entry (see there).
   #
-  # For restheart-accounts multi-team deployments, the teams claim MUST be listed here
-  # (e.g. "teams") so that the JWT contains the active team ID.
-  # Without this, endpoints like POST /auth/invite and POST /auth/switch-team will
-  # fail with 403 because the service cannot resolve the caller's membership role.
-  #
-  # Example for a deployment using "teams" as the claim name:
-  # account-properties-claims:
-  #   - teams
+  # The accounts endpoints need no team claim: they read the caller's active team from the
+  # membership provider at every request, and ACL rules read it as @team.
   #
   # See: https://restheart.org/docs/accounts/configuration
   account-properties-claims:
@@ -499,7 +493,7 @@ accountsConfig:
   default-role: user
 
   # Team role assigned to the user who creates a new team.
-  # Stored in user.teams[].role and team.members[].role.
+  # Stored in team.members[].role.
   # Default: "owner". Override per-team via override-accounts-ownership-role.
   ownership-role: owner
 
@@ -512,11 +506,8 @@ accountsConfig:
   # issued by accounts endpoints (verify, activate, reset-password, switch-team, OAuth).
   # Mirrors jwtTokenManager.account-properties-claims: use the same list so that
   # all token-issuance paths produce identical JWTs.
-  # authDb is always included automatically (no need to list it here).
-  # Must mirror jwtTokenManager.account-properties-claims so all issuance paths
-  # (/token, /auth/verify, /auth/activate, etc.) produce identical JWTs.
-  # For multi-team deployments, include the teams claim (e.g. "teams").
-  # authDb is always included automatically — never list it here.
+  # authDb is always included automatically: never list it here.
+  # No team claim is needed: the active team is @team, read at every request.
   # Deprecated: configure account-properties-claims in jwtConfigProvider instead, once for every
   # token path; the active team is best carried by its "@team" entry (see there).
   account-properties-claims:
@@ -569,7 +560,8 @@ resendInviteService:
 getTeamsService:
   enabled: false
 
-# POST /auth/switch-team — switches the active team and reissues the JWT cookie
+# POST /auth/switch-team: switches the active team and reissues the JWT, which carries no team;
+# the response body has the new active team as { _id, role }
 switchTeamService:
   enabled: false
 
