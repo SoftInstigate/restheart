@@ -27,7 +27,6 @@ import io.undertow.server.HttpServerExchange;
 import java.io.FileNotFoundException;
 import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -69,6 +68,18 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
 
     private final Set<FileAclPermission> permissions = new LinkedHashSet<>();
 
+    /** Where each permission stands in the configuration: the tie-break at equal priority. */
+    private final Map<FileAclPermission, Integer> positions = new java.util.IdentityHashMap<>();
+
+    /**
+     * The order permissions are considered in, within a role and across roles alike: the highest
+     * priority first, as documented and as mongoAclAuthorizer does; at equal priority, the one that
+     * comes first in the configuration (#767).
+     */
+    private final Comparator<FileAclPermission> precedence = Comparator
+            .comparingInt(FileAclPermission::getPriority).reversed()
+            .thenComparingInt(p -> positions.getOrDefault(p, Integer.MAX_VALUE));
+
     @Inject("registry")
     private PluginsRegistry registry;
 
@@ -88,11 +99,11 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
             throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'permissions' parameter");
         }
 
-        // reverse oreder, the first permission in the acl.yml must be on top
-        var list = new ArrayList<FileAclPermission>(this.permissions);
-        Collections.reverse(list);
-        this.permissions.clear();
-        list.stream().forEach(permissions::add);
+        // the configuration order, kept as read: at equal priority the permission that comes first wins
+        var position = 0;
+        for (var p : this.permissions) {
+            positions.put(p, position++);
+        }
     }
 
     @Override
@@ -193,7 +204,8 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
         if (machedPermissions.isEmpty()) {
             return false;
         } else {
-            machedPermissions.sort(Comparator.comparingInt(FileAclPermission::getPriority).reversed());
+            // across roles the same precedence as within one: the order of the account's roles plays no part
+            machedPermissions.sort(precedence);
             LOGGER.debug("effective permission (roles={},predicate={},priority={})",
                     machedPermissions.get(0).getRoles(),
                     machedPermissions.get(0).getRequestPredicate(),
@@ -262,8 +274,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
 
         StreamSupport.stream(this.permissions.spliterator(), true)
                 .filter(p -> p.getRoles() != null && p.getRoles().contains(role))
-                // the documented order, the one mongoAclAuthorizer applies: the highest priority first
-                .sorted(Comparator.comparingInt(FileAclPermission::getPriority).reversed())
+                .sorted(precedence)
                 .forEachOrdered(p -> ret.add(p));
 
         return ret;

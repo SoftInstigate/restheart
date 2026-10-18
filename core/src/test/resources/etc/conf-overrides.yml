@@ -411,12 +411,15 @@
           {"log": 0}
       priority: 100
 
+    # a single document is the exception to the collection rule above, which hides `log`: it
+    # says so with a higher priority. Before #767 the tie went to the last permission in the file,
+    # and this one won only by standing below the other; predicates-acl.feature reads `log` here.
     - role : test
       predicate: >
         method(GET)
         and qparams-whitelist(rep)
         and path-template(value="/test-predicates/coll/{id}")
-      priority: 100
+      priority: 110
 
     - role: test
       predicate: >

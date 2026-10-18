@@ -80,6 +80,29 @@ class FileAclAuthorizerPriorityTest {
     }
 
     @Test
+    void atEqualPriorityTheFirstInTheConfigurationWinsWithinARole() throws Exception {
+        var first = permission(100);
+        var second = permission(100);
+
+        var request = request(List.of(USER));
+        assertTrue(authorizer(List.of(first, second)).isAllowed(request));
+        assertSame(first, BaseAclPermission.getRaw(request), "at a tie the first in the configuration wins (#767)");
+    }
+
+    @Test
+    void atEqualPriorityTheFirstInTheConfigurationWinsAcrossRolesWhateverTheirOrder() throws Exception {
+        var editors = permission("editor", 100);
+        var authors = permission("author", 100);
+        var authorizer = authorizer(List.of(editors, authors));
+
+        for (var roles : List.of(List.of("author", "editor"), List.of("editor", "author"))) {
+            var request = request(roles);
+            assertTrue(authorizer.isAllowed(request));
+            assertSame(editors, BaseAclPermission.getRaw(request), "the order of the roles must not decide a tie: " + roles);
+        }
+    }
+
+    @Test
     void aMongoPermissionWithoutPriorityIsConsideredLast() {
         var doc = BsonDocument.parse("""
                 {"_id": "p", "roles": ["user"], "predicate": "path-prefix('/')"}
@@ -89,9 +112,13 @@ class FileAclAuthorizerPriorityTest {
     }
 
     private static Map<String, Object> permission(Integer priority) {
+        return permission(USER, priority);
+    }
+
+    private static Map<String, Object> permission(String role, Integer priority) {
         // a mutable map: a null priority means no priority at all
         var p = new HashMap<String, Object>();
-        p.put("roles", List.of(USER));
+        p.put("roles", List.of(role));
         p.put("predicate", PATCH_DOCUMENT);
         if (priority != null) {
             p.put("priority", priority);
