@@ -58,7 +58,7 @@ class FileAclAuthorizerTest {
         for (var roles : List.of(List.of(ADMIN), List.of(ADMIN, USER), List.of(USER, ADMIN))) {
             var request = request(roles);
             assertTrue(authorizer.isAllowed(request));
-            assertSame(admin, BaseAclPermission.getRaw(request), "Wrong Mongo permission for " + roles);
+            assertSame(admin, BaseAclPermission.getRaw(request), "Wrong permission for " + roles);
         }
 
         var userRequest = request(List.of(USER));
