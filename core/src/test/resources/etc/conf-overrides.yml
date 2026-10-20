@@ -856,3 +856,8 @@
 /fakeRerankProvider/enabled: true
 # and one whose every call fails, to verify a write survives a failed embedding
 /fakeEmbeddingProviderFailing/enabled: true
+
+# a limit on the request body, to verify that a larger body is answered with 413 (request-too-big.feature);
+# 1 MiB is well above any body the other tests send
+/connection-options/MAX_ENTITY_SIZE: 1048576
+/connection-options/MULTIPART_MAX_ENTITY_SIZE: 1048576
