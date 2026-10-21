@@ -20,8 +20,11 @@
  */
 package org.restheart.initializers;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
@@ -273,10 +276,22 @@ public class WorkersWatchdog implements Initializer {
      * Every thread, virtual ones included, as {@code jcmd Thread.dump_to_file} writes them. Falls
      * back to the platform threads alone, with their locks, if the file cannot be written.
      */
+    /** A temporary directory readable and writable by the owner only; without POSIX permissions, as on Windows, a plain one. */
+    private static Path privateTempDirectory() throws IOException {
+        try {
+            return Files.createTempDirectory("restheart-threads-",
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+        } catch (UnsupportedOperationException e) {
+            return Files.createTempDirectory("restheart-threads-");
+        }
+    }
+
     static String threadDump() {
         try {
-            var file = Files.createTempFile("restheart-threads-", ".txt");
-            Files.delete(file); // dumpThreads refuses to overwrite
+            // a directory of this user alone, so that nobody else can plant the file dumpThreads
+            // writes: it refuses to overwrite, hence a fresh name in a private directory
+            var dir = privateTempDirectory();
+            var file = dir.resolve("threads.txt");
 
             try {
                 ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class)
@@ -284,6 +299,7 @@ public class WorkersWatchdog implements Initializer {
                 return Files.readString(file);
             } finally {
                 Files.deleteIfExists(file);
+                Files.deleteIfExists(dir);
             }
         } catch (Exception e) {
             return "(virtual threads unavailable: " + e + ")\n"

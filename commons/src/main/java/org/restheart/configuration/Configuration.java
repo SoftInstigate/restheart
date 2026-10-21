@@ -112,7 +112,7 @@ public class Configuration {
      *   <li>Group 3: {@code (@.*)} - @ symbol and rest of connection string</li>
      * </ul>
      */
-    private static final String CONNECTION_STRING_PASSWORD_REGEX = "(mongodb(?:\\+srv)?://[^:]+:)([^@]+)(@.*)";
+    private static final String CONNECTION_STRING_CREDENTIALS_REGEX = "(mongodb(?:\\+srv)?://[^:]+:)([^@]+)(@.*)";
 
     /**
      * Masks the password in a MongoDB connection string for secure logging.
@@ -127,7 +127,7 @@ public class Configuration {
      *
      * <h3>Example</h3>
      * <pre>
-     * Input:  mongodb://user:secretPass@host:27017/db
+     * Input:  mongodb://user:&lt;the password&gt;@host:27017/db
      * Output: mongodb://user:**********@host:27017/db
      * </pre>
      *
@@ -139,7 +139,7 @@ public class Configuration {
         if (connectionString == null) {
             return null;
         }
-        return connectionString.replaceFirst(CONNECTION_STRING_PASSWORD_REGEX, "$1" + MASK + "$3");
+        return connectionString.replaceFirst(CONNECTION_STRING_CREDENTIALS_REGEX, "$1" + MASK + "$3");
     }
 
     /**
