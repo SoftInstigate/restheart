@@ -99,6 +99,9 @@ spec:
             - name: configuration
               mountPath: /opt/restheart/etc/restheart.yml
               subPath: restheart.yml
+            # Writable temp dir: the root filesystem is read-only by default
+            - name: tmp
+              mountPath: /tmp
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -118,6 +121,8 @@ spec:
           secret:
             secretName: {{ include "restheart.fullname" . }}
         {{- end }}
+        - name: tmp
+          emptyDir: {}
         {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

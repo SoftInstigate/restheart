@@ -27,11 +27,19 @@ COPY target/restheart ./restheart
 # copies the JDK's AWT libraries next to the executable, and they must travel with it
 COPY target/*.so ./
 
-# Create required directories and set permissions in one layer
-RUN chmod +x restheart && mkdir -p etc plugins
+# Create required directories and set permissions in one layer.
+# Add the same non-root user as the JVM image (nonroot, UID 65532, from the distroless base).
+RUN chmod +x restheart && mkdir -p etc plugins \
+    && groupadd --gid 65532 nonroot \
+    && useradd --uid 65532 --gid 65532 --no-create-home --home-dir /nonexistent \
+        --shell /usr/sbin/nologin nonroot
 
 # Set environment variables
 ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0";/ping/msg->"RESTHeart native is up and running"'
 
 EXPOSE 8009 8080 4443
+# Run as non-root. The UID is numeric so that Kubernetes can verify runAsNonRoot. The files stay
+# owned by root and readable by everyone: any UID can run RESTHeart (OpenShift assigns an
+# arbitrary one), and none can modify it.
+USER 65532
 ENTRYPOINT ["./restheart"]

@@ -48,13 +48,13 @@ podAnnotations: {}
 
 podSecurityContext:
   runAsNonRoot: true
-  fsGroup: 1000
+  fsGroup: 65532
 
 securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
   runAsNonRoot: true
-  runAsUser: 1000
+  runAsUser: 65532
 
 service:
   type: ClusterIP
