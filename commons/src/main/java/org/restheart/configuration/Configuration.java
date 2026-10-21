@@ -112,7 +112,7 @@ public class Configuration {
      *   <li>Group 3: {@code (@.*)} - @ symbol and rest of connection string</li>
      * </ul>
      */
-    private static final String CONNECTION_STRING_CREDENTIALS_REGEX = "(mongodb(?:\\+srv)?://[^:]+:)([^@]+)(@.*)";
+    private static final String CONNECTION_STRING_USERINFO_REGEX = "(mongodb(?:\\+srv)?://[^:]+:)([^@]+)(@.*)";
 
     /**
      * Masks the password in a MongoDB connection string for secure logging.
@@ -139,7 +139,7 @@ public class Configuration {
         if (connectionString == null) {
             return null;
         }
-        return connectionString.replaceFirst(CONNECTION_STRING_CREDENTIALS_REGEX, "$1" + MASK + "$3");
+        return connectionString.replaceFirst(CONNECTION_STRING_USERINFO_REGEX, "$1" + MASK + "$3");
     }
 
     /**

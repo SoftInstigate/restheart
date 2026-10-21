@@ -20,10 +20,8 @@
  */
 package org.restheart.initializers;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.Arrays;
@@ -276,21 +274,13 @@ public class WorkersWatchdog implements Initializer {
      * Every thread, virtual ones included, as {@code jcmd Thread.dump_to_file} writes them. Falls
      * back to the platform threads alone, with their locks, if the file cannot be written.
      */
-    /** A temporary directory readable and writable by the owner only; without POSIX permissions, as on Windows, a plain one. */
-    private static Path privateTempDirectory() throws IOException {
-        try {
-            return Files.createTempDirectory("restheart-threads-",
-                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
-        } catch (UnsupportedOperationException e) {
-            return Files.createTempDirectory("restheart-threads-");
-        }
-    }
-
     static String threadDump() {
         try {
             // a directory of this user alone, so that nobody else can plant the file dumpThreads
-            // writes: it refuses to overwrite, hence a fresh name in a private directory
-            var dir = privateTempDirectory();
+            // writes: it refuses to overwrite, hence a fresh name in a private directory. Without
+            // POSIX permissions, as on Windows, this throws and the platform threads are listed instead
+            var dir = Files.createTempDirectory("restheart-threads-",
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
             var file = dir.resolve("threads.txt");
 
             try {
