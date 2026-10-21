@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
 public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtConfigProvider.class);
     private static final int KEY_SIZE_BYTES = 64; // 512 bits for HMAC algorithms
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     @Inject("config")
     private Map<String, Object> config;
@@ -180,9 +181,8 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
      * @return a Base64-encoded random key
      */
     private String generateSecureRandomKey() {
-        SecureRandom secureRandom = new SecureRandom();
         byte[] keyBytes = new byte[KEY_SIZE_BYTES];
-        secureRandom.nextBytes(keyBytes);
+        RANDOM.nextBytes(keyBytes);
         return Base64.getEncoder().encodeToString(keyBytes);
     }
 
