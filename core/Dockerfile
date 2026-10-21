@@ -22,6 +22,11 @@ COPY target/plugins/lib/*.jar plugins/lib/
 # set environment variables
 ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
 
+# Run as the non-root user of the distroless base image. The UID is numeric so that Kubernetes
+# can verify runAsNonRoot. The files stay owned by root and readable by everyone: any UID can
+# run RESTHeart (OpenShift assigns an arbitrary one), and none can modify it.
+USER 65532
+
 # JDK 25 optimized for RESTHeart: low-latency REST API, 1-2 vCPU, 1-2GB container RAM
 # Default G1 GC is the best fit: MongoDB is the bottleneck, not the JVM.
 # ZGC would add CPU and memory overhead with no benefit when virtual threads
@@ -29,8 +34,11 @@ ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-list
 # NOTE: Graal JIT is enabled by default to support GraalVM polyglot plugin capabilities.
 # If you are not using polyglot plugins, adding -XX:-UseJVMCICompiler will reduce
 # compiler memory overhead significantly in constrained containers (recommended for <512Mi heap).
+# The GraalVM polyglot resource cache goes to /tmp: the default, under the home directory, is not
+# writable with an arbitrary UID (OpenShift) or a read-only root filesystem (the Helm chart).
 ENTRYPOINT [ "java", \
     "-Dfile.encoding=UTF-8", \
+    "-Dpolyglot.engine.userResourceCache=/tmp/graalvm-cache", \
     "--enable-native-access=ALL-UNNAMED", \
     "--sun-misc-unsafe-memory-access=allow", \
     "-XX:MaxRAMPercentage=70.0", \

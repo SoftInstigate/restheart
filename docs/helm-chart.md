@@ -98,14 +98,16 @@ Secure defaults are set in `podSecurityContext` and `securityContext`:
 ```yaml
 podSecurityContext:
   runAsNonRoot: true
-  fsGroup: 1000
+  fsGroup: 65532
 
 securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
   runAsNonRoot: true
-  runAsUser: 1000
+  runAsUser: 65532
 ```
+
+The RESTHeart images already run as UID 65532, so the pod is non-root even without these settings. The chart always mounts an `emptyDir` on `/tmp`, because the root filesystem is read-only and RESTHeart writes temporary files there.
 
 Override for development if needed by setting these to `{}`.
 
