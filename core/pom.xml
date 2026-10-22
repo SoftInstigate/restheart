@@ -577,7 +577,11 @@
                       <enabled>true</enabled>
                       <color>yellow</color>
                     </log>
+                    <!-- the mapped port answers as soon as docker-proxy is up, before mongod
+                         listens: on a slow runner rs.initiate() then found nothing and the
+                         server could not connect. The log line is mongod itself, ready -->
                     <wait>
+                      <log>Waiting for connections</log>
                       <tcp>
                         <mode>mapped</mode>
                         <host>localhost</host>
@@ -585,7 +589,7 @@
                           <port>${mongodb.port}</port>
                         </ports>
                       </tcp>
-                      <time>10000</time>
+                      <time>60000</time>
                       <shutdown>1000</shutdown>
                     </wait>
                   </run>
