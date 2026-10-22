@@ -33,6 +33,13 @@
             <arg value="--eval" />
             <arg value="rs.status()" />
         </exec>
+        <!-- when the replica set is not there, what mongod said: the plugin starts the
+             container without showing its output, and the job log would be blind -->
+        <echo level="info">***** MongoDB container and its last lines:</echo>
+        <exec executable="sh">
+            <arg value="-c" />
+            <arg value="docker ps -a --filter ancestor=${mongodb.image}:${mongodb.version} --format '{{.ID}} {{.Status}}'; for c in $(docker ps -aq --filter ancestor=${mongodb.image}:${mongodb.version}); do docker logs --tail 30 $c 2>&amp;1 | cut -c1-200; done" />
+        </exec>
         <copy file="../test-plugins/target/restheart-test-plugins.jar" todir="./target/plugins" overwrite="true" />
         <echo level="info">***** Starting RESTHeart server</echo>
         <echo level="info">NOTE: in order to execute the integration test suite you need:</echo>
