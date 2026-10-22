@@ -10,7 +10,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # ubuntu-22.04, not ubuntu-latest: the ubuntu-24.04 image 20261018.339.1 (2026-10-18) brings a
+    # Linux kernel 6.19+, on which mongod 8.x refuses to start (TCMalloc and rseq, SERVER-131155, fixed
+    # in kernel 7.0.14+). Back to ubuntu-latest when the runners carry a fixed kernel.
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
@@ -66,3 +69,8 @@ jobs:
             -Dmongodb.version="${{ matrix.mongodb-version }}" \
             -Dkarate.vectorSearch="${{ matrix.vector-search }}" \
             -Dkarate.embeddingProvider="$KARATE_EMBEDDING"
+      # The integration tests fork the server and its output goes to core/restheart.log, which the
+      # job never shows: when the server does not come up, this is where the reason is
+      - name: Server log, when the build fails
+        if: failure()
+        run: tail -n 150 core/restheart.log || echo "no core/restheart.log"

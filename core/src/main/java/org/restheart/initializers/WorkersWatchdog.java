@@ -22,6 +22,7 @@ package org.restheart.initializers;
 
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
@@ -275,8 +276,12 @@ public class WorkersWatchdog implements Initializer {
      */
     static String threadDump() {
         try {
-            var file = Files.createTempFile("restheart-threads-", ".txt");
-            Files.delete(file); // dumpThreads refuses to overwrite
+            // a directory of this user alone, so that nobody else can plant the file dumpThreads
+            // writes: it refuses to overwrite, hence a fresh name in a private directory. Without
+            // POSIX permissions, as on Windows, this throws and the platform threads are listed instead
+            var dir = Files.createTempDirectory("restheart-threads-",
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+            var file = dir.resolve("threads.txt");
 
             try {
                 ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class)
@@ -284,6 +289,7 @@ public class WorkersWatchdog implements Initializer {
                 return Files.readString(file);
             } finally {
                 Files.deleteIfExists(file);
+                Files.deleteIfExists(dir);
             }
         } catch (Exception e) {
             return "(virtual threads unavailable: " + e + ")\n"

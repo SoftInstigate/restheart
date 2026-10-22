@@ -287,6 +287,9 @@ final class BuiltInVarResolvers {
      * occurrence must yield an independent value.
      */
     private static final class RndVarResolver implements VarResolver {
+        /** One generator for every evaluation: seeding a new one per call is slow and gains nothing. */
+        private static final SecureRandom RANDOM = new SecureRandom();
+
         /** Reads nothing at all — it makes one up, which a listing already has. */
         @Override
         public EvaluationScope.Scope scope() {
@@ -319,7 +322,7 @@ final class BuiltInVarResolvers {
                 }
 
                 var bytes = new byte[(bits + 7) / 8]; // Convert bits to bytes
-                new SecureRandom().nextBytes(bytes);
+                RANDOM.nextBytes(bytes);
                 var hex = new BigInteger(1, bytes).toString(16);
 
                 // Pad with leading zeros if necessary
