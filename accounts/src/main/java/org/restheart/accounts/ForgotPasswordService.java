@@ -1,5 +1,7 @@
 package org.restheart.accounts;
 
+import org.restheart.accounts.config.AccountsEmailPolicy;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -67,6 +69,9 @@ public class ForgotPasswordService implements JsonService {
 
     @Inject("accountsConfig")
     private AccountsConfigData conf;
+
+    @Inject("accountsEmailPolicy")
+    private AccountsEmailPolicy emailPolicy;
 
     @Inject("emails")
     private EmailSender emails;
@@ -145,6 +150,16 @@ public class ForgotPasswordService implements JsonService {
         boolean isVerified = !userRoles.isEmpty()
                 && !(userRoles.size() == 1 && "$unauthenticated".equals(userRoles.get(0).asString().getValue()));
 
+        // At most one email per address per cooldown. Without it, this endpoint re-sends to an
+        // address as often as anyone calls it — and an address seeded through /auth/register can
+        // be mailed again and again. The response is the same 202 either way.
+        var lastSentField = isVerified ? "passwordResetCreatedAt" : "emailVerificationCreatedAt";
+        if (!emailPolicy.resendAllowed(user, lastSentField)) {
+            LOGGER.info("forgotPassword: an email was sent to this address less than {}s ago, not sending another",
+                    emailPolicy.resendCooldown().toSeconds());
+            return;
+        }
+
         if (isVerified) {
             sendPasswordReset(req, email, dbName, usersColl, user);
         } else {
@@ -177,8 +192,8 @@ public class ForgotPasswordService implements JsonService {
                 + "/auth/reset-password?email=" + encodedEmail
                 + "&token=" + token;
 
-        // Check X-Skip-Email header for integration tests
-        if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+        // X-Skip-Email header, honoured only where accountsEmailPolicy allows it (tests)
+        if (emailPolicy.skipEmail(req)) {
             LOGGER.debug("Skipping password reset email to <{}> (X-Skip-Email header)", email);
         } else {
             var tmpl = EmailTemplateLoader.loadWithFallback(
@@ -225,8 +240,8 @@ public class ForgotPasswordService implements JsonService {
                 + "/auth/verify?email=" + encodedEmail
                 + "&token=" + token;
 
-        // Check X-Skip-Email header for integration tests
-        if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+        // X-Skip-Email header, honoured only where accountsEmailPolicy allows it (tests)
+        if (emailPolicy.skipEmail(req)) {
             LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
         } else {
             var tmpl = EmailTemplateLoader.loadWithFallback(

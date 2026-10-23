@@ -1,5 +1,7 @@
 package org.restheart.accounts;
 
+import org.restheart.accounts.config.AccountsEmailPolicy;
+
 import com.mongodb.client.MongoClient;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -75,6 +77,9 @@ public class InviteService implements JsonService {
 
     @Inject("accountsConfig")
     private AccountsConfigData conf;
+
+    @Inject("accountsEmailPolicy")
+    private AccountsEmailPolicy emailPolicy;
 
     @Inject("emails")
     private EmailSender emails;
@@ -211,8 +216,8 @@ public class InviteService implements JsonService {
                         ? account.getPrincipal().getName()
                         : invitedEmail;
 
-                // Check X-Skip-Email header for integration tests
-                if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+                // X-Skip-Email header, honoured only where accountsEmailPolicy allows it (tests)
+                if (emailPolicy.skipEmail(req)) {
                     LOGGER.debug("Skipping invite email to <{}> (X-Skip-Email header)", invitedEmail);
                 } else {
                     var tmpl = EmailTemplateLoader.loadWithFallback(
