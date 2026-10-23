@@ -632,6 +632,10 @@
 /core/name: integration-test
 
 # restheart-accounts
+# The tests send X-Skip-Email and call forgot-password right after register: both are off by
+# default (accountsEmailPolicy), so they are turned on here, for the tests only.
+/accountsEmailPolicy/allow-skip-email-header: true
+/accountsEmailPolicy/resend-cooldown-seconds: 0
 /accountsConfig/enabled: true
 # db and users-collection are sourced from mongoRealmAuthenticator
 # (see /mongoRealmAuthenticator/users-db above)

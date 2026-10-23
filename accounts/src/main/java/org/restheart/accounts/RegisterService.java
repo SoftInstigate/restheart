@@ -1,5 +1,7 @@
 package org.restheart.accounts;
 
+import org.restheart.accounts.config.AccountsEmailPolicy;
+
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
 import org.bson.BsonArray;
@@ -151,6 +153,9 @@ public class RegisterService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("accountsEmailPolicy")
+    private AccountsEmailPolicy emailPolicy;
+
     @Inject("emails")
     private EmailSender emails;
 
@@ -232,6 +237,12 @@ public class RegisterService implements JsonService {
             return;
         }
 
+        var invalid = invalidInput(email, firstName, lastName, teamName);
+        if (invalid != null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, invalid);
+            return;
+        }
+
         var weakPassword = passwordPolicy.rejection(password);
         if (weakPassword != null) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, weakPassword);
@@ -302,8 +313,8 @@ public class RegisterService implements JsonService {
 
         // ── 8. Send verification email (best-effort) ─────────────────────────
         try {
-            // Check X-Skip-Email header for integration tests
-            if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+            // X-Skip-Email header, honoured only where accountsEmailPolicy allows it (tests)
+            if (emailPolicy.skipEmail(req)) {
                 LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
             } else {
                 var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
@@ -336,6 +347,39 @@ public class RegisterService implements JsonService {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    static final int EMAIL_MAX = 254;
+    static final int NAME_MAX = 100;
+
+    // One address: no spaces, commas, semicolons, quotes or angle brackets, which would let the
+    // field name several recipients or carry a display name.
+    private static final java.util.regex.Pattern EMAIL =
+            java.util.regex.Pattern.compile("^[^\\s@<>,;\"'()\\[\\]]+@[^\\s@<>,;\"'()\\[\\]]+\\.[^\\s@<>,;\"'()\\[\\]]{2,}$");
+
+    private static final java.util.regex.Pattern NOT_A_NAME =
+            java.util.regex.Pattern.compile("[\\p{Cntrl}\\u2028\\u2029<>]");
+
+    /**
+     * Why the sign-up fields cannot be used, or {@code null} when they can.
+     *
+     * <p>They go into emails (the greeting, the invitation subject) and into the team document, so
+     * they must look like an address and like names: bounded in length, one line, no markup.
+     */
+    static String invalidInput(String email, String firstName, String lastName, String teamName) {
+        if (email.length() > EMAIL_MAX || !EMAIL.matcher(email).matches()) {
+            return "Invalid email address";
+        }
+        for (var field : new String[][] { { "firstName", firstName }, { "lastName", lastName }, { "teamName", teamName } }) {
+            var value = field[1];
+            if (value.length() > NAME_MAX) {
+                return field[0] + ": at most " + NAME_MAX + " characters";
+            }
+            if (NOT_A_NAME.matcher(value).find()) {
+                return field[0] + ": line breaks, control characters and < > are not allowed";
+            }
+        }
+        return null;
+    }
 
     /**
      * Extracts a non-blank trimmed string value from a JSON object.

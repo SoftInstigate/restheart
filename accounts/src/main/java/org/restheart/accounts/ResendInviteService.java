@@ -1,5 +1,7 @@
 package org.restheart.accounts;
 
+import org.restheart.accounts.config.AccountsEmailPolicy;
+
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
 import org.restheart.plugins.accounts.AccountsConfigData;
@@ -63,6 +65,9 @@ public class ResendInviteService implements JsonService {
 
     @Inject("accountsConfig")
     private AccountsConfigData conf;
+
+    @Inject("accountsEmailPolicy")
+    private AccountsEmailPolicy emailPolicy;
 
     @Inject("emails")
     private EmailSender emails;
@@ -175,8 +180,8 @@ public class ResendInviteService implements JsonService {
                         ? account.getPrincipal().getName()
                         : email;
 
-                // Check X-Skip-Email header for integration tests
-                if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+                // X-Skip-Email header, honoured only where accountsEmailPolicy allows it (tests)
+                if (emailPolicy.skipEmail(req)) {
                     LOGGER.debug("Skipping re-send invite email to <{}> (X-Skip-Email header)", email);
                 } else {
                     var tmpl = EmailTemplateLoader.loadWithFallback(
