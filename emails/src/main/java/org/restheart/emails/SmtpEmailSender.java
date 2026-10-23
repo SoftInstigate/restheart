@@ -120,15 +120,22 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
             return true;
         }
 
+        var ownSender = request != null && hasOverride(request);
         try {
-            var decision = gate.check(request, to, request != null && hasOverride(request));
+            var decision = gate.check(request, to, ownSender);
             if (!decision.allowed()) {
                 LOGGER.warn("Email to <{}> not sent: {}", to, decision.reason());
                 return false;
             }
         } catch (Exception e) {
-            // A broken gate must not take the mail down with it: a deployment that cannot count
-            // is worse off refusing everything than sending it.
+            // An email sent on behalf of a request through the deployment's own server is exactly
+            // what the gate exists to count: if it cannot count, it is not sent. Emails with no
+            // request (the deployment's own notices) and those leaving through the requester's
+            // own server still go out, so a broken gate does not silence the warnings about it.
+            if (request != null && !ownSender) {
+                LOGGER.error("Email gate failed, email to <{}> not sent", to, e);
+                return false;
+            }
             LOGGER.error("Email gate failed, sending anyway", e);
         }
 
@@ -201,26 +208,38 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
         return new Settings(this.emailSrv, this.senderEmail, this.appName);
     }
 
+    /**
+     * Whether the request carries a complete SMTP server of its own: hostname, username and
+     * password. Only then are any of the override parameters applied.
+     *
+     * <p>A partial override is ignored as a whole. Merging it with the static configuration
+     * would send with the deployment's credentials under someone else's sender address or name,
+     * or hand those credentials to someone else's hostname, and would count as "own sender" for
+     * the {@link EmailGate} even though the mail still leaves through the deployment's server.
+     */
     private static boolean hasOverride(Request<?> req) {
-        return req.attachedParam(PREFIX + "sender-email") != null
-                || req.attachedParam(PREFIX + "sender-name") != null
-                || req.attachedParam(PREFIX + "smtp-hostname") != null
-                || req.attachedParam(PREFIX + "smtp-port") != null
-                || req.attachedParam(PREFIX + "smtp-username") != null
-                || req.attachedParam(PREFIX + "smtp-password") != null;
+        return notBlank(req.attachedParam(PREFIX + "smtp-hostname"))
+                && notBlank(req.attachedParam(PREFIX + "smtp-username"))
+                && notBlank(req.attachedParam(PREFIX + "smtp-password"));
+    }
+
+    private static boolean notBlank(Object v) {
+        return v != null && !v.toString().isBlank();
     }
 
     /**
-     * Builds the SMTP settings for a request carrying override parameters.
-     * Starts with a full copy of the static YAML config (kebab-case keys),
-     * then overrides only the fields specified via attached parameters, so
-     * unspecified ones keep their static values.
+     * Builds the SMTP settings for a request carrying its own SMTP server (see
+     * {@link #hasOverride}). Starts from the static configuration without its server and
+     * credentials, so only harmless defaults (port, sender address, app name) can come from it.
      *
      * @return the overridden settings, or {@code null} if they are invalid, in
      *         which case the caller falls back to the static configuration
      */
     private Settings buildOverride(Request<?> req) {
         var m = new HashMap<String, Object>(conf != null ? conf : Map.of());
+        m.remove("smtp-hostname");
+        m.remove("smtp-username");
+        m.remove("smtp-password");
         overrideIfPresent(m, "sender-email", str(req.attachedParam(PREFIX + "sender-email")));
         overrideIfPresent(m, "app-name", str(req.attachedParam(PREFIX + "sender-name")));
         overrideIfPresent(m, "smtp-hostname", str(req.attachedParam(PREFIX + "smtp-hostname")));

@@ -127,11 +127,96 @@ class SmtpEmailSenderTest {
     }
 
     @Test
-    void hasOverride_trueWhenAtLeastOneOverrideParamAttached() throws Exception {
+    void hasOverride_trueOnlyWithACompleteSmtpServer() throws Exception {
         Request<?> req = mock(Request.class);
         when(req.attachedParam("override-emails-smtp-hostname")).thenReturn("smtp.override.com");
+        when(req.attachedParam("override-emails-smtp-username")).thenReturn("tenant");
+        when(req.attachedParam("override-emails-smtp-password")).thenReturn("tenant-pass");
 
         assertTrue(hasOverride(req));
+    }
+
+    @Test
+    void hasOverride_falseForSenderAddressOrNameAlone() throws Exception {
+        // a sender address or name alone would otherwise go out through the deployment's server
+        Request<?> req = mock(Request.class);
+        when(req.attachedParam("override-emails-sender-email")).thenReturn("anything@example.com");
+        when(req.attachedParam("override-emails-sender-name")).thenReturn("Some Bank");
+
+        assertFalse(hasOverride(req));
+    }
+
+    @Test
+    void hasOverride_falseForAHostnameWithoutCredentials() throws Exception {
+        // a hostname alone would otherwise receive the deployment's username and password
+        Request<?> req = mock(Request.class);
+        when(req.attachedParam("override-emails-smtp-hostname")).thenReturn("smtp.attacker.example");
+
+        assertFalse(hasOverride(req));
+    }
+
+    @Test
+    void hasOverride_falseWhenACredentialIsBlank() throws Exception {
+        Request<?> req = mock(Request.class);
+        when(req.attachedParam("override-emails-smtp-hostname")).thenReturn("smtp.override.com");
+        when(req.attachedParam("override-emails-smtp-username")).thenReturn("tenant");
+        when(req.attachedParam("override-emails-smtp-password")).thenReturn("  ");
+
+        assertFalse(hasOverride(req));
+    }
+
+    @Test
+    void buildOverride_neverInheritsTheStaticServerOrCredentials() throws Exception {
+        sender = new SmtpEmailSender();
+        setConf(sender, validConf());
+        sender.onInit();
+
+        // called directly with no credentials: the static ones must not fill the gap
+        Request<?> req = mock(Request.class);
+        when(req.attachedParam("override-emails-smtp-hostname")).thenReturn("smtp.attacker.example");
+
+        assertNull(buildOverride(sender, req));
+    }
+
+    @Test
+    void permitted_refusesARequestEmailWhenTheGateFails() throws Exception {
+        sender = new SmtpEmailSender();
+        setGate(sender, (r, to, own) -> { throw new IllegalStateException("db down"); });
+
+        assertFalse(permitted(sender, mock(Request.class), "to@example.com"));
+    }
+
+    @Test
+    void permitted_sendsANoticeWithNoRequestWhenTheGateFails() throws Exception {
+        sender = new SmtpEmailSender();
+        setGate(sender, (r, to, own) -> { throw new IllegalStateException("db down"); });
+
+        assertTrue(permitted(sender, null, "ops@example.com"));
+    }
+
+    @Test
+    void permitted_tellsTheGateOwnSenderOnlyForACompleteSmtpServer() throws Exception {
+        sender = new SmtpEmailSender();
+        var seen = new boolean[] { true };
+        setGate(sender, (r, to, own) -> { seen[0] = own; return EmailGate.Decision.allow(); });
+
+        Request<?> partial = mock(Request.class);
+        when(partial.attachedParam("override-emails-sender-email")).thenReturn("anything@example.com");
+        permitted(sender, partial, "to@example.com");
+
+        assertFalse(seen[0]);
+    }
+
+    private static void setGate(SmtpEmailSender sender, EmailGate gate) throws Exception {
+        var field = SmtpEmailSender.class.getDeclaredField("gate");
+        field.setAccessible(true);
+        field.set(sender, gate);
+    }
+
+    private static boolean permitted(SmtpEmailSender sender, Request<?> req, String to) throws Exception {
+        Method m = SmtpEmailSender.class.getDeclaredMethod("permitted", Request.class, String.class);
+        m.setAccessible(true);
+        return (boolean) m.invoke(sender, req, to);
     }
 
     @Test
@@ -144,6 +229,8 @@ class SmtpEmailSenderTest {
         when(req.attachedParam("override-emails-sender-email")).thenReturn("override@example.com");
         when(req.attachedParam("override-emails-smtp-hostname")).thenReturn("smtp.override.com");
         when(req.attachedParam("override-emails-smtp-port")).thenReturn(587);
+        when(req.attachedParam("override-emails-smtp-username")).thenReturn("tenant");
+        when(req.attachedParam("override-emails-smtp-password")).thenReturn("tenant-pass");
 
         var override = buildOverride(sender, req);
 

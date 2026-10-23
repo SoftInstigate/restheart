@@ -322,7 +322,7 @@ public class RegisterService implements JsonService {
                         "frontend-url", RequestOverrides.frontendUrl(req, conf),
                         "verification-url", verifyLink);
                 var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                emails.sendEmailAsync(email, firstName, rendered.subject(), rendered.htmlBody());
+                emails.sendEmailAsync(req, email, firstName, rendered.subject(), rendered.htmlBody());
             }
         } catch (Exception e) {
             // Log and continue — the user was created; they can request a resend later
