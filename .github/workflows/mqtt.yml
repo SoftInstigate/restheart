@@ -116,7 +116,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download the archive built and tested above
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: restheart-mqtt-archive
           path: dist/

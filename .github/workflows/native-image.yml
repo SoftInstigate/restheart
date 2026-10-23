@@ -99,7 +99,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download native artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: restheart-linux-amd64
           path: core/target/
