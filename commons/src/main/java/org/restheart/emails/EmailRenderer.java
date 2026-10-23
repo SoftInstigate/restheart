@@ -163,17 +163,60 @@ public final class EmailRenderer {
     }
 
     /**
-     * Substitutes {@code {{key}}} placeholders with values from {@code vars}.
+     * Substitutes {@code {{key}}} placeholders with values from {@code vars}, HTML-escaped.
      * Unknown placeholders are left as-is.
+     *
+     * <p>The values are data — a name typed into a sign-up form, a team name, a URL built by the
+     * caller — and must never become markup: unescaped, a "first name" carrying a link or a whole
+     * paragraph turns every email that greets the user into a message written by whoever filled
+     * in the form. Escaping keeps URLs working: a browser reads {@code &amp;} in an href as
+     * {@code &}.
+     *
+     * <p>One pass over the template, so a value that itself contains {@code {{other}}} is not
+     * expanded again.
      */
     static String substituteVars(String html, Map<String, String> vars) {
-        if (vars == null || vars.isEmpty()) return html;
-        var result = html;
-        for (var entry : vars.entrySet()) {
-            var value = entry.getValue() != null ? entry.getValue() : "";
-            result = result.replace("{{" + entry.getKey() + "}}", value);
+        return substitute(html, vars, true);
+    }
+
+    /**
+     * Same as {@link #substituteVars}, for the subject: a plain-text header, so values are not
+     * HTML-escaped, but line breaks and other control characters are removed, as they could
+     * otherwise end the header and start new ones.
+     */
+    static String substituteSubjectVars(String subject, Map<String, String> vars) {
+        return substitute(subject, vars, false);
+    }
+
+    private static final Pattern PLACEHOLDER = Pattern.compile("\\{\\{([A-Za-z0-9_.-]+)}}");
+
+    private static String substitute(String text, Map<String, String> vars, boolean html) {
+        if (vars == null || vars.isEmpty()) return text;
+        return PLACEHOLDER.matcher(text).replaceAll(mr -> {
+            var key = mr.group(1);
+            if (!vars.containsKey(key)) {
+                return java.util.regex.Matcher.quoteReplacement(mr.group());
+            }
+            var value = vars.get(key) != null ? vars.get(key) : "";
+            var safe = html ? escapeHtml(value) : value.replaceAll("[\\p{Cntrl}\\u2028\\u2029]+", " ");
+            return java.util.regex.Matcher.quoteReplacement(safe);
+        });
+    }
+
+    static String escapeHtml(String s) {
+        var out = new StringBuilder(s.length() + 16);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '&' -> out.append("&amp;");
+                case '<' -> out.append("&lt;");
+                case '>' -> out.append("&gt;");
+                case '"' -> out.append("&quot;");
+                case '\'' -> out.append("&#39;");
+                default -> out.append(c);
+            }
         }
-        return result;
+        return out.toString();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -205,7 +248,7 @@ public final class EmailRenderer {
         var m = TITLE_BLOCK.matcher(template);
         if (!m.find()) return "(no subject)";
         var raw = m.group(1).strip();
-        return substituteVars(filterLang(raw, lang), vars).strip();
+        return substituteSubjectVars(filterLang(raw, lang), vars).strip();
     }
 
     private static String extractBody(String template, String lang, Map<String, String> vars) {
