@@ -79,7 +79,7 @@ public final class SdlContextBuilder {
 
         Optional<ObjectTypeDefinition> queryType;
         try {
-            queryType = registry.getType("Query", ObjectTypeDefinition.class);
+            queryType = Optional.ofNullable(registry.getTypeOrNull("Query", ObjectTypeDefinition.class));
         } catch (RuntimeException e) {
             return List.of();
         }

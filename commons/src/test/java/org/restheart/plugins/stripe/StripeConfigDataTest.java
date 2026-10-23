@@ -100,6 +100,7 @@ class StripeConfigDataTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     void nullSubscriptions_returnsSafeDefaults() {
         var conf = new StripeConfigData(
                 "sk_test_x", "whsec_x", "restheart", "teams",

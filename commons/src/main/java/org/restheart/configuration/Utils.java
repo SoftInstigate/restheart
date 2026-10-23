@@ -646,6 +646,12 @@ public class Utils {
      */
     private static final Set<Option<Long>> LONG_UNDERTOW_OPTIONS;
 
+    // deprecated for removal in Undertow, still accepted in configuration
+    @SuppressWarnings("removal")
+    private static Option<Integer> maxCachedHeaderSize() {
+        return UndertowOptions.MAX_CACHED_HEADER_SIZE;
+    }
+
     static {
         UNDERTOW_OPTIONS = Sets.newHashSet();
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_EQUALS_IN_COOKIE_VALUE);
@@ -666,7 +672,7 @@ public class Utils {
         UNDERTOW_OPTIONS.add(UndertowOptions.IDLE_TIMEOUT);
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_AJP_PACKET_SIZE);
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_BUFFERED_REQUEST_SIZE);
-        UNDERTOW_OPTIONS.add(UndertowOptions.MAX_CACHED_HEADER_SIZE);
+        UNDERTOW_OPTIONS.add(maxCachedHeaderSize());
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_CONCURRENT_REQUESTS_PER_CONNECTION);
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_COOKIES);
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_HEADERS);
