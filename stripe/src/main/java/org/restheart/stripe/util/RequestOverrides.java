@@ -150,12 +150,12 @@ public final class RequestOverrides {
     @SuppressWarnings("unchecked")
     public static Map<String, PlanConfig> plans(ServiceRequest<?> req, StripeConfigData conf) {
         var v = req.attachedParam(PLANS);
-        return (v instanceof Map<?, ?> m && !m.isEmpty()) ? (Map<String, PlanConfig>) m : conf.plans();
+        return (v instanceof Map<?, ?> m && !m.isEmpty()) ? (Map<String, PlanConfig>) m : (conf.subscriptions() == null ? Map.of() : conf.subscriptions().plans());
     }
 
     /** Effective default plan id. */
     public static String defaultPlan(ServiceRequest<?> req, StripeConfigData conf) {
-        return str(req, DEFAULT_PLAN, conf.defaultPlan());
+        return str(req, DEFAULT_PLAN, conf.subscriptions() == null ? null : conf.subscriptions().defaultPlan());
     }
 
     /**

@@ -42,7 +42,7 @@ class JwtHelperTest {
         var claims = List.of("password", "emailVerificationToken", "emailVerificationCreatedAt",
                 "passwordResetToken", "passwordResetCreatedAt", "plan");
 
-        var jwt = new JwtHelper(KEY, ISSUER, 15, claims);
+        var jwt = new JwtHelper(KEY, ISSUER, 15, claims, null);
         var token = jwt.issueToken("user@example.com", ROLES, null, null, null, userDoc);
         var decoded = JWT.decode(token);
 
