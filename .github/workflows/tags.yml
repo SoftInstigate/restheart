@@ -11,7 +11,10 @@ jobs:
   # Build and test the project
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
-    runs-on: ubuntu-latest
+    # ubuntu-22.04, not ubuntu-latest: the ubuntu-24.04 image 20261018.339.1 (2026-10-18) brings a
+    # Linux kernel 6.19+, on which mongod 8.x refuses to start (TCMalloc and rseq, SERVER-131155, fixed
+    # in kernel 7.0.14+). Back to ubuntu-latest when the runners carry a fixed kernel.
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
@@ -84,7 +87,7 @@ jobs:
   release:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     timeout-minutes: 10
@@ -120,7 +123,7 @@ jobs:
   build-docker-standard:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         mongodb-version: ["8.3"]
@@ -172,7 +175,7 @@ jobs:
   deploy-maven-central:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         mongodb-version: ["8.3"]
@@ -216,7 +219,7 @@ jobs:
   trigger-native-image:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
       - name: Trigger native image workflow
