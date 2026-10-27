@@ -124,7 +124,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             // Resolve the stream operation early — needed for notify_when and bound vars
             var operation = findOperation(request);
             var evaluator = NotifyWhenEvaluator.from(operation.getNotifyWhen());
-            var boundVars = extractBoundVars(exchange, evaluator);
+            var boundVars = extractBoundVars(request, evaluator);
             exchange.putAttachment(BOUND_VARS_EXCHANGE_KEY, boundVars);
 
             if (isWebSocketHandshakeRequest(exchange)) {
@@ -320,16 +320,33 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     }
 
     /**
-     * Extracts the single query-parameter variable required by the {@code notify_when}
-     * evaluator. Returns an empty map when {@code evaluator} is {@code null} or the
-     * parameter is absent.
+     * Binds the single variable required by the {@code notify_when} evaluator. It is resolved
+     * like a stage variable: from {@code avars} or from the plain query parameter, the
+     * {@code avars} entry winning. Returns an empty map when {@code evaluator} is {@code null}.
+     *
+     * @throws QueryVariableNotBoundException when the stream defines {@code notify_when} and
+     *         the request does not bind its variable to a string: the stream fails closed,
+     *         never broadcasting to a client that did not say which events are its own
      */
-    private static Map<String, String> extractBoundVars(HttpServerExchange exchange, NotifyWhenEvaluator evaluator) {
+    private static Map<String, String> extractBoundVars(MongoRequest request, NotifyWhenEvaluator evaluator)
+            throws QueryVariableNotBoundException {
         if (evaluator == null) return Map.of();
         var varName = evaluator.getVarName();
-        var params = exchange.getQueryParameters().get(varName);
-        if (params == null || params.isEmpty()) return Map.of();
-        return Map.of(varName, params.getFirst());
+        var vars = request.getAggregationVars();
+        var value = vars != null ? vars.get(varName) : null;
+        if (value == null) {
+            throw new QueryVariableNotBoundException("variable " + varName + " not bound");
+        }
+        if (value.isString()) {
+            return Map.of(varName, value.asString().getValue());
+        }
+        // a plain parameter that parses as JSON (?tid=123) is bound as that JSON value:
+        // notify_when compares strings, so it gets the parameter as written
+        var params = request.getExchange().getQueryParameters().get(varName);
+        if (params != null && !params.isEmpty()) {
+            return Map.of(varName, params.getFirst());
+        }
+        throw new QueryVariableNotBoundException("variable " + varName + " must be a string to be used in notify_when");
     }
 
     /**

@@ -97,19 +97,20 @@ public class NotifyWhenEvaluator {
      * variables are {@code boundVars}.
      *
      * <ul>
-     *   <li>Returns {@code true} when {@code boundVars} is {@code null} or does not contain
-     *       the required variable (pass-through: don't filter what we can't evaluate).</li>
+     *   <li>Returns {@code false} when {@code boundVars} is {@code null} or does not contain
+     *       the required variable: the predicate fails closed. The handler already rejects
+     *       such a request with {@code variable not bound}; this is the second line.</li>
      *   <li>Returns {@code false} when the target field is absent in the event.</li>
      *   <li>Scalar field: returns {@code true} iff field value equals the bound variable.</li>
      *   <li>Array field: returns {@code true} iff the bound variable value is in the array.</li>
      * </ul>
      *
      * @param event     the change event document (as returned by {@code ChangeStreamWorker.getDocument})
-     * @param boundVars the session's bound variables (from query params)
+     * @param boundVars the session's bound variables (query parameter or {@code avars})
      */
     public boolean matches(BsonDocument event, Map<String, String> boundVars) {
         if (boundVars == null || !boundVars.containsKey(varName)) {
-            return true; // unbound variable → pass-through
+            return false; // unbound variable → nothing is dispatched
         }
 
         var varValue = boundVars.get(varName);
