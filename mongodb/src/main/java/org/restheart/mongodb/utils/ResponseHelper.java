@@ -181,6 +181,22 @@ public class ResponseHelper {
             case 241 -> HttpStatus.SC_BAD_REQUEST;
             // wrong $sort value (must be 1 or -1)
             case 15975 -> HttpStatus.SC_BAD_REQUEST;
+            // Invalid GeoJSON for a 2dsphere index: 510 GeoKeyExtractionFailed and
+            // 511 GeoKeyExtractionFailedTimeseries (MongoDB 9.0+), 16755 and 16756 before 9.0
+            case 510, 511, 16755, 16756 -> HttpStatus.SC_BAD_REQUEST;
+            // $group accumulator with an empty field name (MongoDB 9.0+)
+            case 12116300 -> HttpStatus.SC_BAD_REQUEST;
+            // 146 ExceededMemoryLimit, 292 QueryExceededMemoryLimitNoDiskUseAllowed
+            // (MongoDB 9.0 adds a per-operation memory limit)
+            case 146, 292 -> HttpStatus.SC_BAD_REQUEST;
+            // 509 TooManyOpenTransactions (MongoDB 9.0+)
+            case 509 -> HttpStatus.SC_SERVICE_UNAVAILABLE;
+            // SystemOverloadedError category (MongoDB 9.0+): 433 AdmissionQueueOverflow,
+            // 449 RateLimitExceeded, 450 PooledConnectionAcquisitionRejected,
+            // 462 IngressRequestRateLimitExceeded, 473 InterruptedDueToOverload,
+            // 489 SearchRequestRejectedDueToOverload, 512 WriteConflictRetryLimitExceeded,
+            // 521 QueryMemoryLimitExceeded. The driver already retries them before failing.
+            case 433, 449, 450, 462, 473, 489, 512, 521 -> HttpStatus.SC_SERVICE_UNAVAILABLE;
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -210,7 +226,25 @@ public class ResponseHelper {
                 }
             }
             case 11000 -> duplicateKeyMessage(me);
+            // the server message says what is wrong, e.g. "Could not extract geo keys at path 'loc'
+            // for document with _id ...: Longitude/latitude is out of bounds, lng: 500 lat: 500"
+            case 510, 511, 16755, 16756, 12116300 -> {
+                var raw = serverErrorMessage(me);
+                yield raw == null || raw.isBlank() ? getMessageFromErrorCode(code) : raw;
+            }
             default -> getMessageFromErrorCode(code);
+        };
+    }
+
+    /**
+     * The error message as sent by the server, without the driver's "Command failed with
+     * error..." wrapping.
+     */
+    private static String serverErrorMessage(MongoException me) {
+        return switch (me) {
+            case MongoWriteException mwe -> mwe.getError().getMessage();
+            case MongoCommandException mce -> mce.getErrorMessage();
+            default -> me.getMessage();
         };
     }
 
@@ -223,11 +257,7 @@ public class ResponseHelper {
      * not tell which one it had hit.
      */
     private static String duplicateKeyMessage(MongoException me) {
-        var raw = switch (me) {
-            case MongoWriteException mwe -> mwe.getError().getMessage();
-            case MongoCommandException mce -> mce.getErrorMessage();
-            default -> me.getMessage();
-        };
+        var raw = serverErrorMessage(me);
 
         var m = raw == null ? null : DUP_KEY.matcher(raw);
 
@@ -278,6 +308,11 @@ public class ResponseHelper {
             case 15998 -> "FieldPath field names may not be empty strings";
             case 241 -> "Failed to parse number in $convert";
             case 15975 -> "Wrong sort parameter, key ordering must be 1 (for ascending) or -1 (for descending)";
+            case 510, 511, 16755, 16756 -> "Invalid GeoJSON for a 2dsphere index";
+            case 12116300 -> "A $group accumulator cannot have an empty field name";
+            case 146, 292 -> "The query exceeded the MongoDB memory limit. For aggregations, set 'allowDiskUse: true' in the aggregation definition";
+            case 509 -> "Too many open transactions on MongoDB, retry later";
+            case 433, 449, 450, 462, 473, 489, 512, 521 -> "MongoDB is overloaded, retry later";
             default -> "Error handling the request, see log for more information";
         };
     }

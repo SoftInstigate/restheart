@@ -46,7 +46,7 @@ public class ErrorHandler implements HttpHandler {
 
     private final HttpHandler next;
 
-    private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
      * Creates a new instance of ErrorHandler
@@ -89,7 +89,12 @@ public class ErrorHandler implements HttpHandler {
         } catch (MongoException mce) {
             int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
 
-            if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
+            if (httpCode == HttpStatus.SC_SERVICE_UNAVAILABLE) {
+                // MongoDB overloaded or at a limit (e.g. too many open transactions):
+                // expected under load, so no stack trace and a clean message for the client
+                LOGGER.warn("MongoDB cannot serve the request now: {}", mce.getMessage());
+                response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
+            } else if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
                 LOGGER.error("Error handling the request", mce);
                 response.setInError(httpCode, mce.getMessage());
             } else {
