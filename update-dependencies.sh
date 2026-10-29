@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-# If the first argument is true, allow minor updates.
+# If the first argument is true, allow minor updates (default: patch updates only).
+# Major updates are never applied: the versions plugin allows them by default
+# (allowMajorUpdates=true), so they are disabled explicitly below.
 ALLOW_MINOR_UPDATES=${1:-false}
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 RULES_URI="file://${SCRIPT_DIR}/rules.xml"
@@ -14,6 +16,7 @@ else
 fi
 
 COMMON_ARGS=(
+	-DallowMajorUpdates=false
 	-DallowMinorUpdates="${ALLOW_MINOR_UPDATES}"
 	-DincludePlugins=true
 	-Dmaven.version.rules="${RULES_URI}"
