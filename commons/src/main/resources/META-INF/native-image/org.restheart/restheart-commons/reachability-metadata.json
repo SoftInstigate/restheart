@@ -1426,14 +1426,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.mongodb.client.internal.ClientSessionClock",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
       "type": "com.mongodb.client.internal.Crypts",
       "allPublicFields": true,
       "allPublicConstructors": true,
@@ -2162,14 +2154,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.mongodb.internal.connection.ClientMetadataHelper",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
       "type": "com.mongodb.internal.connection.Cluster",
       "allPublicFields": true,
       "allPublicConstructors": true,
@@ -2346,14 +2330,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.mongodb.internal.connection.ElementExtendingBsonWriter",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
       "type": "com.mongodb.internal.connection.ExtendedAsynchronousByteChannel",
       "allPublicFields": true,
       "allPublicConstructors": true,
@@ -2499,14 +2475,6 @@
     },
     {
       "type": "com.mongodb.internal.connection.ProtocolHelper",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
-      "type": "com.mongodb.internal.connection.QueryResult",
       "allPublicFields": true,
       "allPublicConstructors": true,
       "allDeclaredConstructors": true,
@@ -2946,30 +2914,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.mongodb.internal.operation.AsyncExplainableReadOperation",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
-      "type": "com.mongodb.internal.operation.AsyncReadOperation",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
-      "type": "com.mongodb.internal.operation.AsyncWriteOperation",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
       "type": "com.mongodb.internal.operation.BaseFindAndModifyOperation",
       "allPublicFields": true,
       "allPublicConstructors": true,
@@ -3083,14 +3027,6 @@
     },
     {
       "type": "com.mongodb.internal.operation.EstimatedDocumentCountOperation",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
-      "type": "com.mongodb.internal.operation.ExplainableReadOperation",
       "allPublicFields": true,
       "allPublicConstructors": true,
       "allDeclaredConstructors": true,
@@ -3242,14 +3178,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.mongodb.internal.operation.SyncOperations",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true
-    },
-    {
       "type": "com.mongodb.internal.operation.TransactionOperation",
       "allPublicFields": true,
       "allPublicConstructors": true,
@@ -3393,12 +3321,6 @@
     },
     {
       "type": "com.mongodb.internal.operation.BatchCursor",
-      "allDeclaredFields": true,
-      "allDeclaredMethods": true,
-      "allDeclaredConstructors": true
-    },
-    {
-      "type": "com.mongodb.internal.operation.QueryBatchCursor",
       "allDeclaredFields": true,
       "allDeclaredMethods": true,
       "allDeclaredConstructors": true
