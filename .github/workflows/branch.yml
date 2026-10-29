@@ -43,6 +43,10 @@ jobs:
             mongodb-image: "mongo"
             mongodb-profile: "-P-mongodb,mongodb-classic"
             vector-search: "false"
+          - mongodb-version: "9.0"
+            mongodb-image: "mongo"
+            mongodb-profile: "-P-mongodb,mongodb-classic"
+            vector-search: "false"
           # mongodb-atlas-local — the default "mongodb" profile's image (mongod +
           # mongot, self-initializing replica set): runs restheart-ai's vector search
           # tests, which none of the official-mongo legs above can.
