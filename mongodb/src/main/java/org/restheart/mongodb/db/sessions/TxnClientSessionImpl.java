@@ -44,6 +44,8 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
     private boolean commitInProgress;
     private TransactionOptions transactionOptions;
     private Txn txnServerStatus = null;
+    // retries on server overload errors (MongoDB 9.0+), from the client settings; null = driver default
+    private final Integer maxAdaptiveRetries;
 
     public TxnClientSessionImpl(final ServerSessionPool serverSessionPool,
                                 final Object originator,
@@ -53,6 +55,7 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
         super(serverSessionPool, originator, options);
         this.executor = executor;
         this.txnServerStatus = txnServerStatus;
+        this.maxAdaptiveRetries = SessionsUtils.getSettings().getMaxAdaptiveRetries();
     }
 
     public void setMessageSentInCurrentTransaction(boolean messageSentInCurrentTransaction) {
@@ -144,8 +147,10 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
                 if (readConcern == null) {
                     throw new MongoInternalException("Invariant violated. Transaction options read concern can not be null");
                 }
+                // as in the driver's ClientSessionImpl: a retried commit is sent with majority write concern
+                var alreadyCommitted = commitInProgress || transactionState == TransactionStatus.COMMITTED;
                 commitInProgress = true;
-                executor.execute(new CommitTransactionOperation(transactionOptions.getWriteConcern()), readConcern, this);
+                executor.execute(new CommitTransactionOperation(transactionOptions.getWriteConcern(), maxAdaptiveRetries, alreadyCommitted), readConcern, this);
             }
         } finally {
             commitInProgress = false;
@@ -170,7 +175,7 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
                 if (readConcern == null) {
                     throw new MongoInternalException("Invariant violated. Transaction options read concern can not be null");
                 }
-                executor.execute(new AbortTransactionOperation(transactionOptions.getWriteConcern()), readConcern, this);
+                executor.execute(new AbortTransactionOperation(transactionOptions.getWriteConcern(), maxAdaptiveRetries), readConcern, this);
             }
         } catch (Exception e) {
             // ignore errors
