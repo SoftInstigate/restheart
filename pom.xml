@@ -55,8 +55,8 @@
         <mongodb.image>mongodb/mongodb-atlas-local</mongodb.image>
         <mongodb.version>preview</mongodb.version>
         <jdk.version>25</jdk.version>
-        <graalvm.version>25.1.3</graalvm.version>
-        <truffle.version>25.1.3</truffle.version> <!-- Truffle and Graal languages are compatible
+        <graalvm.version>25.4.4.1.1</graalvm.version>
+        <truffle.version>25.4.4.1.1</truffle.version> <!-- Truffle and Graal languages are compatible
         with the latest version of the GraalVM JDK as well as the latest LTS release.-->
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
@@ -83,19 +83,19 @@
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
         <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
         <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
-        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
+        <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
         <maven-antrun-plugin.version>3.2.0</maven-antrun-plugin.version>
-        <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
-        <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
-        <native-maven-plugin.version>1.1.14</native-maven-plugin.version>
-        <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
-        <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
+        <central-publishing-maven-plugin.version>0.12.0</central-publishing-maven-plugin.version>
+        <docker-maven-plugin.version>0.49.0</docker-maven-plugin.version>
+        <native-maven-plugin.version>1.1.17</native-maven-plugin.version>
+        <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
+        <versions-maven-plugin.version>2.23.0</versions-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
-        <rewrite-maven-plugin.version>6.45.0</rewrite-maven-plugin.version>
+        <rewrite-maven-plugin.version>6.46.1</rewrite-maven-plugin.version>
     </properties>
 
     <modules>
@@ -280,7 +280,7 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>5.7.1</version>
+                <version>5.14.0</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
@@ -297,13 +297,13 @@
             <dependency>
                 <groupId>org.jboss.threads</groupId>
                 <artifactId>jboss-threads</artifactId>
-                <version>3.9.2</version>
+                <version>3.11.1</version>
             </dependency>
             <!-- Pin transitive dependencies for dependency convergence -->
             <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_annotations</artifactId>
-                <version>2.49.0</version>
+                <version>2.51.0</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
@@ -313,17 +313,17 @@
             <dependency>
                 <groupId>io.smallrye.common</groupId>
                 <artifactId>smallrye-common-constraint</artifactId>
-                <version>2.14.0</version>
+                <version>2.21.1</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.common</groupId>
                 <artifactId>smallrye-common-cpu</artifactId>
-                <version>2.14.0</version>
+                <version>2.21.1</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.common</groupId>
                 <artifactId>smallrye-common-function</artifactId>
-                <version>2.14.0</version>
+                <version>2.21.1</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
@@ -333,12 +333,12 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.21.7</version>
+                <version>2.22.4</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>33.6.0-jre</version>
+                <version>33.7.2-jre</version>
             </dependency>
             <dependency>
                 <groupId>org.jspecify</groupId>
@@ -348,12 +348,12 @@
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
-                <version>3.2.4</version>
+                <version>3.3.1</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
-                <version>2.14.0</version>
+                <version>2.15.0</version>
             </dependency>
             <dependency>
                 <groupId>com.jayway.jsonpath</groupId>
@@ -368,7 +368,7 @@
             <dependency>
                 <groupId>com.auth0</groupId>
                 <artifactId>java-jwt</artifactId>
-                <version>4.5.2</version>
+                <version>4.6.2</version>
             </dependency>
             <dependency>
                 <groupId>com.softinstigate</groupId>
@@ -384,12 +384,12 @@
             <dependency>
                 <groupId>com.stripe</groupId>
                 <artifactId>stripe-java</artifactId>
-                <version>33.3.0</version>
+                <version>33.4.2</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.22.1</version>
+                <version>1.23.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-jxpath</groupId>
@@ -399,12 +399,12 @@
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
-                <version>2.6</version>
+                <version>2.7</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.38</version>
+                <version>1.6.6</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -424,17 +424,17 @@
             <dependency>
                 <groupId>io.modelcontextprotocol.sdk</groupId>
                 <artifactId>mcp</artifactId>
-                <version>2.0.1</version>
+                <version>2.1.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-core</artifactId>
-                <version>3.3.2</version>
+                <version>3.3.3</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-parsers-standard-package</artifactId>
-                <version>3.3.2</version>
+                <version>3.3.3</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
@@ -508,7 +508,7 @@
             <dependency>
                 <groupId>com.graphql-java</groupId>
                 <artifactId>graphql-java</artifactId>
-                <version>26.0</version>
+                <version>26.1</version>
             </dependency>
             <dependency>
                 <groupId>com.nulab-inc</groupId>
@@ -537,7 +537,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>5.23.0</version>
+                <version>5.24.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>

@@ -20,8 +20,11 @@
  */
 package org.restheart.mongodb.db.sessions;
 
+import com.mongodb.MongoClientSettings;
+import com.mongodb.internal.TimeoutSettings;
 import com.mongodb.internal.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;
+import com.mongodb.internal.thread.AsyncClientExecutor;
 import com.mongodb.session.ServerSession;
 import java.util.UUID;
 
@@ -38,7 +41,14 @@ public class SimpleServerSessionPool extends ServerSessionPool {
      * @param sid
      */
     public SimpleServerSessionPool(Cluster cluster, UUID sid) {
-        super(cluster, null);
+        this(cluster, sid, SessionsUtils.getSettings());
+    }
+
+    private SimpleServerSessionPool(Cluster cluster, UUID sid, MongoClientSettings settings) {
+        // Same arguments the driver's MongoClientImpl uses. The pool's OperationContext is only
+        // used to end pooled sessions on close(); this pool never pools sessions (get() is
+        // overridden), so the no-op executor is enough.
+        super(cluster, AsyncClientExecutor.NO_OP, TimeoutSettings.create(settings), settings.getServerApi());
         this.sid = sid;
     }
 
