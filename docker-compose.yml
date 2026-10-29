@@ -24,7 +24,7 @@ services:
 
   # MongoDB database server
   mongodb:
-    image: mongo:8.0
+    image: mongo:9.0
     # Run as replica set (required for change streams and transactions)
     command: ["--bind_ip_all", "--replSet", "rs0"]
     # Health check to initialize replica set
@@ -35,7 +35,7 @@ services:
           "mongosh",
           "--quiet",
           "--eval",
-          "'if (!rs.isMaster().ismaster) { rs.initiate(); }'",
+          "'if (!db.hello().isWritablePrimary) { rs.initiate(); }'",
         ]
       interval: 5s # Check every 5 seconds
       timeout: 10s # Wait up to 10 seconds for response
