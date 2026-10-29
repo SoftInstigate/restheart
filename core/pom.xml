@@ -568,7 +568,9 @@
                 <image>
                   <name>${mongodb.image}:${mongodb.version}</name>
                   <run>
-                    <cmd>--bind_ip_all --replSet rs0</cmd>
+                    <!-- enableTestCommands: the failCommand fail point, used by
+                         ChangeStreamResumeIT to make a change stream getMore fail -->
+                    <cmd>--bind_ip_all --replSet rs0 --setParameter enableTestCommands=1</cmd>
                     <ports>
                       <port>${mongodb.port}:${mongodb.port}</port>
                     </ports>
