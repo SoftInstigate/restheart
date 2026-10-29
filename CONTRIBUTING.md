@@ -193,6 +193,15 @@ Stop the environment with `core/bin/stop.sh` and `docker stop rh-mongo`.
 
 Any published `mongodb/mongodb-atlas-local` tag works (`latest`, `preview`, `8.0`, `7.0`, or a pinned `<major>.<minor>.<patch>-<timestamp>` build); the default is set by the `mongodb.version` property in the root POM.
 
+Versions with no atlas-local tag, such as MongoDB 9.0, run on the official `mongo` image through the `mongodb-classic` profile. That image has no mongot, so the vector search scenarios must be excluded:
+
+```bash
+./mvnw clean verify -P-mongodb,mongodb-classic \
+  -Dmongodb.image=mongo -Dmongodb.version="9.0" -Dkarate.vectorSearch=false
+```
+
+CI runs the suite on the official `mongo` image 7.0, 8.0, 8.3 and 9.0, and on `mongodb/mongodb-atlas-local:preview`, the only leg that runs the vector search tests.
+
 ### Skip updating license headers (faster iteration)
 
 ```bash
