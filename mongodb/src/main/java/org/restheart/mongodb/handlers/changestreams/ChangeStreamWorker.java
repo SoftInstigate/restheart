@@ -73,8 +73,22 @@ public class ChangeStreamWorker implements Runnable {
     private final List<BsonDocument> resolvedStages;
     private final String dbName;
     private final String collName;
-    private final BsonDocument resumeToken;
     private final NotifyWhenEvaluator notifyWhenEvaluator;
+
+    /**
+     * Where the stream (re)opens: the initial token (from {@code Last-Event-ID}) until the first
+     * event, then the token of the last event dispatched. When the stream fails and is reopened,
+     * it continues right after that event: nothing written in between is lost or sent again.
+     */
+    private volatile BsonDocument resumeFrom;
+
+    /**
+     * 286 ChangeStreamHistoryLost; 280 ChangeStreamFatalError, which older servers return when the
+     * resume token is no longer in the oplog.
+     */
+    private static final Set<Integer> HISTORY_LOST_CODES = Set.of(286, 280);
+
+    private static final long REOPEN_DELAY_MS = 1_000;
 
     private final Set<WebSocketSession> websocketSessions = Collections.synchronizedSet(new HashSet<>());
     private final Set<ServerSentEventConnection> sseSessions = Collections.synchronizedSet(new HashSet<>());
@@ -113,7 +127,7 @@ public class ChangeStreamWorker implements Runnable {
         this.resolvedStages = resolvedStages;
         this.dbName = dbName;
         this.collName = collName;
-        this.resumeToken = resumeToken;
+        this.resumeFrom = resumeToken;
         this.notifyWhenEvaluator = notifyWhenEvaluator;
     }
 
@@ -160,22 +174,40 @@ public class ChangeStreamWorker implements Runnable {
 
     /**
      * Executes the change stream events loop.
-     * On MongoDB exceptions it reconnects to the change stream after 1 second.
+     *
+     * <p>The driver resumes the stream by itself on resumable errors. On the other MongoDB errors
+     * the stream is reopened after 1 second, after the last event dispatched (see
+     * {@link #resumeFrom}). If the oplog no longer has that event, the events since then are lost:
+     * the stream reopens from now, and a warning says so.
      */
     private void changeStreamEventsLoop() {
-        try {
-            _changeStreamEventsLoop();
-        } catch (MongoInterruptedException mie) {
-            close();
-        } catch (MongoException mqe) {
-            LOGGER.error("MongoDB error on ChangeStreamWorker {}, restarting a new worker", key, mqe);
-
+        while (true) {
             try {
-                Thread.sleep(1_000);
-            } catch (InterruptedException ex) {
-                // nothing to do
-            } finally {
-                changeStreamEventsLoop();
+                _changeStreamEventsLoop();
+                return; // the stream ended, e.g. invalidated by a drop of the collection
+            } catch (MongoInterruptedException mie) {
+                close();
+                return;
+            } catch (MongoException me) {
+                if (resumeFrom != null && HISTORY_LOST_CODES.contains(me.getCode())) {
+                    LOGGER.warn("Change Stream Worker {} cannot resume after the last event sent, no longer in the oplog: "
+                            + "the events since then are lost, reopening from now", key);
+                    resumeFrom = null;
+                } else {
+                    LOGGER.error("MongoDB error on Change Stream Worker {}, reopening the change stream in {} ms",
+                            key, REOPEN_DELAY_MS, me);
+                }
+
+                if (this.websocketSessions.isEmpty() && this.sseSessions.isEmpty()) {
+                    return;
+                }
+
+                try {
+                    Thread.sleep(REOPEN_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             }
         }
     }
@@ -222,6 +254,11 @@ public class ChangeStreamWorker implements Runnable {
                     this.sseSessions.remove(conn);
                 }
             }));
+
+            // dispatched: if the stream fails from here on, it reopens after this event
+            if (changeEvent.getResumeToken() != null) {
+                this.resumeFrom = changeEvent.getResumeToken();
+            }
         });
     }
 
@@ -298,9 +335,10 @@ public class ChangeStreamWorker implements Runnable {
                     .watch(resolvedStages)
                     .fullDocument(FullDocument.UPDATE_LOOKUP);
 
-            if (resumeToken != null) {
-                cs = cs.startAfter(resumeToken);
-                LOGGER.debug("Change Stream Worker {} resuming from token {}", key, resumeToken);
+            var from = resumeFrom;
+            if (from != null) {
+                cs = cs.startAfter(from);
+                LOGGER.debug("Change Stream Worker {} resuming from token {}", key, from);
             }
 
             return cs;

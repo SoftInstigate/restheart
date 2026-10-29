@@ -31,6 +31,7 @@ import org.bson.BsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 
 /**
@@ -115,6 +116,12 @@ public final class CollectionWatchers {
     private static final Duration MAX_BACKOFF = Duration.ofSeconds(30);
 
     /**
+     * 286 ChangeStreamHistoryLost; 280 ChangeStreamFatalError, which older servers return when the
+     * resume token is no longer in the oplog.
+     */
+    private static final Set<Integer> HISTORY_LOST_CODES = Set.of(286, 280);
+
+    /**
      * Reads the stream, reopening it for as long as somebody is subscribed.
      *
      * <p>A change stream ends for reasons that have nothing to do with the subscriber: the
@@ -126,19 +133,35 @@ public final class CollectionWatchers {
      */
     private void run(Key key, Watch watch) {
         var backoff = INITIAL_BACKOFF;
+        // the token after the last change notified: a reopened stream continues from there, so a
+        // change made while the stream was down is still notified
+        BsonDocument resumeFrom = null;
 
         try {
             while (!watch.stopped) {
-                try (var cursor = collections.apply(key.db(), key.collection()).watch().cursor()) {
+                var iterable = collections.apply(key.db(), key.collection()).watch();
+                if (resumeFrom != null) {
+                    iterable = iterable.startAfter(resumeFrom);
+                }
+
+                try (var cursor = iterable.cursor()) {
                     backoff = INITIAL_BACKOFF;
 
                     while (!watch.stopped && cursor.hasNext()) {
                         cursor.next();
+                        resumeFrom = cursor.getResumeToken();
                         notifyListeners(watch);
                     }
                 } catch (Exception e) {
                     if (watch.stopped || Thread.currentThread().isInterrupted()) {
                         return;
+                    }
+
+                    if (resumeFrom != null && e instanceof MongoException me && HISTORY_LOST_CODES.contains(me.getCode())) {
+                        // the oplog no longer has the last change notified: start again from now
+                        LOGGER.warn("MCP change stream on {}.{} cannot resume after the last change notified, "
+                                + "no longer in the oplog: reopening from now", key.db(), key.collection());
+                        resumeFrom = null;
                     }
 
                     LOGGER.debug("MCP change stream on {}.{} failed, retrying in {}",
