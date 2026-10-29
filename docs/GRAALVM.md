@@ -78,37 +78,42 @@ cd core
 
 ### Generate native-image build configuration
 
-Start RESTHeart with test configuration and the `native-image-agent`
+Run the integration tests with RESTHeart under the GraalVM `native-image-agent`, which records every class reached through reflection, JNI or resources.
+
+1. Build, and start MongoDB with a replica set (here the official image on 27017):
 
 ```bash
-./mvnw clean package
+./mvnw clean package -DskipTests
+docker run -d --name mongo-agent -p 27017:27017 mongo:9.0 --replSet rs0
+docker exec mongo-agent mongosh --quiet --eval 'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:27017"}]})'
 cp test-plugins/target/restheart-test-plugins.jar core/target/plugins
-java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar -o core/src/test/resources/etc/conf-overrides.yml
 ```
 
-Execute tests, this makes the `native-image-agent` collecting all needed configuration
+2. Start RESTHeart with the agent, using a GraalVM JDK. Don't pass `--fork`: the forked process is a new JVM, without the agent. Write the output to a separate directory, not over the files in the repo:
 
 ```bash
 cd core
-../mvnw test surefire:test -DskipITs=false -Dtest=\*IT
+$GRAALVM_HOME/bin/java -agentlib:native-image-agent=config-output-dir=/tmp/rh-agent \
+  --sun-misc-unsafe-memory-access=allow --enable-native-access=ALL-UNNAMED \
+  -jar target/restheart.jar -o src/test/resources/etc/conf-overrides.yml
 ```
 
-Stop restheart. this makes the [Assisted Configuration of Native Image Builds](https://github.com/oracle/graal/blob/master/substratevm/BuildConfiguration.md#assisted-configuration-of-native-image-builds) being updated.
+3. In another shell, from the repository root, run the integration tests against it. The profiles turned off here are the ones that would start their own MongoDB and RESTHeart:
 
-The generated configuration are merged into the existing ones in directory `core/src/main/resources/META-INF/native-image/org.restheart/restheart`
+```bash
+./mvnw verify -pl core -am -P-mongodb,-mongodb-classic,-start-server
+```
 
-*Some files need to be manually edited*
+4. Stop RESTHeart with Ctrl-C (or SIGTERM): the agent writes `/tmp/rh-agent/reachability-metadata.json` when the JVM exits.
 
-Remove all references to classes of packages `org.restheart.test`, `org.graalvm` (keep `org.graalvm.polyglot.Value`) and `com.oracle.truffle` from `reflect-config.json`
+5. Compare it with the `reachability-metadata.json` of each module and add what is missing to the module that owns the class:
 
-Also make sure to move:
+- `org.restheart.security` to `security/src/main/resources/META-INF/native-image/org.restheart/restheart-security/`
+- `org.restheart.mongodb` to `mongodb/src/main/resources/META-INF/native-image/org.restheart/restheart-mongodb/`
+- `org.restheart.polyglot` to `polyglot/src/main/resources/META-INF/native-image/org.restheart/restheart-polyglot/`, `graphql` to `graphql/...`
+- the rest to `core/` or `commons/`
 
-- references to classes in package `org.restheart.security` to `security/src/main/resources/META-INF/native-image/org.restheart/restheart-security/reflect-config.json`
-
-- references to classes in package `org.restheart.mongodb` to `mongodb/src/main/resources/META-INF/native-image/org.restheart/restheart-mongodb/reflect-config.json`
-
-- references to classes in packages `org.restheart.ployglot`, `graphql` to `ployglot/src/main/resources/META-INF/native-image/org.restheart/restheart-ployglot/reflect-config.json`
-
+Leave out `org.restheart.test`, `org.graalvm` (except `org.graalvm.polyglot.Value`) and `com.oracle.truffle`. The MongoDB driver and BSON jars ship their own metadata: a driver class the agent records is already covered when it is in their `META-INF/native-image/reflect-config.json`.
 
 The following fields must be configured with `allowWrite: true`
 
