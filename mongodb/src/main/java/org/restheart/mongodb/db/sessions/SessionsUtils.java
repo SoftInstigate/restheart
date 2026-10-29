@@ -22,6 +22,7 @@ package org.restheart.mongodb.db.sessions;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.internal.OperationExecutor;
 import com.mongodb.internal.connection.Cluster;
@@ -87,6 +88,23 @@ public class SessionsUtils {
             return (OperationExecutor) getOperationExecutor.invoke(mclient);
         } catch (Throwable t) {
             throw new RuntimeException("could not instantiate OperationExecutor", t);
+        }
+    }
+
+    /**
+     * Returns the settings the MongoClient was built with.
+     *
+     * @return the MongoClientSettings of the MongoClient
+     */
+    public static MongoClientSettings getSettings() {
+        try {
+            var mclient = RHMongoClients.mclient();
+            var getSettings = mclient.getClass().getDeclaredMethod("getSettings");
+
+            getSettings.setAccessible(true);
+            return (MongoClientSettings) getSettings.invoke(mclient);
+        } catch (Throwable t) {
+            throw new RuntimeException("could not get MongoClientSettings", t);
         }
     }
 }
