@@ -98,8 +98,50 @@ public class ChangeStreamResumeIT extends AbstactIT {
         }
     }
 
+    /** The driver resumes the stream by itself: RESTHeart never sees the error. */
     @Test
     void resumableGetMoreErrorLosesAndRepeatsNoEvent() throws Exception {
+        assertNoEventLostOrRepeated(getMoreError(11602).append("errorLabels", List.of("ResumableChangeStreamError")));
+    }
+
+    /**
+     * Without the resumable label the driver gives up and ChangeStreamWorker reopens the stream:
+     * it must continue after the last event sent, not from now.
+     */
+    @Test
+    void nonResumableGetMoreErrorLosesAndRepeatsNoEvent() throws Exception {
+        assertNoEventLostOrRepeated(getMoreError(11602));
+    }
+
+    /**
+     * When the oplog no longer has the last event sent (286 ChangeStreamHistoryLost), the stream
+     * reopens from now: the events written meanwhile are lost, but the stream keeps working.
+     */
+    @Test
+    void historyLostReopensFromNow() throws Exception {
+        var data = openSseStream();
+        awaitStreamOpen(data);
+
+        insert("lost-A");
+        awaitReceived(data, "lost-A", 10);
+
+        failPoint(new Document("times", 1), getMoreError(286));
+        insert("lost-B");
+
+        // the stream fails, then reopens from now after 1 second
+        Thread.sleep(3_000);
+        var fired = failPoint("off", null).getInteger("count", 0);
+        assertTrue(fired >= 1, "the fail point never fired: the error was not exercised");
+
+        insert("lost-C");
+        awaitReceived(data, "lost-C", 20);
+        assertEquals(1, count(data, "lost-C"), "event lost-C must arrive exactly once; got: " + data);
+    }
+
+    /**
+     * A, then a getMore failing with {@code error}, then B and C: each must arrive exactly once.
+     */
+    private void assertNoEventLostOrRepeated(Document error) throws Exception {
         var data = openSseStream();
 
         awaitStreamOpen(data);
@@ -108,15 +150,11 @@ public class ChangeStreamResumeIT extends AbstactIT {
         insert("resume-A");
         awaitReceived(data, "resume-A", 10);
 
-        // the next getMore of RESTHeart's change stream fails with 11602, labelled resumable
-        failPoint(new Document("times", 1), new Document("failCommands", List.of("getMore"))
-                .append("errorCode", 11602)
-                .append("errorLabels", List.of("ResumableChangeStreamError"))
-                .append("appName", RESTHEART_APP_NAME));
+        failPoint(new Document("times", 1), error);
 
         // B and C are written around the failing getMore (a getMore already in flight may still
-        // deliver B). A stream re-opened from "now", instead of resumed from the last token,
-        // misses the events written in between: without the resumable label it loses C.
+        // deliver B). A stream reopened from "now", instead of after the last event sent, misses
+        // the events written in between.
         insert("resume-B");
         awaitReceived(data, "resume-B", 20);
 
@@ -130,6 +168,13 @@ public class ChangeStreamResumeIT extends AbstactIT {
             assertEquals(1, count(data, marker),
                     "event " + marker + " must arrive exactly once; got: " + data);
         }
+    }
+
+    /** The failCommand data making the next getMore of RESTHeart's connections fail with {@code code}. */
+    private static Document getMoreError(int code) {
+        return new Document("failCommands", List.of("getMore"))
+                .append("errorCode", code)
+                .append("appName", RESTHEART_APP_NAME);
     }
 
     // -----------------------------------------------------------------------
