@@ -41,8 +41,12 @@ import io.undertow.server.HttpServerExchange;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+ * Handles errors that occur during MongoDB request processing and maps them to appropriate HTTP responses.
  */
 public class ErrorHandler implements HttpHandler {
+
+    private static final String ERROR_HANDLING_THE_REQUEST = "Error handling the request";
 
     private final HttpHandler next;
 
@@ -61,7 +65,7 @@ public class ErrorHandler implements HttpHandler {
      *
      * @param next
      */
-    public ErrorHandler(HttpHandler next) {
+    public ErrorHandler(final HttpHandler next) {
         this.next = next;
     }
 
@@ -71,49 +75,65 @@ public class ErrorHandler implements HttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var response = MongoResponse.of(exchange);
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
+        final var response = MongoResponse.of(exchange);
 
         try {
             next.handleRequest(exchange);
-        } catch (MongoTimeoutException nte) {
+        } catch (final MongoTimeoutException nte) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
-        } catch (MongoExecutionTimeoutException mete) {
+        } catch (final MongoExecutionTimeoutException mete) {
             response.setInError(HttpStatus.SC_REQUEST_TIMEOUT, "Operation exceeded time limit");
-        } catch (MongoBulkWriteException mce) {
-            response.setInError(true);
-            var error = new BulkResultRepresentationFactory().getRepresentation(MongoRequest.of(exchange).getPath(), mce);
-
-            response.setStatusCode(HttpStatus.SC_MULTI_STATUS);
-            response.setContent(error);
-        } catch (MongoException mce) {
-            int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
-
-            if (httpCode == HttpStatus.SC_SERVICE_UNAVAILABLE) {
-                // MongoDB overloaded or at a limit (e.g. too many open transactions):
-                // expected under load, so no stack trace and a clean message for the client
-                LOGGER.warn("MongoDB cannot serve the request now: {}", mce.getMessage());
-                response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
-            } else if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
-                LOGGER.error("Error handling the request", mce);
-                response.setInError(httpCode, mce.getMessage());
-            } else {
-                LOGGER.debug("Error handling the request", mce);
-                response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
-            }
-        } catch (BSONException be) {
-            LOGGER.debug("Request failed due to invalid BSON", be);
-            response.setInError(400, "Invalid BSON: " + be.getMessage());
-        } catch (BadRequestException be) {
+        } catch (final MongoBulkWriteException mce) {
+            generateBulkWriteErrorResponse(exchange, response, mce);
+        } catch (final MongoException mce) {
+            mapMongoExceptionToHttpCode(response, mce);
+        } catch (final BSONException be) {
+            handleBsonException(response, be);
+        } catch (final BadRequestException be) {
             response.setInError(be.getStatusCode(), be.getMessage());
-        } catch (Exception t) {
-            if (t.getMessage() != null && t.getMessage().contains("UT000128")) { // Remote peer closed connection before all data could be read
-                LOGGER.error("Remote peer closed connection before all data could be read");
-                response.setInError(HttpStatus.SC_BAD_REQUEST, ""); // setting status just for logging, the client won't receive the response.
-            } else {
-                LOGGER.error("Error handling the request", t);
-                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
-            }
+        } catch (final Exception t) {
+            handleErrorResponse(response, t);
+        }
+    }
+
+    private void generateBulkWriteErrorResponse(final HttpServerExchange exchange, final MongoResponse response, final MongoBulkWriteException mce) {
+        response.setInError(true);
+        final var error = new BulkResultRepresentationFactory().getRepresentation(MongoRequest.of(exchange).getPath(), mce);
+
+        response.setStatusCode(HttpStatus.SC_MULTI_STATUS);
+        response.setContent(error);
+    }
+
+    private void handleErrorResponse(final MongoResponse response, final Exception t) {
+        if (t.getMessage() != null && t.getMessage().contains("UT000128")) { // Remote peer closed connection before all data could be read
+            LOGGER.error("Remote peer closed connection before all data could be read");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, ""); // setting status just for logging, the client won't receive the response.
+        } else {
+            LOGGER.error(ERROR_HANDLING_THE_REQUEST, t);
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
+        }
+    }
+
+    private void handleBsonException(final MongoResponse response, final BSONException be) {
+        LOGGER.debug("Request failed due to invalid BSON", be);
+        response.setInError(400, "Invalid BSON: " + be.getMessage());
+    }
+
+    private void mapMongoExceptionToHttpCode(final MongoResponse response, final MongoException mce) {
+        final int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
+
+        if (httpCode == HttpStatus.SC_SERVICE_UNAVAILABLE) {
+            // MongoDB overloaded or at a limit (e.g. too many open transactions):
+            // expected under load, so no stack trace and a clean message for the client
+            LOGGER.warn("MongoDB cannot serve the request now: {}", mce.getMessage());
+            response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
+        } else if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
+            LOGGER.error(ERROR_HANDLING_THE_REQUEST, mce);
+            response.setInError(httpCode, mce.getMessage());
+        } else {
+            LOGGER.debug(ERROR_HANDLING_THE_REQUEST, mce);
+            response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
         }
     }
 }
