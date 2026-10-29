@@ -468,6 +468,12 @@ graphql:
   max-limit: 1000
   # The time limit in milliseconds for processing queries. Set to 0 for no time limit.
   query-time-limit: 0
+  # How deep a query may nest and how many fields it may select, nested ones weighed (graphql-java's
+  # MaxQueryDepthInstrumentation and MaxQueryComplexityInstrumentation). A query over either cap is
+  # refused before any resolver runs, 400 with the error. 0 means no cap; 10 and 1000 suit a
+  # deployment that serves many tenants.
+  max-query-depth: 0
+  max-query-complexity: 0
   verbose: false
   # restrict-mapping-db: when enabled, all mappings must use the same db as the GraphQL app definition
   restrict-mapping-db: false

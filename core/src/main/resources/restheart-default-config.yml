@@ -1049,6 +1049,12 @@ graphql:
   max-limit: 1_000
   # The time limit in milliseconds for processing queries. Set to 0 for no time limit.
   query-time-limit: 0 # in milliseconds
+  # How deep a query may nest and how many fields it may select, nested ones weighed (graphql-java's
+  # MaxQueryDepthInstrumentation and MaxQueryComplexityInstrumentation). A query over either cap is
+  # refused before any resolver runs, 400 with the error. 0 means no cap; 10 and 1000 suit a
+  # deployment that serves many tenants.
+  max-query-depth: 0
+  max-query-complexity: 0
   verbose: false
   # restrict-mapping-db: when enabled, all mappings must use the same db as the GraphQL app definition
   restrict-mapping-db: false
@@ -1099,6 +1105,12 @@ mcpService:
   # its session ended is answered 404 and sends a new initialize, as the MCP specification
   # prescribes. 0 keeps every session until DELETE.
   session-idle-timeout-seconds: 1800
+
+  # How many sessions and resource subscriptions a scope may hold at a time (the whole server when
+  # there is no scope provider). One more session is refused at initialize with 429 and a JSON-RPC
+  # error; one more subscription at resources/subscribe with a JSON-RPC error. 0 means no cap.
+  max-sessions-per-scope: 0
+  max-subscriptions-per-scope: 0
 
   # How often an idle MCP stream (SSE) gets a comment line, to keep the connection in use: a
   # proxy in front of RESTHeart drops a connection idle for its own timeout, and the client would
