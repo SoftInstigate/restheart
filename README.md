@@ -65,6 +65,8 @@ curl http://localhost:8080/ping
 
 Every build is tested against MongoDB 7.0, 8.0, 8.3 and 9.0, and against [`mongodb/mongodb-atlas-local`](https://hub.docker.com/r/mongodb/mongodb-atlas-local).
 
+Older versions should work too, down to MongoDB 4.2, the oldest the MongoDB Java driver connects to, but they are not tested and some features may need a newer server. If something does not work on your version, please [open an issue](https://github.com/SoftInstigate/restheart/issues).
+
 Some features need more than a standalone server:
 
 - **Transactions and change streams**, which the WebSocket and SSE streams of collection changes rely on, need a replica set. A single-node one is enough, like the one in `docker-compose.yml`.
