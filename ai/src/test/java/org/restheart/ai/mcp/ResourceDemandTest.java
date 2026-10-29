@@ -114,4 +114,21 @@ public class ResourceDemandTest {
         demand.sessionEnded("s1");
         assertFalse(demand.hasSubscriptions("s1"));
     }
+
+    @Test
+    public void subscriptionsOfCountsThePairsHeldByGivenSessions() {
+        var demand = new ResourceDemand();
+        demand.subscribed("u1", "a");
+        demand.subscribed("u2", "a");
+        demand.subscribed("u1", "b");
+        demand.subscribed("u3", "c");
+
+        // (u1,a), (u2,a), (u1,b): the pairs of the sessions of one scope, c's left out
+        assertEquals(3, demand.subscriptionsOf(java.util.Set.of("a", "b")));
+        assertEquals(1, demand.subscriptionsOf(java.util.Set.of("c")));
+        assertEquals(0, demand.subscriptionsOf(java.util.Set.of()));
+
+        demand.unsubscribed("u1", "a");
+        assertEquals(2, demand.subscriptionsOf(java.util.Set.of("a", "b")));
+    }
 }
