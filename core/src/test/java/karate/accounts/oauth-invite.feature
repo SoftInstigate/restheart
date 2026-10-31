@@ -396,3 +396,64 @@ Feature: OAuth activation for invited users
     When method GET
     Then status 307
     And match responseHeaders['Location'][0] contains 'error=oauth_error'
+
+  # ---------------------------------------------------------------------------
+  Scenario: self-registered user who never verified signs in via OAuth — activated, registration password dropped
+  # ---------------------------------------------------------------------------
+    # Anyone can register any address. If the person who registered it is not the one
+    # signing in through the provider, the password they chose must not survive the
+    # activation (GHSA-m7m7-gjxg-cjmm).
+
+    * def seededEmail = 'oauth-seeded-' + java.util.UUID.randomUUID() + '@example.com'
+    Given path '/auth/register'
+    And request { "firstName": "Seeded", "lastName": "User", "teamName": "Seeded Team", "email": "#(seededEmail)", "password": "Seeded-Password1!" }
+    When method POST
+    Then status 201
+
+    Given path '/users/' + seededEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.roles contains '$unauthenticated'
+
+    # The owner of the address signs in through the provider, no invitation involved
+    Given path '/auth/oauth/authorize/test'
+    When method GET
+    Then status 307
+    * def state = responseHeaders['Location'][0].split('state=')[1].split('&')[0]
+
+    Given path '/auth/oauth/callback/test'
+    And param code = 'test-' + seededEmail
+    And param state = state
+    When method GET
+    Then status 307
+    * match responseHeaders['Location'][0] contains '#access_token='
+    * match responseHeaders['Set-Cookie'][0] contains 'rh_auth=Bearer_'
+
+    # Activated: default role, provider recorded, verification fields gone
+    Given path '/users/' + seededEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.roles contains 'user'
+    And match response.roles !contains '$unauthenticated'
+    And match response.socialAuths[0].provider == 'test'
+    And match response.emailVerificationToken == '#notpresent'
+    And match response.emailVerificationCreatedAt == '#notpresent'
+
+    # The password chosen at registration no longer opens the account
+    * def Base64 = Java.type('java.util.Base64')
+    * def seededCreds = Base64.getEncoder().encodeToString((seededEmail + ':Seeded-Password1!').getBytes())
+    Given path '/token'
+    And header Authorization = 'Basic ' + seededCreds
+    When method POST
+    Then status 401
+
+    # Neither does an empty one
+    * def emptyCreds = Base64.getEncoder().encodeToString((seededEmail + ':').getBytes())
+    Given path '/token'
+    And header Authorization = 'Basic ' + emptyCreds
+    When method POST
+    Then status 401
