@@ -60,8 +60,11 @@ public class RunnerIT extends AbstactIT {
     public void run() {
         List<String> tags = new ArrayList<>(List.of("~@ignore", "~@helper"));
 
-        if (!isGraalVM25_1_OrLater()) {
-            // Skip polyglot tests on non-GraalVM or GraalVM < 25.1 (JS plugins won't load)
+        // the JavaScript plugin features run on GraalVM 25.1 or later; -Dkarate.polyglot=true forces
+        // them on (a developer with an older GraalVM and the Truffle fallback runtime),
+        // -Dkarate.polyglot=false forces them off
+        var polyglot = System.getProperty("karate.polyglot");
+        if (polyglot != null ? !Boolean.parseBoolean(polyglot) : !isGraalVM25_1_OrLater()) {
             tags.add("~@requires-graalvm");
         }
 
