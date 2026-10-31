@@ -13,6 +13,8 @@ RESTHeart is designed to be fully compatible with GraalVM, particularly its impl
 
 NOTE: executing RESTHeart on GraalVM Node is experimental and not suggested for production.
 
+NOTE: Node plugins do not use the `restheart:sdk` module. They run on the event loop of GraalVM Node, outside the polyglot contexts RESTHeart creates for its JavaScript plugins, so the module is not resolvable there and the execution model (blocking calls on a virtual thread, no promises) does not apply. For the SDK, write a JavaScript or TypeScript plugin as in [`examples/js-plugin`](../js-plugin), which runs on RESTHeart itself, on GraalVM or as a native image.
+
 ## Install RESTHeart
 
 We assume that the latest version of RESTHeart is installed in the directory <RH_HOME>

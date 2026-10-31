@@ -1,70 +1,57 @@
-# JavaScript Example plugin
+# JavaScript and TypeScript example plugins
 
-RESTHeart can execute JavaScript plugins when running on the GraalVM.
+RESTHeart runs plugins written in JavaScript when it runs on GraalVM, or as a native image. These examples are written in TypeScript on the `restheart:sdk` module, with the types of [`@restheart/sdk`](https://www.npmjs.com/package/@restheart/sdk).
 
-This plugin includes 6 services:
+The sources are in `src/*.mts`. `tsc` compiles each one to the `.mjs` file next to `package.json`, which lists the plugins in `rh:services` and `rh:interceptors`. RESTHeart deploys the `.mjs` files: it does not transpile.
 
-- hello.mjs                         simple hello world service
-- sub/hello.mjs                     simple hello world service in a subdirectory
-- http-client.mjs                   service that shows how to use the Java HttpClient from JS code
-- require-module-service.mjs        service with a require module.JS code
-- mclient-service.mjs               service that shows how to use the Java MongoClient from JS code
-- test.ts                           simple hello world service in TypeScript. Transpiled to test.mjs
+| source | what it shows |
+|---|---|
+| `src/hello.mts` | a json service, `req.query`, `res.json()`, `res.headers`, `res.statusCode` |
+| `src/sub/hello.mts` | a plugin in a subdirectory |
+| `src/hello-interceptor.mts` | a json interceptor on the response of a service, `res.content` as native data |
+| `src/users.mts` | the `mongo` capability, `config`, `logger`, a typed error |
+| `src/http-client.mts` | the `http` capability, blocking, `ok === false` on a 4xx |
+| `src/webhook.mts` | `crypto.hmacSha256` and `crypto.timingSafeEqual` on a signed payload |
+| `src/mongo-get-doc-interceptor.mts` | a `mongo` interceptor on the response of `GET /coll/<docid>`, `req.mongo` |
+| `src/mongo-post-coll-interceptor.mts` | a `mongo` interceptor on the request of `POST /coll`, a native `Date` written as a BSON date |
+| `src/require-module-service.mts` | a pure JavaScript npm package from `node_modules` |
 
- and 3 interceptors:
-
-- mongo-post-coll-interceptor.mjs   intercept POST requests handled by the MongoService
-- mongo-get-doc-interceptor.mjs     intercept GET requests handled by the MongoService
-- hello-interceptor.mjs             intercept the service hello.mjs modifying the response
-
-You can notice that some plugins have the `.mjx` extension. You can use the usual `.js` extension for JavaScript plugins. However, if one of the plugins use `require` than GraalVM imposes to use the `.mjx` extension. In this example, the plugin `require-module-service.mjs` uses `require`, than we use the `.mjs` extension.
-
-## Install dependencies
+## Build
 
 ```bash
 npm install
+npm run build
 ```
 
-## Running RESTHeart with the plugin
+`npm run watch` recompiles on every change; RESTHeart redeploys a plugin when its `.mjs` file changes.
 
-To run the RESTHeart with the plugin, use Docker as follows. This command maps the host's port 8080 to the container's port 8080 and mounts the build directory as a volume:
+## Run RESTHeart with the plugins
 
-1) **Start MongoDB Container**
-
-**For First-Time Setup:**
-
-Use the following commands to start a MongoDB container and initialize it as a single node replica set.
+Start MongoDB as a single node replica set, once:
 
 ```bash
-docker run -d --name mongodb -p 27017:27017 mongo --replSet=rs0 # Launch a MongoDB container
-docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the MongoDB instance to work as a single node replica set
+docker run -d --name mongodb -p 27017:27017 mongo --replSet=rs0
+docker exec mongodb mongosh --quiet --eval "rs.initiate()"
 ```
 
-**For Subsequent Uses:**
-
-If you've previously created the MongoDB container and just need to start it again, you can simply use the following command:
-
-```bash
-docker start mongodb
-```
-
-2) **Launch RESTHeart Container**
-
-Run the RESTHeart container, linking it to the MongoDB container:
-
-Note that we are using the RESTHart native image that supports js plugins. Alternatively you can use the GraalVM image (docker tag `softinstigate/restheart:latest-graalvm`).
-
-Ensure you are in the project's root directory before executing it.
+Then RESTHeart, with this directory mounted in its `plugins` directory. The native image supports JavaScript plugins; the GraalVM image (`softinstigate/restheart:latest-graalvm`) does too.
 
 ```bash
 docker run --name restheart --rm -p "8080:8080" -v .:/opt/restheart/plugins/custom softinstigate/restheart:latest-native
 ```
 
-For more information see: [For development: run RESTHeart and open MongoDB with Docker](https://restheart.org/docs/setup-with-docker#for-development-run-restheart-and-open-mongodb-with-docker)
+The `users` and `webhook` services read their configuration from `restheart.yml`, by plugin name:
 
-## Testing the Service
+```yaml
+usersService:
+  db: restheart
+  collection: users
 
-Invoke service `/hello` (whose execution involves an interceptors):
+webhookService:
+  secret: the-signing-secret-of-the-provider
+```
+
+## Try it
 
 ```bash
 http -b :8080/hello
@@ -72,4 +59,8 @@ http -b :8080/hello
     "msg": "Hello World! from Italy with Love",
     "note": "'from Italy with Love' was added by 'helloWorldInterceptor' that modifies the response of 'helloWorldService'"
 }
+
+http -b -a admin:secret :8080/users limit==2
 ```
+
+The documentation of the SDK is at [restheart.org/docs/framework/javascript-plugins](https://restheart.org/docs/framework/javascript-plugins).
