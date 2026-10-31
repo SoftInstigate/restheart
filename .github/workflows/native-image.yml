@@ -31,7 +31,7 @@ jobs:
             arch: windows-amd64
           - os: macos-latest
             arch: "darwin-arm64"
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v6
 
