@@ -180,6 +180,16 @@
     </issueManagement>
 
     <repositories>
+        <!-- Central first, by name: Maven asks the repositories in this order and stops at the first
+             that has the artifact, so jitpack below is asked only for what Central does not have.
+             Without this entry jitpack came first and was asked for every artifact. -->
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
         <repository>
             <name>Central Portal Snapshots</name>
             <id>central-portal-snapshots</id>
@@ -189,6 +199,17 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <!-- com.softinstigate:ermes-mail, built by jitpack from GitHub; nothing else comes from here -->
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
     </repositories>
