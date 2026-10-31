@@ -136,10 +136,12 @@ public interface MembershipProvider {
     }
 
     /**
-     * Called by the OAuth callback when the OAuth-authenticated user has
-     * {@code status: "invited"}. Implementations should activate the pending
-     * invite, record consents if provided, and return the membership to use
-     * for JWT issuance.
+     * Called by the OAuth callback when the OAuth-authenticated user is still unverified
+     * ({@code roles: ["$unauthenticated"]}, invited or self-registered). Implementations
+     * should activate the pending invite, record consents if provided, and return the
+     * membership to use for JWT issuance. The callback has already dropped the document's
+     * password, since whoever set it never proved ownership of the address: implementations
+     * must not restore it.
      *
      * <p>Return {@link Optional#empty()} to fall back to the default
      * behaviour (redirect to {@code frontendErrorUrl}). The default implementation

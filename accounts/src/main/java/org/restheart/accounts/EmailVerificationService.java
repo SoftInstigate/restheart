@@ -70,8 +70,11 @@ public class EmailVerificationService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailVerificationService.class);
 
-    /** Token TTL: 7 days expressed in hours. */
-    private static final int VERIFICATION_TTL_HOURS = 7 * 24;
+    /**
+     * Token TTL: 7 days expressed in hours. Also how long an unverified self-registration
+     * lives before {@link AccountsInitializer} lets MongoDB purge it.
+     */
+    public static final int VERIFICATION_TTL_HOURS = 7 * 24;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;

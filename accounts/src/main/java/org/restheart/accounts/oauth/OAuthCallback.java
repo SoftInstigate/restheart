@@ -52,8 +52,13 @@ import static java.util.function.Predicate.not;
  *   <li>Verify CSRF state token (consumed atomically from MongoDB)</li>
  *   <li>Delegate code exchange and profile fetch to the {@link org.restheart.plugins.accounts.OAuthProvider}</li>
  *   <li>Find or create the user in MongoDB</li>
- *   <li>If user has {@code status:"invited"}, invoke
- *       {@link org.restheart.plugins.accounts.MembershipProvider#activateViaOAuth} to activate</li>
+ *   <li>If the user is still unverified ({@code roles: ["$unauthenticated"]}, whether invited or
+ *       self-registered), drop its password and invoke
+ *       {@link org.restheart.plugins.accounts.MembershipProvider#activateViaOAuth} to activate.
+ *       The password set before activation was chosen by whoever registered the address, who
+ *       never proved they own it: the provider just did, for the person signing in. Keeping it
+ *       would let anyone pre-register a victim's email and log in with Basic auth once the
+ *       victim activates the account through OAuth (GHSA-m7m7-gjxg-cjmm)</li>
  *   <li>Issue JWT, set the auth cookie ({@code conf.cookieName()}), and redirect to
  *       {@code frontendSuccessUrl} with the token also appended as a URL fragment
  *       ({@code #access_token=...}, via {@link TokenRedirectHelper}) so kit-based
@@ -182,7 +187,7 @@ public class OAuthCallback implements StringService {
             var focr = findOrCreateUser(req, profile, provider);
             var user = focr.user();
 
-            // Check if user is unverified (invited but not yet activated)
+            // Check if user is unverified (invited or self-registered, not yet activated)
             var userRoles = user.containsKey("roles") && user.get("roles").isArray()
                     ? user.getArray("roles") : new org.bson.BsonArray();
             boolean isUnverified = userRoles.size() == 1
@@ -191,8 +196,29 @@ public class OAuthCallback implements StringService {
             var pendingInviteToken = callbackResult.pendingInviteToken();
             var hasPendingToken = pendingInviteToken != null && !pendingInviteToken.isBlank();
 
-            // 3a. New user (invited, $unauthenticated): activate via MembershipProvider
+            // 3a. Unverified user ($unauthenticated): activate via MembershipProvider
             if (isUnverified) {
+                // The password on this document was set by whoever registered the address
+                // (RegisterService) or is a placeholder nobody knows (InviteService). Neither
+                // proved ownership of the email; the OAuth provider just did, for the person
+                // signing in now. Drop the password before activating, so a credential seeded
+                // by a third party cannot survive into the activated account and be used with
+                // Basic auth (GHSA-m7m7-gjxg-cjmm). The owner can set their own password later
+                // through forgot-password. Done here, not in the MembershipProvider, so every
+                // provider implementation is covered.
+                var oauthDb = db(req);
+                var linkedAt = new BsonDateTime(System.currentTimeMillis());
+                var socialAuths = new BsonArray();
+                socialAuths.add(new BsonDocument()
+                        .append("provider", new BsonString(provider))
+                        .append("providerId", profile.containsKey("providerId")
+                                ? profile.get("providerId") : new BsonString(""))
+                        .append("linkedAt", linkedAt));
+                oauthDb.updateUser(email, new BsonDocument()
+                        .append("password", new BsonString("")) // no password for OAuth users
+                        .append("socialAuths", socialAuths));
+                oauthDb.unsetUserFields(email, java.util.List.of("emailVerificationToken", "emailVerificationCreatedAt"));
+
                 ConsentRecord consents = null;
                 if (callbackResult.consentsAccepted()) {
                     var ip = req.getExchange().getSourceAddress().getAddress().getHostAddress();
@@ -355,6 +381,13 @@ public class OAuthCallback implements StringService {
         }
 
         // ── New user ──────────────────────────────────────────────────────────
+        // A registration of this address purged unverified (TTL index in AccountsInitializer)
+        // leaves its team behind with that one member: remove it before creating a new one.
+        var orphans = db(req).deleteOrphanTeamsOf(email);
+        if (orphans > 0) {
+            LOGGER.info("Removed {} team(s) left by a purged unverified registration of <{}>", orphans, email);
+        }
+
         var now = new BsonDateTime(System.currentTimeMillis());
         var name = profile.containsKey("name") ? profile.getString("name").getValue()
                 : email.split("@")[0];

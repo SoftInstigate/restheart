@@ -1,9 +1,11 @@
 package org.restheart.accounts;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.plugins.accounts.AccountsConfigData;
@@ -37,6 +39,13 @@ import org.restheart.plugins.security.PasswordPolicy;
  * <p>Validates a one-shot {@code passwordResetToken} and replaces the user's password.
  * On success the token fields are removed ({@code $unset}) and a fresh JWT is issued so
  * the user is automatically logged in after the reset.
+ *
+ * <p>An account that never completed email verification ({@code roles: ["$unauthenticated"]})
+ * is verified here as well: the reset token reached the caller by email, which is the same
+ * proof of ownership the verification link gives, and the password is now one the owner
+ * chose rather than the one set at registration by whoever registered the address
+ * (GHSA-m7m7-gjxg-cjmm). The account gets the configured {@code default-role} and the
+ * verification fields are removed, exactly as {@link EmailVerificationService} does.
  *
  * <p>Expected body:
  * <pre>{@code
@@ -165,13 +174,10 @@ public class ResetPasswordService implements JsonService {
             return;
         }
 
-        // 5. Only verified accounts may reset their password
-        //    Verified users have roles != ["$unauthenticated"]
+        // 5. An unverified account (roles == ["$unauthenticated"]) is verified by this reset:
+        //    the token came by email, so the caller owns the address. See the class javadoc.
         var roles = extractRoles(user);
-        if (roles.isEmpty() || (roles.size() == 1 && roles.contains("$unauthenticated"))) {
-            Errors.error(res, 400, "Account not verified");
-            return;
-        }
+        var unverified = roles.isEmpty() || (roles.size() == 1 && roles.contains("$unauthenticated"));
 
         var weakPassword = passwordPolicy.rejection(password);
         if (weakPassword != null) {
@@ -179,17 +185,29 @@ public class ResetPasswordService implements JsonService {
             return;
         }
 
-        // 6a. Persist the new hashed password
+        // 6a. Persist the new hashed password, and the system role for an account verified here
         var hashed = TokenUtils.hashPassword(password, passwordPolicy.bcryptComplexity());
         var updates = new BsonDocument("password", new BsonString(hashed));
+        var unset = new ArrayList<>(List.of("passwordResetToken", "passwordResetCreatedAt"));
+        if (unverified) {
+            var effectiveRole = RequestOverrides.defaultRole(req, conf);
+            var rolesArray = new BsonArray();
+            rolesArray.add(new BsonString(effectiveRole));
+            updates.put("roles", rolesArray);
+            roles = Set.of(effectiveRole);
+            unset.addAll(List.of("emailVerificationToken", "emailVerificationCreatedAt"));
+        }
         try {
             db(req).updateUser(storedEmail, updates);
 
             // 6b. One-shot: remove the token fields immediately
-            db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
+            db(req).unsetUserFields(storedEmail, unset);
         } catch (BadRequestException e) {
             Errors.error(res, e);
             return;
+        }
+        if (unverified) {
+            LOGGER.info("resetPassword: unverified account verified by the password reset");
         }
 
         // 7. Auto-login: issue a fresh JWT and set the auth cookie

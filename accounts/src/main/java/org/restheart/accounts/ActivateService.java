@@ -172,6 +172,9 @@ public class ActivateService implements JsonService {
 
         try {
             db(req).updateUser(normalizedEmail, setDoc);
+            // Before 9.12.4 forgot-password re-sent the verification link to an invited
+            // account too, leaving these fields on it; an activated account must not carry them
+            db(req).unsetUserFields(normalizedEmail, java.util.List.of("emailVerificationToken", "emailVerificationCreatedAt"));
         } catch (BadRequestException e) {
             Errors.error(res, e);
             return;
