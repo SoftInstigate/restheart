@@ -392,9 +392,18 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
     }
 
-    private boolean checkPassword(final String usersDb, final String username, final boolean hashed, final char[] password, final char[] expected) {
+    // package-private for MongoRealmAuthenticatorTest
+    boolean checkPassword(final String usersDb, final String username, final boolean hashed, final char[] password, final char[] expected) {
+        // An empty stored password marks an account with no password at all: one that signs in
+        // only through OAuth, as restheart-accounts creates and activates them. It must match
+        // nothing, in either hashing mode. The bcrypt check already fails on it (an empty string
+        // is not a hash), but a plaintext comparison would accept an empty Basic credential.
+        if (expected == null || expected.length == 0) {
+            return false;
+        }
+
         if (hashed) {
-            if (username == null || password == null || expected == null) {
+            if (username == null || password == null) {
                 return false;
             }
 

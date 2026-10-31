@@ -193,7 +193,8 @@ public class HttpServerExchange extends AbstractAttachable {
     /**
      * @param relativePath the relativePath to set
      */
-    public void setRelativePath(String relativePath) {
+    public HttpServerExchange setRelativePath(String relativePath) {
         this.relativePath = relativePath;
+        return this;
     }
 }

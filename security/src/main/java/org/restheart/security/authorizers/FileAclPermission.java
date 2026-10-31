@@ -99,8 +99,10 @@ public class FileAclPermission extends BaseAclPermission {
         if (args.containsKey("priority")) {
             priority = argValue(args, "priority");
         } else {
-            LOGGER.debug("Predicate {} {} doesn't have priority; setting it to very low priority", roles, argPredicate);
-            priority = Integer.MAX_VALUE; // very low priority
+            LOGGER.debug("Predicate {} {} doesn't have priority; setting it to the lowest priority", roles, argPredicate);
+            // the lowest priority: permissions are evaluated from the highest priority down, so a
+            // permission without one is considered last
+            priority = Integer.MIN_VALUE;
         }
 
         return new FileAclPermission(argPredicate, roles, priority, args);

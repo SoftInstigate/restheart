@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RequestTooBigException;
 import io.undertow.util.AttachmentKey;
 
 /**
@@ -192,12 +193,15 @@ public abstract class ServiceRequest<T> extends Request<T> {
      *   <li>Marking the request as errored</li>
      *   <li>Setting appropriate error responses</li>
      *   <li>Throwing BadRequestException for client errors</li>
+     *   <li>Throwing BadRequestException with status 413 when the body exceeds
+     *       {@code MAX_ENTITY_SIZE} or {@code MULTIPART_MAX_ENTITY_SIZE}</li>
      *   <li>Wrapping IOException in RuntimeException for server errors</li>
      * </ul>
      * </p>
      *
      * @return the content of the request, which may be newly parsed or previously retrieved
-     * @throws BadRequestException if the content cannot be parsed due to client error (malformed content, etc.)
+     * @throws BadRequestException if the content cannot be parsed due to client error (malformed content,
+     *         body larger than the configured maximum size, etc.)
      * @throws RuntimeException if an IOException occurs during content reading (wrapped for convenience)
      */
     public T getContent() throws BadRequestException {
@@ -207,6 +211,12 @@ public abstract class ServiceRequest<T> extends Request<T> {
             try {
                 setContent(parseContent());
             } catch (BadRequestException bre) {
+                this.setInError(true);
+                Response.of(wrapped).setInError(bre.getStatusCode(), bre.getMessage(), bre);
+                throw bre;
+            } catch (RequestTooBigException rtbe) {
+                // the body exceeds MAX_ENTITY_SIZE or MULTIPART_MAX_ENTITY_SIZE: a client error, not a server fault
+                var bre = new BadRequestException("request exceeds the maximum size of %d bytes".formatted(wrapped.getMaxEntitySize()), HttpStatus.SC_REQUEST_TOO_LONG, rtbe);
                 this.setInError(true);
                 Response.of(wrapped).setInError(bre.getStatusCode(), bre.getMessage(), bre);
                 throw bre;

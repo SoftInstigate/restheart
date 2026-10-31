@@ -88,6 +88,8 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResultImpl;
 import graphql.GraphQL;
 import graphql.GraphQLError;
+import graphql.analysis.MaxQueryComplexityInstrumentation;
+import graphql.analysis.MaxQueryDepthInstrumentation;
 import graphql.execution.ValueUnboxer;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
@@ -107,6 +109,10 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
     public static final int DEFAULT_DEFAULT_LIMIT = 100;
     public static final int DEFAULT_MAX_LIMIT = 1_000;
     public static final long DEFAULT_QUERY_TIME_LIMIT = 0l; // disabled
+    /** max-query-depth: how deep a query may nest; 0 means no cap (restheart#782). */
+    public static final int DEFAULT_MAX_QUERY_DEPTH = 0;
+    /** max-query-complexity: how many fields a query may select, nested ones weighed; 0 means no cap (restheart#782). */
+    public static final int DEFAULT_MAX_QUERY_COMPLEXITY = 0;
     public static final Boolean DEFAULT_RESTRICT_MAPPING_DB = false;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
@@ -115,6 +121,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
     private String collection = DEFAULT_APP_DEF_COLLECTION;
     private Boolean verbose = DEFAULT_VERBOSE;
     private long queryTimeLimit = DEFAULT_QUERY_TIME_LIMIT;
+    private int maxQueryDepth = DEFAULT_MAX_QUERY_DEPTH;
+    private int maxQueryComplexity = DEFAULT_MAX_QUERY_COMPLEXITY;
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -140,6 +148,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
         var maxLimit = argOrDefault(config, "max-limit", DEFAULT_MAX_LIMIT);
 
         this.queryTimeLimit = ((Number) argOrDefault(config, "query-time-limit", DEFAULT_QUERY_TIME_LIMIT)).longValue();
+        this.maxQueryDepth = ((Number) argOrDefault(config, "max-query-depth", DEFAULT_MAX_QUERY_DEPTH)).intValue();
+        this.maxQueryComplexity = ((Number) argOrDefault(config, "max-query-complexity", DEFAULT_MAX_QUERY_COMPLEXITY)).intValue();
         var restrictMappingDb = argOrDefault(config, "restrict-mapping-db", DEFAULT_RESTRICT_MAPPING_DB);
 
         QueryBatchLoader.setMongoClient(mclient);
@@ -249,6 +259,15 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
 
         var chainedInstrumentations = new ArrayList<Instrumentation>();
         chainedInstrumentations.add(new MaxQueryTimeInstrumentation(this.queryTimeLimit));
+
+        // the shape of the query is bounded before any resolver runs (restheart#782): a query too
+        // deep or too wide is a validation error, data null, answered 400 below
+        if (this.maxQueryDepth > 0) {
+            chainedInstrumentations.add(new MaxQueryDepthInstrumentation(this.maxQueryDepth));
+        }
+        if (this.maxQueryComplexity > 0) {
+            chainedInstrumentations.add(new MaxQueryComplexityInstrumentation(this.maxQueryComplexity));
+        }
 
         // the schema this caller may see: a field their roles exclude is not in it at all, so
         // asking for it is a validation error and introspection never mentions it (restheart#478)

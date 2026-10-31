@@ -1,5 +1,6 @@
 package org.restheart.accounts.config;
 
+import java.util.List;
 import java.util.Map;
 
 import org.restheart.configuration.Configuration;
@@ -105,6 +106,19 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
             LOGGER.warn("accountsConfig/jwt-issuer is ignored: JWT issuer is now sourced from jwtConfigProvider. Remove it from your configuration.");
         }
 
+        // The claim list is jwtConfigProvider's, the one every issuer applies, unless the deprecated
+        // per-plugin setting is still there: then it wins, as jwtTokenManager's does, so that an
+        // existing deployment keeps its tokens as they were
+        List<String> accountPropertiesClaims = configVal(config, "account-properties-claims", null);
+
+        if (accountPropertiesClaims != null) {
+            LOGGER.warn("accountsConfig/account-properties-claims is deprecated: configure "
+                    + "account-properties-claims in jwtConfigProvider instead, so that every JWT "
+                    + "issuer applies the same claims. Support for this setting will be removed.");
+        } else {
+            accountPropertiesClaims = jwtConfig.accountPropertiesClaims();
+        }
+
         // Read optional templates sub-map
         var templates = config != null && config.get("templates") instanceof Map<?, ?>
                 ? (Map<String, Object>) config.get("templates")
@@ -134,8 +148,9 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
                 configVal(config, "membership-endpoints-enabled", true),
                 configVal(config, "ownership-role", "owner"),
                 configVal(config, "default-role", "user"),
-                configVal(config, "account-properties-claims", null),
-                configVal(config, "users-unrestricted-roles", null)
+                accountPropertiesClaims,
+                configVal(config, "users-unrestricted-roles", null),
+                configVal(config, "migrate-memberships", false)
         );
     }
 

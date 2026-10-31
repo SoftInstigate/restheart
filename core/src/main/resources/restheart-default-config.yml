@@ -55,6 +55,18 @@ jwtConfigProvider:
   algorithm: HS256 # Supported: HS256, HS384, HS512
   issuer: restheart.org
   audience: null   # null or array of audience strings
+  # Account properties copied into every JWT this deployment issues, on /token and by the accounts
+  # endpoints alike. A plain entry names a property of the user document, nested with / (e.g.
+  # consents/tos/version). An entry starting with @ is an ACL variable instead, resolved with the
+  # request that issues the token and put in the token under its name: "@team", registered by
+  # restheart-accounts, carries the active team as { _id, role } on every token path, whatever the
+  # membership provider stores. Quote it: @ is reserved in YAML.
+  #account-properties-claims:
+  #  - profile
+  #  - "@team"
+  # Claims copied whatever a per-request override of the list says.
+  #required-account-properties-claims:
+  #  - srvNode
 
 # Issues signed JWTs on behalf of other plugins, which inject it as @Inject("jwtIssuer").
 # Key, algorithm, issuer, audience and claim policy all come from jwtConfigProvider above: a token
@@ -288,14 +300,11 @@ jwtTokenManager:
   # paths (/token, /auth/verify, /auth/activate, /auth/reset-password, /auth/switch-team,
   # OAuth callbacks) produce identical JWTs.
   #
-  # For restheart-accounts multi-team deployments, the teams claim MUST be listed here
-  # (e.g. "teams") so that the JWT contains the active team ID.
-  # Without this, endpoints like POST /auth/invite and POST /auth/switch-team will
-  # fail with 403 because the service cannot resolve the caller's membership role.
+  # Deprecated: configure account-properties-claims in jwtConfigProvider instead, once for every
+  # token path; the active team is best carried by its "@team" entry (see there).
   #
-  # Example for a deployment using "teams" as the claim name:
-  # account-properties-claims:
-  #   - teams
+  # The accounts endpoints need no team claim: they read the caller's active team from the
+  # membership provider at every request, and ACL rules read it as @team.
   #
   # See: https://restheart.org/docs/accounts/configuration
   account-properties-claims:
@@ -468,7 +477,10 @@ accountsConfig:
   # ── Membership SPI (9.4.1+) ─────────────────────────────────────────────
   # See https://restheart.org/docs/accounts/membership-providers
 
-  # JWT claim name for the active team identifier.
+  # The name of the ACL variable restheart-accounts registers for the active team, @team, read
+  # from the membership provider as { _id, role } (@team._id, @team.role). Since 9.12.0 the tokens
+  # the accounts endpoints issue carry no such claim: to put it in every token, /token included,
+  # list "@team" in jwtConfigProvider/account-properties-claims, and the claim takes this name too.
   # Default: "team".
   team-claim-name: team
 
@@ -481,7 +493,7 @@ accountsConfig:
   default-role: user
 
   # Team role assigned to the user who creates a new team.
-  # Stored in user.teams[].role and team.members[].role.
+  # Stored in team.members[].role.
   # Default: "owner". Override per-team via override-accounts-ownership-role.
   ownership-role: owner
 
@@ -494,13 +506,19 @@ accountsConfig:
   # issued by accounts endpoints (verify, activate, reset-password, switch-team, OAuth).
   # Mirrors jwtTokenManager.account-properties-claims: use the same list so that
   # all token-issuance paths produce identical JWTs.
-  # authDb is always included automatically (no need to list it here).
-  # Must mirror jwtTokenManager.account-properties-claims so all issuance paths
-  # (/token, /auth/verify, /auth/activate, etc.) produce identical JWTs.
-  # For multi-team deployments, include the teams claim (e.g. "teams").
-  # authDb is always included automatically — never list it here.
+  # authDb is always included automatically: never list it here.
+  # No team claim is needed: the active team is @team, read at every request.
+  # Deprecated: configure account-properties-claims in jwtConfigProvider instead, once for every
+  # token path; the active team is best carried by its "@team" entry (see there).
   account-properties-claims:
   # - srvNode  # example: attached-param set by SrvNodeEnricher in multi-team deployments
+
+  # One-off migration of existing data to the 9.12.0 membership model: who belongs to a team is
+  # kept on the team only (teams.members), the user keeps just the id of its active team. Turn it
+  # on once: at startup every user document still carrying the old `teams` array or `team.role`
+  # has them removed, and every membership they listed that the team does not confirm is reported
+  # in the log, never added. Then turn it off.
+  #migrate-memberships: false
 
 # Dependency-injection service holding the active MembershipProvider.
 accountsService:
@@ -542,7 +560,8 @@ resendInviteService:
 getTeamsService:
   enabled: false
 
-# POST /auth/switch-team — switches the active team and reissues the JWT cookie
+# POST /auth/switch-team: switches the active team and reissues the JWT, which carries no team;
+# the response body has the new active team as { _id, role }
 switchTeamService:
   enabled: false
 
@@ -1030,6 +1049,12 @@ graphql:
   max-limit: 1_000
   # The time limit in milliseconds for processing queries. Set to 0 for no time limit.
   query-time-limit: 0 # in milliseconds
+  # How deep a query may nest and how many fields it may select, nested ones weighed (graphql-java's
+  # MaxQueryDepthInstrumentation and MaxQueryComplexityInstrumentation). A query over either cap is
+  # refused before any resolver runs, 400 with the error. 0 means no cap; 10 and 1000 suit a
+  # deployment that serves many tenants.
+  max-query-depth: 0
+  max-query-complexity: 0
   verbose: false
   # restrict-mapping-db: when enabled, all mappings must use the same db as the GraphQL app definition
   restrict-mapping-db: false
@@ -1080,6 +1105,12 @@ mcpService:
   # its session ended is answered 404 and sends a new initialize, as the MCP specification
   # prescribes. 0 keeps every session until DELETE.
   session-idle-timeout-seconds: 1800
+
+  # How many sessions and resource subscriptions a scope may hold at a time (the whole server when
+  # there is no scope provider). One more session is refused at initialize with 429 and a JSON-RPC
+  # error; one more subscription at resources/subscribe with a JSON-RPC error. 0 means no cap.
+  max-sessions-per-scope: 0
+  max-subscriptions-per-scope: 0
 
   # How often an idle MCP stream (SSE) gets a comment line, to keep the connection in use: a
   # proxy in front of RESTHeart drops a connection idle for its own timeout, and the client would

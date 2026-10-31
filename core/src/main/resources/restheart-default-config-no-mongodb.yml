@@ -55,6 +55,11 @@ jwtConfigProvider:
   algorithm: HS256 # Supported: HS256, HS384, HS512
   issuer: restheart.org
   audience: null   # null or array of audience strings
+  # Account properties copied into every JWT this deployment issues, on /token and by any other
+  # issuer alike: a property of the user document, nested with /, or an ACL variable ("@name",
+  # quoted, resolved with the request that issues the token).
+  #account-properties-claims:
+  #  - profile
 
 # Issues signed JWTs on behalf of other plugins, which inject it as @Inject("jwtIssuer").
 # Key, algorithm, issuer, audience and claim policy all come from jwtConfigProvider above: a token
@@ -463,6 +468,12 @@ graphql:
   max-limit: 1000
   # The time limit in milliseconds for processing queries. Set to 0 for no time limit.
   query-time-limit: 0
+  # How deep a query may nest and how many fields it may select, nested ones weighed (graphql-java's
+  # MaxQueryDepthInstrumentation and MaxQueryComplexityInstrumentation). A query over either cap is
+  # refused before any resolver runs, 400 with the error. 0 means no cap; 10 and 1000 suit a
+  # deployment that serves many tenants.
+  max-query-depth: 0
+  max-query-complexity: 0
   verbose: false
   # restrict-mapping-db: when enabled, all mappings must use the same db as the GraphQL app definition
   restrict-mapping-db: false

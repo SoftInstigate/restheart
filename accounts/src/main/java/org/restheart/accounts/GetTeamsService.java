@@ -11,7 +11,6 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -204,10 +203,9 @@ public class GetTeamsService implements JsonService {
                 dbRoles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                java.util.Map.<String, Object>of(conf.teamClaimName(),
-                        TeamClaim.of(teamRef.id(), RequestOverrides.ownershipRole(req, conf))),
-                null,
-                RequestOverrides.accountPropertiesClaims(req, conf));
+                userDoc.orElse(null),
+                RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
 
         var delivery = TokenDelivery.resolve(
                 req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE,

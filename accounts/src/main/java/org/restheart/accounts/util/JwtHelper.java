@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.security.tokens.JwtTokenManager;
 import org.restheart.security.AuthCookie;
@@ -153,7 +154,6 @@ public class JwtHelper {
      *   <li>{@code accountProperties} — filtered by {@code accountPropertiesClaims}: only the
      *       names in the list become claims (e.g. {@code srvNode}, set by
      *       {@code SrvNodeEnricher})</li>
-     *   <li>{@code extraClaims} — always included (e.g. {@code team}, {@code status})</li>
      * </ul>
      *
      * @param email             the user identity ({@code sub})
@@ -161,20 +161,18 @@ public class JwtHelper {
      * @param authDb            the MongoDB authentication database ({@code authDb}); may be {@code null}
      * @param accountProperties all the request's attached params (see {@code Request.attachedParams()});
      *                          filtered by {@code accountPropertiesClaims}; may be {@code null}
-     * @param extraClaims       additional claims, always included (e.g. team, status); may be {@code null}
      * @return the signed JWT
      */
     public String issueToken(String email,
                              Set<String> roles,
                              String authDb,
                              Map<String, Object> accountProperties,
-                             Map<String, Object> extraClaims,
                              BsonDocument userDocument) {
-        return issueToken(email, roles, authDb, accountProperties, extraClaims, userDocument, null);
+        return issueToken(email, roles, authDb, accountProperties, userDocument, null);
     }
 
     /**
-     * As {@link #issueToken(String, Set, String, Map, Map, BsonDocument)}, with the effective
+     * As {@link #issueToken(String, Set, String, Map, BsonDocument)}, with the effective
      * {@code accountPropertiesClaims} list for this single call (e.g. from
      * {@code RequestOverrides#accountPropertiesClaims}) instead of the one fixed at construction
      * time. The denylist is enforced regardless of which list is in use.
@@ -186,9 +184,26 @@ public class JwtHelper {
                              Set<String> roles,
                              String authDb,
                              Map<String, Object> accountProperties,
-                             Map<String, Object> extraClaims,
                              BsonDocument userDocument,
                              List<String> accountPropertiesClaimsOverride) {
+        return issueToken(email, roles, authDb, accountProperties, userDocument, accountPropertiesClaimsOverride, null);
+    }
+
+    /**
+     * As {@link #issueToken(String, Set, String, Map, BsonDocument, List)}, with the request that
+     * issues the token. The ACL-variable entries of the claim list ({@code "@team"}) are resolved
+     * against it, so a service that has the request at hand must pass it, or those entries add no
+     * claim to the token it issues.
+     *
+     * @param request the issuing request, or {@code null} where there is none
+     */
+    public String issueToken(String email,
+                             Set<String> roles,
+                             String authDb,
+                             Map<String, Object> accountProperties,
+                             BsonDocument userDocument,
+                             List<String> accountPropertiesClaimsOverride,
+                             Request<?> request) {
         var effectiveClaims = accountPropertiesClaimsOverride != null
                 ? accountPropertiesClaimsOverride
                 : accountPropertiesClaims;
@@ -212,15 +227,6 @@ public class JwtHelper {
             properties.put("authDb", authDb);
         }
 
-        // Extra claims are always included (team, status, ...), converted from BsonValue if needed
-        var extra = new java.util.HashMap<String, Object>();
-        if (extraClaims != null) {
-            for (var entry : extraClaims.entrySet()) {
-                var val = entry.getValue() instanceof BsonValue bv ? bsonValueToObject(bv) : entry.getValue();
-                extra.put(entry.getKey(), val);
-            }
-        }
-
         // Claim selection, denylist and nested paths all live in DefaultJwtIssuer — the same logic
         // jwtTokenManager applies on /token.
         var builder = jwtIssuer.newBuilder(email, roles, Date.from(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES)))
@@ -233,12 +239,9 @@ public class JwtHelper {
         // below, which deliberately does not carry the mark.
         builder = jwtIssuer.withClaim(builder, JwtTokenManager.RENEWABLE, true);
 
-        builder = jwtIssuer.applyAccountClaims(builder, properties, effectiveClaims);
-
-        for (var e : extra.entrySet()) {
-            if (isDenylisted(e.getKey())) continue;
-            builder = jwtIssuer.withClaim(builder, e.getKey(), e.getValue());
-        }
+        // No claim beyond the list: since 9.12.0 the active team is not put in here either, a rule
+        // reads it through the @team variable, and a deployment that wants it in the token lists "@team"
+        builder = jwtIssuer.applyAccountClaims(builder, properties, effectiveClaims, request);
 
         return jwtIssuer.sign(builder);
     }
@@ -247,7 +250,7 @@ public class JwtHelper {
      * Issues a JWT carrying only the explicit claims passed in {@code extraClaims}. Does not
      * include {@code authDb} and does not propagate attached params.
      *
-     * @deprecated Use {@link #issueToken(String, Set, String, Map, Map, BsonDocument)} to include
+     * @deprecated Use {@link #issueToken(String, Set, String, Map, BsonDocument)} to include
      *             {@code authDb} and the claims configured in {@code account-properties-claims}.
      */
     @Deprecated
@@ -320,28 +323,7 @@ public class JwtHelper {
     }
 
     private static Object bsonValueToObject(BsonValue value) {
-        return switch (value) {
-            case org.bson.BsonString s -> s.getValue();
-            case org.bson.BsonBoolean b -> b.getValue();
-            case org.bson.BsonInt32 i -> i.getValue();
-            case org.bson.BsonInt64 l -> l.getValue();
-            case org.bson.BsonDouble d -> d.getValue();
-            case org.bson.BsonObjectId oid -> Map.of("$oid", oid.getValue().toHexString());
-            case BsonArray a -> {
-                var list = new java.util.ArrayList<>();
-                for (var item : a) {
-                    list.add(bsonValueToObject(item));
-                }
-                yield list;
-            }
-            case BsonDocument d -> {
-                var map = new java.util.HashMap<String, Object>();
-                for (var entry : d.entrySet()) {
-                    map.put(entry.getKey(), bsonValueToObject(entry.getValue()));
-                }
-                yield map;
-            }
-            default -> value.toString();
-        };
+        // the one conversion every issuer applies, so a claim reads the same whoever minted it
+        return DefaultJwtIssuer.claimValue(value);
     }
 }

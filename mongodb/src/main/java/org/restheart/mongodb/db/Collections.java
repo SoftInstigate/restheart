@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import com.mongodb.client.model.CountOptions;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -176,7 +178,10 @@ class Collections {
         if (estimate && (filters == null || filters.isEmpty())) {
             return coll.estimatedDocumentCount();
         }
-        return cs.isPresent() ? coll.countDocuments(cs.get(), filters) : coll.countDocuments(filters);
+        // the same bound a find has (restheart#783): a count with a filter no index serves scans
+        // the collection like a find does
+        var options = new CountOptions().maxTime(MongoServiceConfiguration.get().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
+        return cs.isPresent() ? coll.countDocuments(cs.get(), filters, options) : coll.countDocuments(filters, options);
     }
 
     /**

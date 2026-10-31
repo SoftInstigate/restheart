@@ -11,6 +11,13 @@ Feature: setup second team for multi-team tests
     When method DELETE
     * match [200, 204, 404] contains responseStatus
 
+    # and the teams that still name it (memberships live on the teams since 9.12.0)
+    Given path '/teams/*'
+    And header Authorization = adminAuth
+    And param filter = '{"members.userId": "second-team-owner@example.com"}'
+    When method DELETE
+    * match [200, 204, 404] contains responseStatus
+
     # 1. Register fresh
     Given path '/auth/register'
     And request { "firstName": "Second", "lastName": "Owner", "teamName": "Second Test Team", "email": "second-team-owner@example.com", "password": "SecondPass123!" }
@@ -44,11 +51,11 @@ Feature: setup second team for multi-team tests
     * if (inviteStatus == 201) karate.call('classpath:karate/accounts/helpers/accept-invite-existing.feature', { secondOwnerJwt: secondOwnerJwt, secondTeamId: secondTeamId, ownerJwt: ownerAcceptJwt })
 
     # Verify owner-test is in the second team (whether just accepted or already a member)
-    Given path '/users/owner-test@example.com'
-    And header Authorization = adminAuth
+    Given path '/auth/teams'
+    And header Authorization = 'Bearer ' + ownerAcceptJwt
     When method GET
     Then status 200
-    * def teamIds = karate.map(response.teams, function(x){ return x.id })
+    * def teamIds = karate.map(response, function(x){ return x.id })
     And match teamIds contains secondTeamId
 
     * karate.log('Second team setup done, teamId:', secondTeamId)

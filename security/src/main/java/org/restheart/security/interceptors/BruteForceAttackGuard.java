@@ -20,6 +20,7 @@
  */
 package org.restheart.security.interceptors;
 
+import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
@@ -133,6 +134,10 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     @Inject("config")
     private Map<String, Object> config;
+
+    /** For /core/name, the instance in the alarm: the machine name alone says little behind a container platform. */
+    @Inject("rh-config")
+    private Configuration rhConfig;
 
     @OnInit
     public void init() {
@@ -257,6 +262,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
                 + " tracked-by=" + (trackedByXff ? "x-forwarded-for" : "remote-ip")
                 + " remote-ip=" + ExchangeAttributes.remoteIp().readAttribute(exchange)
                 + " xff=\"" + (xff == null ? "" : xff) + "\""
+                + " host=" + ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.HOST)).readAttribute(exchange)
                 + " method=" + ExchangeAttributes.requestMethod().readAttribute(exchange)
                 + " url=" + ExchangeAttributes.requestURL().readAttribute(exchange);
     }
@@ -297,9 +303,10 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
             return;
         }
 
+        var instance = rhConfig.coreModule().name();
         var host = hostName();
-        var subject = "RESTHeart on " + host + ": blocking a possible brute force attack from " + source;
-        var body = "<p>RESTHeart on <b>" + escape(host) + "</b> got " + maxFailedAttempts + " or more failed "
+        var subject = "RESTHeart " + instance + ": blocking a possible brute force attack from " + source;
+        var body = "<p>RESTHeart <b>" + escape(instance) + "</b> on " + escape(host) + " got " + maxFailedAttempts + " or more failed "
                 + "authentications in 10 seconds from <b>" + escape(source) + "</b>, and answers its requests with "
                 + "429 Too Many Requests until they stop.</p>"
                 + "<pre style=\"font-size:12px;white-space:pre-wrap\">" + escape(line) + "</pre>"

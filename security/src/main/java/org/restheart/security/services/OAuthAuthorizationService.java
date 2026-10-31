@@ -569,11 +569,11 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
         // Propagate account-properties-claims so the access token (later built from this
         // code's payload) carries the same claims. The request carries the effective claim
-        // list on a multi-tenant deployment.
-        if (account instanceof WithProperties<?> awp) {
-            codeBuilder = jwtIssuer.applyAccountClaims(codeBuilder, awp.propertiesAsMap(),
-                    DefaultJwtIssuer.claimsOverride(request));
-        }
+        // list on a multi-tenant deployment, and is what the ACL-variable entries ("@team")
+        // resolve against.
+        codeBuilder = jwtIssuer.applyAccountClaims(codeBuilder,
+                account instanceof WithProperties<?> awp ? awp.propertiesAsMap() : null,
+                DefaultJwtIssuer.claimsOverride(request), request);
 
         if (!sealed.isEmpty()) {
             // Signed, not encrypted, and about to travel in a redirect URL: the issuer was told

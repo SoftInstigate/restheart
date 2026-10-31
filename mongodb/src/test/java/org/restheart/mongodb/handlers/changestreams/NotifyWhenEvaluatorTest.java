@@ -78,14 +78,14 @@ class NotifyWhenEvaluatorTest {
         }
 
         @Test
-        void passThroughWhenVarAbsent() {
-            // bound vars don't contain the required variable → pass-through
-            assertTrue(ev.matches(event("t1"), Map.of()));
+        void noMatchWhenVarAbsent() {
+            // bound vars don't contain the required variable → fails closed
+            assertFalse(ev.matches(event("t1"), Map.of()));
         }
 
         @Test
-        void passThroughWhenBoundVarsNull() {
-            assertTrue(ev.matches(event("t1"), null));
+        void noMatchWhenBoundVarsNull() {
+            assertFalse(ev.matches(event("t1"), null));
         }
 
         @Test
@@ -134,8 +134,8 @@ class NotifyWhenEvaluatorTest {
         }
 
         @Test
-        void passThroughWhenVarAbsent() {
-            assertTrue(ev.matches(event("A", "B"), Map.of()));
+        void noMatchWhenVarAbsent() {
+            assertFalse(ev.matches(event("A", "B"), Map.of()));
         }
     }
 

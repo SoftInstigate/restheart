@@ -23,6 +23,7 @@ package org.restheart.security.authorizers;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ import java.util.stream.StreamSupport;
 
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonValue;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -190,10 +192,10 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
 
                     String marker;
 
-                    // to highlight the effective permission
+                    // to highlight the candidate permission for this role
                     if (resolved && matched.isEmpty()) {
                         matched.add(permission);
-                        marker = " <--";
+                        marker = " <-- candidate for role";
                     } else {
                         marker = "";
                     }
@@ -232,6 +234,12 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
         if (permissions.isEmpty()) {
             return false;
         } else {
+            // across roles the same precedence the query applies within one, {priority: -1, _id: -1}:
+            // the order of the account's roles plays no part, not even at a tie (#767)
+            permissions.sort(PRECEDENCE);
+            LOGGER.debug("effective permission id {}, priority {}",
+                    BsonUtils.toJson(permissions.get(0).getId()),
+                    permissions.get(0).getPriority());
             exchange.putAttachment(MATCHING_ACL_PERMISSION, permissions.get(0));
             return true;
         }
@@ -347,6 +355,52 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
     }
 
     private static final BsonDocument SORT = BsonDocument.parse("{\"priority\":-1,\"_id\":-1}");
+
+    /**
+     * {@link #SORT} in Java, for the permissions of different roles: the highest priority first,
+     * then the greatest {@code _id}, compared as MongoDB orders values of different BSON types.
+     */
+    static final Comparator<MongoAclPermission> PRECEDENCE = Comparator
+            .comparingInt(MongoAclPermission::getPriority).reversed()
+            .thenComparing(MongoAclPermission::getId, Comparator.nullsLast(((Comparator<BsonValue>) MongoAclAuthorizer::compareIds).reversed()));
+
+    /**
+     * Orders two {@code _id} values as a MongoDB sort does: first by the BSON type order (numbers,
+     * strings, documents, arrays, binary, ObjectId, boolean, date), then by value within a type.
+     */
+    static int compareIds(BsonValue a, BsonValue b) {
+        var byType = Integer.compare(typeRank(a), typeRank(b));
+        if (byType != 0) {
+            return byType;
+        }
+
+        if (a.isNumber()) {
+            return Double.compare(a.asNumber().doubleValue(), b.asNumber().doubleValue());
+        } else if (a.isString()) {
+            return a.asString().getValue().compareTo(b.asString().getValue());
+        } else if (a.isObjectId()) {
+            return a.asObjectId().getValue().compareTo(b.asObjectId().getValue());
+        } else if (a.isBoolean()) {
+            return Boolean.compare(a.asBoolean().getValue(), b.asBoolean().getValue());
+        } else if (a.isDateTime()) {
+            return Long.compare(a.asDateTime().getValue(), b.asDateTime().getValue());
+        } else {
+            // documents, arrays, binary: rare as an _id; a stable order is all a tie-break needs
+            return BsonUtils.toJson(a).compareTo(BsonUtils.toJson(b));
+        }
+    }
+
+    private static int typeRank(BsonValue v) {
+        if (v.isNumber()) return 1;
+        if (v.isString() || v.isSymbol()) return 2;
+        if (v.isDocument()) return 3;
+        if (v.isArray()) return 4;
+        if (v.isBinary()) return 5;
+        if (v.isObjectId()) return 6;
+        if (v.isBoolean()) return 7;
+        if (v.isDateTime()) return 8;
+        return 9;
+    }
 
     private LinkedHashSet<MongoAclPermission> findRolePermissions(final CacheKey key) {
         if (this.mclient == null) {

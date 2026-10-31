@@ -9,7 +9,6 @@ import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.BadRequestException;
@@ -189,21 +188,14 @@ public class EmailVerificationService implements JsonService {
         roles.add(effectiveRole);
 
         // ── 5d. Issue JWT ─────────────────────────────────────────────────────
-        var activeMembership = accountsService.getMembershipProvider(req)
-                .activeMembership(storedEmail);
-
-        var extraClaims = new java.util.HashMap<String, Object>();
-        activeMembership.ifPresent(m ->
-                extraClaims.put(conf.teamClaimName(), TeamClaim.of(m.teamId(), m.role())));
-
         var jwtToken = jwt.issueToken(
                 storedEmail,
                 roles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                extraClaims,
                 user,
-                RequestOverrides.accountPropertiesClaims(req, conf));
+                RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
 
         LOGGER.info("Email verified — user activated: <{}>", storedEmail);
 

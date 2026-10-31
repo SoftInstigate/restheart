@@ -183,7 +183,20 @@ public record AccountsConfigData(
          * <p>{@code null} or empty list → no role is exempt, the restriction applies
          * to every caller.
          */
-        List<String> usersUnrestrictedRoles
+        List<String> usersUnrestrictedRoles,
+
+        // ── One-off data migration ─────────────────────────────────────────────
+
+        /**
+         * Whether {@code accountsInitializer} runs, at startup, the one-off migration of the
+         * membership model to 9.12.0 (#766): every user document still carrying the pre-9.12.0
+         * {@code teams} array or {@code team.role} has them unset, and every membership listed
+         * there that the team's {@code members} does not confirm is reported in the log, never
+         * added. Idempotent: run it once, then turn it off.
+         *
+         * <p>Default {@code false}.
+         */
+        boolean migrateMemberships
 
 ) {
     /** default users collection name, used when none is configured */
@@ -227,7 +240,7 @@ public record AccountsConfigData(
                 termsVersion, privacyVersion, defaultLocale, verificationTemplatePath,
                 passwordResetTemplatePath, inviteTemplatePath, teamClaimName,
                 memberRoleName, membershipEndpointsEnabled, ownershipRole, defaultRole,
-                accountPropertiesClaims, usersUnrestrictedRoles);
+                accountPropertiesClaims, usersUnrestrictedRoles, false);
     }
 
     /**
@@ -268,7 +281,7 @@ public record AccountsConfigData(
                 termsVersion, privacyVersion, defaultLocale, verificationTemplatePath,
                 passwordResetTemplatePath, inviteTemplatePath, teamClaimName,
                 memberRoleName, membershipEndpointsEnabled, ownershipRole, defaultRole,
-                accountPropertiesClaims, usersUnrestrictedRoles);
+                accountPropertiesClaims, usersUnrestrictedRoles, false);
     }
 
     /**

@@ -20,15 +20,18 @@
  */
 package org.restheart.test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -45,10 +48,10 @@ import kong.unirest.Unirest;
 /**
  * Integration tests for the {@code notify_when} per-client dispatch predicate.
  *
- * <p>Two SSE clients connect to the same stream URI with different {@code ?tid=} query
- * parameters. Documents inserted with different {@code tenantId} values must be routed
- * only to the matching client, proving both per-tenant filtering and shared-cursor
- * behaviour.
+ * <p>Two SSE clients connect to the same stream URI with different {@code tid} values,
+ * passed as {@code ?tid=} or as {@code ?avars={"tid":...}}. Documents inserted with
+ * different {@code tenantId} values must be routed only to the matching client. A client
+ * that does not bind {@code tid} is rejected: the stream fails closed.
  */
 public class ChangeStreamNotifyWhenIT extends AbstactIT {
 
@@ -98,8 +101,17 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
     // -----------------------------------------------------------------------
 
     private HttpRequest sseFor(String tenantId) {
+        return sse("?tid=" + tenantId);
+    }
+
+    /** The legacy form of the variable, which must be equivalent to {@code ?tid=}. */
+    private HttpRequest sseForAvars(String tenantId) {
+        return sse("?avars=" + URLEncoder.encode("{\"tid\":\"" + tenantId + "\"}", StandardCharsets.UTF_8));
+    }
+
+    private HttpRequest sse(String query) {
         return HttpRequest.newBuilder()
-                .uri(URI.create(STREAM_URI + "?tid=" + tenantId))
+                .uri(URI.create(STREAM_URI + query))
                 .header("Accept", "text/event-stream")
                 .header("Authorization", ADMIN_BASIC)
                 .build();
@@ -124,11 +136,30 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
      */
     @Test
     void eachClientReceivesOnlyItsOwnEvents() throws Exception {
+        assertEachClientReceivesOnlyItsOwnEvents(sseFor("tenant-A"), sseFor("tenant-B"));
+    }
+
+    /** The variable passed as {@code avars} filters exactly like the plain query parameter. */
+    @Test
+    void avarsFormFiltersLikeThePlainParameter() throws Exception {
+        assertEachClientReceivesOnlyItsOwnEvents(sseForAvars("tenant-A"), sseForAvars("tenant-B"));
+    }
+
+    /** Given both ways, the {@code avars} value wins, as for the stage variables. */
+    @Test
+    void avarsWinsOverThePlainParameter() throws Exception {
+        var a = sse("?tid=tenant-B&avars=" + URLEncoder.encode("{\"tid\":\"tenant-A\"}", StandardCharsets.UTF_8));
+        assertEachClientReceivesOnlyItsOwnEvents(a, sseFor("tenant-B"));
+    }
+
+    private void assertEachClientReceivesOnlyItsOwnEvents(HttpRequest reqA, HttpRequest reqB) throws Exception {
         // Open both SSE connections synchronously: CLIENT.send() returns only after
         // the server has sent the 200 headers, so both sessions are already registered
         // in the ChangeStreamWorker by the time we proceed.
-        var respA = CLIENT.send(sseFor("tenant-A"), BodyHandlers.ofInputStream());
-        var respB = CLIENT.send(sseFor("tenant-B"), BodyHandlers.ofInputStream());
+        var respA = CLIENT.send(reqA, BodyHandlers.ofInputStream());
+        var respB = CLIENT.send(reqB, BodyHandlers.ofInputStream());
+        assertEquals(200, respA.statusCode(), "Client-A must be accepted");
+        assertEquals(200, respB.statusCode(), "Client-B must be accepted");
         var isA = respA.body();
         var isB = respB.body();
 
@@ -201,60 +232,21 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
     }
 
     /**
-     * A client without a bound variable receives all events (pass-through mode).
-     *
-     * <p>When a client connects without the {@code ?tid=} parameter, the evaluator
-     * cannot bind the variable and passes through all events as a broadcast.
+     * A client without a bound variable is rejected: {@code notify_when} fails closed, as an
+     * unbound stage variable does, instead of broadcasting every event to it.
      */
     @Test
-    void clientWithoutBoundVarReceivesAllEvents() throws Exception {
-        // Connect without ?tid — no bound variable → pass-through
-        var reqAll = HttpRequest.newBuilder()
-                .uri(URI.create(STREAM_URI))
-                .header("Accept", "text/event-stream")
-                .header("Authorization", ADMIN_BASIC)
-                .build();
+    void clientWithoutBoundVarIsRejected() throws Exception {
+        var resp = CLIENT.send(sse(""), BodyHandlers.ofInputStream());
+        resp.body().close();
+        assertEquals(400, resp.statusCode(), "A client without ?tid must be rejected");
+    }
 
-        // Open connection synchronously so the session is registered before any insert
-        var resp = CLIENT.send(reqAll, BodyHandlers.ofInputStream());
-        var is = resp.body();
-
-        var lines = Collections.synchronizedList(new ArrayList<String>());
-
-        var reader = CompletableFuture.runAsync(() -> {
-            try (var br = new BufferedReader(new InputStreamReader(is))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    if (!line.isBlank()) lines.add(line);
-                }
-            } catch (Exception ignored) {
-            }
-        });
-
-        Thread.sleep(500); // let the ChangeStreamWorker enter its forEach loop
-
-        Unirest.post(TEST_COLL)
-                .basicAuth("admin", "secret")
-                .contentType("application/json")
-                .body("{\"tenantId\": \"tenant-X\", \"msg\": \"broadcast\"}")
-                .asEmpty();
-
-        Thread.sleep(1_500);
-
-        Unirest.post(TEST_COLL)
-                .basicAuth("admin", "secret")
-                .contentType("application/json")
-                .body("{\"tenantId\": \"tenant-Y\", \"msg\": \"broadcast\"}")
-                .asEmpty();
-
-        Thread.sleep(1_500);
-
-        is.close();
-        reader.get(2, TimeUnit.SECONDS);
-
-        assertTrue(lines.stream().anyMatch(l -> l.contains("tenant-X")),
-                "Unbound client must receive tenant-X event; got: " + lines);
-        assertTrue(lines.stream().anyMatch(l -> l.contains("tenant-Y")),
-                "Unbound client must receive tenant-Y event; got: " + lines);
+    /** {@code avars} without the variable does not bind it either. */
+    @Test
+    void clientWithAvarsWithoutTheVarIsRejected() throws Exception {
+        var resp = CLIENT.send(sse("?avars=" + URLEncoder.encode("{}", StandardCharsets.UTF_8)), BodyHandlers.ofInputStream());
+        resp.body().close();
+        assertEquals(400, resp.statusCode(), "A client with avars={} must be rejected");
     }
 }

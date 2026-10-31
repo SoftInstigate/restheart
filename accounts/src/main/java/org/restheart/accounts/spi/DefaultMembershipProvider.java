@@ -1,58 +1,83 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-accounts
+ * %%
+ * Copyright (C) 2018 - 2026 SoftInstigate
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * =========================LICENSE_END==================================
+ */
 package org.restheart.accounts.spi;
-
-import com.mongodb.client.MongoClient;
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
-import org.bson.BsonDateTime;
-import org.bson.BsonString;
-import org.bson.BsonValue;
-import org.bson.types.ObjectId;
-import org.restheart.accounts.util.DbHelper;
-import org.restheart.utils.BsonUtils;
-import org.restheart.plugins.accounts.Membership;
-import org.restheart.plugins.accounts.MembershipProvider;
-import org.restheart.plugins.accounts.TeamMember;
-import org.restheart.plugins.accounts.TeamRef;
-import org.restheart.plugins.accounts.ConsentRecord;
-import org.restheart.plugins.schema.JsonSchemas;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.bson.BsonArray;
+import org.bson.BsonDateTime;
+import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.BsonValue;
+import org.bson.types.ObjectId;
+import org.restheart.accounts.util.DbHelper;
+import org.restheart.plugins.accounts.ConsentRecord;
+import org.restheart.plugins.accounts.Membership;
+import org.restheart.plugins.accounts.MembershipProvider;
+import org.restheart.plugins.accounts.TeamMember;
+import org.restheart.plugins.accounts.TeamRef;
+import org.restheart.plugins.schema.JsonSchemas;
+import org.restheart.utils.BsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
+
 /**
  * Default {@link MembershipProvider} implementation.
  *
- * <p>Preserves the built-in {@code team}/{@code teams} schema:
+ * <p>Who belongs to a team, and as what, is written once, on the team (9.12.0, #766):
  *
  * <pre>
- * // users collection
- * {
- *   _id: "alice@example.com",
- *   team:  "objectIdHex",               // active team
- *   teams: [{ id: "objectIdHex", role: "owner"|"admin"|"member" }]
- * }
- *
  * // teams collection
  * {
  *   _id: ObjectId,
  *   name: "Acme Corp",
  *   createdBy: "alice@example.com",
  *   createdAt: ISODate,
- *   members: [{ userId: "...", role: "...", joinedAt: ISODate }]
+ *   members: [{ userId: "alice@example.com", role: "owner"|"member", joinedAt: ISODate }]
+ * }
+ *
+ * // users collection
+ * {
+ *   _id: "alice@example.com",
+ *   team: { _id: ObjectId }             // the active team: the user's own choice, so on the user
  * }
  * </pre>
+ *
+ * <p>Before 9.12.0 the user also carried {@code teams: [{ id, role }]} and the active role in
+ * {@code team.role}: three copies, written with separate updates, that could disagree. They are
+ * neither written nor read any more; {@code MembershipMigration} unsets them from existing data.
+ * Access follows {@code team.members}: a user listed nowhere in a team's members cannot use it,
+ * and has no active membership while that team is the active one.
  *
  * <p>This class is <em>not</em> a RESTHeart plugin. It is instantiated directly by
  * {@link org.restheart.accounts.AccountsService}, which passes a {@link MongoClient} and
  * the configured database name to the constructor.
  */
 public class DefaultMembershipProvider implements MembershipProvider {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMembershipProvider.class);
 
     private final DbHelper db;
@@ -68,9 +93,8 @@ public class DefaultMembershipProvider implements MembershipProvider {
     // ── createInitialTeam ─────────────────────────────────────────────────────
 
     /**
-     * Creates a team document in the {@code teams} collection and links the user
-     * to it by setting {@code team} and adding an entry to {@code teams} on
-     * the user document.
+     * Creates a team with the user as its owner and makes it the user's active team, unless the
+     * user already has one.
      *
      * <p>The user document must already exist when this method is called.
      *
@@ -86,9 +110,8 @@ public class DefaultMembershipProvider implements MembershipProvider {
     // ── createTeam ───────────────────────────────────────────────────────────
 
     /**
-     * Creates an additional team for an already-registered user and sets it as
-     * their newly active membership (unlike {@link #createInitialTeam}, which only
-     * sets the team active if the user has none yet).
+     * Creates an additional team for an already-registered user and makes it the active one
+     * (unlike {@link #createInitialTeam}, which only does so when the user has none yet).
      *
      * @param userId   the user's email address; must already exist
      * @param teamName the display name for the new team
@@ -119,15 +142,10 @@ public class DefaultMembershipProvider implements MembershipProvider {
         var teamId = db.insertTeam(teamDoc);
         var teamIdBson = new BsonObjectId(new ObjectId(teamId));
 
-        // Link user → team
-        db.addTeamMembership(userId, new BsonDocument()
-                .append("id", teamIdBson)
-                .append("role", new BsonString(ownershipRole)));
-
         if (forceActive) {
-            db.setActiveTeam(userId, teamIdBson, ownershipRole);
+            db.setActiveTeam(userId, teamIdBson);
         } else {
-            db.setActiveTeamIfAbsent(userId, teamIdBson, ownershipRole);
+            db.setActiveTeamIfAbsent(userId, teamIdBson);
         }
 
         LOGGER.debug("DefaultMembershipProvider: created team '{}' ({}) for user <{}>",
@@ -138,37 +156,18 @@ public class DefaultMembershipProvider implements MembershipProvider {
 
     // ── isMember ─────────────────────────────────────────────────────────────
 
+    /** Whether the team's {@code members} name the user: the one place a membership exists. */
     @Override
     public boolean isMember(String userId, BsonValue teamId) {
-        var userOpt = db.findUser(userId);
-        if (userOpt.isEmpty()) return false;
-        var user = userOpt.get();
-
-        var activeId = activeTeamId(user);
-        if (activeId != null && teamId.equals(activeId)) {
-            return true;
-        }
-        if (user.containsKey("teams") && user.get("teams").isArray()) {
-            for (var entry : user.getArray("teams")) {
-                if (entry.isDocument()) {
-                    var e = entry.asDocument();
-                    if (e.containsKey("id") && teamId.equals(e.get("id"))) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        return db.findTeam(teamId).flatMap(t -> member(t, userId)).isPresent();
     }
 
     // ── addMember ─────────────────────────────────────────────────────────────
 
     /**
-     * Adds a {@code {id, role}} entry to the user's {@code teams} array and a
-     * mirrored {@code {userId, role, joinedAt}} entry to the team's
-     * {@code members} array (both idempotent). If the user has no active team
-     * yet, also sets {@code team} to this team so they are immediately able to
-     * use it.
+     * Adds a {@code {userId, role, joinedAt}} entry to the team's {@code members} (idempotent:
+     * a user already there keeps the role it has). If the user has no active team yet, this
+     * team becomes it, so they are immediately able to use it.
      *
      * @param userId the user's email address
      * @param teamId the team identifier
@@ -176,54 +175,44 @@ public class DefaultMembershipProvider implements MembershipProvider {
      */
     @Override
     public void addMember(String userId, BsonValue teamId, String role) {
-        db.addTeamMembership(userId, new BsonDocument()
-                .append("id", teamId)
-                .append("role", new BsonString(role)));
         db.addMemberToTeam(teamId, userId, role);
-        db.setActiveTeamIfAbsent(userId, teamId, role);
+        db.setActiveTeamIfAbsent(userId, teamId);
     }
 
     // ── activeMembership ──────────────────────────────────────────────────────
 
+    /**
+     * The user's active team with the role its {@code members} entry says, or none: when the user
+     * has no active team, or is no longer among its members (removed while it was the active one).
+     */
     @Override
     public Optional<Membership> activeMembership(String userId) {
         var userOpt = db.findUser(userId);
         if (userOpt.isEmpty()) return Optional.empty();
-        var user = userOpt.get();
 
-        var teamId = activeTeamId(user);
+        var teamId = activeTeamId(userOpt.get());
         if (teamId == null) {
             return Optional.empty();
         }
-        var role = findRoleInTeams(user, teamId);
-        var displayName = loadTeamName(teamId);
 
-        return Optional.of(new Membership(teamId, displayName, loadTeamDescription(teamId), role, true));
+        return db.findTeam(teamId)
+                .flatMap(team -> member(team, userId).map(m -> membership(team, m, true)));
     }
 
     // ── listMemberships ───────────────────────────────────────────────────────
 
+    /** The teams whose {@code members} name the user, one query on the teams collection. */
     @Override
     public List<Membership> listMemberships(String userId) {
-        var userOpt = db.findUser(userId);
-        if (userOpt.isEmpty()) return List.of();
-        var user = userOpt.get();
-
-        var activeTeam = activeTeamId(user);
+        var activeTeam = db.findUser(userId).map(DefaultMembershipProvider::activeTeamId).orElse(null);
 
         var result = new ArrayList<Membership>();
-        if (user.containsKey("teams") && user.get("teams").isArray()) {
-            for (var entry : user.getArray("teams")) {
-                if (!entry.isDocument()) continue;
-                var e = entry.asDocument();
-                var teamId = e.containsKey("id") && !e.get("id").isNull() ? e.get("id") : null;
-                var role = e.containsKey("role") && e.get("role").isString()
-                        ? e.getString("role").getValue() : "member";
-                if (teamId == null) continue;
-                var displayName = loadTeamName(teamId);
-                result.add(new Membership(teamId, displayName, loadTeamDescription(teamId), role, teamId.equals(activeTeam)));
-            }
+
+        for (var team : db.findTeamsOf(userId)) {
+            var teamId = team.get("_id");
+            member(team, userId).ifPresent(m -> result.add(membership(team, m, teamId.equals(activeTeam))));
         }
+
         return result;
     }
 
@@ -231,52 +220,34 @@ public class DefaultMembershipProvider implements MembershipProvider {
 
     @Override
     public void setActiveMembership(String userId, BsonValue teamId) {
-        var userOpt = db.findUser(userId);
-        if (userOpt.isEmpty() || !isMember(userId, teamId)) {
+        if (db.findUser(userId).isEmpty() || !isMember(userId, teamId)) {
             throw new IllegalArgumentException(
                     "User <" + userId + "> is not a member of team " + teamId);
         }
-        var role = findRoleInTeams(userOpt.get(), teamId);
-        db.setActiveTeam(userId, teamId, role);
+
+        db.setActiveTeam(userId, teamId);
     }
 
     // ── removeMember ─────────────────────────────────────────────────────
 
     /**
-     * Removes the user from the given team on both sides:
-     * {@code user.teams[]} (user document) and {@code team.members[]} (team document).
-     * If the team was the user's active team, the active team field is cleared.
+     * Removes the user from the team's {@code members}. If the team was the user's active team,
+     * the active team is cleared.
      */
     @Override
     public void removeMember(String userId, BsonValue teamId) {
-        var userOpt = db.findUser(userId);
-        if (userOpt.isEmpty()) return;
-        var user = userOpt.get();
-
-        db.removeTeamMembership(userId, teamId);
         db.removeMemberFromTeam(teamId, userId);
-
-        // Clear active team if it was this one
-        if (teamId.equals(activeTeamId(user))) {
-            db.unsetUserFields(userId, List.of("team"));
-        }
+        db.unsetActiveTeamIf(userId, teamId);
 
         LOGGER.info("DefaultMembershipProvider: removed user <{}> from team {}", userId, teamId);
     }
 
     // ── updateMemberRole ─────────────────────────────────────────────────
 
-    /**
-     * Updates the org-level role for the user in the given team on both sides:
-     * {@code user.teams[].role} and {@code team.members[].role}.
-     */
+    /** Updates the user's role in the team's {@code members}: what {@code @team.role} reads next. */
     @Override
     public void updateMemberRole(String userId, BsonValue teamId, String newRole) {
-        db.updateTeamRole(userId, teamId, newRole);
         db.updateMemberRoleInTeam(teamId, userId, newRole);
-        // Keep the denormalized active-team role in sync if this is the user's active team,
-        // so their next issued/refreshed JWT carries team.role == newRole.
-        db.setActiveTeamRoleIfActive(userId, teamId, newRole);
 
         LOGGER.info("DefaultMembershipProvider: updated role of <{}> in team {} to '{}'",
                 userId, teamId, newRole);
@@ -293,15 +264,17 @@ public class DefaultMembershipProvider implements MembershipProvider {
         var teamOpt = db.findTeam(teamId);
         if (teamOpt.isEmpty()) return List.of();
         var team = teamOpt.get();
-        if (!team.containsKey("members") || !team.get("members").isArray()) return List.of();
 
+        if (!team.containsKey("members") || !team.get("members").isArray()) return List.of();
         var memberEntries = team.getArray("members");
+
         var userIds = new ArrayList<String>();
         for (var entry : memberEntries) {
             if (entry.isDocument() && entry.asDocument().containsKey("userId")) {
                 userIds.add(entry.asDocument().getString("userId").getValue());
             }
         }
+
         var users = db.findUsers(userIds);
 
         var result = new ArrayList<TeamMember>();
@@ -309,12 +282,13 @@ public class DefaultMembershipProvider implements MembershipProvider {
             if (!entry.isDocument()) continue;
             var e = entry.asDocument();
             if (!e.containsKey("userId")) continue;
+
             var userId = e.getString("userId").getValue();
-            var role = e.containsKey("role") && e.get("role").isString()
-                    ? e.getString("role").getValue() : "member";
+            var role = roleOf(e);
             var joinedAt = e.containsKey("joinedAt") && e.get("joinedAt").isDateTime()
                     ? Instant.ofEpochMilli(e.getDateTime("joinedAt").getValue()) : null;
             var name = displayName(users.get(userId));
+
             result.add(new TeamMember(userId, name, role, joinedAt));
         }
         return result;
@@ -340,9 +314,8 @@ public class DefaultMembershipProvider implements MembershipProvider {
     // ── deleteTeam ────────────────────────────────────────────────────────
 
     /**
-     * Atomically deletes the team if it has no other members, then clears the
-     * caller's own membership entry ({@code user.teams[]}) and active-team
-     * pointer (if this was the active team).
+     * Atomically deletes the team if it has no other members, then clears the caller's active
+     * team if this was it.
      */
     @Override
     public boolean deleteTeam(String userId, BsonValue teamId) {
@@ -350,10 +323,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
             return false;
         }
 
-        db.removeTeamMembership(userId, teamId);
-        db.findUser(userId)
-                .filter(u -> teamId.equals(activeTeamId(u)))
-                .ifPresent(u -> db.unsetUserFields(userId, List.of("team")));
+        db.unsetActiveTeamIf(userId, teamId);
 
         LOGGER.info("DefaultMembershipProvider: deleted team {} (requested by <{}>)", teamId, userId);
         return true;
@@ -364,17 +334,16 @@ public class DefaultMembershipProvider implements MembershipProvider {
     /**
      * Activates an invited user via OAuth.
      *
-     * <p>Activates any unverified user ({@code roles: ["$unauthenticated"]}) who
-     * already has an active {@code team} set (assigned when the invite was sent).
-     * Assigns the configured {@code default-role}, removes the {@code inviteToken}
-     * field.
+     * <p>Activates any unverified user ({@code roles: ["$unauthenticated"]}) who already has an
+     * active team whose members name them (the caller adds the membership from the invitation
+     * first). Assigns the configured {@code default-role}.
      *
      * <p>Consent persistence is the responsibility of the deployment layer.
      * This method ignores the {@code consents} parameter.
      *
      * @param userId   the user's email address
      * @return an {@link Optional} with the activated membership, or empty if the user
-     *         is not unverified or has no pending team
+     *         is not unverified or has no active membership
      */
     @Override
     public Optional<Membership> activateViaOAuth(String userId, ConsentRecord consents) {
@@ -387,13 +356,13 @@ public class DefaultMembershipProvider implements MembershipProvider {
                 ? user.getArray("roles") : new BsonArray();
         boolean isUnverified = userRoles.size() == 1
                 && "$unauthenticated".equals(userRoles.get(0).asString().getValue());
+
         if (!isUnverified) {
             return Optional.empty();
         }
 
-        // User must already have an active team (set when the invite was sent)
-        var teamId = activeTeamId(user);
-        if (teamId == null) {
+        var membership = activeMembership(userId);
+        if (membership.isEmpty()) {
             LOGGER.warn("DefaultMembershipProvider.activateViaOAuth: invited user <{}> has no team", userId);
             return Optional.empty();
         }
@@ -401,27 +370,22 @@ public class DefaultMembershipProvider implements MembershipProvider {
         // Activate: assign defaultRole
         var rolesArray = new BsonArray();
         rolesArray.add(new BsonString(defaultRole));
-        var updates = new BsonDocument().append("roles", rolesArray);
-        db.updateUser(userId, updates);
-
-        var role = findRoleInTeams(user, teamId);
-        var displayName = loadTeamName(teamId);
+        db.updateUser(userId, new BsonDocument().append("roles", rolesArray));
 
         LOGGER.info("DefaultMembershipProvider: invited user <{}> activated via OAuth (team={})",
-                userId, teamId);
+                userId, membership.get().teamId());
 
-        return Optional.of(new Membership(teamId, displayName, loadTeamDescription(teamId), role, true));
+        return membership;
     }
 
     // ── Helpers ─────────────────────────────────────────────────────
 
     /**
-     * Extracts the active team's id from the user document, tolerating both the
-     * current {@code team: { _id, role }} object shape and the legacy scalar
-     * {@code team: <oid>} shape (pre-9.6.0 data). Returns {@code null} when the
-     * user has no active team.
+     * Extracts the active team's id from the user document, tolerating the {@code team: { _id }}
+     * shape, the pre-9.12.0 {@code team: { _id, role }} one and the pre-9.6.0 bare id. Returns
+     * {@code null} when the user has no active team.
      */
-    private static BsonValue activeTeamId(BsonDocument user) {
+    static BsonValue activeTeamId(BsonDocument user) {
         if (!user.containsKey("team") || user.get("team").isNull()) {
             return null;
         }
@@ -433,18 +397,39 @@ public class DefaultMembershipProvider implements MembershipProvider {
         return team; // legacy scalar id
     }
 
-    private String findRoleInTeams(BsonDocument user, BsonValue teamId) {
-        if (user.containsKey("teams") && user.get("teams").isArray()) {
-            for (var entry : user.getArray("teams")) {
-                if (!entry.isDocument()) continue;
+    /** The {@code members} entry of {@code userId} in {@code team}, if any. */
+    static Optional<BsonDocument> member(BsonDocument team, String userId) {
+        if (!team.containsKey("members") || !team.get("members").isArray()) {
+            return Optional.empty();
+        }
+
+        for (var entry : team.getArray("members")) {
+            if (entry.isDocument()) {
                 var e = entry.asDocument();
-                if (e.containsKey("id") && teamId.equals(e.get("id"))) {
-                    return e.containsKey("role") && e.get("role").isString()
-                            ? e.getString("role").getValue() : "member";
+                if (e.containsKey("userId") && e.get("userId").isString()
+                        && userId.equals(e.getString("userId").getValue())) {
+                    return Optional.of(e);
                 }
             }
         }
-        return "member";
+
+        return Optional.empty();
+    }
+
+    private static String roleOf(BsonDocument memberEntry) {
+        return memberEntry.containsKey("role") && memberEntry.get("role").isString()
+                ? memberEntry.getString("role").getValue() : "member";
+    }
+
+    private static Membership membership(BsonDocument team, BsonDocument memberEntry, boolean active) {
+        var teamId = team.get("_id");
+        var name = team.containsKey("name") && team.get("name").isString()
+                ? team.getString("name").getValue()
+                : teamId.isString() ? teamId.asString().getValue() : BsonUtils.toJson(teamId);
+        var description = team.containsKey("description") && team.get("description").isString()
+                ? team.getString("description").getValue() : null;
+
+        return new Membership(teamId, name, description, roleOf(memberEntry), active);
     }
 
     /** Builds a display name ("name surname") from a user's profile, falling back to their email. */
@@ -453,39 +438,14 @@ public class DefaultMembershipProvider implements MembershipProvider {
         var email = user.containsKey("_id") && user.get("_id").isString()
                 ? user.getString("_id").getValue() : null;
         if (!user.containsKey("profile") || !user.get("profile").isDocument()) return email;
-
         var profile = user.getDocument("profile");
         var name = profile.containsKey("name") && profile.get("name").isString()
                 ? profile.getString("name").getValue() : null;
         var surname = profile.containsKey("surname") && profile.get("surname").isString()
                 ? profile.getString("surname").getValue() : null;
-
         if (name == null && surname == null) return email;
         return java.util.stream.Stream.of(name, surname)
                 .filter(s -> s != null && !s.isBlank())
                 .collect(java.util.stream.Collectors.joining(" "));
-    }
-
-    private String loadTeamName(BsonValue teamId) {
-        var fallback = teamId.isString() ? teamId.asString().getValue() : BsonUtils.toJson(teamId);
-        try {
-            return db.findTeam(teamId)
-                    .filter(t -> t.containsKey("name") && t.get("name").isString())
-                    .map(t -> t.getString("name").getValue())
-                    .orElse(fallback);
-        } catch (Exception e) {
-            return fallback;
-        }
-    }
-
-    private String loadTeamDescription(BsonValue teamId) {
-        try {
-            return db.findTeam(teamId)
-                    .filter(t -> t.containsKey("description") && t.get("description").isString())
-                    .map(t -> t.getString("description").getValue())
-                    .orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
     }
 }

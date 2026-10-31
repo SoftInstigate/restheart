@@ -98,6 +98,24 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
     private final McpJsonMapper jsonMapper;
     private McpStreamableServerSession.Factory sessionFactory;
     private final ConcurrentHashMap<String, McpStreamableServerSession> sessions = new ConcurrentHashMap<>();
+
+    /** How many sessions this transport accepts at a time; 0 means no cap (restheart#781). */
+    private volatile int maxSessions = 0;
+
+    /** Caps the sessions alive on this transport; 0 removes the cap. */
+    public void maxSessions(int max) {
+        this.maxSessions = Math.max(0, max);
+    }
+
+    /** The sessions alive on this transport now (restheart#781). */
+    public int sessionCount() {
+        return sessions.size();
+    }
+
+    /** The ids of the sessions alive on this transport now (restheart#781). */
+    public java.util.Set<String> sessionIds() {
+        return java.util.Set.copyOf(sessions.keySet());
+    }
     private final SessionActivity activity = new SessionActivity();
 
     /**
@@ -402,6 +420,20 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 return;
             }
 
+            // one more session than the cap allows is refused before it exists (restheart#781):
+            // 429 with a JSON-RPC error the client can read, as for the subscriptions
+            if (maxSessions > 0 && sessions.size() >= maxSessions) {
+                try {
+                    var error = new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
+                        "too many MCP sessions: %d alive, %d allowed. End one with DELETE, or wait for an idle one to expire".formatted(sessions.size(), maxSessions));
+                    res.setContentType("application/json");
+                    res.setContent(jsonMapper.writeValueAsString(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, rpcReq.id(), null, error)));
+                } catch (Exception e) {
+                    res.setContent("too many MCP sessions");
+                }
+                res.setStatusCode(HttpStatus.SC_TOO_MANY_REQUESTS);
+                return;
+            }
             try {
                 var initReq = jsonMapper.convertValue(rpcReq.params(), new TypeRef<McpSchema.InitializeRequest>() {
                 });

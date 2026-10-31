@@ -155,7 +155,7 @@ public class JwtTokenManager implements TokenManager {
         jwtCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
                 Cache.EXPIRE_POLICY.AFTER_WRITE,
                 ttl * 1000 * 60 - 500, // -500 makes sure that cache entry expires always before token
-                key -> newToken(key.wrapped(), key.claims()));
+                key -> newToken(key.wrapped(), key.claims(), key.varClaims()));
 
         try {
             this.verifier = jwtConfig.hasAudience()
@@ -364,10 +364,10 @@ public class JwtTokenManager implements TokenManager {
 
         try {
             final var claims = DefaultJwtIssuer.claimsOverride(request);
-            final var ca = new ComparableAccount(account, claims);
+            final var ca = new ComparableAccount(account, claims, issuer().variableClaims(request, claims));
 
             final var renewedAccount = accountForRenew(request, account);
-            final var newToken = renewToken(account, renewedAccount, claims);
+            final var newToken = renewToken(account, renewedAccount, claims, request);
 
             this.jwtCache.put(ca, newToken);
 
@@ -409,7 +409,7 @@ public class JwtTokenManager implements TokenManager {
             // The effective claim list is part of the cache key: on a multi-tenant node the same
             // principal can be served with different lists, producing different tokens.
             final var claims = DefaultJwtIssuer.claimsOverride(request);
-            final var ca = new ComparableAccount(account, claims);
+            final var ca = new ComparableAccount(account, claims, issuer().variableClaims(request, claims));
             final var token = this.jwtCache.getLoading(ca).get();
             var cacheDuration = System.currentTimeMillis() - cacheStartTime;
 
@@ -504,11 +504,16 @@ public class JwtTokenManager implements TokenManager {
         return account;
     }
 
-    private Token newToken(final Account account, final List<String> claims) {
-        return newToken(account, Date.from(Instant.now().plus(ttl, ChronoUnit.MINUTES)), claims);
+    private Token newToken(final Account account, final List<String> claims, final Map<String, Object> varClaims) {
+        return newToken(account, Date.from(Instant.now().plus(ttl, ChronoUnit.MINUTES)), claims, varClaims);
     }
 
-    private Token newToken(final Account account, final Date expires, final List<String> claims) {
+    /**
+     * @param varClaims the claims the ACL-variable entries of the claim list resolved to for the
+     *                  issuing request — see {@link DefaultJwtIssuer#variableClaims}; part of the
+     *                  cache key, since the loader has no request of its own
+     */
+    private Token newToken(final Account account, final Date expires, final List<String> claims, final Map<String, Object> varClaims) {
         final var jwtIssuer = issuer();
 
         var builder = jwtIssuer.newBuilder(account.getPrincipal().getName(), account.getRoles(), expires);
@@ -521,6 +526,10 @@ public class JwtTokenManager implements TokenManager {
             properties = jwtIssuer.accountClaims(awp.propertiesAsMap(), claims);
         } else {
             properties = null;
+        }
+
+        for (var e : varClaims.entrySet()) {
+            builder = jwtIssuer.withClaim(builder, e.getKey(), e.getValue());
         }
 
         // a token minted outside a renewal follows a real authentication, so the session starts now
@@ -555,7 +564,7 @@ public class JwtTokenManager implements TokenManager {
      * from {@code renewedAccount}. These are the claims that reflect the user document as it
      * is <em>now</em>, so a change to the document reaches the renewed token.
      */
-    private Token renewToken(final Account originalAccount, final Account renewedAccount, final List<String> claimsOverride) {
+    private Token renewToken(final Account originalAccount, final Account renewedAccount, final List<String> claimsOverride, final Request<?> request) {
         final var jwtIssuer = issuer();
         final var expires = Date.from(Instant.now().plus(ttl, ChronoUnit.MINUTES));
         var builder = jwtIssuer.newBuilder(renewedAccount.getPrincipal().getName(), renewedAccount.getRoles(), expires);
@@ -585,6 +594,11 @@ public class JwtTokenManager implements TokenManager {
             properties = jwtIssuer.accountClaims(awp.propertiesAsMap(), claimsOverride);
         } else {
             properties = null;
+        }
+
+        // the ACL-variable entries, read at this renewal like everything else in step 2
+        for (var e : jwtIssuer.variableClaims(request, claimsOverride).entrySet()) {
+            builder = jwtIssuer.withClaim(builder, e.getKey(), e.getValue());
         }
 
         // Step 3: the session, as opposed to the token. Step 1 already carried both claims over when
@@ -757,7 +771,7 @@ public class JwtTokenManager implements TokenManager {
      */
     public Builder withAccountPropertiesClaims(Builder builder, final Account account, final Request<?> request) {
         if (!(account instanceof WithProperties<?> awp)) return builder;
-        return issuer().applyAccountClaims(builder, awp.propertiesAsMap(), DefaultJwtIssuer.claimsOverride(request));
+        return issuer().applyAccountClaims(builder, awp.propertiesAsMap(), DefaultJwtIssuer.claimsOverride(request), request);
     }
 
     @Override
@@ -790,7 +804,7 @@ public class JwtTokenManager implements TokenManager {
             final var account = request.getAuthenticatedAccount();
             // Same key get() uses: the effective claim list is part of the token's identity
             final var claims = DefaultJwtIssuer.claimsOverride(request);
-            final var ca = new ComparableAccount(account, claims);
+            final var ca = new ComparableAccount(account, claims, issuer().variableClaims(request, claims));
 
             exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
                     URLUtils.removeTrailingSlashes(srvURI));
@@ -805,7 +819,7 @@ public class JwtTokenManager implements TokenManager {
 
             if (shouldRenew) {
                 final var renewedAccount = accountForRenew(request, account);
-                final var newToken = renewToken(account, renewedAccount, claims);
+                final var newToken = renewToken(account, renewedAccount, claims, request);
 
                 this.jwtCache.put(ca, newToken);
                 exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, String.valueOf(newToken.raw()));
@@ -892,9 +906,14 @@ record Token(char[] raw, Date expires, String[] roles, Map<String, ? super Objec
  * the principal alone would serve one tenant's token to another. {@code null} means "the
  * configured default was used".
  */
-record ComparableAccount(Account wrapped, List<String> claims) {
+record ComparableAccount(Account wrapped, List<String> claims, Map<String, Object> varClaims) {
     ComparableAccount(Account wrapped) {
         this(wrapped, null);
+    }
+
+    /** Without the ACL-variable claims: an entry that no request resolved anything for. */
+    ComparableAccount(Account wrapped, List<String> claims) {
+        this(wrapped, claims, Map.of());
     }
 
     @Override
@@ -917,6 +936,13 @@ record ComparableAccount(Account wrapped, List<String> claims) {
 
         // Compare the effective claim list: same user, different claims -> different token
         if (!Objects.equals(this.claims, that.claims)) {
+            return false;
+        }
+
+        // And what the ACL-variable entries of that list resolved to: the active team of "@team"
+        // is read at issuance, not from the account, so the same principal gets a different
+        // token once it has switched team
+        if (!Objects.equals(this.varClaims, that.varClaims)) {
             return false;
         }
 
@@ -953,7 +979,7 @@ record ComparableAccount(Account wrapped, List<String> claims) {
     public int hashCode() {
         String username = wrapped.getPrincipal() == null ? null : wrapped.getPrincipal().getName();
         String authDb = getAuthDb(wrapped);
-        return Objects.hash(username, authDb, claims, rolesOf(wrapped), fromApiKeyAccount(wrapped));
+        return Objects.hash(username, authDb, claims, varClaims, rolesOf(wrapped), fromApiKeyAccount(wrapped));
     }
 
     /** Mirrors JwtTokenManager.fromApiKey: what the token will say about where the account came from. */

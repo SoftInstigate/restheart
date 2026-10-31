@@ -4,6 +4,7 @@ import com.mongodb.client.MongoClient;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.spi.DefaultMembershipProvider;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.exchange.Request;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.plugins.accounts.MembershipProviderRegistry;
@@ -115,10 +116,11 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
      * <p>Custom providers registered via {@link #registerMembershipProvider(MembershipProvider)}
      * are returned as-is; they are responsible for their own database resolution.
      *
-     * @param req the current service request
+     * @param req the current request, a service's or a MongoDB one: the ACL variable {@code @team}
+     *            asks for the provider from a {@code readFilter} on a collection too
      * @return the active {@link MembershipProvider} for this request; never {@code null}
      */
-    public MembershipProvider getMembershipProvider(ServiceRequest<?> req) {
+    public MembershipProvider getMembershipProvider(Request<?> req) {
         if (membershipProvider instanceof DefaultMembershipProvider) {
             return new DefaultMembershipProvider(
                     mclient,

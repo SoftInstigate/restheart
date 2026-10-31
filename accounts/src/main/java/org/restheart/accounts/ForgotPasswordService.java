@@ -9,7 +9,6 @@ import java.time.Instant;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.bson.BsonArray;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
@@ -36,15 +35,18 @@ import com.mongodb.client.MongoClient;
  * POST /auth/forgot-password
  *
  * <p>Generates a one-shot {@code passwordResetToken} (256-bit, TTL 1 hour) stored on the
- * user document and sends a password-reset email — for accounts that have completed email
- * verification.
+ * user document and sends a password-reset email.
  *
- * <p>For an account that has <strong>not</strong> completed email verification yet (still
- * {@code $unauthenticated}), there is no password to reset: instead this re-sends the
- * verification email (new {@code emailVerificationToken}, invalidating the previous one).
- * This is the account owner's only self-service way to recover from a lost or expired
- * activation email — without it, such an account would be stuck forever, since registration
- * rejects the email as already taken.
+ * <p>An account that has <strong>not</strong> completed email verification yet (still
+ * {@code $unauthenticated}) gets the same reset link, and {@link ResetPasswordService}
+ * verifies it as it sets the new password: following the link proves ownership of the
+ * address just as the verification link would. This is the account owner's only self-service
+ * way to recover from a lost or expired verification email, since registration rejects the
+ * email as already taken. It deliberately does not re-send the verification link: that link
+ * would activate the account with the password chosen at registration, which the person
+ * following the link may not know, since anyone can register any address. A third party
+ * who pre-registered the address would then have a working password for the activated
+ * account (GHSA-m7m7-gjxg-cjmm). The reset link makes the owner choose the password.
  *
  * <p><strong>Anti-enumeration</strong>: always responds {@code 202 Accepted} regardless of
  * whether the requested email exists, is verified, or anything else. All internal outcomes
@@ -129,8 +131,8 @@ public class ForgotPasswordService implements JsonService {
     // -------------------------------------------------------------------------
 
     /**
-     * Dispatches to the password-reset or the verification-resend flow depending on
-     * whether the account has completed email verification.
+     * Sends the reset link to an existing account, verified or not (see the class javadoc for
+     * why an unverified account gets a reset link rather than the verification link again).
      * Exceptions bubble up to {@link #handle} where they are caught and logged,
      * leaving the already-set 202 response intact.
      */
@@ -144,32 +146,22 @@ public class ForgotPasswordService implements JsonService {
 
         var user = userOpt.get();
 
-        // Verified users have roles != ["$unauthenticated"]
-        var userRoles = user.containsKey("roles") && user.get("roles").isArray()
-                ? user.getArray("roles") : new BsonArray();
-        boolean isVerified = !userRoles.isEmpty()
-                && !(userRoles.size() == 1 && "$unauthenticated".equals(userRoles.get(0).asString().getValue()));
-
         // At most one email per address per cooldown. Without it, this endpoint re-sends to an
         // address as often as anyone calls it — and an address seeded through /auth/register can
-        // be mailed again and again. The response is the same 202 either way.
-        var lastSentField = isVerified ? "passwordResetCreatedAt" : "emailVerificationCreatedAt";
-        if (!emailPolicy.resendAllowed(user, lastSentField)) {
+        // be mailed again and again. The verification email sent at registration counts too.
+        // The response is the same 202 either way.
+        if (!emailPolicy.resendAllowed(user, "passwordResetCreatedAt")
+                || !emailPolicy.resendAllowed(user, "emailVerificationCreatedAt")) {
             LOGGER.info("forgotPassword: an email was sent to this address less than {}s ago, not sending another",
                     emailPolicy.resendCooldown().toSeconds());
             return;
         }
 
-        if (isVerified) {
-            sendPasswordReset(req, email, dbName, usersColl, user);
-        } else {
-            resendVerificationEmail(req, email, dbName, usersColl, user);
-        }
+        sendPasswordReset(req, email, dbName, usersColl, user);
     }
 
     /**
-     * Account has a password to reset: generate a one-shot {@code passwordResetToken}
-     * and email the reset link.
+     * Generate a one-shot {@code passwordResetToken} and email the reset link.
      */
     private void sendPasswordReset(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
         // a. Generate one-shot reset token and record its creation time
@@ -211,53 +203,5 @@ public class ForgotPasswordService implements JsonService {
 
         // d. Audit log — no PII at INFO level
         LOGGER.info("forgotPassword: password reset email dispatched");
-    }
-
-    /**
-     * Account never completed email verification: there is no password to reset yet.
-     * Regenerate {@code emailVerificationToken} (invalidating the previous one, e.g. an
-     * expired or lost original) and re-send the activation email — mirrors the email
-     * sent by {@link RegisterService} at signup time.
-     */
-    private void resendVerificationEmail(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
-        // a. Generate new verification token and record its creation time
-        var token = TokenUtils.generateToken();
-        var now = new BsonDateTime(Instant.now().toEpochMilli());
-
-        // b. Persist token on the user document
-        var updates = new BsonDocument();
-        updates.put("emailVerificationToken", new BsonString(token));
-        updates.put("emailVerificationCreatedAt", now);
-        new DbHelper(mclient, dbName, usersColl, jsonSchemas).updateUser(email, updates);
-
-        // c. Build verification link and send email
-        var firstName = user.containsKey("profile") && user.get("profile").isDocument()
-                && user.getDocument("profile").containsKey("name")
-                ? user.getDocument("profile").getString("name").getValue()
-                : email;
-        var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        var verifyLink = RequestOverrides.frontendUrl(req, conf)
-                + "/auth/verify?email=" + encodedEmail
-                + "&token=" + token;
-
-        // X-Skip-Email header, honoured only where accountsEmailPolicy allows it (tests)
-        if (emailPolicy.skipEmail(req)) {
-            LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
-        } else {
-            var tmpl = EmailTemplateLoader.loadWithFallback(
-                    RequestOverrides.templateVerification(req), conf.verificationTemplatePath(), "verification.html");
-            var vars = java.util.Map.of(
-                    "app-name", RequestOverrides.appName(req, conf),
-                    "year", String.valueOf(java.time.Year.now().getValue()),
-                    "first-name", firstName != null ? firstName : "",
-                    "email", email,
-                    "frontend-url", RequestOverrides.frontendUrl(req, conf),
-                    "verification-url", verifyLink);
-            var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-            emails.sendEmailAsync(req, email, firstName, rendered.subject(), rendered.htmlBody());
-        }
-
-        // d. Audit log — no PII at INFO level
-        LOGGER.info("forgotPassword: account not verified — verification email re-dispatched");
     }
 }

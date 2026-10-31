@@ -23,6 +23,7 @@ import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -246,80 +247,16 @@ public class DbHelper {
     }
 
     /**
-     * Adds a team membership to the user's {@code teams} array using {@code $addToSet}.
-     *
-     * @param email      the user's email (_id)
-     * @param membership a document {@code { id: "...", role: "..." }}
-     * @return {@code true} if a document was matched
+     * Sets the user's active team, {@code team: { _id }}. Which team is active is the user's own
+     * choice, so it lives on the user; who belongs to a team, and as what, lives on the team only,
+     * in {@code members} (9.12.0, #766).
      */
-    public boolean addTeamMembership(String email, BsonDocument membership) {
-        var result = users().updateOne(
-                eq("_id", new BsonString(email)),
-                new BsonDocument("$addToSet", new BsonDocument("teams", membership))
-        );
-        return result.getMatchedCount() > 0;
+    public boolean setActiveTeam(String email, BsonValue teamId) {
+        return updateUser(email, new BsonDocument("team", activeTeamDoc(teamId)));
     }
 
-    /**
-     * Removes the entry with the given {@code teamId} from the user's {@code teams} array.
-     *
-     * @param email  the user's email (_id)
-     * @param teamId the team to remove
-     * @return {@code true} if a document was matched
-     */
-    public boolean removeTeamMembership(String email, BsonValue teamId) {
-        var result = users().updateOne(
-                eq("_id", new BsonString(email)),
-                Updates.pull("teams", new BsonDocument("id", teamId))
-        );
-        return result.getMatchedCount() > 0;
-    }
-
-    /**
-     * Updates the role for the given team entry in the user's {@code teams} array.
-     *
-     * @param email  the user's email (_id)
-     * @param teamId the team whose role to change
-     * @param newRole the new role string
-     * @return {@code true} if a matching team entry was found and modified
-     */
-    public boolean updateTeamRole(String email, BsonValue teamId, String newRole) {
-        var result = users().updateOne(
-                Filters.and(
-                        eq("_id", new BsonString(email)),
-                        Filters.eq("teams.id", teamId)
-                ),
-                Updates.set("teams.$.role", new BsonString(newRole))
-        );
-        return result.getModifiedCount() > 0;
-    }
-
-    /**
-     * Sets the user's active team unconditionally. The {@code team} field is stored as
-     * a {@code { _id, role }} object so the active team's id <em>and</em> the caller's
-     * role in it travel together into the JWT {@code team} claim (see the {@code team}
-     * claim shape used for ACL {@code @user.team._id} / {@code @user.team.role}).
-     *
-     * @param email  the user's email (_id)
-     * @param teamId the team to make active
-     * @param role   the user's role within that team
-     * @return {@code true} if a document was matched
-     */
-    public boolean setActiveTeam(String email, BsonValue teamId, String role) {
-        return updateUser(email, new BsonDocument("team", activeTeamDoc(teamId, role)));
-    }
-
-    /**
-     * Sets the user's active team only if the {@code team} field is absent or null.
-     * Safe to call idempotently after every {@code addTeamMembership} for new users.
-     * Stored as a {@code { _id, role }} object (see {@link #setActiveTeam}).
-     *
-     * @param email  the user's email (_id)
-     * @param teamId the team to set as active
-     * @param role   the user's role within that team
-     * @return {@code true} if the field was set (document matched and had no prior team)
-     */
-    public boolean setActiveTeamIfAbsent(String email, BsonValue teamId, String role) {
+    /** Sets the active team only when the user has none yet. */
+    public boolean setActiveTeamIfAbsent(String email, BsonValue teamId) {
         var result = users().updateOne(
                 Filters.and(
                         eq("_id", new BsonString(email)),
@@ -328,39 +265,31 @@ public class DbHelper {
                                 Filters.eq("team", null)
                         )
                 ),
-                Updates.set("team", activeTeamDoc(teamId, role))
+                Updates.set("team", activeTeamDoc(teamId))
         );
         return result.getModifiedCount() > 0;
     }
 
     /**
-     * Updates the role recorded on the active-team object ({@code team.role}) only when
-     * the given team is currently the user's active team ({@code team._id} matches).
-     * Used to keep the denormalized active-team role in sync when a member's role is
-     * changed while that team is their active one.
-     *
-     * @param email  the user's email (_id)
-     * @param teamId the team whose role changed
-     * @param role   the new role
-     * @return {@code true} if the active-team role was updated (i.e. it was the active team)
+     * Clears the active team when it is {@code teamId}, whether stored as {@code { _id }} or as the
+     * pre-9.6.0 bare id: once removed from a team, nothing stays active.
      */
-    public boolean setActiveTeamRoleIfActive(String email, BsonValue teamId, String role) {
+    public boolean unsetActiveTeamIf(String email, BsonValue teamId) {
         var result = users().updateOne(
                 Filters.and(
                         eq("_id", new BsonString(email)),
-                        Filters.eq("team._id", teamId)
+                        Filters.or(
+                                Filters.eq("team._id", teamId),
+                                Filters.eq("team", teamId)
+                        )
                 ),
-                Updates.set("team.role", new BsonString(role))
+                Updates.unset("team")
         );
         return result.getModifiedCount() > 0;
     }
 
-    private static BsonDocument activeTeamDoc(BsonValue teamId, String role) {
-        var doc = new BsonDocument("_id", teamId);
-        if (role != null) {
-            doc.append("role", new BsonString(role));
-        }
-        return doc;
+    private static BsonDocument activeTeamDoc(BsonValue teamId) {
+        return new BsonDocument("_id", teamId);
     }
 
     // -------------------------------------------------------------------------
@@ -390,6 +319,11 @@ public class DbHelper {
                         .find(eq("_id", teamId))
                         .first()
         );
+    }
+
+    /** The teams {@code userId} belongs to: those whose {@code members} name it. */
+    public List<BsonDocument> findTeamsOf(String userId) {
+        return teams().find(eq("members.userId", new BsonString(userId))).into(new ArrayList<>());
     }
 
     /**

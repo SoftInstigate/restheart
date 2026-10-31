@@ -39,6 +39,8 @@
 # node, the one naming the issuing node, verified on every later request).
 /jwtConfigProvider/required-account-properties-claims:
   - teams
+  # a user of restheart-accounts has no `teams` property since 9.12.0: _id stands in for it there
+  - _id
 
 /jwtTokenManager/enabled: true
 /jwtTokenManager/ttl: 15
@@ -156,20 +158,35 @@
       predicate: path-prefix[path="/auth/invite"] or path-prefix[path="/auth/resend-invite"]
       priority: 100
 
-    # 9.6.0: proves ACL gating by the active team role carried in user.team.role.
-    # System role is `user` for every verified accounts user; the predicate refines
-    # it to only those whose ACTIVE team role is `owner` (via @user.team.role).
-    # Exercised by team-role-acl.feature.
+    # 9.6.0, migrated with 9.12.0: proves ACL gating by the active team role. System role is
+    # `user` for every verified accounts user; the predicate refines it to only those whose ACTIVE
+    # team role is `owner`, read through @team from the membership provider (the token carries no
+    # team claim any more). Exercised by team-role-acl.feature.
     - role: user
       predicate: >
         path-prefix[path="/restheart-test/team-partitioned"]
         and method[value="POST"]
-        and equals[@user.team.role, "owner"]
+        and equals[@team.role, "owner"]
       priority: 100
       mongo:
         allowWriteMode: true
         mergeRequest: >
-          {"team": "@user.team._id"}
+          {"team": "@team._id"}
+
+    # #765: the same team as @team, resolved by restheart-accounts' TeamVarResolver from the
+    # membership provider, never from the token. A readFilter on @team._id returns the same
+    # documents to a token from POST /token and to one from the accounts endpoints, and follows a
+    # switch of team whatever token the caller still holds. Exercised by team-claim-variable.feature.
+    - role: user
+      predicate: >
+        path-prefix[path="/restheart-test/team-scoped"]
+        and (method[value="GET"] or method[value="POST"])
+      priority: 100
+      mongo:
+        readFilter: >
+          {"team": "@team._id"}
+        mergeRequest: >
+          {"team": "@team._id"}
 
     # #754: `test` may write to this bucket and nowhere near the chunks collections its rules
     # fill; karate/ai/chunking-rules.feature proves the chunks are written anyway
@@ -394,12 +411,15 @@
           {"log": 0}
       priority: 100
 
+    # a single document is the exception to the collection rule above, which hides `log`: it
+    # says so with a higher priority. Before #767 the tie went to the last permission in the file,
+    # and this one won only by standing below the other; predicates-acl.feature reads `log` here.
     - role : test
       predicate: >
         method(GET)
         and qparams-whitelist(rep)
         and path-template(value="/test-predicates/coll/{id}")
-      priority: 100
+      priority: 110
 
     - role: test
       predicate: >
@@ -840,3 +860,8 @@
 /fakeRerankProvider/enabled: true
 # and one whose every call fails, to verify a write survives a failed embedding
 /fakeEmbeddingProviderFailing/enabled: true
+
+# a limit on the request body, to verify that a larger body is answered with 413 (request-too-big.feature);
+# 1 MiB is well above any body the other tests send
+/connection-options/MAX_ENTITY_SIZE: 1048576
+/connection-options/MULTIPART_MAX_ENTITY_SIZE: 1048576

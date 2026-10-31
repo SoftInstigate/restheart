@@ -94,10 +94,13 @@ Feature: OAuth activation for invited users
     * def payload = JSON.parse(payloadJson)
     * karate.log('JWT payload:', payload)
     * match payload.sub == inviteEmail
-    # team claim is now a { _id: {"$oid":"..."}, role: "..." } object (9.6.0+) mirroring user.team
-    * def teamClaim = payload.team
-    * match teamClaim._id['$oid'] == '#string'
-    * match teamClaim.role == '#string'
+    # the token is built from the document as the activation left it: an activated user,
+    # not the $unauthenticated one read before activateViaOAuth
+    * match payload.roles contains 'user'
+    * match payload.roles !contains '$unauthenticated'
+    # since 9.12.0 the token carries no team claim: rules read @team from the membership provider,
+    # and a client that wants it in the token lists "@team" in account-properties-claims
+    * match payload.team == '#notpresent'
 
     # 6. The fragment token must be the same JWT as the cookie, with token_type=Bearer
     * def fragment = callbackLocation.split('#')[1]
@@ -397,3 +400,73 @@ Feature: OAuth activation for invited users
     When method GET
     Then status 307
     And match responseHeaders['Location'][0] contains 'error=oauth_error'
+
+  # ---------------------------------------------------------------------------
+  Scenario: self-registered user who never verified signs in via OAuth — activated, registration password dropped
+  # ---------------------------------------------------------------------------
+    # Anyone can register any address. If the person who registered it is not the one
+    # signing in through the provider, the password they chose must not survive the
+    # activation (GHSA-m7m7-gjxg-cjmm).
+
+    * def seededEmail = 'oauth-seeded-' + java.util.UUID.randomUUID() + '@example.com'
+    Given path '/auth/register'
+    And request { "firstName": "Seeded", "lastName": "User", "teamName": "Seeded Team", "email": "#(seededEmail)", "password": "Seeded-Password1!" }
+    When method POST
+    Then status 201
+
+    Given path '/users/' + seededEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.roles contains '$unauthenticated'
+
+    # The owner of the address signs in through the provider, no invitation involved
+    Given path '/auth/oauth/authorize/test'
+    When method GET
+    Then status 307
+    * def state = responseHeaders['Location'][0].split('state=')[1].split('&')[0]
+
+    Given path '/auth/oauth/callback/test'
+    And param code = 'test-' + seededEmail
+    And param state = state
+    When method GET
+    Then status 307
+    * match responseHeaders['Location'][0] contains '#access_token='
+    * match responseHeaders['Set-Cookie'][0] contains 'rh_auth=Bearer_'
+    * def seededJwt = responseHeaders['Set-Cookie'][0].split('Bearer_')[1].split(';')[0]
+
+    # Activated: default role, provider recorded, verification fields gone
+    Given path '/users/' + seededEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.roles contains 'user'
+    And match response.roles !contains '$unauthenticated'
+    And match response.socialAuths[0].provider == 'test'
+    And match response.emailVerificationToken == '#notpresent'
+    And match response.emailVerificationCreatedAt == '#notpresent'
+
+    # The password chosen at registration is gone. Basic auth maps to the file realm in this
+    # test configuration, so the check goes through PATCH /auth/change-password: with a
+    # password still stored, a wrong currentPassword is refused with 401; with none, the
+    # current password is not checked and the owner sets their first one.
+    Given path '/auth/change-password'
+    And header Authorization = 'Bearer ' + seededJwt
+    And request { "currentPassword": "not-the-seeded-one", "newPassword": "Owner-Password1!" }
+    When method PATCH
+    Then status 200
+
+    # From now on the stored password is the owner's: the seeded one is refused
+    Given path '/auth/change-password'
+    And header Authorization = 'Bearer ' + seededJwt
+    And request { "currentPassword": "Seeded-Password1!", "newPassword": "Another-Password1!" }
+    When method PATCH
+    Then status 401
+
+    Given path '/auth/change-password'
+    And header Authorization = 'Bearer ' + seededJwt
+    And request { "currentPassword": "Owner-Password1!", "newPassword": "Another-Password1!" }
+    When method PATCH
+    Then status 200

@@ -9,7 +9,6 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
-import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.BadRequestException;
@@ -26,7 +25,6 @@ import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import org.restheart.plugins.security.PasswordPolicy;
 
@@ -174,6 +172,9 @@ public class ActivateService implements JsonService {
 
         try {
             db(req).updateUser(normalizedEmail, setDoc);
+            // Before 9.12.4 forgot-password re-sent the verification link to an invited
+            // account too, leaving these fields on it; an activated account has no use for them
+            db(req).unsetUserFields(normalizedEmail, java.util.List.of("emailVerificationToken", "emailVerificationCreatedAt"));
         } catch (BadRequestException e) {
             Errors.error(res, e);
             return;
@@ -191,15 +192,12 @@ public class ActivateService implements JsonService {
         var userRoles = new HashSet<String>();
         userRoles.add(effectiveRole);
 
-        var extraClaims = new HashMap<String, Object>();
-        extraClaims.put(conf.teamClaimName(), TeamClaim.of(teamId, orgRole));
-
         var jwtToken = jwt.issueToken(normalizedEmail, userRoles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                extraClaims,
                 user,
-                RequestOverrides.accountPropertiesClaims(req, conf));
+                RequestOverrides.accountPropertiesClaims(req, conf),
+                req);
 
         // 11. Auto-login: deliver the token per the `delivery` query parameter.
         // fetch()-based endpoint → cookie (default) or body (bearer).

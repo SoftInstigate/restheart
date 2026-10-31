@@ -130,6 +130,11 @@ public class McpService implements ByteArrayService {
     private static final String CTX_SCOPE = "scope";
 
     private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
+    /** max-sessions-per-scope and max-subscriptions-per-scope: 0 means no cap (restheart#781). */
+    private static final int DEFAULT_MAX_SESSIONS_PER_SCOPE = 0;
+    private static final int DEFAULT_MAX_SUBSCRIPTIONS_PER_SCOPE = 0;
+    private int maxSessionsPerScope = DEFAULT_MAX_SESSIONS_PER_SCOPE;
+    private int maxSubscriptionsPerScope = DEFAULT_MAX_SUBSCRIPTIONS_PER_SCOPE;
 
     /**
      * How long an MCP session may go unused, with no open stream, before it is ended: see
@@ -296,6 +301,8 @@ public class McpService implements ByteArrayService {
         subscriptions = new ResourceSubscriptions(Duration.ofSeconds(notifyIntervalSeconds), this::notifyResourceUpdated);
 
         var catalogTtlSeconds = argOrDefault(config, "catalog-ttl-seconds", DEFAULT_CATALOG_TTL_SECONDS);
+        maxSessionsPerScope = ((Number) argOrDefault(config, "max-sessions-per-scope", DEFAULT_MAX_SESSIONS_PER_SCOPE)).intValue();
+        maxSubscriptionsPerScope = ((Number) argOrDefault(config, "max-subscriptions-per-scope", DEFAULT_MAX_SUBSCRIPTIONS_PER_SCOPE)).intValue();
         resourceLookup = new CachedResourceLookup(mcpAwareRegistry, Duration.ofSeconds(catalogTtlSeconds), this::onCatalogExpired);
         listApisTool = new ListApisTool(resourceLookup);
         howToCallTool = new HowToCallTool(resourceLookup);
@@ -492,6 +499,7 @@ public class McpService implements ByteArrayService {
 
     private ScopedServer newScopedServer(String scope) {
         var scopedProvider = new UndertowStreamableServerTransportProvider(jsonMapper);
+        scopedProvider.maxSessions(maxSessionsPerScope);
         scopedProvider.keepAlive(demand::hasSubscriptions);
         scopedProvider.streamKeepAlive(streamKeepAliveSeconds * 1000L);
         scopedProvider.expiredSessions(expiredSessions);
@@ -524,6 +532,25 @@ public class McpService implements ByteArrayService {
         LOGGER.debug("MCP server created for scope '{}'", scope);
 
         return new ScopedServer(scope, scopedProvider, scopedSrv, new AtomicBoolean(false), new AtomicInteger());
+    }
+
+    /**
+     * The MCP sessions alive in a scope now; 0 for a scope that has no server (restheart#781).
+     */
+    public int sessions(String scope) {
+        var scoped = scopes.get(scope);
+        return scoped == null ? 0 : scoped.provider().sessionCount();
+    }
+
+    /** The resource subscriptions alive in a scope now, over all its sessions (restheart#781). */
+    public int subscriptions(String scope) {
+        var scoped = scopes.get(scope);
+        return scoped == null ? 0 : demand.subscriptionsOf(scoped.provider().sessionIds());
+    }
+
+    /** The scopes that have an MCP server now (restheart#781). */
+    public java.util.Set<String> scopes() {
+        return java.util.Set.copyOf(scopes.keySet());
     }
 
     /**
@@ -564,6 +591,14 @@ public class McpService implements ByteArrayService {
 
                 if (!canReceiveNotifications(ctx)) {
                     refuseUndeliverableSubscription(res, rpc, uri);
+                    return false;
+                }
+
+                // so many subscriptions per scope, the configuration says (restheart#781)
+                var scope = effectiveScope(ctx);
+                if (maxSubscriptionsPerScope > 0 && subscriptions(scope) >= maxSubscriptionsPerScope) {
+                    writeJsonRpcError(res, rpc, "too many subscriptions: %d alive in this scope, %d allowed. Unsubscribe from one first"
+                        .formatted(subscriptions(scope), maxSubscriptionsPerScope));
                     return false;
                 }
 

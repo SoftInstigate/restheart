@@ -3,6 +3,7 @@ package org.restheart.accounts;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.exchange.ExchangeKeys.METHOD;
@@ -13,7 +14,10 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.accounts.acl.TeamVarResolver;
+import org.restheart.accounts.spi.MembershipMigration;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.AclVarsRegistry;
 import org.restheart.security.predicates.BsonRequestBlacklistPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +37,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code oauth_codes} — short-lived OAuth authorization codes (TTL 600 s)</li>
  *   <li>{@code teams}       — team documents with member sub-documents</li>
  * </ul>
+ *
  *
  * <p>Indexes are idempotent: MongoDB no-ops when an equivalent index already exists.
  */
@@ -54,6 +59,12 @@ public class AccountsInitializer implements Initializer {
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
+
+    @Inject("acl-vars-registry")
+    private AclVarsRegistry aclVarsRegistry;
+
+    @Inject("accountsService")
+    private AccountsService accountsService;
 
     // Every privileged mutation of a user document (roles, teams, team, password,
     // sub, *Token fields, ...) is performed by an accounts-plugin service through
@@ -103,6 +114,11 @@ public class AccountsInitializer implements Initializer {
 
     @Override
     public void init() {
+        // @team: the active team as { _id, role }, for ACL rules and for the "@team" entry of
+        // jwtConfigProvider/account-properties-claims, which makes POST /token carry the same claim
+        // the accounts endpoints issue, whatever the membership provider stores (#765)
+        aclVarsRegistry.register(new TeamVarResolver(accountsService, conf.teamClaimName()));
+
         // Generic REST writes to /users are restricted to self-service profile/app-level
         // edits — see USER_WRITE_DENYLIST above for why this is safe to enforce
         // unconditionally.
@@ -225,6 +241,30 @@ public class AccountsInitializer implements Initializer {
             LOGGER.info("accountsInitializer: indexes ensured in db `{}`", conf.db());
         } catch (Exception e) {
             LOGGER.warn("accountsInitializer: index error (non-fatal)", e);
+        }
+
+        if (conf.migrateMemberships()) {
+            migrateMemberships(database);
+        }
+    }
+    /**
+     * The one-off migration to the 9.12.0 membership model (#766), run when
+     * {@code accountsConfig/migrate-memberships} is on: see {@link MembershipMigration}. Every
+     * membership the old user-side list claimed and the team does not confirm goes to the log as a
+     * warning, for an operator to look at; nothing is added to a team.
+     */
+    private void migrateMemberships(com.mongodb.client.MongoDatabase database) {
+        try {
+            var users = database.getCollection(conf.usersCollection(), BsonDocument.class);
+            var teams = database.getCollection("teams", BsonDocument.class);
+
+            var plan = MembershipMigration.plan(users, teams);
+            plan.mismatches().forEach(m -> LOGGER.warn("accountsInitializer: membership migration: {}", m));
+
+            var applied = MembershipMigration.apply(plan, users);
+            LOGGER.info("accountsInitializer: {}; turn migrate-memberships off now", MembershipMigration.summary(plan, applied));
+        } catch (Exception e) {
+            LOGGER.error("accountsInitializer: membership migration failed", e);
         }
     }
 }

@@ -42,7 +42,8 @@ class RequestOverridesTest {
             "owner",                // ownershipRole
             "user",                 // defaultRole
             List.of("srvNode"),     // accountPropertiesClaims
-            null);                  // usersUnrestrictedRoles
+            null,                   // usersUnrestrictedRoles
+            false);                 // migrateMemberships
 
     private JsonRequest requestWithParam(String key, Object value) {
         var req = mock(JsonRequest.class);

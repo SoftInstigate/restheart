@@ -65,16 +65,23 @@ Feature: POST /auth/teams
     Then status 201
     * def newTeamId = response.id['$oid']
 
+    # the memberships come from the teams (9.12.0): the new one is listed, owned, and active
+    Given path '/auth/teams'
+    And header Authorization = 'Bearer ' + ownerJwt
+    When method GET
+    Then status 200
+    And match response == '#[2]'
+    * def newEntry = karate.filter(response, function(x){ return x.id['$oid'] == newTeamId })[0]
+    And match newEntry.role == 'owner'
+    And match newEntry.active == true
+
     Given path '/users/owner-test@example.com'
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    And match response.teams == '#[2]'
-    * def newEntry = karate.filter(response.teams, function(x){ return x.id['$oid'] == newTeamId })[0]
-    And match newEntry.role == 'owner'
     And match response.team._id['$oid'] == newTeamId
-    And match response.team.role == 'owner'
+    And match response.team.role == '#notpresent'
 
   # ---------------------------------------------------------------------------
   Scenario: verify DB — the team document itself is created correctly

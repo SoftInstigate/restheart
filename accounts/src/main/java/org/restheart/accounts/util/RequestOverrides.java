@@ -2,6 +2,7 @@ package org.restheart.accounts.util;
 
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.oauth.OAuthConfig;
+import org.restheart.exchange.Request;
 import org.restheart.exchange.ServiceRequest;
 
 import java.util.List;
@@ -236,7 +237,7 @@ public final class RequestOverrides {
     // ── Accessor methods ──────────────────────────────────────────────────────
 
     /** Effective MongoDB database name. */
-    public static String db(ServiceRequest<?> req, AccountsConfigData conf) {
+    public static String db(Request<?> req, AccountsConfigData conf) {
         return str(req, USERS_DB, conf.db());
     }
 
@@ -249,7 +250,7 @@ public final class RequestOverrides {
      * override would move where users are written without moving where they are read,
      * so registrations would succeed and the subsequent logins would fail.
      */
-    public static String usersCollection(ServiceRequest<?> req, AccountsConfigData conf) {
+    public static String usersCollection(Request<?> req, AccountsConfigData conf) {
         return conf.usersCollection();
     }
 
@@ -297,12 +298,12 @@ public final class RequestOverrides {
     }
 
     /** Effective system ACL role after verification. */
-    public static String defaultRole(ServiceRequest<?> req, AccountsConfigData conf) {
+    public static String defaultRole(Request<?> req, AccountsConfigData conf) {
         return str(req, DEFAULT_ROLE, conf.defaultRole());
     }
 
     /** Effective ownership role for team creators. */
-    public static String ownershipRole(ServiceRequest<?> req, AccountsConfigData conf) {
+    public static String ownershipRole(Request<?> req, AccountsConfigData conf) {
         return str(req, OWNERSHIP_ROLE, conf.ownershipRole());
     }
 
@@ -400,12 +401,12 @@ public final class RequestOverrides {
 
     // ── Internal helpers ──────────────────────────────────────────────────────
 
-    private static String str(ServiceRequest<?> req, String key, String defaultValue) {
+    private static String str(Request<?> req, String key, String defaultValue) {
         var v = req.attachedParam(key);
         return (v instanceof String s && !s.isBlank()) ? s : defaultValue;
     }
 
-    private static boolean bool(ServiceRequest<?> req, String key, boolean defaultValue) {
+    private static boolean bool(Request<?> req, String key, boolean defaultValue) {
         var v = req.attachedParam(key);
         if (v instanceof Boolean b) return b;
         if (v instanceof String s) return Boolean.parseBoolean(s);

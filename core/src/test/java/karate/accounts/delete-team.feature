@@ -100,7 +100,7 @@ Feature: DELETE /auth/team
     And param rep = 's'
     When method GET
     Then status 200
-    And match response.teams == '#[0]'
+    And match response.teams == '#notpresent'
     And match response.team == '#notpresent'
 
   # ---------------------------------------------------------------------------

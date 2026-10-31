@@ -25,15 +25,18 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.stripe.BillingScope;
 import org.restheart.plugins.stripe.LicenseGrantResult;
 import org.restheart.plugins.stripe.SubscriptionOwner;
 import org.restheart.plugins.stripe.SubscriptionOwnerProvider;
 import org.restheart.plugins.stripe.SubscriptionState;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.WithProperties;
 import org.restheart.stripe.util.RequestOverrides;
 import org.restheart.stripe.util.TeamRepository;
+import org.restheart.utils.BsonUtils;
 
 import com.mongodb.client.MongoClient;
 
@@ -203,6 +206,24 @@ public class DefaultSubscriptionOwnerProvider implements SubscriptionOwnerProvid
     private TeamClaim readTeamClaim(ServiceRequest<?> req) {
         if (req == null || req.getAuthenticatedAccount() == null) {
             return null;
+        }
+
+        // since 9.12.0 the active team comes first from the ACL variable restheart-accounts
+        // registers under the claim's name (@team, #765): it answers from the membership provider,
+        // so it is right whatever the token says, and the tokens restheart-accounts issues carry
+        // no team claim any more. The claim below is the fallback where no such variable exists.
+        var fromVariable = AclVarsInterpolator.resolveRegisteredVar(req, "@" + teamClaimName)
+                .filter(BsonValue::isDocument)
+                .map(BsonValue::asDocument)
+                .filter(d -> d.containsKey("_id") && !d.get("_id").isNull());
+
+        if (fromVariable.isPresent()) {
+            var d = fromVariable.get();
+            var id = d.get("_id");
+            var teamId = id.isObjectId() ? id.asObjectId().getValue().toHexString()
+                    : id.isString() ? id.asString().getValue() : BsonUtils.toJson(id);
+            var role = d.containsKey("role") && d.get("role").isString() ? d.getString("role").getValue() : null;
+            return new TeamClaim(teamId, role);
         }
         if (!(req.getAuthenticatedAccount() instanceof WithProperties<?> withProperties)) {
             return null;
