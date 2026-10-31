@@ -121,7 +121,7 @@ public class TxnsUtils {
      * @param mqe
      * @return
      */
-    private static long getTxnNumFromExc(MongoQueryException mqe) {
+    static long getTxnNumFromExc(MongoQueryException mqe) {
         if (mqe.getErrorCode() == 225 && mqe.getErrorMessage() != null) {
             int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_STARTED) + TXT_NUM_ERROR_MSG_PREFIX_STARTED.length();
             int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_STARTED);
@@ -221,7 +221,7 @@ public class TxnsUtils {
      * @param mqe
      * @return
      */
-    private static Txn.TransactionStatus getTxnStateFromExc(MongoQueryException mqe) {
+    static Txn.TransactionStatus getTxnStateFromExc(MongoQueryException mqe) {
         if (mqe.getErrorCode() == 251) {
             if (mqe.getErrorMessage().contains("does not match any in-progress transactions")) {
                 return Txn.TransactionStatus.NONE;
