@@ -1,0 +1,95 @@
+name: GraalVM of the runtime image
+description: >-
+  Installs the exact GraalVM Community build that core/Dockerfile puts in the Docker image,
+  read from its GRAALVM_VERSION argument, so the tests and the native builds run on the JDK
+  that ships. One place to bump: core/Dockerfile.
+runs:
+  using: composite
+  steps:
+    - name: Read the GraalVM version from core/Dockerfile
+      shell: bash
+      run: |
+        set -euo pipefail
+        TAG=$(sed -n 's/^ARG GRAALVM_VERSION=//p' core/Dockerfile)   # e.g. 25.4.4.1.1-graalce
+        V=${TAG%-graalce}
+        MAJOR=${V%%.*}; REST=${V#*.}; INNO=${REST%%.*}; JDK_REST=${REST#*.}
+        if [ "$INNO" = "0" ]; then
+          # LTS line: release jdk-25.0.2, file graalvm-community-jdk-25.0.2_<platform>_bin
+          RELEASE="jdk-$V"; FILE_VERSION="$V"
+        else
+          # innovation line: release graal-25.4.4.1.1, file graalvm-community-jdk-25i4-25.0.4.1.1_<platform>_bin
+          RELEASE="graal-$V"; FILE_VERSION="${MAJOR}i${INNO}-${MAJOR}.0.${JDK_REST}"
+        fi
+        case "$RUNNER_OS-$RUNNER_ARCH" in
+          Linux-X64)     PLATFORM=linux-x64;     EXT=tar.gz ;;
+          Linux-ARM64)   PLATFORM=linux-aarch64; EXT=tar.gz ;;
+          macOS-ARM64)   PLATFORM=macos-aarch64; EXT=tar.gz ;;
+          Windows-X64)   PLATFORM=windows-x64;   EXT=zip ;;
+          *) echo "unsupported runner: $RUNNER_OS $RUNNER_ARCH" >&2; exit 1 ;;
+        esac
+        {
+          echo "GRAALVM_IMAGE_VERSION=$V"
+          echo "GRAALVM_ASSET=graalvm-community-jdk-${FILE_VERSION}_${PLATFORM}_bin.${EXT}"
+          echo "GRAALVM_URL=https://github.com/graalvm/graalvm-ce-builds/releases/download/${RELEASE}/graalvm-community-jdk-${FILE_VERSION}_${PLATFORM}_bin.${EXT}"
+        } >> "$GITHUB_ENV"
+        echo "GraalVM Community $V for $PLATFORM, from release $RELEASE"
+
+    - name: Cache the GraalVM archive
+      id: archive
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/graalvm-archive
+        key: graalvm-${{ env.GRAALVM_ASSET }}
+
+    - name: Download the GraalVM archive
+      if: steps.archive.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        DIR="$RUNNER_TEMP/graalvm-archive"
+        [ "$RUNNER_OS" = "Windows" ] && DIR=$(cygpath -u "$RUNNER_TEMP")/graalvm-archive
+        mkdir -p "$DIR"
+        curl -fsSL --retry 3 -o "$DIR/$GRAALVM_ASSET" "$GRAALVM_URL"
+        curl -fsSL --retry 3 -o "$DIR/$GRAALVM_ASSET.sha256" "$GRAALVM_URL.sha256"
+        cd "$DIR"
+        echo "$(cat "$GRAALVM_ASSET.sha256" | cut -d' ' -f1)  $GRAALVM_ASSET" | shasum -a 256 -c -
+
+    - name: Install GraalVM
+      shell: bash
+      run: |
+        set -euo pipefail
+        DIR="$RUNNER_TEMP/graalvm-archive"; DEST="$RUNNER_TEMP/graalvm"
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          DIR=$(cygpath -u "$RUNNER_TEMP")/graalvm-archive; DEST=$(cygpath -u "$RUNNER_TEMP")/graalvm
+        fi
+        rm -rf "$DEST"; mkdir -p "$DEST"
+        case "$GRAALVM_ASSET" in
+          *.zip) powershell -Command "Expand-Archive -Path '$(cygpath -w "$DIR/$GRAALVM_ASSET")' -DestinationPath '$(cygpath -w "$DEST")'" ;;
+          *)     tar -xzf "$DIR/$GRAALVM_ASSET" -C "$DEST" ;;
+        esac
+        HOME_DIR=$(ls -d "$DEST"/graalvm-community-* | head -1)
+        [ "$RUNNER_OS" = "macOS" ] && HOME_DIR="$HOME_DIR/Contents/Home"
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          echo "JAVA_HOME=$(cygpath -w "$HOME_DIR")" >> "$GITHUB_ENV"
+          echo "GRAALVM_HOME=$(cygpath -w "$HOME_DIR")" >> "$GITHUB_ENV"
+          echo "$(cygpath -w "$HOME_DIR/bin")" >> "$GITHUB_PATH"
+        else
+          echo "JAVA_HOME=$HOME_DIR" >> "$GITHUB_ENV"
+          echo "GRAALVM_HOME=$HOME_DIR" >> "$GITHUB_ENV"
+          echo "$HOME_DIR/bin" >> "$GITHUB_PATH"
+        fi
+
+    - name: The JDK is the one of the image
+      shell: bash
+      run: |
+        set -euo pipefail
+        java -version 2>&1
+        java -version 2>&1 | grep -q "GraalVM CE $GRAALVM_IMAGE_VERSION" \
+          || { echo "::error::java -version does not report GraalVM CE $GRAALVM_IMAGE_VERSION, the version in core/Dockerfile"; exit 1; }
+
+    - name: Cache the Maven repository
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-maven-
