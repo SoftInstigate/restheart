@@ -93,7 +93,10 @@ jobs:
           native-image -march=list
           # 7 GB on the runner: the builder gets 6 of them, Maven itself stays small
           export MAVEN_OPTS="-Xmx512m"
-          mvn package -Pnative -DskipTests \
+          # a download that stalls on this runner used to hold the job for hours: fail it in a minute
+          mvn -B package -Pnative -DskipTests \
+            -Daether.connector.connectTimeout=30000 \
+            -Daether.connector.requestTimeout=60000 \
             -Dnative.march="-march=armv8-a" \
             -Dnative.xmx="-J-Xmx6g"
           chmod +x core/target/restheart
