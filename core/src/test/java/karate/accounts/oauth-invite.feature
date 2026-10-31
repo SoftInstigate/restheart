@@ -430,6 +430,7 @@ Feature: OAuth activation for invited users
     Then status 307
     * match responseHeaders['Location'][0] contains '#access_token='
     * match responseHeaders['Set-Cookie'][0] contains 'rh_auth=Bearer_'
+    * def seededJwt = responseHeaders['Set-Cookie'][0].split('Bearer_')[1].split(';')[0]
 
     # Activated: default role, provider recorded, verification fields gone
     Given path '/users/' + seededEmail
@@ -443,17 +444,25 @@ Feature: OAuth activation for invited users
     And match response.emailVerificationToken == '#notpresent'
     And match response.emailVerificationCreatedAt == '#notpresent'
 
-    # The password chosen at registration no longer opens the account
-    * def Base64 = Java.type('java.util.Base64')
-    * def seededCreds = Base64.getEncoder().encodeToString((seededEmail + ':Seeded-Password1!').getBytes())
-    Given path '/token'
-    And header Authorization = 'Basic ' + seededCreds
-    When method POST
+    # The password chosen at registration is gone. Basic auth maps to the file realm in this
+    # test configuration, so the check goes through PATCH /auth/change-password: with a
+    # password still stored, a wrong currentPassword is refused with 401; with none, the
+    # current password is not checked and the owner sets their first one.
+    Given path '/auth/change-password'
+    And header Authorization = 'Bearer ' + seededJwt
+    And request { "currentPassword": "not-the-seeded-one", "newPassword": "Owner-Password1!" }
+    When method PATCH
+    Then status 200
+
+    # From now on the stored password is the owner's: the seeded one is refused
+    Given path '/auth/change-password'
+    And header Authorization = 'Bearer ' + seededJwt
+    And request { "currentPassword": "Seeded-Password1!", "newPassword": "Another-Password1!" }
+    When method PATCH
     Then status 401
 
-    # Neither does an empty one
-    * def emptyCreds = Base64.getEncoder().encodeToString((seededEmail + ':').getBytes())
-    Given path '/token'
-    And header Authorization = 'Basic ' + emptyCreds
-    When method POST
-    Then status 401
+    Given path '/auth/change-password'
+    And header Authorization = 'Bearer ' + seededJwt
+    And request { "currentPassword": "Owner-Password1!", "newPassword": "Another-Password1!" }
+    When method PATCH
+    Then status 200

@@ -97,6 +97,7 @@ Feature: POST /auth/forgot-password
     And request { "email": "#(email)", "token": "#(resetToken)", "password": "Owner-Password1!" }
     When method PATCH
     Then status 200
+    * def ownerJwt = responseHeaders['Set-Cookie'][0].split('Bearer_')[1].split(';')[0]
 
     Given path '/users/' + email
     And header Authorization = adminAuth
@@ -109,19 +110,20 @@ Feature: POST /auth/forgot-password
     And match response.emailVerificationToken == '#notpresent'
     And match response.emailVerificationCreatedAt == '#notpresent'
 
-    # The owner's password opens the account, the one given at registration does not
-    * def Base64 = Java.type('java.util.Base64')
-    * def ownerCreds = Base64.getEncoder().encodeToString((email + ':Owner-Password1!').getBytes())
-    Given path '/token'
-    And header Authorization = 'Basic ' + ownerCreds
-    When method POST
-    Then status 200
-
-    * def seededCreds = Base64.getEncoder().encodeToString((email + ':Seeded-Password1!').getBytes())
-    Given path '/token'
-    And header Authorization = 'Basic ' + seededCreds
-    When method POST
+    # The stored password is the owner's, not the one given at registration. Basic auth maps
+    # to the file realm in this test configuration, so the check goes through
+    # PATCH /auth/change-password, which bcrypt-verifies currentPassword against the document.
+    Given path '/auth/change-password'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "currentPassword": "Seeded-Password1!", "newPassword": "Another-Password1!" }
+    When method PATCH
     Then status 401
+
+    Given path '/auth/change-password'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "currentPassword": "Owner-Password1!", "newPassword": "Another-Password1!" }
+    When method PATCH
+    Then status 200
 
   # ---------------------------------------------------------------------------
   Scenario: non-existent email — always returns 202 (anti-enumeration)
