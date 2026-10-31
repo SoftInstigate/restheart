@@ -97,4 +97,39 @@ public class BruteForceAttackGuardTest {
         exchange.getRequestHeaders().put(Headers.HOST, host);
         return exchange;
     }
+
+    // --- the decision: per user first, the per-source ceiling after, see restheart#792
+
+    @Test
+    public void fiveWrongPasswordsForOneUserBlockThatUser() {
+        assertEquals(BruteForceAttackGuard.Block.Kind.USER, BruteForceAttackGuard.decision(5, 5, true, 5, 50));
+    }
+
+    @Test
+    public void fiveUsersBehindOneNatAreNotBlocked() {
+        // five unrelated people, one wrong password each, from the same address
+        assertEquals(BruteForceAttackGuard.Block.Kind.NONE, BruteForceAttackGuard.decision(5, 1, true, 5, 50));
+    }
+
+    @Test
+    public void passwordSprayHitsTheSourceCeiling() {
+        assertEquals(BruteForceAttackGuard.Block.Kind.SOURCE, BruteForceAttackGuard.decision(50, 1, true, 5, 50));
+    }
+
+    @Test
+    public void noCredentialsCountOnTheSourceOnly() {
+        assertEquals(BruteForceAttackGuard.Block.Kind.NONE, BruteForceAttackGuard.decision(5, 0, false, 5, 50));
+        assertEquals(BruteForceAttackGuard.Block.Kind.SOURCE, BruteForceAttackGuard.decision(50, 0, false, 5, 50));
+    }
+
+    @Test
+    public void behaviourBefore9140IsPerUserOffAndFivePerSource() {
+        assertEquals(BruteForceAttackGuard.Block.Kind.SOURCE, BruteForceAttackGuard.decision(5, 1, true, 0, 5));
+        assertEquals(BruteForceAttackGuard.Block.Kind.NONE, BruteForceAttackGuard.decision(4, 4, true, 0, 5));
+    }
+
+    @Test
+    public void zeroCeilingNeverBlocksOnTheSource() {
+        assertEquals(BruteForceAttackGuard.Block.Kind.NONE, BruteForceAttackGuard.decision(1000, 1, true, 5, 0));
+    }
 }

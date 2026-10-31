@@ -1251,13 +1251,22 @@ aggregationSecurity:
 
 # bruteForceAttackGuard defends from brute force password cracking attacks
 # by returning `429 Too Many Requests` when more than
-# `max-failed-attempts` requests with wrong credentials
-# are received in last 10 seconds from the same ip
+# `max-failed-attempts` requests with wrong credentials for the same user
+# are received in last 10 seconds from the same ip. The ip alone is not the
+# client: behind a carrier-grade NAT or a corporate proxy it is shared by many
+# users, and a brute force targets one account.
 bruteForceAttackGuard:
   enabled: false
-  # Max number of failed attempts in 10 seconds sliding window
-  # before returning 429 Too Many Requests
+  # Max number of failed attempts per ip and user in 10 seconds sliding window
+  # before returning 429 Too Many Requests to that ip for that user.
+  # 0 disables the per-user count.
   max-failed-attempts: 5
+  # Max number of failed attempts per ip whatever the user (a password spray
+  # cycling through many usernames) before returning 429 Too Many Requests
+  # to that ip. A request with no credentials counts on the ip only.
+  # 0 disables the per-ip ceiling. The behaviour before 9.14.0, 5 per ip
+  # whatever the user, is max-failed-attempts: 0 and max-failed-attempts-per-ip: 5
+  max-failed-attempts-per-ip: 50
   # If true, the source ip is obtained from X-Forwarded-For header
   # this requires that header being set by the proxy, dangerous otherwise
   trust-x-forwarded-for: false
