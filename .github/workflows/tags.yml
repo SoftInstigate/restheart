@@ -205,6 +205,32 @@ jobs:
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
+  # Publish @restheart/sdk, the type declarations of the restheart:sdk module of JavaScript
+  # plugins (polyglot/sdk), with the version of the tag: the package is versioned in lockstep
+  # with RESTHeart, 9.14.0 declares what RESTHeart 9.14.0 provides. Types only, nothing to build.
+  deploy-npm:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Set the version from the tag
+        working-directory: polyglot/sdk
+        run: npm version "${GITHUB_REF#refs/tags/}" --no-git-tag-version
+
+      - name: Publish @restheart/sdk
+        working-directory: polyglot/sdk
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   # Trigger native image build asynchronously (fire-and-forget).
   # Native builds take 30-60 min; running them via gh workflow run
   # decouples them from the parent workflow so tags.yml finishes fast.
