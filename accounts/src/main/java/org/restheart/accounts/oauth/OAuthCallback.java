@@ -381,13 +381,6 @@ public class OAuthCallback implements StringService {
         }
 
         // ── New user ──────────────────────────────────────────────────────────
-        // A registration of this address purged unverified (TTL index in AccountsInitializer)
-        // leaves its team behind with that one member: remove it before creating a new one.
-        var orphans = db(req).deleteOrphanTeamsOf(email);
-        if (orphans > 0) {
-            LOGGER.info("Removed {} team(s) left by a purged unverified registration of <{}>", orphans, email);
-        }
-
         var now = new BsonDateTime(System.currentTimeMillis());
         var name = profile.containsKey("name") ? profile.getString("name").getValue()
                 : email.split("@")[0];

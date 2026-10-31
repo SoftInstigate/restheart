@@ -255,14 +255,6 @@ public class RegisterService implements JsonService {
             return;
         }
 
-        // The address is free. If a previous registration of it was purged unverified (TTL index
-        // in AccountsInitializer), the team created for it is still there with that one member:
-        // remove it before creating a new one for this registration.
-        var orphans = db(req).deleteOrphanTeamsOf(email);
-        if (orphans > 0) {
-            LOGGER.info("Removed {} team(s) left by a purged unverified registration of <{}>", orphans, email);
-        }
-
         // ── 4. Generate email verification token ─────────────────────────────
         var verificationToken = TokenUtils.generateToken();
         var now = new BsonDateTime(System.currentTimeMillis());

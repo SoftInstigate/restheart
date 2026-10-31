@@ -387,24 +387,6 @@ public class DbHelper {
     }
 
     /**
-     * Deletes the teams whose only member is {@code userId}, for a user that has no document
-     * any more. Only garbage matches: a team with one member and no user behind it is what the
-     * TTL purge of an unverified self-registration leaves behind, since MongoDB deletes the
-     * user document but knows nothing of the team {@code createInitialTeam} made for it.
-     * Callers invoke it right before creating that user again, when the user document is
-     * known to be absent.
-     *
-     * @param userId the user whose sole-member teams are removed
-     * @return how many teams were deleted
-     */
-    public long deleteOrphanTeamsOf(String userId) {
-        var filter = Filters.and(
-                Filters.size("members", 1),
-                eq("members.userId", new BsonString(userId)));
-        return teams().deleteMany(filter).getDeletedCount();
-    }
-
-    /**
      * Removes a member entry from the team's {@code members} array.
      *
      * @param teamId the team's {@code _id}

@@ -1,7 +1,6 @@
 package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import org.bson.BsonDocument;
@@ -39,14 +38,6 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code teams}       — team documents with member sub-documents</li>
  * </ul>
  *
- * <p>On {@code users}, besides the lookup indexes for the auth-flow tokens, a TTL index purges
- * self-registered accounts that never verified their email: {@code emailVerificationCreatedAt}
- * older than {@link EmailVerificationService#VERIFICATION_TTL_HOURS}, restricted to documents
- * still {@code $unauthenticated}. Anyone can register any address, so an unverified
- * registration left forever would both block the address and keep a password chosen by a
- * possible third party around (GHSA-m7m7-gjxg-cjmm). Invited accounts carry no such field and
- * verified ones have it removed, so neither is touched; the role filter also spares an
- * activated account that still carries the field from before 9.12.4.
  *
  * <p>Indexes are idempotent: MongoDB no-ops when an equivalent index already exists.
  */
@@ -228,15 +219,6 @@ public class AccountsInitializer implements Initializer {
 
                 users.createIndex(Indexes.ascending("emailVerificationToken"),
                         new IndexOptions().sparse(true).name("emailVerificationToken_1"));
-
-                // TTL: an unverified self-registration is purged once its verification token
-                // is expired. Only unverified documents carry the field (see class javadoc);
-                // the partial filter spares any activated document that still has it.
-                users.createIndex(Indexes.ascending("emailVerificationCreatedAt"),
-                        new IndexOptions()
-                                .expireAfter((long) EmailVerificationService.VERIFICATION_TTL_HOURS, TimeUnit.HOURS)
-                                .partialFilterExpression(Filters.eq("roles", "$unauthenticated"))
-                                .name("emailVerificationCreatedAt_ttl"));
 
                 // Active team is stored as a { _id, role } object (9.6.0+); index the id.
                 users.createIndex(Indexes.ascending("team._id"),
