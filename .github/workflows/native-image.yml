@@ -82,7 +82,7 @@ jobs:
   # hour or more there, and a release does not wait for it. The binary is uploaded when it arrives.
   build-macos:
     runs-on: macos-latest
-    timeout-minutes: 240
+    timeout-minutes: 360
     continue-on-error: true
     steps:
       - uses: actions/checkout@v6
