@@ -248,12 +248,15 @@ public class OAuthCallback implements StringService {
                         inviteDb.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite ->
                                 inviteDb.deleteInvitation(invite.getObjectId("_id")));
                     }
-                    var activatedRoles = extractRoles(user);
-                    // the document as the activation left it, for the configured claims
+                    // the document as the activation left it: roles for the token and the
+                    // configured claims. `user` was read before the activation and still says
+                    // $unauthenticated, a token built from it would be refused by the ACL.
+                    var activated = db(req).findUser(email).orElse(user);
+                    var activatedRoles = extractRoles(activated);
                     var jwtToken = jwt.issueToken(email, activatedRoles,
                             RequestOverrides.db(req, conf),
                             req.attachedParams(),
-                            db(req).findUser(email).orElse(user),
+                            activated,
                             RequestOverrides.accountPropertiesClaims(req, conf),
                 req);
                     setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin", callbackResult.returnTo());

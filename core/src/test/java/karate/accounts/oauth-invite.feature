@@ -94,6 +94,10 @@ Feature: OAuth activation for invited users
     * def payload = JSON.parse(payloadJson)
     * karate.log('JWT payload:', payload)
     * match payload.sub == inviteEmail
+    # the token is built from the document as the activation left it: an activated user,
+    # not the $unauthenticated one read before activateViaOAuth
+    * match payload.roles contains 'user'
+    * match payload.roles !contains '$unauthenticated'
     # since 9.12.0 the token carries no team claim: rules read @team from the membership provider,
     # and a client that wants it in the token lists "@team" in account-properties-claims
     * match payload.team == '#notpresent'
