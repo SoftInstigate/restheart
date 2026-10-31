@@ -29,9 +29,7 @@ jobs:
             arch: linux-amd64
           - os: windows-latest
             arch: windows-amd64
-          - os: macos-latest
-            arch: "darwin-arm64"
-    timeout-minutes: 120
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
 
@@ -42,18 +40,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
           native-image-job-reports: 'true'
-
-      - name: Build MacOS Apple Silicon native
-        if: matrix.arch == 'darwin-arm64'
-        run: |
-          echo "GRAALVM_HOME: $GRAALVM_HOME"
-          echo "JAVA_HOME: $JAVA_HOME"
-          java --version
-          native-image -march=list
-          export MAVEN_OPTS="-Xmx8g -Xms4g"
-          mvn package -Pnative -DskipTests \
-            -Dnative.march="-march=armv8-a" \
-            -Dquarkus.native.additional-build-args="-J-Xmx6g,-J-Xms4g,--gc=serial"
 
       - name: Build Windows native
         if: matrix.arch == 'windows-amd64'
@@ -91,6 +77,51 @@ jobs:
           DST="restheart-${{ matrix.arch }}${{ matrix.arch == 'windows-amd64' && '.exe' || '' }}"
           cp "$SRC" "/tmp/$DST"
           gh release upload "${{ inputs.version }}" "/tmp/$DST" --clobber
+
+  # The GitHub-hosted macOS arm64 runner has 3 vCPUs and 7 GB of RAM: the native build takes an
+  # hour or more there, and a release does not wait for it. The binary is uploaded when it arrives.
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 240
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: '25.4'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: 'maven'
+          native-image-job-reports: 'true'
+
+      - name: Build MacOS Apple Silicon native
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image -march=list
+          # 7 GB on the runner: the builder gets 6 of them, Maven itself stays small
+          export MAVEN_OPTS="-Xmx512m"
+          mvn package -Pnative -DskipTests \
+            -Dnative.march="-march=armv8-a" \
+            -Dnative.xmx="-J-Xmx6g"
+          chmod +x core/target/restheart
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: restheart-darwin-arm64
+          path: core/target/restheart
+          overwrite: true
+
+      - name: Upload to release
+        if: inputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp core/target/restheart /tmp/restheart-darwin-arm64
+          gh release upload "${{ inputs.version }}" /tmp/restheart-darwin-arm64 --clobber
 
   docker-publish-linux:
     runs-on: ubuntu-latest

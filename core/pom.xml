@@ -11,6 +11,8 @@
   <properties>
     <native.gc>--gc=serial</native.gc>
     <native.march>-march=compatibility</native.march>
+    <!-- heap of the native-image builder; the macOS runner of the native-image workflow has 7 GB and passes a smaller one -->
+    <native.xmx>-J-Xmx10g</native.xmx>
     <mongodb.port>27017</mongodb.port>
     <!-- Which integration tests failsafe runs. The default matches every IT class, which is
          what the previous (unconfigured) failsafe default did — all 33 IT classes in this
@@ -716,7 +718,7 @@
               <buildArgs>
                 <buildArg>${native.gc}</buildArg>
                 <buildArg>${native.march}</buildArg>
-                <buildArg>-J-Xmx10g</buildArg>
+                <buildArg>${native.xmx}</buildArg>
               </buildArgs>
             </configuration>
             <extensions>true</extensions>
