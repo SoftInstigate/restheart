@@ -39,6 +39,10 @@ import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.polyglot.NodeQueue;
+import org.restheart.polyglot.spi.ContentKind;
+import org.restheart.polyglot.spi.PluginDefinition;
+import org.restheart.polyglot.spi.PluginDefinition.Kind;
+import org.restheart.polyglot.spi.PluginModule;
 
 /**
  *
@@ -79,12 +83,14 @@ public class NodeService extends JSService implements StringService {
     }
 
     private NodeService(Path scriptPath, Optional<MongoClient> mclient, Configuration config) throws IOException {
-        super(args(scriptPath, mclient, config));
+        // a Node service has no SDK runtime: the script runs on GraalVM Node, outside the
+        // polyglot contexts, with the legacy globals only
+        super(definition(scriptPath), null, config, mclient);
         this.source = Files.readString(scriptPath);
         this.codeHash = this.source.hashCode();
     }
 
-    private static JSServiceArgs args(Path scriptPath, Optional<MongoClient> mclient, Configuration config) throws IOException {
+    private static PluginDefinition definition(Path scriptPath) throws IOException {
         // check plugin definition
         var out = new LinkedBlockingDeque<String>();
         Object[] message = {"parse", Files.readString(scriptPath), out};
@@ -192,7 +198,8 @@ public class NodeService extends JSService implements StringService {
                 throw new IllegalArgumentException("wrong js plugin, member 'handle' is not a function, " + ERROR_HINT);
             }
 
-            return new JSServiceArgs(name, description, uri, secured, null, matchPolicy, null, config, mclient, new HashMap<String, String>());
+            return new PluginDefinition(Kind.SERVICE, false, name, description, uri, secured, matchPolicy, null,
+                    ContentKind.STRING, null, scriptPath, PluginModule.pluginRoot(scriptPath), new HashMap<String, String>());
         } catch (InterruptedException ie) {
             LOGGER.debug("Error initializing node plugin", ie);
             Thread.currentThread().interrupt();

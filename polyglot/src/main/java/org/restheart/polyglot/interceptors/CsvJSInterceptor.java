@@ -20,28 +20,21 @@
  */
 package org.restheart.polyglot.interceptors;
 
-import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.BsonFromCsvRequest;
 import org.restheart.exchange.BsonResponse;
-import org.restheart.plugins.InterceptPoint;
+import org.restheart.polyglot.spi.PluginDefinition;
+import org.restheart.polyglot.spi.RhRuntime;
 
 import com.mongodb.client.MongoClient;
 
+/**
+ * The JavaScript interceptor of content kind csv.
+ */
 public class CsvJSInterceptor extends JSInterceptor<BsonFromCsvRequest, BsonResponse> {
-    public CsvJSInterceptor(String name,
-                            String pluginClass,
-                            String description,
-                            InterceptPoint interceptPoint,
-                            String modulesReplacements,
-                            Source handleSource,
-                            Source resolveSource,
-                            Optional<MongoClient> mclient,
-                            Configuration config,
-                            Map<String, String> contextOptions) {
-        super(name, pluginClass, description, interceptPoint, modulesReplacements, handleSource, resolveSource, mclient, config, contextOptions);
+    public CsvJSInterceptor(PluginDefinition definition, RhRuntime runtime, Configuration config, Optional<MongoClient> mclient) {
+        super(definition, runtime, config, mclient);
     }
 }

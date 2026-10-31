@@ -28,9 +28,11 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,10 +46,10 @@ import java.util.stream.Collectors;
 
 import org.graalvm.home.Version;
 import org.restheart.configuration.Configuration;
+import org.restheart.emails.EmailSender;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.graal.ImageInfo;
-import org.restheart.utils.BootstrapLogger;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
@@ -57,9 +59,16 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.polyglot.interceptors.JSInterceptor;
 import org.restheart.polyglot.interceptors.JSInterceptorFactory;
+import org.restheart.polyglot.services.JSBsonService;
+import org.restheart.polyglot.services.JSByteArrayService;
+import org.restheart.polyglot.services.JSJsonService;
 import org.restheart.polyglot.services.JSService;
 import org.restheart.polyglot.services.JSStringService;
 import org.restheart.polyglot.services.NodeService;
+import org.restheart.polyglot.spi.Capabilities;
+import org.restheart.polyglot.spi.PluginDefinition.Kind;
+import org.restheart.polyglot.spi.RhRuntime;
+import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.DirectoryWatcher;
 import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
@@ -68,11 +77,24 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonIOException;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.mongodb.client.MongoClient;
 
 /**
+ * Deploys the JavaScript plugins found in the plugins directory, and keeps watching it.
+ *
+ * <p>A plugin directory has a {@code package.json} listing its modules in {@code rh:services}
+ * and {@code rh:interceptors}. Each module is an SDK plugin ({@code defineService} or
+ * {@code defineInterceptor} as the default export, importing from {@code restheart:sdk}) or a
+ * legacy one ({@code options}, {@code handle}, {@code resolve}). The service variant comes
+ * from {@code contentKind}.</p>
+ *
+ * <p>The capabilities of the SDK come from the providers injected here: {@code mclient} for
+ * {@code mongo}, {@code http-client} for {@code http}, {@code emails} for {@code mail}, the
+ * registry for {@code providers}. A plugin importing a capability that is not available is
+ * not deployed, and the log says which one and why.</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -95,7 +117,14 @@ public class PolyglotDeployer implements Initializer {
     @Inject(value = "mclient", required = false)
     private MongoClient mclientInjected;
 
+    @Inject(value = "http-client", required = false)
+    private HttpClient httpClient;
+
+    @Inject(value = "emails", required = false)
+    private EmailSender emailSender;
+
     private Optional<MongoClient> mclient;
+    private Capabilities capabilities;
 
     @OnInit
     public void onInit() {
@@ -109,10 +138,24 @@ public class PolyglotDeployer implements Initializer {
         LOGGER.trace("pluginsDirectory: {}", pluginsDirectory);
 
         this.mclient = Optional.ofNullable(mclientInjected);
+        this.capabilities = new Capabilities(this.mclient, httpClient, httpRequestTimeout(config), emailSender, registry, config);
 
-        this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.config);
+        LOGGER.info("JavaScript SDK {} capabilities: {}", RhRuntime.SPI_VERSION,
+                capabilities.available().entrySet().stream()
+                        .map(e -> e.getKey() + (e.getValue() ? "" : " (not available)"))
+                        .collect(Collectors.joining(", ")));
+
+        this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.config, this.capabilities);
         deployAll(pluginsDirectory);
         watch(pluginsDirectory);
+    }
+
+    /**
+     * The request timeout of the shared HTTP client, from the {@code http-client} configuration.
+     */
+    static Duration httpRequestTimeout(Configuration config) {
+        var seconds = config == null ? null : findOrDefault(config.toMap(), "/http-client/request-timeout", (Object) null, true);
+        return seconds instanceof Number n && n.longValue() > 0 ? Duration.ofSeconds(n.longValue()) : Duration.ofSeconds(30);
     }
 
     private boolean isRunningOnGraalVM() {
@@ -131,6 +174,9 @@ public class PolyglotDeployer implements Initializer {
     private void deployAll(final Path pluginsDirectory) {
         for (final var pluginPath : findJsPluginDirectories(pluginsDirectory)) {
             try {
+                if (!checkSpiVersion(pluginPath)) {
+                    continue;
+                }
                 final var services = findServices(pluginPath);
                 final var nodeServices = findNodeServices(pluginPath);
                 final var interceptors = findInterceptors(pluginPath);
@@ -159,6 +205,9 @@ public class PolyglotDeployer implements Initializer {
                     // Handle directory creation (e.g., copying a plugin directory)
                     if (Files.isDirectory(path) && "ENTRY_CREATE".equals(kind.name())) {
                         LOGGER.info("New plugin directory detected: {}", path);
+                        if (!checkSpiVersion(path)) {
+                            return;
+                        }
                         final var services = findServices(path);
                         final var nodeServices = findNodeServices(path);
                         final var interceptors = findInterceptors(path);
@@ -177,6 +226,9 @@ public class PolyglotDeployer implements Initializer {
                             case "ENTRY_CREATE", "ENTRY_MODIFY" -> {
                                 undeploy(path);
                                 final var pluginDir = pluginPathFromEvent(pluginsDirectory, path);
+                                if (!checkSpiVersion(pluginDir)) {
+                                    return;
+                                }
                                 final var services = findServices(pluginDir);
                                 final var interceptors = findInterceptors(pluginDir);
 
@@ -295,6 +347,51 @@ public class PolyglotDeployer implements Initializer {
         return true;
     }
 
+    /**
+     * A plugin built against a future SDK is refused: {@code "rh:spi"} in {@code package.json}
+     * names the major it was written for.
+     *
+     * @return whether the plugin directory can be deployed
+     */
+    private boolean checkSpiVersion(final Path pluginDir) {
+        final var pkg = readPackageJson(pluginDir);
+
+        if (pkg == null || !pkg.has("rh:spi")) {
+            return true;
+        }
+
+        final var spi = pkg.get("rh:spi");
+
+        if (!spi.isJsonPrimitive() || !spi.getAsJsonPrimitive().isNumber()) {
+            LOGGER.error("Plugin {} not deployed: rh:spi in package.json must be a number, got {}", pluginDir, spi);
+            return false;
+        }
+
+        if (spi.getAsInt() > RhRuntime.SPI_VERSION) {
+            LOGGER.error("Plugin {} not deployed: it needs SDK version {} (rh:spi in package.json), this RESTHeart has version {}",
+                    pluginDir, spi.getAsInt(), RhRuntime.SPI_VERSION);
+            return false;
+        }
+
+        return true;
+    }
+
+    private JsonObject readPackageJson(final Path pluginDir) {
+        final var packagePath = pluginDir.resolve("package.json");
+
+        if (!Files.isRegularFile(packagePath)) {
+            return null;
+        }
+
+        try {
+            final var p = JsonParser.parseReader(Files.newBufferedReader(packagePath));
+            return p.isJsonObject() ? p.getAsJsonObject() : null;
+        } catch (JsonIOException | JsonSyntaxException | IOException t) {
+            LOGGER.error("Error reading {}", packagePath, t);
+            return null;
+        }
+    }
+
     private List<Path> findServices(final Path path) {
         return findServices(path, true);
     }
@@ -324,49 +421,36 @@ public class PolyglotDeployer implements Initializer {
             return Lists.newArrayList();
         }
 
+        final var pkg = readPackageJson(path);
+
+        if (pkg == null || !pkg.has(prop) || !pkg.get(prop).isJsonArray() || pkg.getAsJsonArray(prop).size() == 0) {
+            return Lists.newArrayList();
+        }
+
+        final List<Path> ret = Lists.newArrayList();
         final var packagePath = path.resolve("package.json");
 
-        if (!Files.isRegularFile(packagePath)) {
-            return Lists.newArrayList();
-        }
+        pkg.getAsJsonArray(prop).forEach(item -> {
+            if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
+                final var pluginPath = path.resolve(item.getAsString());
 
-        try {
-            final var p = JsonParser.parseReader(Files.newBufferedReader(packagePath));
-
-            if (p.isJsonObject()
-                    && p.getAsJsonObject().has(prop)
-                    && p.getAsJsonObject().get(prop).isJsonArray()
-                    && p.getAsJsonObject().getAsJsonArray(prop).size() > 0) {
-                final List<Path> ret = Lists.newArrayList();
-
-                p.getAsJsonObject().getAsJsonArray(prop).forEach(item -> {
-                    if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
-                        final var pluginPath = path.resolve(item.getAsString());
-
-                        if (checkPluginFiles) {
-                            if (Files.isRegularFile(pluginPath)) {
-                                // files are already filtered to .mjs by the deployer, so
-                                // Source.findLanguage() is not needed: it would need the
-                                // plugins classloader to see js-language
-                                ret.add(pluginPath);
-                            } else {
-                                LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(),
-                                        packagePath.toAbsolutePath());
-                            }
-                        } else {
-                            ret.add(pluginPath);
-                        }
+                if (checkPluginFiles) {
+                    if (Files.isRegularFile(pluginPath)) {
+                        // files are already filtered to .mjs by the deployer, so
+                        // Source.findLanguage() is not needed: it would need the
+                        // plugins classloader to see js-language
+                        ret.add(pluginPath);
+                    } else {
+                        LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(),
+                                packagePath.toAbsolutePath());
                     }
-                });
-
-                return ret;
-            } else {
-                return Lists.newArrayList();
+                } else {
+                    ret.add(pluginPath);
+                }
             }
-        } catch (JsonIOException | JsonSyntaxException | IOException t) {
-            LOGGER.error("Error reading {}", packagePath, t);
-            return Lists.newArrayList();
-        }
+        });
+
+        return ret;
     }
 
     private void deploy(final List<Path> services, final List<Path> nodeServices, final List<Path> interceptors)
@@ -390,7 +474,15 @@ public class PolyglotDeployer implements Initializer {
         }
 
         try {
-            final var srv = new JSStringService(pluginPath, this.mclient, this.config);
+            final var loaded = PluginLoader.load(pluginPath, Kind.SERVICE, this.capabilities, this.config, this.mclient);
+            final var def = loaded.definition();
+
+            final JSService srv = switch (def.contentKind()) {
+                case JSON -> new JSJsonService(def, loaded.runtime(), this.config, this.mclient);
+                case BSON -> new JSBsonService(def, loaded.runtime(), this.config, this.mclient);
+                case BYTES -> new JSByteArrayService(def, loaded.runtime(), this.config, this.mclient);
+                default -> new JSStringService(def, loaded.runtime(), this.config, this.mclient);
+            };
 
             final var pluginRecord = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(
                     srv.name(),
@@ -398,7 +490,7 @@ public class PolyglotDeployer implements Initializer {
                     srv.secured(),
                     true,
                     srv.getClass().getName(),
-                    srv,
+                    (Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>) srv,
                     new HashMap<>());
 
             registry.plugService(pluginRecord, srv.uri(), srv.matchPolicy(), srv.secured());
@@ -406,10 +498,13 @@ public class PolyglotDeployer implements Initializer {
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
             LOGGER.info(ansi().fg(GREEN)
-                    .a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
-                    .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy());
+                    .a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}. Content: {}{}")
+                    .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy(),
+                    def.contentKind().key(), def.sdk() ? "" : " (legacy plugin, see the JavaScript SDK docs)");
+        } catch (PluginLoader.MissingCapabilityException e) {
+            LOGGER.error("Service not deployed: {}", e.getMessage());
         } catch (IllegalArgumentException | IllegalStateException e) {
-            if (e.getMessage().contains("require is not defined")) {
+            if (e.getMessage() != null && e.getMessage().contains("require is not defined")) {
                 LOGGER.error(
                         "Error deploying plugin {}. Resolution: Try running 'npm install' for required dependencies.",
                         pluginPath);
@@ -457,15 +552,25 @@ public class PolyglotDeployer implements Initializer {
             throw new IllegalStateException("Cannot deploy a CommonJs interceptor, RESTHeart is running on Node");
         }
 
-        final var interceptorRecord = this.jsInterceptorFactory.create(pluginPath);
+        try {
+            final var interceptorRecord = this.jsInterceptorFactory.create(pluginPath);
+            final var interceptor = (JSInterceptor<?, ?>) interceptorRecord.getInstance();
 
-        registry.addInterceptor(interceptorRecord);
+            registry.addInterceptor(interceptorRecord);
 
-        DEPLOYEES.put(pluginPath.toAbsolutePath(), (JSPlugin) interceptorRecord.getInstance());
+            DEPLOYEES.put(pluginPath.toAbsolutePath(), interceptor);
 
-        LOGGER.info(ansi().fg(GREEN).a("Interceptor '{}' deployed with description: '{}'").reset().toString(),
-                interceptorRecord.getName(),
-                interceptorRecord.getDescription());
+            LOGGER.info(ansi().fg(GREEN).a("Interceptor '{}' deployed with description: '{}'. Intercept point: {}. Content: {}{}").reset().toString(),
+                    interceptorRecord.getName(),
+                    interceptorRecord.getDescription(),
+                    interceptor.getInterceptPoint(),
+                    interceptor.definition().contentKind().key(),
+                    interceptor.definition().sdk() ? "" : " (legacy plugin, see the JavaScript SDK docs)");
+        } catch (PluginLoader.MissingCapabilityException e) {
+            LOGGER.error("Interceptor not deployed: {}", e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            LOGGER.error("Error deploying plugin {}", pluginPath, e);
+        }
     }
 
     private void undeploy(final Path pluginPath) {
@@ -484,6 +589,7 @@ public class PolyglotDeployer implements Initializer {
 
             if (_toUndeploy != null && _toUndeploy instanceof final JSService toUndeploy) {
                 registry.unplug(toUndeploy.uri(), toUndeploy.matchPolicy());
+                toUndeploy.close();
 
                 LOGGER.info(ansi().fg(GREEN).a("Service '{}' bound to '{}' undeployed").reset().toString(),
                         toUndeploy.name(), toUndeploy.uri());
@@ -503,6 +609,7 @@ public class PolyglotDeployer implements Initializer {
                     .removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.name()));
 
             if (removed) {
+                toUndeploy.close();
                 LOGGER.info(ansi().fg(GREEN).a("Interceptor '{}' undeployed").reset().toString(), toUndeploy.name());
             } else {
                 LOGGER.warn("Interceptor {} was not undeployed", toUndeploy.name());

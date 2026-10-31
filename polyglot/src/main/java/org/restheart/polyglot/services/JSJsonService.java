@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-security
+ * restheart-polyglot
  * %%
- * Copyright (C) 2018 - 2026 SoftInstigate
+ * Copyright (C) 2020 - 2026 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,30 +18,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-
 package org.restheart.polyglot.services;
 
-import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
-import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
+import org.restheart.exchange.JsonRequest;
+import org.restheart.exchange.JsonResponse;
+import org.restheart.plugins.JsonService;
+import org.restheart.polyglot.spi.PluginDefinition;
+import org.restheart.polyglot.spi.RhRuntime;
 
 import com.mongodb.client.MongoClient;
 
 /**
+ * The JavaScript service of content kind json: a {@link JsonService} that delegates to the
+ * plugin's {@code handle(req, res)}.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public record JSServiceArgs(String name,
-                            String description,
-                            String uri,
-                            boolean secured,
-                            String modulesReplacements,
-                            MATCH_POLICY matchPolicy,
-                            Source handleSource,
-                            Configuration configuration,
-                            Optional<MongoClient> mclient,
-                            Map<String, String> contextOptions) {
+public class JSJsonService extends JSService implements JsonService {
+    public JSJsonService(PluginDefinition definition, RhRuntime runtime, Configuration config, Optional<MongoClient> mclient) {
+        super(definition, runtime, config, mclient);
+    }
+
+    @Override
+    public void handle(JsonRequest request, JsonResponse response) throws Exception {
+        invokeHandle(request, response);
+    }
 }

@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-polyglot
+ * restheart-security
  * %%
- * Copyright (C) 2020 - 2026 SoftInstigate
+ * Copyright (C) 2018 - 2026 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,18 +20,36 @@
  */
 package org.restheart.polyglot;
 
-import java.util.Map;
 import java.util.Optional;
 
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
-import org.restheart.polyglot.services.JSServiceArgs;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
+import org.restheart.polyglot.spi.GuestErrors;
+import org.restheart.polyglot.spi.PluginDefinition;
+import org.restheart.polyglot.spi.PluginModule;
+import org.restheart.polyglot.spi.RhRequest;
+import org.restheart.polyglot.spi.RhResponse;
+import org.restheart.polyglot.spi.RhRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
 
+/**
+ * A JavaScript plugin: its definition, its SDK runtime and the pool of contexts it runs in.
+ *
+ * <p>{@link #invokeHandle} and {@link #invokeResolve} are what the service and interceptor
+ * classes call: they import the module in the context, pick {@code handle} or {@code resolve},
+ * hand the plugin the {@link RhRequest} and {@link RhResponse} adapters (or the raw Java
+ * objects, for a plugin written before the SDK) and turn an exception into the response
+ * {@link GuestErrors} decides.</p>
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
 public abstract class JSPlugin {
     protected static final Logger LOGGER = LoggerFactory.getLogger(JSPlugin.class);
 
@@ -58,54 +76,31 @@ public abstract class JSPlugin {
         return engine;
     }
 
-    private final String modulesReplacements;
-    private final Source handleSource;
-
+    // read by reflection in PluginUtils.name(): a JS plugin has no @RegisterPlugin annotation,
+    // and the registry matches the interceptors of a service by this name
     private final String name;
-    private final String description;
+    private final PluginDefinition definition;
+    private final RhRuntime runtime;
+    private final Source moduleSource;
     private final Optional<MongoClient> mclient;
     private final Configuration configuration;
 
     protected ContextQueue contextQueue;
 
     /**
-     *
-     * @param name
-     * @param configuration
-     * @param description
-     * @param modulesReplacements
-     * @param handleSource
-     * @param mclient
-     * @param opts
+     * @param definition what the module declares
+     * @param runtime the SDK runtime of the plugin
+     * @param configuration the configuration, for the legacy {@code pluginArgs}
+     * @param mclient the MongoDB client, for the legacy {@code mclient}
      */
-    public JSPlugin(String name,
-                    String description,
-                    Source handleSource,
-                    String modulesReplacements,
-                    Configuration configuration,
-                    Optional<MongoClient> mclient,
-                    Map<String, String> opts) {
-        this.name = name;
-        this.description = description;
-        this.handleSource = handleSource;
-        this.mclient = mclient;
+    protected JSPlugin(PluginDefinition definition, RhRuntime runtime, Configuration configuration, Optional<MongoClient> mclient) {
+        this.name = definition.name();
+        this.definition = definition;
+        this.runtime = runtime;
+        this.moduleSource = PluginModule.source(definition.pluginPath());
+        this.mclient = mclient == null ? Optional.empty() : mclient;
         this.configuration = configuration;
-        this.modulesReplacements = modulesReplacements;
-        this.contextQueue = new ContextQueue(engine, name, configuration, LOGGER, mclient, modulesReplacements, opts);
-    }
-
-    /**
-     *
-     * @param args
-     */
-    public JSPlugin(JSServiceArgs args) {
-        this.name = args.name();
-        this.description = args.description();
-        this.handleSource = args.handleSource();
-        this.mclient = args.mclient();
-        this.configuration = args.configuration();
-        this.modulesReplacements = args.modulesReplacements();
-        this.contextQueue = new ContextQueue(engine, name, configuration, LOGGER, mclient, modulesReplacements, args.contextOptions());
+        this.contextQueue = new ContextQueue(engine(), runtime, definition.name(), configuration, LOGGER, this.mclient, definition.contextOptions());
     }
 
     public String name() {
@@ -113,12 +108,20 @@ public abstract class JSPlugin {
     }
 
     public String getDescription() {
-        return description;
+        return definition.description();
+    }
+
+    public PluginDefinition definition() {
+        return definition;
+    }
+
+    public RhRuntime runtime() {
+        return runtime;
     }
 
     /**
      * Provides access to the context queue for executing JavaScript code within a scoped context.
-     * 
+     *
      * @return the context queue instance
      */
     protected ContextQueue contextQueue() {
@@ -129,12 +132,84 @@ public abstract class JSPlugin {
         return mclient;
     }
 
-    public Source handleSource() {
-        return handleSource;
+    public Source moduleSource() {
+        return moduleSource;
     }
 
     public Configuration configuration() {
         return configuration;
     }
 
+    /**
+     * Closes the contexts of the plugin, when it is undeployed.
+     */
+    public void close() {
+        contextQueue.close();
+    }
+
+    /**
+     * Runs the plugin's {@code handle(req, res)}.
+     *
+     * <p>An exception is answered here, see {@link GuestErrors}: a typed error with its status,
+     * anything else with 500 and a log line with the plugin name.</p>
+     *
+     * @param request the request
+     * @param response the response
+     * @throws Exception when the context cannot be used at all
+     */
+    protected void invokeHandle(Request<?> request, Response<?> response) throws Exception {
+        try {
+            contextQueue.executeWithContext(ctx -> {
+                var ns = PluginModule.namespace(ctx, moduleSource);
+                var handle = PluginModule.handle(ns);
+                handle.executeVoid(adaptRequest(request), adaptResponse(response));
+            });
+        } catch (Exception e) {
+            GuestErrors.handle(e, response, name(), LOGGER);
+        }
+    }
+
+    /**
+     * Runs the plugin's {@code resolve(req, res)}.
+     *
+     * @param request the request
+     * @param response the response
+     * @return what resolve returned; false, with the request in error, when it threw or did not return a boolean
+     */
+    protected boolean invokeResolve(Request<?> request, Response<?> response) {
+        try {
+            return contextQueue.executeWithContext(ctx -> {
+                var ns = PluginModule.namespace(ctx, moduleSource);
+                var resolve = PluginModule.resolve(ns);
+
+                if (resolve == null) {
+                    LOGGER.error("interceptor {} has no resolve()", name());
+                    request.setInError(true);
+                    return false;
+                }
+
+                Value ret = resolve.execute(adaptRequest(request), adaptResponse(response));
+
+                if (ret != null && ret.isBoolean()) {
+                    return ret.asBoolean();
+                } else {
+                    LOGGER.error("resolve() of interceptor {} did not return a boolean", name());
+                    request.setInError(true);
+                    return false;
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error("error on interceptor {} resolve()", name(), e);
+            request.setInError(true);
+            return false;
+        }
+    }
+
+    private Object adaptRequest(Request<?> request) {
+        return definition.sdk() ? new RhRequest(request, definition.contentKind()) : request;
+    }
+
+    private Object adaptResponse(Response<?> response) {
+        return definition.sdk() ? new RhResponse(response, definition.contentKind()) : response;
+    }
 }

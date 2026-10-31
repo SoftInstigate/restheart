@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-security
+ * restheart-polyglot
  * %%
- * Copyright (C) 2018 - 2026 SoftInstigate
+ * Copyright (C) 2020 - 2026 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,64 +18,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-
 package org.restheart.polyglot.services;
 
-import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.polyglot.JSPlugin;
+import org.restheart.polyglot.spi.PluginDefinition;
+import org.restheart.polyglot.spi.RhRuntime;
 
 import com.mongodb.client.MongoClient;
 
-
 /**
+ * A JavaScript service: uri, match policy and whether it is secured come from the module's
+ * declaration; the subclasses fix the content kind.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class JSService extends JSPlugin {
-    private final String uri;
-    private final boolean secured;
-    private final MATCH_POLICY matchPolicy;
-
-    public JSService(String name,
-                     String pluginClass,
-                     String description,
-                     String uri,
-                     boolean secured,
-                     MATCH_POLICY matchPolicy,
-                     Source handleSource,
-                     String modulesReplacements,
-                     Configuration config,
-                     Optional<MongoClient> mclient,
-                     Map<String, String> contextOptions) {
-        super(name, description, handleSource, modulesReplacements, config, mclient, contextOptions);
-        this.uri = uri;
-        this.secured = secured;
-        this.matchPolicy = matchPolicy;
-    }
-
-
-    public JSService(JSServiceArgs args) {
-        super(args.name(), args.description(), args.handleSource(), args.modulesReplacements(), args.configuration(), args.mclient(), args.contextOptions());
-        this.uri = args.uri();
-        this.secured = args.secured();
-        this.matchPolicy = args.matchPolicy();
+    protected JSService(PluginDefinition definition, RhRuntime runtime, Configuration config, Optional<MongoClient> mclient) {
+        super(definition, runtime, config, mclient);
     }
 
     public String uri() {
-        return uri;
+        return definition().uri();
     }
 
-
     public boolean secured() {
-        return secured;
+        return definition().secured();
     }
 
     public MATCH_POLICY matchPolicy() {
-        return matchPolicy;
+        return definition().matchPolicy();
     }
 }

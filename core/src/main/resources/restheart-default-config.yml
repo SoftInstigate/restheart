@@ -1365,6 +1365,19 @@ workersWatchdog:
   halt-after-seconds: 0
   notify-email: null
 
+# The shared java.net.http.HttpClient, built once from these options and injected into the
+# plugins that call other services with @Inject("http-client"). The http capability of the
+# JavaScript SDK (import { http } from "restheart:sdk") uses it too.
+# request-timeout is the default of a call that sets none; the SDK overrides it per call.
+http-client:
+  connect-timeout: 10        # seconds
+  request-timeout: 30        # seconds
+  version: http-2            # http-1.1 or http-2 (falls back to 1.1 when the server has no h2)
+  follow-redirects: normal   # never, normal (never from https to http), always
+  # proxy:
+  #   host: proxy.example.com
+  #   port: 3128
+
 # Runs a request through this server's handler chain in-process, without a socket, for plugins
 # such as the MCP service and the document chunker. An in-process request gets the same
 # connection-options as a request from the network, MAX_ENTITY_SIZE and the timeouts included.
