@@ -58,7 +58,7 @@ Feature: POST /auth/forgot-password
     # Anyone can register any address, so the password given at registration may not be
     # the owner's. The owner recovers the account through the reset link, which makes them
     # choose the password and verifies the address in one step (GHSA-m7m7-gjxg-cjmm).
-    # Before 9.12.4 the verification link was re-sent and the reset was refused.
+    # Before 9.13.0 the verification link was re-sent and the reset was refused.
     * def email = 'forgot-pending-' + java.util.UUID.randomUUID() + '@example.com'
 
     Given path '/auth/register'
