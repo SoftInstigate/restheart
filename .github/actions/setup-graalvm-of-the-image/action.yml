@@ -52,7 +52,12 @@ runs:
         curl -fsSL --retry 3 -o "$DIR/$GRAALVM_ASSET" "$GRAALVM_URL"
         curl -fsSL --retry 3 -o "$DIR/$GRAALVM_ASSET.sha256" "$GRAALVM_URL.sha256"
         cd "$DIR"
-        echo "$(cat "$GRAALVM_ASSET.sha256" | cut -d' ' -f1)  $GRAALVM_ASSET" | shasum -a 256 -c -
+        # sha256sum on Linux and in Git Bash on Windows, shasum on macOS
+        if command -v sha256sum >/dev/null 2>&1; then
+          echo "$(cut -d' ' -f1 "$GRAALVM_ASSET.sha256")  $GRAALVM_ASSET" | sha256sum -c -
+        else
+          echo "$(cut -d' ' -f1 "$GRAALVM_ASSET.sha256")  $GRAALVM_ASSET" | shasum -a 256 -c -
+        fi
 
     - name: Install GraalVM
       shell: bash
