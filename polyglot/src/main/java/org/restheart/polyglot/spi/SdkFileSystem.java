@@ -55,6 +55,13 @@ import org.graalvm.polyglot.io.FileSystem;
  * {@code node_modules} are served untouched, and a package named {@code restheart:sdk}
  * installed there is never consulted: the import never reaches package resolution.</p>
  *
+ * <p>The failure of the npm-compatible loader is a GraalJS bug, reported as
+ * <a href="https://github.com/oracle/graaljs/issues/1147">oracle/graaljs#1147</a>. The rewrite
+ * can go once the GraalJS version RESTHeart uses has the fix, if the fix hands such a
+ * specifier to the file system as the default loader does: the URI mapping of
+ * {@link #parsePath(URI)} then serves both loaders. A fix that only turns the exception into
+ * a guest error is not enough.</p>
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SdkFileSystem implements FileSystem {
