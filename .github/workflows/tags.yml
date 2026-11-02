@@ -213,13 +213,23 @@ jobs:
     needs: build
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+    # npm trusted publishing: the job authenticates with a GitHub OIDC token, accepted by npm for
+    # this repository and workflow (tags.yml) as configured on the @restheart/sdk package. No npm
+    # token is stored in the repository, and npm attaches the provenance of the build.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
+
+      # trusted publishing needs npm 11.5.1 or later
+      - name: Update npm
+        run: npm install -g npm@latest
 
       - name: Set the version from the tag
         working-directory: polyglot/sdk
@@ -228,8 +238,6 @@ jobs:
       - name: Publish @restheart/sdk
         working-directory: polyglot/sdk
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # Trigger native image build asynchronously (fire-and-forget).
   # Native builds take 30-60 min; running them via gh workflow run
