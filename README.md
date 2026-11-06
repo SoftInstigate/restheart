@@ -22,8 +22,12 @@ RESTHeart is a backend for web, mobile, AI and IoT apps. It gives an application
 
 ### Example
 
+With RESTHeart running locally (see below), create a collection, add a document and query it:
+
 ```bash
-curl "https://demo.restheart.org/messages?filter={\"from\":\"Bob\"}&pagesize=1"
+curl -u admin:secret -X PUT localhost:8080/messages
+curl -u admin:secret -H 'Content-Type: application/json' -d '{"from":"Bob","message":"Hello"}' localhost:8080/messages
+curl -u admin:secret "localhost:8080/messages?filter={\"from\":\"Bob\"}&pagesize=1"
 ```
 
 No route was written for `/messages`. It is a MongoDB collection, and the query parameters (`filter`, `pagesize`, sorting) map directly to MongoDB's query language.
