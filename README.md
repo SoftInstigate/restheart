@@ -52,7 +52,7 @@ Distributed as a Docker image and a GraalVM native binary. Built on Java 25, Und
 
 ### Running it
 
-On [Ulabase](https://ulabase.com), the managed platform built on RESTHeart: fully managed, no installation required, and including [Sophia](https://restheart.org/docs/cloud/sophia/mcp), an MCP server and browser assistant that exposes RESTHeart's docs and plugin API to AI coding assistants such as Claude Code, Cursor, or VS Code:
+Managed, on [Ulabase](https://ulabase.com), the platform built on RESTHeart: nothing to install, a free plan to start.
 
 [![Try Ulabase for free](https://restheart.org/images/ulabase-button.svg)](https://ulabase.com/auth/signup)
 
