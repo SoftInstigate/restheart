@@ -1,4 +1,4 @@
-# <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
+# <img src="https://restheart.org/images/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
 **A backend for web, mobile, AI and IoT apps.**
 
@@ -52,9 +52,9 @@ Distributed as a Docker image and a GraalVM native binary. Built on Java 25, Und
 
 ### Running it
 
-Fully managed, no installation required, and including [Sophia](https://restheart.org/docs/cloud/sophia/mcp), an MCP server and browser assistant that exposes RESTHeart's docs and plugin API to AI coding assistants such as Claude Code, Cursor, or VS Code:
+On [Ulabase](https://ulabase.com), the managed platform built on RESTHeart: fully managed, no installation required, and including [Sophia](https://restheart.org/docs/cloud/sophia/mcp), an MCP server and browser assistant that exposes RESTHeart's docs and plugin API to AI coding assistants such as Claude Code, Cursor, or VS Code:
 
-[![Try RESTHeart Cloud for free](https://restheart.org/images/restheart-cloud-button.svg)](https://cloud.restheart.com/signup)
+[![Try Ulabase for free](https://restheart.org/images/restheart-cloud-button.svg)](https://ulabase.com/auth/signup)
 
 Or self-hosted, since the core is free and open source:
 
