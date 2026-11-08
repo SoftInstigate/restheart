@@ -190,7 +190,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
         return enabled
                 && request.isHandledBy("mongo")
                 && request.isWriteDocument()
-                && request.isContentTypeJson()
+                // any Content-Type: the MongoDB API turns JSON, hal+json, a missing Content-Type and forms into a document
                 && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
                 && this.usersCollection.equalsIgnoreCase(request.getCollectionName());
     }
