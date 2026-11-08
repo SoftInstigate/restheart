@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>9.14.1-SNAPSHOT</version>
+    <version>9.15.0-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -161,6 +161,10 @@
           <includes>
             <includes>**/*.java</includes>
           </includes>
+          <excludes>
+            <!-- modified copies of Undertow classes keep their Apache 2.0 header -->
+            <exclude>io/undertow/**</exclude>
+          </excludes>
         </configuration>
         <executions>
           <execution>
