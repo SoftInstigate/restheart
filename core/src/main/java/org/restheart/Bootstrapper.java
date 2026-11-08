@@ -110,8 +110,11 @@ import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.restheart.utils.InProcessDispatcher;
+import org.restheart.utils.ThreadsUtils;
 import org.xnio.OptionMap;
+import org.xnio.Options;
 import org.xnio.Xnio;
+import org.xnio.XnioWorker;
 
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
@@ -149,6 +152,7 @@ public final class Bootstrapper {
     private static GracefulShutdownHandler HANDLERS = null;
     private static Configuration configuration;
     private static Undertow undertowServer;
+    private static XnioWorker xnioWorker;
     private static ByteBufferPool BYTE_BUFFER_POOL;
     private static OptionMap UNDERTOW_OPTIONS = OptionMap.EMPTY;
 
@@ -619,6 +623,11 @@ public final class Bootstrapper {
             undertowServer.stop();
         }
 
+        // Undertow does not shut down a worker it did not create
+        if (xnioWorker != null) {
+            xnioWorker.shutdown();
+        }
+
         if (!silent) {
             LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
         }
@@ -751,9 +760,27 @@ public final class Bootstrapper {
                 workersSchedulerParallelism,
                 configuration.coreModule().workersSchedulerMaxPoolSize());
 
+        // Starting v8, RESTHeart runs blocking requests on virtual threads and Undertow has no worker
+        // threads. Undertow still submits tasks to its XNIO worker: the dispatch after 100 Continue
+        // (HttpContinueAcceptingHandler) and the deletion of multipart temporary files. A worker whose
+        // tasks run on virtual threads runs them (#795, #796), with the options Undertow uses for its own.
+        try {
+            xnioWorker = Xnio.getInstance(Undertow.class.getClassLoader()).createWorkerBuilder()
+                    .populateFromOptions(OptionMap.builder()
+                            .set(Options.WORKER_IO_THREADS, ioThreads)
+                            .set(Options.CONNECTION_HIGH_WATER, 1000000)
+                            .set(Options.CONNECTION_LOW_WATER, 1000000)
+                            .set(Options.TCP_NODELAY, true)
+                            .set(Options.CORK, true)
+                            .getMap())
+                    .setExternalExecutorService(ThreadsUtils.virtualThreadsExecutor())
+                    .build();
+        } catch (IllegalArgumentException iae) {
+            throw new IllegalStateException("Cannot create the XNIO worker", iae);
+        }
+
         builder
-                .setIoThreads(ioThreads)
-                .setWorkerThreads(0) // starting v8, restheart uses virtual threads
+                .setWorker(xnioWorker)
                 .setDirectBuffers(configuration.coreModule().directBuffers())
                 .setBufferSize(configuration.coreModule().bufferSize())
                 .setHandler(HANDLERS);

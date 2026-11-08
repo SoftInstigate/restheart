@@ -244,16 +244,61 @@ public abstract class Exchange<T> {
     /**
      * Checks if the content type is JSON.
      * <p>
-     * This helper method determines if the content type is application/json
-     * or starts with application/json (allowing for additional parameters
-     * like charset specifications).
+     * True for {@code application/json}, any media type with the {@code +json}
+     * structured syntax suffix (RFC 6839), e.g. {@code application/problem+json},
+     * and the legacy aliases {@code text/x-json} and {@code application/jsonrequest};
+     * parameters like {@code charset} are ignored and the comparison is case-insensitive.
      * </p>
      *
      * @return true if the content type is JSON, false otherwise
+     * @see #isJsonMediaType(String)
      */
     public boolean isContentTypeJson() {
-        return "application/json".equals(getContentType())
-                || (getContentType() != null && getContentType().startsWith("application/json;"));
+        return isJsonMediaType(getContentType());
+    }
+
+    /**
+     * Returns the essence of a media type: the lowercase {@code type/subtype}, without parameters.
+     *
+     * @param contentType a Content-Type header value, possibly null
+     * @return the lowercase {@code type/subtype}, or null if the value is null or blank
+     * @since 9.15.0
+     */
+    public static String mediaType(String contentType) {
+        if (contentType == null) {
+            return null;
+        }
+
+        final int semi = contentType.indexOf(';');
+        final var mt = (semi < 0 ? contentType : contentType.substring(0, semi)).trim();
+
+        return mt.isEmpty() ? null : mt.toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /**
+     * Checks if a Content-Type value denotes JSON: {@code application/json}, a media type
+     * with the {@code +json} structured syntax suffix (RFC 6839), or one of the legacy
+     * aliases {@code text/x-json} and {@code application/jsonrequest}.
+     *
+     * @param contentType a Content-Type header value, possibly null
+     * @return true if it denotes JSON
+     * @since 9.15.0
+     */
+    public static boolean isJsonMediaType(String contentType) {
+        final var mt = mediaType(contentType);
+
+        if (mt == null) {
+            return false;
+        }
+
+        return switch (mt) {
+            case JSON_MEDIA_TYPE, "text/x-json", "application/jsonrequest" -> true;
+            default -> {
+                final int slash = mt.indexOf('/');
+                // type and subtype must not be empty, e.g. reject "/+json" and "application/+json"
+                yield slash > 0 && mt.endsWith("+json") && mt.length() - slash - 1 > "+json".length();
+            }
+        };
     }
 
     /**
@@ -320,16 +365,15 @@ public abstract class Exchange<T> {
      * Checks if the request content type is JSON for the specified exchange.
      * <p>
      * This static utility method examines the Content-Type header of the
-     * request to determine if it indicates JSON content. It checks for
-     * exact matches and content types that start with application/json.
+     * request to determine if it indicates JSON content.
      * </p>
      *
      * @param exchange the HttpServerExchange to check
      * @return true if the request content type is JSON, false otherwise
+     * @see #isJsonMediaType(String)
      */
     public static boolean isContentTypeJson(HttpServerExchange exchange) {
-        var ct = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
-        return "application/json".equals(ct) || (ct != null && ct.startsWith("application/json;"));
+        return isJsonMediaType(exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE));
     }
 
     /**
@@ -367,8 +411,19 @@ public abstract class Exchange<T> {
      * @return true if the request content type is form-encoded or multipart, false otherwise
      */
     public static boolean isContentTypeFormOrMultipart(HttpServerExchange exchange) {
-        var ct = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
-        return ct != null && (ct.startsWith(FORM_URLENCODED) || ct.startsWith(MULTIPART));
+        var mt = mediaType(exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE));
+        return FORM_URLENCODED.equals(mt) || MULTIPART.equals(mt);
+    }
+
+    /**
+     * Checks if the request content type is {@code multipart/form-data}, regardless of its parameters and case.
+     *
+     * @param exchange the HttpServerExchange to check
+     * @return true if the request content type is multipart/form-data
+     * @since 9.15.0
+     */
+    public static boolean isContentTypeMultipartFormData(HttpServerExchange exchange) {
+        return MULTIPART.equals(mediaType(exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE)));
     }
 
     /**

@@ -27,11 +27,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.restheart.Bootstrapper;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.configuration.ConfigurationException;
@@ -58,6 +61,7 @@ import org.restheart.handlers.ServiceExchangeInitializer;
 import org.restheart.handlers.SseWildcardInterceptorsExecutor;
 import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.WorkingThreadsPoolDispatcher;
+import org.restheart.handlers.RequestContentBuffer;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
@@ -355,6 +359,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public void addInterceptor(PluginRecord<Interceptor<?, ?>> i) {
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+        this.SRV_INTERCEPTORS_VERSION.incrementAndGet();
+        this.SRV_INTERCEPTORS_BY_SERVICE.clear();
 
         if (this.interceptors == null) {
             // avoid NPE if not already initialized
@@ -367,12 +373,19 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor<?, ?>>> filter) {
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+        this.SRV_INTERCEPTORS_VERSION.incrementAndGet();
+        this.SRV_INTERCEPTORS_BY_SERVICE.clear();
         return this.interceptors.removeIf(filter);
     }
 
     /** Cache key for SRV_INTERCEPTORS_CACHE - cheaper and more readable than a SimpleEntry. */
     private record InterceptorCacheKey(String service, InterceptPoint point) {
     }
+
+    // the interceptors of each service by intercept point, for the per-request lookup; cleared with SRV_INTERCEPTORS_CACHE
+    private final ConcurrentHashMap<Service<?, ?>, AtomicReferenceArray<List<Interceptor<?, ?>>>> SRV_INTERCEPTORS_BY_SERVICE = new ConcurrentHashMap<>();
+    // incremented before every clear, so a list computed before an invalidation is not stored after it
+    private final AtomicLong SRV_INTERCEPTORS_VERSION = new AtomicLong();
 
     private final LoadingCache<InterceptorCacheKey, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
             .createHashMapLoadingCache((key) -> __interceptors(key.service(), key.point()));
@@ -426,11 +439,32 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         Objects.requireNonNull(srv);
         Objects.requireNonNull(interceptPoint);
 
+        // hot path, called for every request and intercept point: an identity lookup and an array read
+        var byPoint = SRV_INTERCEPTORS_BY_SERVICE.get(srv);
+
+        if (byPoint != null) {
+            var cached = byPoint.get(interceptPoint.ordinal());
+            if (cached != null) {
+                return cached;
+            }
+        }
+
+        final var version = SRV_INTERCEPTORS_VERSION.get();
         var serviceName = PluginUtils.name(srv);
 
         var _ret = SRV_INTERCEPTORS_CACHE.getLoading(new InterceptorCacheKey(serviceName, interceptPoint));
 
-        return _ret.isPresent() ? _ret.get() : List.of();
+        var ret = _ret.isPresent() ? _ret.get() : List.<Interceptor<?, ?>>of();
+
+        if (byPoint == null) {
+            byPoint = SRV_INTERCEPTORS_BY_SERVICE.computeIfAbsent(srv, k -> new AtomicReferenceArray<>(InterceptPoint.values().length));
+        }
+
+        if (SRV_INTERCEPTORS_VERSION.get() == version) {
+            byPoint.set(interceptPoint.ordinal(), ret);
+        }
+
+        return ret;
     }
 
     /**
@@ -540,16 +574,25 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         var blockingSrv = PluginUtils.blocking(srv.getInstance());
 
+        final var coreModule = Bootstrapper.getConfiguration().coreModule();
+        // constant for this pipeline: the handlers get it here instead of matching the path on every request
+        final var pipelineInfo = new PipelineInfo(SERVICE, uri, mp, srv.getName());
+
         var _srv = pipe(
+                // blocking services: small bodies with a Content-Length are read on the IO thread,
+                // without blocking, before the dispatch, so the virtual thread never waits for the client (#800)
+                blockingSrv ? RequestContentBuffer.forBlockingService(coreModule.blockingContentPrebufferLimit()) : null,
                 // if service is blocking (i.e. @RegisterPlugin(blocking=true))
                 // add WorkingThreadsPoolDispatcher to the pipe
                 blockingSrv ? new WorkingThreadsPoolDispatcher() : null,
+                // non-blocking services run on the IO thread: the body is read for them without blocking (#799)
+                blockingSrv ? null : RequestContentBuffer.forNonBlockingService(coreModule.nonBlockingContentLimit()),
                 new ErrorHandler(),
-                new PipelineInfoInjector(),
+                new PipelineInfoInjector(pipelineInfo),
                 new TracingInstrumentationHandler(),
                 new RequestLogger(),
                 new BeforeExchangeInitInterceptorsExecutor(),
-                new ServiceExchangeInitializer(),
+                new ServiceExchangeInitializer(srv),
                 new CORSHandler(),
                 new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
                 new QueryStringRebuilder(),
@@ -558,16 +601,18 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 new QueryStringRebuilder(),
                 PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(PipelinedWrappingHandler.wrap(srv.getInstance()))),
                 new ResponseInterceptorsExecutor(),
-                new ResponseSender()
+                new ResponseSender().forService(srv)
         );
 
-        plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
+        plugPipeline(uri, _srv, pipelineInfo);
 
         this.services.add(srv);
         this.servicesByName.put(srv.getName(), srv);
 
         // service list changed, invalidate cache
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+        this.SRV_INTERCEPTORS_VERSION.incrementAndGet();
+        this.SRV_INTERCEPTORS_BY_SERVICE.clear();
     }
 
     /**
@@ -668,6 +713,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         // service list changed, invalidate cache
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+        this.SRV_INTERCEPTORS_VERSION.incrementAndGet();
+        this.SRV_INTERCEPTORS_BY_SERVICE.clear();
     }
 
     private static class SingletonHolder {

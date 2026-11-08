@@ -22,8 +22,12 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
+import org.restheart.exchange.Request;
+import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.Service;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
@@ -40,6 +44,19 @@ public class ResponseSender extends PipelinedHandler {
     /**
      *
      */
+    // the service of this pipeline, known when the pipeline is built; null to look it up per request
+    private PluginRecord<Service<?, ?>> service = null;
+
+    /**
+     * @param service the service of the pipeline this handler belongs to
+     * @return this handler
+     * @since 9.15.0
+     */
+    public ResponseSender forService(PluginRecord<Service<?, ?>> service) {
+        this.service = service;
+        return this;
+    }
+
     public ResponseSender() {
         super(null);
     }
@@ -59,14 +76,23 @@ public class ResponseSender extends PipelinedHandler {
     @Override
     @SuppressWarnings("rawtypes")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var path = exchange.getRequestPath();
+        final PipelineInfo.PIPELINE_TYPE type;
+        final Optional<PluginRecord<Service<?, ?>>> srv;
 
-        var pi = pluginsRegistry.getPipelineInfo(path);
+        if (service != null) {
+            // the sender of a service pipeline knows its service
+            type = PipelineInfo.PIPELINE_TYPE.SERVICE;
+            srv = Optional.of(service);
+        } else {
+            var attached = Request.getPipelineInfo(exchange);
+            final var pi = attached != null ? attached : pluginsRegistry.getPipelineInfo(exchange.getRequestPath());
+            type = pi.getType();
+            srv = type == PipelineInfo.PIPELINE_TYPE.SERVICE
+                    ? pluginsRegistry.getServices().stream().filter(s -> s.getName().equals(pi.getName())).findAny()
+                    : Optional.empty();
+        }
 
-        if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
-            var srv = pluginsRegistry.getServices().stream()
-                    .filter(s -> s.getName().equals(pi.getName()))
-                    .findAny();
+        if (type == PipelineInfo.PIPELINE_TYPE.SERVICE) {
 
             if (srv.isPresent()) {
                 var response = (ServiceResponse) srv.get().getInstance().response().apply(exchange);
@@ -87,7 +113,7 @@ public class ResponseSender extends PipelinedHandler {
                     }
                 }
             }
-        } else if (pi.getType() == PipelineInfo.PIPELINE_TYPE.PROXY) {
+        } else if (type == PipelineInfo.PIPELINE_TYPE.PROXY) {
             var response = ByteArrayProxyResponse.of(exchange);
 
             if (!exchange.isResponseStarted() && response.getStatusCode() > 0) {

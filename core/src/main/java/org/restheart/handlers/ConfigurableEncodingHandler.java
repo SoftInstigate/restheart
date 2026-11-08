@@ -44,12 +44,16 @@ public class ConfigurableEncodingHandler extends EncodingHandler {
 
     private boolean forceCompression = false;
 
+    private final boolean compression;
+
     /**
      * Creates a new instance of ConfigurableEncodingHandler
      *
      * if Configuration().isForceGzipEncoding() is true
      * requests without gzip or deflate encodingin Accept-Encoding header
      * will be rejected
+     *
+     * if response-compression is false, responses are never compressed (#794)
      *
      * @param next
      */
@@ -59,11 +63,15 @@ public class ConfigurableEncodingHandler extends EncodingHandler {
                 .addEncodingHandler("deflate", new DeflateEncodingProvider(), 50));
 
         this.forceCompression = Bootstrapper.getConfiguration().coreModule().forceGzipEncoding();
+        this.compression = Bootstrapper.getConfiguration().coreModule().responseCompression();
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (forceCompression) {
+        if (!compression) {
+            // response compression disabled: skip the encoding, whatever Accept-Encoding says
+            getNext().handleRequest(exchange);
+        } else if (forceCompression) {
             var acceptedEncodings = exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING_STRING);
 
             for (String values : acceptedEncodings) {

@@ -71,6 +71,11 @@ public class WorkingThreadsPoolDispatcher extends PipelinedHandler {
             exchange.startBlocking();
             exchange.dispatch(virtualThreadsExecutor, getNext());
         } else {
+            // already off the IO thread, e.g. dispatched to the XNIO worker by HttpContinueAcceptingHandler
+            // after sending 100 Continue: the exchange is not blocking yet (#795)
+            if (!exchange.isBlocking()) {
+                exchange.startBlocking();
+            }
             next(exchange);
         }
     }

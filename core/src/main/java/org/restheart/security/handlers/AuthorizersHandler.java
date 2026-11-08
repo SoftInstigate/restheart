@@ -21,7 +21,6 @@
 package org.restheart.security.handlers;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -57,7 +56,9 @@ import io.undertow.util.Headers;
 public class AuthorizersHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthorizersHandler.class);
 
-    private final Set<PluginRecord<Authorizer>> authorizers;
+    // split once by type, in the order of the authorizers set
+    private final Entry[] vetoers;
+    private final Entry[] allowers;
     private final RequestInterceptorsExecutor failedAuthInterceptorsExecutor;
 
     /**
@@ -68,7 +69,8 @@ public class AuthorizersHandler extends PipelinedHandler {
      */
     public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, PipelinedHandler next) {
         super(next);
-        this.authorizers = authorizers;
+        this.vetoers = entries(authorizers, TYPE.VETOER);
+        this.allowers = entries(authorizers, TYPE.ALLOWER);
         this.failedAuthInterceptorsExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_FAILED_AUTH);
     }
 
@@ -92,17 +94,16 @@ public class AuthorizersHandler extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = Request.of(exchange);
-        var requestPath = exchange.getRequestPath();
-        var requestMethod = exchange.getRequestMethod().toString();
-        var authorizationStartTime = System.currentTimeMillis();
-        var isAuthenticated = request.isAuthenticated();
-        var userPrincipal = isAuthenticated ? request.getAuthenticatedAccount().getPrincipal().getName() : "anonymous";
+        final var debug = LOGGER.isDebugEnabled();
+        final var authorizationStartTime = debug ? System.currentTimeMillis() : 0L;
 
-        RequestPhaseContext.setPhase(Phase.PHASE_START);
-        LOGGER.debug("AUTHORIZATION for {} {} - User: {}", requestMethod, requestPath, userPrincipal);
+        if (debug) {
+            RequestPhaseContext.setPhase(Phase.PHASE_START);
+            LOGGER.debug("AUTHORIZATION for {} {} - User: {}", exchange.getRequestMethod(), exchange.getRequestPath(), principal(request));
+        }
 
         var isAllowedResult = isAllowed(request);
-        var authorizationDuration = System.currentTimeMillis() - authorizationStartTime;
+        var authorizationDuration = debug ? System.currentTimeMillis() - authorizationStartTime : 0L;
 
         if (isAllowedResult) {
             RequestPhaseContext.setPhase(Phase.PHASE_END);
@@ -140,103 +141,95 @@ public class AuthorizersHandler extends PipelinedHandler {
      * @param request
      * @return true if no vetoer vetoes the request and any allower allows it
      */
-    @SuppressWarnings("rawtypes")
-    private boolean isAllowed(final Request request) {
-        var requestPath = request.getPath();
-        var requestMethod = request.getMethod().toString();
-        var isAuthenticated = request.isAuthenticated();
-        var userPrincipal = isAuthenticated ? request.getAuthenticatedAccount().getPrincipal().getName() : "anonymous";
+    private boolean isAllowed(final Request<?> request) {
+        final var debug = LOGGER.isDebugEnabled();
 
-        if (authorizers == null || authorizers.isEmpty()) {
-            LOGGER.debug("No authorizers configured for {} {} - User: {} - Access DENIED",
-                    requestMethod, requestPath, userPrincipal);
+        if (vetoers.length == 0 && allowers.length == 0) {
+            if (debug) {
+                LOGGER.debug("No authorizers configured for {} {} - User: {} - Access DENIED",
+                        request.getMethod(), request.getPath(), principal(request));
+            }
             return false;
         }
 
         // Check VETOER authorizers first
-        var vetoers = authorizers.stream()
-                .filter(a -> a.isEnabled())
-                .filter(a -> a.getInstance() != null)
-                .map(a -> a.getInstance())
-                .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
-                .filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER)
-                .collect(Collectors.toList());
-
-        if (!vetoers.isEmpty()) {
-            RequestPhaseContext.setPhase(Phase.INFO);
-            LOGGER.debug("Checking {} VETOER authorizers", vetoers.size());
-        }
-
-        var vetoerResult = true;
-
         for (var vetoer : vetoers) {
-            var vetoerName = PluginUtils.name(vetoer);
-            var vetoerClass = vetoer.getClass().getSimpleName();
-            var vetoerCheckStartTime = System.currentTimeMillis();
+            if (!vetoer.applies(request)) {
+                continue;
+            }
+
+            final var startTime = debug ? System.currentTimeMillis() : 0L;
 
             try {
-                var allowed = vetoer.isAllowed(request);
-                var vetoerCheckDuration = System.currentTimeMillis() - vetoerCheckStartTime;
+                final var allowed = vetoer.authorizer.isAllowed(request);
 
-                RequestPhaseContext.setPhase(Phase.ITEM);
-                LOGGER.debug("VETOER {}: {} ({}ms)", vetoerName, allowed ? "✓" : "✗", vetoerCheckDuration);
+                if (debug) {
+                    RequestPhaseContext.setPhase(Phase.ITEM);
+                    LOGGER.debug("VETOER {}: {} ({}ms)", vetoer.name, allowed ? "✓" : "✗", System.currentTimeMillis() - startTime);
+                }
 
                 if (!allowed) {
-                    vetoerResult = false;
-                    break;
+                    return false;
                 }
             } catch (Exception ex) {
-                var vetoerCheckDuration = System.currentTimeMillis() - vetoerCheckStartTime;
-                LOGGER.error("Error in VETOER {} ({}) for {} {} - User: {} after {}ms",
-                        vetoerName, vetoerClass, requestMethod, requestPath, userPrincipal, vetoerCheckDuration, ex);
-                vetoerResult = false;
-                break;
+                LOGGER.error("Error in VETOER {} ({}) for {} {} - User: {}",
+                        vetoer.name, vetoer.authorizer.getClass().getSimpleName(), request.getMethod(), request.getPath(), principal(request), ex);
+                return false;
             }
-        }
-
-        if (!vetoerResult) {
-            return false;
         }
 
         // Check ALLOWER authorizers
-        var allowers = authorizers.stream()
-                .filter(a -> a.isEnabled())
-                .filter(a -> a.getInstance() != null)
-                .map(a -> a.getInstance())
-                .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
-                .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
-                .collect(Collectors.toList());
-
-        if (!allowers.isEmpty()) {
-            RequestPhaseContext.setPhase(Phase.INFO);
-            LOGGER.debug("Checking {} ALLOWER authorizers", allowers.size());
-        }
-
-        var allowerResult = false;
-
         for (var allower : allowers) {
-            var allowerName = PluginUtils.name(allower);
-            var allowerClass = allower.getClass().getSimpleName();
-            var allowerCheckStartTime = System.currentTimeMillis();
+            if (!allower.applies(request)) {
+                continue;
+            }
+
+            final var startTime = debug ? System.currentTimeMillis() : 0L;
 
             try {
-                var allowed = allower.isAllowed(request);
-                var allowerCheckDuration = System.currentTimeMillis() - allowerCheckStartTime;
+                final var allowed = allower.authorizer.isAllowed(request);
 
-                RequestPhaseContext.setPhase(Phase.ITEM);
-                LOGGER.debug("ALLOWER {}: {} ({}ms)", allowerName, allowed ? "✓" : "✗", allowerCheckDuration);
+                if (debug) {
+                    RequestPhaseContext.setPhase(Phase.ITEM);
+                    LOGGER.debug("ALLOWER {}: {} ({}ms)", allower.name, allowed ? "✓" : "✗", System.currentTimeMillis() - startTime);
+                }
 
                 if (allowed) {
-                    allowerResult = true;
-                    break;
+                    return true;
                 }
             } catch (Exception ex) {
-                var allowerCheckDuration = System.currentTimeMillis() - allowerCheckStartTime;
-                LOGGER.error("Error in ALLOWER {} ({}) for {} {} - User: {} after {}ms",
-                        allowerName, allowerClass, requestMethod, requestPath, userPrincipal, allowerCheckDuration, ex);
+                LOGGER.error("Error in ALLOWER {} ({}) for {} {} - User: {}",
+                        allower.name, allower.authorizer.getClass().getSimpleName(), request.getMethod(), request.getPath(), principal(request), ex);
             }
         }
 
-        return vetoerResult && allowerResult;
+        return false;
+    }
+
+    private static String principal(Request<?> request) {
+        return request.isAuthenticated() ? request.getAuthenticatedAccount().getPrincipal().getName() : "anonymous";
+    }
+
+    /**
+     * An authorizer with the metadata read once, at construction, instead of on every request.
+     */
+    @SuppressWarnings("rawtypes")
+    private record Entry(PluginRecord<Authorizer> record, Authorizer authorizer, String name) {
+        @SuppressWarnings("unchecked")
+        boolean applies(Request<?> request) {
+            return record.isEnabled() && (!authorizer.isAuthenticationRequired(request) || request.isAuthenticated());
+        }
+    }
+
+    private static Entry[] entries(Set<PluginRecord<Authorizer>> authorizers, TYPE type) {
+        if (authorizers == null) {
+            return new Entry[0];
+        }
+
+        return authorizers.stream()
+                .filter(a -> a.getInstance() != null)
+                .filter(a -> PluginUtils.authorizerType(a.getInstance()) == type)
+                .map(a -> new Entry(a, a.getInstance(), PluginUtils.name(a.getInstance())))
+                .toArray(Entry[]::new);
     }
 }

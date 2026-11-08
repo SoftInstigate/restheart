@@ -26,8 +26,12 @@ import org.bson.BsonString;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.UninitializedRequest;
 import org.restheart.exchange.UninitializedResponse;
+import java.util.Optional;
+
+import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.Service;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -54,21 +58,37 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
      * Creates a new instance of RequestInitializer
      *
      */
+    // the service of this pipeline, known when the pipeline is built; null to look it up per request
+    private final PluginRecord<Service<?, ?>> service;
+
     public ServiceExchangeInitializer() {
+        this(null);
+    }
+
+    /**
+     * @param service the service of the pipeline this handler belongs to
+     * @since 9.15.0
+     */
+    public ServiceExchangeInitializer(PluginRecord<Service<?, ?>> service) {
         super();
+        this.service = service;
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var path = exchange.getRequestPath();
-        var method = exchange.getRequestMethod().toString();
         var initStartTime = System.currentTimeMillis();
+        final var debug = LOGGER.isDebugEnabled();
 
-        var pi = pluginsRegistry.getPipelineInfo(path);
+        final Optional<PluginRecord<Service<?, ?>>> srv;
 
-        var srv = pluginsRegistry.getServices().stream()
-                .filter(s -> s.getName().equals(pi.getName()))
-                .findAny();
+        if (service != null) {
+            srv = Optional.of(service);
+        } else {
+            var pi = pluginsRegistry.getPipelineInfo(exchange.getRequestPath());
+            srv = pluginsRegistry.getServices().stream()
+                    .filter(s -> s.getName().equals(pi.getName()))
+                    .findAny();
+        }
 
         if (srv.isPresent()) {
             var serviceName = srv.get().getName();
@@ -77,7 +97,7 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
             RequestPhaseContext.setPhase(Phase.PHASE_START);
             LOGGER.debug("SERVICE EXCHANGE INIT: {} ({})", serviceName, serviceClass);
             try {
-                var requestInitStartTime = System.currentTimeMillis();
+                var requestInitStartTime = debug ? System.currentTimeMillis() : 0L;
 
                 // execute the service request initializer or a custom one
                 var customRequestInitializer = UninitializedRequest.of(exchange).customRequestInitializer();
@@ -92,11 +112,11 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                     customRequestInitializer.accept(exchange);
                 }
 
-                var requestInitDuration = System.currentTimeMillis() - requestInitStartTime;
+                var requestInitDuration = debug ? System.currentTimeMillis() - requestInitStartTime : 0L;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.debug("✓ {}ms", requestInitDuration);
 
-                var responseInitStartTime = System.currentTimeMillis();
+                var responseInitStartTime = debug ? System.currentTimeMillis() : 0L;
 
                 // execute the service respnse initializer or a custom one
                 var customResponseInitializer = UninitializedResponse.of(exchange).customResponseInitializer();
@@ -111,11 +131,11 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                     customResponseInitializer.accept(exchange);
                 }
 
-                var responseInitDuration = System.currentTimeMillis() - responseInitStartTime;
+                var responseInitDuration = debug ? System.currentTimeMillis() - responseInitStartTime : 0L;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.debug("✓ {}ms", responseInitDuration);
 
-                var totalInitDuration = System.currentTimeMillis() - initStartTime;
+                var totalInitDuration = debug ? System.currentTimeMillis() - initStartTime : 0L;
                 RequestPhaseContext.setPhase(Phase.PHASE_END);
                 LOGGER.debug("SERVICE EXCHANGE INIT COMPLETED in {}ms", totalInitDuration);
             } catch (BadRequestException bre) {

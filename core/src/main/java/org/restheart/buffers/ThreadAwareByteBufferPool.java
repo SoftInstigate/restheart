@@ -22,12 +22,12 @@ package org.restheart.buffers;
 
 import io.undertow.connector.ByteBufferPool;
 import io.undertow.connector.PooledByteBuffer;
-import io.undertow.server.DefaultByteBufferPool;
 
 /**
  * A byte buffer pool that delegates to specific implementations based on the thread type.
  * <p>
- * For IO threads, it utilizes the {@code undertow.DefaultByteBufferPool} to pool resources efficiently.
+ * For IO threads, it utilizes {@link IoThreadByteBufferPool}, a lock-free pool with a free list per thread
+ * (since 9.15.0; before, Undertow's {@code DefaultByteBufferPool}, whose per-thread cache takes a global lock).
  * For virtual worker threads, it uses the {@code NotPoolingByteBufferPool}, which doesn't pool resources, to optimize performance
  * given the unique characteristics of virtual threads.
  * </p>
@@ -36,7 +36,7 @@ import io.undertow.server.DefaultByteBufferPool;
  */
 
 public class ThreadAwareByteBufferPool implements ByteBufferPool {
-    private final DefaultByteBufferPool undertowDefaultByteBufferPool;
+    private final ByteBufferPool ioThreadsPool;
     private final NotPoolingByteBufferPool notPoolingByteBufferPool;
 
     private final boolean enablePooling;
@@ -47,7 +47,7 @@ public class ThreadAwareByteBufferPool implements ByteBufferPool {
      * @param enablePooling        true to enable pooling for platform threads
      */
     public ThreadAwareByteBufferPool(boolean direct, int bufferSize, boolean enablePooling) {
-        this.undertowDefaultByteBufferPool = enablePooling ? new DefaultByteBufferPool(direct, bufferSize, -1, 4) : null;
+        this.ioThreadsPool = enablePooling ? new IoThreadByteBufferPool(direct, bufferSize) : null;
         this.notPoolingByteBufferPool = new NotPoolingByteBufferPool(false, bufferSize);
         this.enablePooling = enablePooling;
     }
@@ -66,20 +66,20 @@ public class ThreadAwareByteBufferPool implements ByteBufferPool {
     public PooledByteBuffer allocate() {
         return !enablePooling || Thread.currentThread().isVirtual()
                 ? this.notPoolingByteBufferPool.allocate()
-                : this.undertowDefaultByteBufferPool.allocate();
+                : this.ioThreadsPool.allocate();
     }
 
     @Override
     public ByteBufferPool getArrayBackedPool() {
         return !enablePooling || Thread.currentThread().isVirtual()
                 ? this.notPoolingByteBufferPool.getArrayBackedPool()
-                : this.undertowDefaultByteBufferPool.getArrayBackedPool();
+                : this.ioThreadsPool.getArrayBackedPool();
     }
 
     @Override
     public void close() {
         if (enablePooling && !Thread.currentThread().isVirtual()) {
-            this.undertowDefaultByteBufferPool.close();
+            this.ioThreadsPool.close();
         }
     }
 }

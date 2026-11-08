@@ -127,7 +127,8 @@ public class StringRequest extends ServiceRequest<String> {
      */
     @Override
     public String parseContent() throws IOException, BadRequestException {
-        if (wrapped.getRequestContentLength() > 0) {
+        // no Content-Length does not mean no body: chunked requests have none (#793)
+        if (BufferedContent.get(wrapped) != null || BufferedContent.hasBody(wrapped)) {
             return ChannelReader.readString(wrapped);
         } else {
             return null;

@@ -1447,6 +1447,20 @@ core:
   # In order to save bandwidth, force requests to support the giz encoding (if not, requests will be rejected)
   force-gzip-encoding: false
 
+  # Set to false to never compress responses, even when the client accepts gzip or deflate,
+  # e.g. behind a reverse proxy that compresses, or for content that is already compressed
+  response-compression: true
+
+  # Non-blocking services (blocking = false) run on the IO thread. The core reads their request body
+  # without blocking, with a read listener that holds no thread while a slow client sends it,
+  # then invokes the service with the body in memory. Larger bodies get 413.
+  non-blocking-content-limit: 1048576
+
+  # The request body of a blocking service with a Content-Length up to this size is read on the IO thread
+  # before the dispatch, so the virtual thread finds it in memory and never waits for the client.
+  # Larger or chunked bodies are streamed. 0 disables it.
+  blocking-content-prebuffer-limit: 65536
+
   # true to allow unescaped characters in URL
   allow-unescaped-characters-in-url: true
 
