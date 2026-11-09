@@ -1452,8 +1452,9 @@ core:
   response-compression: true
 
   # Non-blocking services (blocking = false) run on the IO thread. The core reads their request body
-  # without blocking, with a read listener that holds no thread while a slow client sends it,
-  # then invokes the service with the body in memory. Larger bodies get 413.
+  # up to this size without blocking, with a read listener that holds no thread while a slow client
+  # sends it, then invokes the service with the body in memory. Larger bodies are left in the request,
+  # and the service reads them by itself as before 9.15.0.
   non-blocking-content-limit: 1048576
 
   # The request body of a blocking service with a Content-Length up to this size is read on the IO thread

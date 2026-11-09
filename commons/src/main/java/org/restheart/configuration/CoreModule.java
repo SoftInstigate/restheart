@@ -63,7 +63,7 @@ import static org.restheart.configuration.Utils.getOrDefault;
  * @param allowUnescapedCharsInUrl if true, allows unescaped characters in URLs
  * @param responseCompression if false, responses are never compressed, even when the client accepts gzip or deflate
  * @param nonBlockingContentLimit maximum request body, in bytes, that the core reads for a non-blocking service;
- *        larger bodies get 413
+ *        larger bodies are left in the request for the service to read
  * @param blockingContentPrebufferLimit request bodies of blocking services with a Content-Length up to this size,
  *        in bytes, are read on the IO thread before the dispatch to the virtual thread; 0 disables it
  * 

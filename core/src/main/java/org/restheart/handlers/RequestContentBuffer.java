@@ -48,13 +48,18 @@ import io.undertow.util.ImmediatePooledByteBuffer;
  * <p>Two modes:</p>
  * <ul>
  *   <li><b>non-blocking services</b> ({@link #forNonBlockingService(int)}): they run
- *       on the IO thread and cannot block to read the body, so it is always read
- *       here; bodies larger than the limit get 413 (#799);</li>
+ *       on the IO thread and cannot block to read the body, so bodies up to the limit
+ *       are read here (#799);</li>
  *   <li><b>blocking services</b> ({@link #forBlockingService(int)}): placed before
  *       {@link WorkingThreadsPoolDispatcher}, it reads bodies with a Content-Length
  *       up to the limit, so the virtual thread finds them in memory and never waits
  *       for the client; larger or chunked bodies are left to be streamed (#800).</li>
  * </ul>
+ *
+ * <p>A body larger than the limit is left in the request, as before 9.15.0: when its
+ * Content-Length is known nothing is read, and when a chunked body exceeds the limit
+ * while it is read, the bytes read so far are put back. The service then reads it as
+ * it did before, e.g. with {@code exchange.getRequestReceiver()} (#803).</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 9.15.0
@@ -73,7 +78,7 @@ public class RequestContentBuffer extends PipelinedHandler {
     }
 
     /**
-     * @param limit the maximum body size in bytes; larger bodies get 413
+     * @param limit bodies up to this size are read in advance; larger ones are left to the service
      * @return the handler for the pipeline of a non-blocking service
      */
     public static RequestContentBuffer forNonBlockingService(int limit) {
@@ -97,14 +102,10 @@ public class RequestContentBuffer extends PipelinedHandler {
 
         final var declared = exchange.getRequestContentLength();
 
-        if (streamAboveLimit && (declared < 0 || declared > limit)) {
-            // blocking service: chunked or large bodies are streamed by the virtual thread
+        if (declared > limit || (streamAboveLimit && declared < 0)) {
+            // left to the service: large bodies, and chunked bodies of blocking services,
+            // which the virtual thread streams
             next(exchange);
-            return;
-        }
-
-        if (declared > limit) {
-            tooLarge(exchange);
             return;
         }
 
@@ -123,6 +124,10 @@ public class RequestContentBuffer extends PipelinedHandler {
                 reader.attach();
                 next(exchange);
             }
+            case OVERFLOW -> {
+                reader.putBack();
+                next(exchange);
+            }
             case PENDING -> {
                 // resumed when the call returns; the listener runs on the IO thread
                 channel.getReadSetter().set(ch -> reader.onReadable());
@@ -134,12 +139,7 @@ public class RequestContentBuffer extends PipelinedHandler {
         }
     }
 
-    private void tooLarge(HttpServerExchange exchange) {
-        exchange.setStatusCode(HttpStatus.SC_REQUEST_TOO_LONG);
-        exchange.endExchange();
-    }
-
-    private enum State { COMPLETE, PENDING, FAILED }
+    private enum State { COMPLETE, OVERFLOW, PENDING, FAILED }
 
     private final class Reader {
         private final HttpServerExchange exchange;
@@ -171,8 +171,9 @@ public class RequestContentBuffer extends PipelinedHandler {
                     }
 
                     if (size + r > limit) {
-                        tooLarge(exchange);
-                        return State.FAILED;
+                        // the chunk just read stays in the buffer, putBack() returns it too
+                        buffer.flip();
+                        return State.OVERFLOW;
                     }
 
                     if (size + r > content.length) {
@@ -204,6 +205,9 @@ public class RequestContentBuffer extends PipelinedHandler {
             if (state == State.COMPLETE) {
                 attach();
                 Connectors.executeRootHandler(getNext(), exchange);
+            } else if (state == State.OVERFLOW) {
+                putBack();
+                Connectors.executeRootHandler(getNext(), exchange);
             }
         }
 
@@ -218,6 +222,25 @@ public class RequestContentBuffer extends PipelinedHandler {
 
             if (body.length > 0) {
                 Connectors.ungetRequestBytes(exchange, new ImmediatePooledByteBuffer(ByteBuffer.wrap(body)));
+            }
+
+            Connectors.resetRequestChannel(exchange);
+        }
+
+        /**
+         * Puts back into the request what was read of a body larger than the limit, without
+         * attaching it, so that the service reads the whole body from the request.
+         */
+        void putBack() {
+            final var overflow = new byte[buffer.remaining()];
+            buffer.get(overflow);
+
+            if (size > 0) {
+                Connectors.ungetRequestBytes(exchange,
+                        new ImmediatePooledByteBuffer(ByteBuffer.wrap(content, 0, size)),
+                        new ImmediatePooledByteBuffer(ByteBuffer.wrap(overflow)));
+            } else {
+                Connectors.ungetRequestBytes(exchange, new ImmediatePooledByteBuffer(ByteBuffer.wrap(overflow)));
             }
 
             Connectors.resetRequestChannel(exchange);
