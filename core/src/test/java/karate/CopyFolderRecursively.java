@@ -31,6 +31,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Comparator;
@@ -56,8 +57,11 @@ import com.google.gson.JsonParser;
 public class CopyFolderRecursively {
     private static final Set<String> DEPLOYED = ConcurrentHashMap.newKeySet();
 
+    /** The plugins that did not deploy within the timeout, so that the next scenarios fail at once. */
+    private static final Set<String> NOT_DEPLOYED = ConcurrentHashMap.newKeySet();
+
     /** How long the deployer may take to deploy a plugins directory. */
-    private static final Duration DEPLOY_TIMEOUT = Duration.ofSeconds(120);
+    private static final Duration DEPLOY_TIMEOUT = Duration.ofSeconds(60);
 
     /** How often the registered plugins are checked while waiting. */
     private static final Duration POLL_INTERVAL = Duration.ofMillis(500);
@@ -82,22 +86,33 @@ public class CopyFolderRecursively {
         var projectRoot = projectRoot();
         var src = Paths.get(projectRoot, "polyglot/src/test/resources/" + name);
         var dest = Paths.get(projectRoot, "core/target/plugins/" + name);
+        // next to the plugins directory, on the same file system, so that the move below is atomic
+        var staging = Paths.get(projectRoot, "core/target/plugins-staging/" + name);
 
-        // delete the directory and files within
-        if (Files.exists(dest)) {
-            try (Stream<Path> walk = Files.walk(dest)) {
+        delete(dest);
+        delete(staging);
+        Files.createDirectories(staging.getParent());
+
+        try (Stream<Path> stream = Files.walk(src)) {
+            stream.forEach(source -> copy(source, staging.resolve(src.relativize(source))));
+        }
+
+        setLastModified(staging.toFile(), System.currentTimeMillis());
+
+        // the deployer watches the plugins directory and deploys a file when it appears, if package.json
+        // declares it: a file copied before package.json was never deployed, depending on the order in
+        // which the file system lists them (#802). The directory appears at once, with every file in it
+        Files.move(staging, dest, StandardCopyOption.ATOMIC_MOVE);
+    }
+
+    private static void delete(Path dir) throws IOException {
+        if (Files.exists(dir)) {
+            try (Stream<Path> walk = Files.walk(dir)) {
                 walk.sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
             }
         }
-
-        try (Stream<Path> stream = Files.walk(src)) {
-            stream.forEach(source -> copy(source, dest.resolve(src.relativize(source))));
-        }
-
-        // file set last modified
-        setLastModified(dest.toFile(), System.currentTimeMillis());
     }
 
     /**
@@ -120,6 +135,12 @@ public class CopyFolderRecursively {
     }
 
     private static void awaitDeployed(Collection<String> plugins) throws InterruptedException {
+        var known = plugins.stream().filter(NOT_DEPLOYED::contains).toList();
+
+        if (!known.isEmpty()) {
+            throw new IllegalStateException("plugins not deployed: " + known + ", see core/restheart.log");
+        }
+
         var deadline = System.nanoTime() + DEPLOY_TIMEOUT.toNanos();
         var missing = Set.copyOf(plugins);
 
@@ -134,6 +155,7 @@ public class CopyFolderRecursively {
                 }
 
                 if (System.nanoTime() > deadline) {
+                    NOT_DEPLOYED.addAll(missing);
                     throw new IllegalStateException("plugins not deployed after " + DEPLOY_TIMEOUT.toSeconds()
                             + " seconds: " + missing + ", see core/restheart.log");
                 }
