@@ -20,7 +20,10 @@
  */
 package org.restheart.security.authenticators;
 
+import java.util.Arrays;
+
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -32,6 +35,7 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,7 +98,7 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
                 && request.isGet()
                 && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
                 && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
-                && hasFilterOnPassword(request.getFiltersDocument());
+                && (refersToPassword(request.getFiltersDocument()) || sortsByPassword(request));
     }
 
     @Override
@@ -102,15 +106,53 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
         response.setInError(HttpStatus.SC_FORBIDDEN, "Using filters on the password property is forbidden");
     }
 
-    private boolean hasFilterOnPassword(BsonDocument filters) {
-        if (filters == null || filters.keySet().isEmpty()) {
+    /**
+     * @return true if {@code value} has a key that is the password property, or a path under it,
+     *         or a string that refers to it in an expression ({@code "$password"}), at any depth,
+     *         in documents and in arrays ({@code $or}, {@code $and}, {@code $nor})
+     */
+    private boolean refersToPassword(BsonValue value) {
+        if (value == null) {
             return false;
-        } else {
-            return filters.keySet().contains(propNamePassword) || filters
-                    .keySet().stream()
-                    .filter(key -> filters.get(key).isDocument())
-                    .map(key -> filters.get(key).asDocument())
-                    .anyMatch(doc -> hasFilterOnPassword(doc));
         }
+
+        if (value.isDocument()) {
+            BsonDocument doc = value.asDocument();
+            return doc.keySet().stream().anyMatch(this::isPassword)
+                    || doc.values().stream().anyMatch(this::refersToPassword);
+        } else if (value.isArray()) {
+            return value.asArray().stream().anyMatch(this::refersToPassword);
+        } else if (value.isString()) {
+            var s = value.asString().getValue();
+            return s.startsWith("$") && isPassword(s.substring(1));
+        }
+
+        return false;
+    }
+
+    /**
+     * @return true if the sort or sort_by query parameter refers to the password property
+     */
+    private boolean sortsByPassword(MongoRequest request) {
+        var sortBy = request.getSortBy();
+
+        if (sortBy == null || sortBy.isEmpty()) {
+            return false;
+        }
+
+        return sortBy.stream().anyMatch(p -> {
+            try {
+                return refersToPassword(BsonUtils.parse(p));
+            } catch (Throwable t) {
+                // not JSON, e.g. "password" or "-password": field names, comma separated
+                return Arrays.stream(p.split(",")).map(String::strip)
+                        .map(name -> name.startsWith("-") || name.startsWith("+") ? name.substring(1) : name)
+                        .anyMatch(this::isPassword);
+            }
+        });
+    }
+
+    private boolean isPassword(String name) {
+        return propNamePassword.equals(name) || name.startsWith(propNamePassword + ".");
     }
 }
