@@ -1,0 +1,40 @@
+{
+  "_id": "test-args",
+  "descriptor": {
+    "name": "test-args",
+    "description": "Arguments are values: operators refused, strings starting with $ bound in $literal (check-operators)",
+    "enabled": true,
+    "uri": "test-args"
+  },
+  "schema": "type Thing { name: String owner: String } type Query { byOwnerExpr(owner: String): [Thing] byOwnerFindExpr(owner: String): [Thing] byOwnerFind(owner: String): [Thing] byOwnerDoc(owner: BsonDocument): [Thing] }",
+  "mappings": {
+    "Query": {
+      "byOwnerExpr": {
+        "db": "test-graphql",
+        "collection": "test-args",
+        "stages": [
+          { "$match": { "$expr": { "$eq": [ "$owner", { "$arg": "owner" } ] } } },
+          { "$sort": { "name": 1 } }
+        ]
+      },
+      "byOwnerFindExpr": {
+        "db": "test-graphql",
+        "collection": "test-args",
+        "find": { "$expr": { "$eq": [ "$owner", { "$arg": "owner" } ] } },
+        "sort": { "name": 1 }
+      },
+      "byOwnerFind": {
+        "db": "test-graphql",
+        "collection": "test-args",
+        "find": { "owner": { "$arg": "owner" } },
+        "sort": { "name": 1 }
+      },
+      "byOwnerDoc": {
+        "db": "test-graphql",
+        "collection": "test-args",
+        "find": { "owner": { "$arg": "owner" } },
+        "sort": { "name": 1 }
+      }
+    }
+  }
+}

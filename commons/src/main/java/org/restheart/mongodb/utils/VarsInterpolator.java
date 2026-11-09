@@ -198,6 +198,18 @@ public class VarsInterpolator {
     }
 
     /**
+     * Same as {@link #interpolate(VAR_OPERATOR, BsonValue, BsonDocument, Request, boolean)} with
+     * {@code literalStrings}, for a query, e.g. the {@code find} of a GraphQL query mapping: a
+     * string starting with {@code $} is left as it is, a query value, and is bound in
+     * {@code $literal} only inside {@code $expr}.
+     *
+     * @since 9.15.3
+     */
+    public static BsonValue interpolateQuery(VAR_OPERATOR operator, BsonValue query, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {
+        return interpolate(operator, query, values, request, null, Literal.QUERY);
+    }
+
+    /**
      * The walk itself, carrying where in the structure it is: the nearest enclosing single-key
      * {@code $operator} document and the key under it, handed to a {@link CustomOperator} as its
      * {@link CustomOperator.Placement} so it can read its surroundings (restheart#753).

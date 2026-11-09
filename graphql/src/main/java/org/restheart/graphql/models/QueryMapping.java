@@ -128,6 +128,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
 
         // one set of values for every field of this mapping — find, sort, limit, skip all resolve
         // their $arg references against the same thing
+        checkArguments(env);
         var values = contextValues(env);
 
         var fields = (QueryMapping.class).getDeclaredFields();
@@ -136,7 +137,11 @@ public class QueryMapping extends FieldMapping implements Batchable {
 
             if (value instanceof BsonDocument bsonDoc) {
                 try {
-                    var argInterpolated = VarsInterpolator.interpolate(VAR_OPERATOR.$arg, bsonDoc, values, request(env));
+                    // find is a query, sort, limit and skip are not expressions: a string argument starting
+                    // with $ is a value, bound in $literal inside $expr
+                    var argInterpolated = checkOperators()
+                            ? VarsInterpolator.interpolateQuery(VAR_OPERATOR.$arg, bsonDoc, values, request(env))
+                            : VarsInterpolator.interpolate(VAR_OPERATOR.$arg, bsonDoc, values, request(env));
                     var argAndFkIntepolated = argInterpolated;
 
                     if (argInterpolated.isDocument()) {

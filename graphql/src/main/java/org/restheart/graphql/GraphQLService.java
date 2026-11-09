@@ -114,6 +114,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
     /** max-query-complexity: how many fields a query may select, nested ones weighed; 0 means no cap (restheart#782). */
     public static final int DEFAULT_MAX_QUERY_COMPLEXITY = 0;
     public static final Boolean DEFAULT_RESTRICT_MAPPING_DB = false;
+    public static final Boolean DEFAULT_CHECK_OPERATORS = true;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
@@ -151,6 +152,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
         this.maxQueryDepth = ((Number) argOrDefault(config, "max-query-depth", DEFAULT_MAX_QUERY_DEPTH)).intValue();
         this.maxQueryComplexity = ((Number) argOrDefault(config, "max-query-complexity", DEFAULT_MAX_QUERY_COMPLEXITY)).intValue();
         var restrictMappingDb = argOrDefault(config, "restrict-mapping-db", DEFAULT_RESTRICT_MAPPING_DB);
+        var checkOperators = argOrDefault(config, "check-operators", DEFAULT_CHECK_OPERATORS);
 
         QueryBatchLoader.setMongoClient(mclient);
         AggregationBatchLoader.setMongoClient(mclient);
@@ -167,6 +169,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
         AppBuilder.setDefaultLimit(defaultLimit);
         AppBuilder.setMaxLimit(maxLimit);
         QueryMapping.setMaxLimit(maxLimit);
+        FieldMapping.setCheckOperators(checkOperators);
 
         this.mcpAware = GraphqlMcpAwareImpl.create(mclient, defaultAppDefDb, collection);
     }

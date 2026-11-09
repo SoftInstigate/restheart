@@ -90,10 +90,13 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     }
 
     public List<BsonDocument> interpolateArgs(DataFetchingEnvironment env) throws QueryVariableNotBoundException, GraphQLIllegalAppDefinitionException {
+        checkArguments(env);
         var values = contextValues(env);
 
         try {
-            var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values, request(env));
+            // a string argument starting with $ is a value: bound in $literal where MongoDB would read it
+            // as a field path or a variable
+            var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values, request(env), checkOperators());
             var argAndFkInterpolated = new ArrayList<BsonDocument>();
 
             for (var s : argInterpolated) {

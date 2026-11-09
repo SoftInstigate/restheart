@@ -29,6 +29,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.exchange.Request;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.utils.BsonUtils;
 import graphql.schema.DataFetchingEnvironment;
 
@@ -41,6 +42,40 @@ public abstract class FieldMapping {
     public static final String REQUEST_CONTEXT_KEY = "restheart-request";
 
     protected final String fieldName;
+
+    /** The check-operators option of the graphql configuration. */
+    private static boolean checkOperators = true;
+
+    /**
+     * @param _checkOperators true to refuse arguments with operators and to bind string arguments
+     *        starting with $ in $literal where MongoDB would read them as field paths or variables
+     */
+    public static void setCheckOperators(boolean _checkOperators) {
+        checkOperators = _checkOperators;
+    }
+
+    protected static boolean checkOperators() {
+        return checkOperators;
+    }
+
+    /**
+     * With check-operators, refuses arguments that contain MongoDB operators, i.e. keys starting
+     * with $. GraphQL names cannot start with $, so they can only come with a BsonDocument argument
+     * passed as a GraphQL variable.
+     *
+     * @throws QueryVariableNotBoundException if an argument contains an operator
+     */
+    protected static void checkArguments(DataFetchingEnvironment env) throws QueryVariableNotBoundException {
+        if (!checkOperators || env.getArguments() == null) {
+            return;
+        }
+
+        try {
+            StagesInterpolator.shouldNotContainOperators(BsonUtils.toBsonDocument(env.getArguments()));
+        } catch (SecurityException se) {
+            throw new QueryVariableNotBoundException("arguments cannot include operators, see check-operators in the graphql configuration");
+        }
+    }
 
     public FieldMapping(String fieldName) {
         this.fieldName = fieldName;
