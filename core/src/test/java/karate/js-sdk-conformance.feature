@@ -9,11 +9,23 @@ Feature: Conformance suite of the polyglot plugin SDK (restheart:sdk)
 Background:
     * url 'http://localhost:8080'
 
+    # the reference plugins by name, the same in every guest language. sdkUnavailable is missing:
+    # it is never deployed, see its scenario
+    * def referencePlugins =
+    """
+    [
+        'sdkRequest', 'sdkEcho', 'sdkContentString', 'sdkContentJson', 'sdkContentBson', 'sdkContentBytes',
+        'sdkErrors', 'sdkWebhook', 'sdkEncode', 'sdkResource', 'sdkLogger', 'sdkConfig', 'sdkHttp', 'sdkMongo',
+        'sdkProviders', 'sdkStringInterceptor', 'sdkJsonInterceptor', 'sdkMongoInterceptor', 'sdkCsvInterceptor'
+    ]
+    """
+
+    # copies the directory once and waits until RESTHeart has registered every reference plugin
     * def ensurePlugins =
     """
     function(dir) {
         var CopyFolderRecursively = Java.type('karate.CopyFolderRecursively');
-        new CopyFolderRecursively().ensure(dir);
+        new CopyFolderRecursively().ensure(dir, referencePlugins);
     }
     """
 

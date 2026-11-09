@@ -8,7 +8,7 @@ Background:
     """
     function() {
         var CopyFolderRecursively = Java.type('karate.CopyFolderRecursively');
-        new CopyFolderRecursively().ensure('test-js-plugins');
+        new CopyFolderRecursively().ensure('test-js-plugins', ['helloWorldService', 'helloWorldInterceptor']);
     }
     """
 

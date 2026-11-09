@@ -24,13 +24,25 @@ import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Copies a directory of polyglot plugins from {@code polyglot/src/test/resources} into the
@@ -44,8 +56,14 @@ import java.util.stream.Stream;
 public class CopyFolderRecursively {
     private static final Set<String> DEPLOYED = ConcurrentHashMap.newKeySet();
 
-    /** How long the deployer takes to notice a new directory and deploy its plugins. */
-    private static final long DEPLOY_SECONDS = 10;
+    /** How long the deployer may take to deploy a plugins directory. */
+    private static final Duration DEPLOY_TIMEOUT = Duration.ofSeconds(120);
+
+    /** How often the registered plugins are checked while waiting. */
+    private static final Duration POLL_INTERVAL = Duration.ofMillis(500);
+
+    /** Lists the registered services and interceptors, see DeployedPluginsService in restheart-test-plugins. */
+    private static final URI DEPLOYED_PLUGINS = URI.create("http://localhost:8080/test-deployed-plugins");
 
     /** The default plugins directory, the JavaScript reference plugins. */
     public static final String JS_PLUGINS = "test-js-plugins";
@@ -83,16 +101,76 @@ public class CopyFolderRecursively {
     }
 
     /**
-     * Copies a plugins directory once per test run and waits for the deployer, so that every
-     * feature using it can call this in its background without redeploying the plugins.
+     * Copies a plugins directory once per test run and waits until RESTHeart has registered the
+     * given plugins, so that every feature using it can call this in its background without
+     * redeploying the plugins.
      *
-     * @param name the directory under {@code polyglot/src/test/resources}
+     * <p>The deployer loads the plugins one by one, each in its own context: how long it takes
+     * depends on the machine, so a fixed sleep made the tests fail on slow runners (#802).</p>
+     *
+     * @param name    the directory under {@code polyglot/src/test/resources}
+     * @param plugins the names of the services and interceptors to wait for
      */
-    public void ensure(String name) throws IOException, InterruptedException {
+    public void ensure(String name, List<String> plugins) throws IOException, InterruptedException {
         if (DEPLOYED.add(name)) {
             copyFolder(name);
-            Thread.sleep(DEPLOY_SECONDS * 1000);
         }
+
+        awaitDeployed(plugins);
+    }
+
+    private static void awaitDeployed(Collection<String> plugins) throws InterruptedException {
+        var deadline = System.nanoTime() + DEPLOY_TIMEOUT.toNanos();
+        var missing = Set.copyOf(plugins);
+
+        try (var client = HttpClient.newHttpClient()) {
+            var request = HttpRequest.newBuilder(DEPLOYED_PLUGINS).timeout(Duration.ofSeconds(5)).GET().build();
+
+            while (true) {
+                missing = missing(client, request, plugins, missing);
+
+                if (missing.isEmpty()) {
+                    return;
+                }
+
+                if (System.nanoTime() > deadline) {
+                    throw new IllegalStateException("plugins not deployed after " + DEPLOY_TIMEOUT.toSeconds()
+                            + " seconds: " + missing + ", see core/restheart.log");
+                }
+
+                Thread.sleep(POLL_INTERVAL);
+            }
+        }
+    }
+
+    /**
+     * @return the plugins not registered yet; the previous result if RESTHeart does not answer,
+     *         e.g. while it is busy deploying
+     */
+    private static Set<String> missing(HttpClient client, HttpRequest request, Collection<String> plugins, Set<String> previous)
+            throws InterruptedException {
+        try {
+            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                return previous;
+            }
+
+            var body = JsonParser.parseString(response.body()).getAsJsonObject();
+            var registered = new HashSet<String>();
+            registered.addAll(names(body, "services"));
+            registered.addAll(names(body, "interceptors"));
+
+            var ret = new HashSet<>(plugins);
+            ret.removeAll(registered);
+            return ret;
+        } catch (IOException | RuntimeException e) {
+            return previous;
+        }
+    }
+
+    private static List<String> names(JsonObject body, String key) {
+        return body.getAsJsonArray(key).asList().stream().map(JsonElement::getAsString).toList();
     }
 
     private static String projectRoot() {
