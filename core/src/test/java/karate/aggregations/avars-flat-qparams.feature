@@ -127,6 +127,61 @@ Scenario: a flat query parameter with an operator is refused, like avars
     And match response.message contains 'illegal query parameter status'
 
 
+Scenario: in $match a string starting with "$" is a value
+
+    # a $match outside $expr is a query: "$status" is compared as a string, and matches nothing
+    * header Authorization = admin
+    Given path aggr
+    And param status = '$status'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == []
+
+
+Scenario: in $expr a string starting with "$" is bound in $literal, not read as a field path
+
+    # read as the status field, the comparison would be true for every document
+    * header Authorization = admin
+    Given path coll + '/_aggrs/byStatusExpr'
+    And param status = '$status'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == []
+
+    * header Authorization = admin
+    Given path coll + '/_aggrs/byStatusExpr'
+    And param status = 'D'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == [{ item: 'gadget' }]
+
+
+Scenario: in a projection a string starting with "$" is returned as it is
+
+    * header Authorization = admin
+    Given path coll + '/_aggrs/labelled'
+    And param label = '$5'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == [{ label: '$5' }]
+
+
+Scenario: a string that starts with "$" and a space is a value
+
+    # "$ 5" is allowed: it matches no document here, and the request is not refused
+    * header Authorization = admin
+    Given path aggr
+    And param status = '$ 5'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == []
+
+
 Scenario: a flat query parameter with an operator does not fail a request that reads no variables
 
     # only aggregations and change streams read the variables: elsewhere the value is not bound

@@ -348,7 +348,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     static List<BsonDocument> resolveStages(MongoRequest request, BsonDocument avars)
             throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException {
         var pipeline = findOperation(request);
-        return StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request);
+        return StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request,
+                        MongoServiceConfiguration.get().getAggregationCheckOperators());
     }
 
     private static ChangeStreamOperation findOperation(MongoRequest request)

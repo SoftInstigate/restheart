@@ -137,7 +137,8 @@ public class GetAggregationHandler extends PipelinedHandler {
                 try {
                     var clientSession = request.getClientSession();
 
-                    var stages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request);
+                    var stages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request,
+                        MongoServiceConfiguration.get().getAggregationCheckOperators());
 
                     // Security validation: check aggregation pipeline for blacklisted stages and operators
                     try {
