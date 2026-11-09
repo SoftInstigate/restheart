@@ -102,3 +102,37 @@ Scenario: a reserved query parameter is not bound as a variable
     When method GET
     Then status 400
     And match response.message contains 'aggregation'
+
+
+Scenario: an avars value with an operator is refused
+
+    # aggregation-check-operators is true by default: a variable value is data, never an operator
+    * header Authorization = admin
+    Given path aggr
+    And param avars = '{"status": {"$gt": ""}}'
+    And param rep = 's'
+    When method GET
+    Then status 400
+
+
+Scenario: a flat query parameter with an operator is refused, like avars
+
+    # before 9.15.3 the flat form skipped the check that avars has
+    * header Authorization = admin
+    Given path aggr
+    And param status = '{"$gt": ""}'
+    And param rep = 's'
+    When method GET
+    Then status 400
+    And match response.message contains 'illegal query parameter status'
+
+
+Scenario: a flat query parameter with an operator does not fail a request that reads no variables
+
+    # only aggregations and change streams read the variables: elsewhere the value is not bound
+    * header Authorization = admin
+    Given path coll
+    And param status = '{"$gt": ""}'
+    And param rep = 's'
+    When method GET
+    Then status 200

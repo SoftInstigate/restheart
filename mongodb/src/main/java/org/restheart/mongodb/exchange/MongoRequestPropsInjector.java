@@ -336,7 +336,26 @@ public class MongoRequestPropsInjector {
                     value = null;
                 }
                 // not JSON (e.g. a bare word like "A"), or blank — bind it as a plain string
-                qvars.put(key, value != null ? value : new BsonString(raw));
+                value = value != null ? value : new BsonString(raw);
+
+                // the same check as the avars parameter: a flat query parameter is an aggregation
+                // variable too, and was bound without it
+                if (MongoServiceConfiguration.get().getAggregationCheckOperators()) {
+                    try {
+                        StagesInterpolator.shouldNotContainOperators(value);
+                    } catch (SecurityException se) {
+                        if (request.getType() == TYPE.AGGREGATION || request.getType() == TYPE.CHANGE_STREAM) {
+                            response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal query parameter " + key + ": " + raw, se);
+                            return;
+                        }
+
+                        // only aggregations and change streams read the variables: elsewhere the
+                        // value is not bound, and the request goes on as before
+                        continue;
+                    }
+                }
+
+                qvars.put(key, value);
             }
         }
 
