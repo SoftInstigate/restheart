@@ -40,8 +40,9 @@ import com.google.gson.JsonParser;
 /**
  * The request body of a non-blocking service (#799, #803).
  *
- * <p>Bodies up to {@code non-blocking-content-limit} (1 MiB by default) are read by the
- * core and attached as {@code BufferedContent}. Larger ones are left in the request,
+ * <p>Bodies up to {@code non-blocking-content-limit} (256 KiB in the integration tests,
+ * below their {@code MAX_ENTITY_SIZE} of 1 MiB) are read by the core and attached as
+ * {@code BufferedContent}. Larger ones are left in the request,
  * as before 9.15.0, and the service reads them whole by itself: with a Content-Length
  * nothing is read in advance, and a chunked body that exceeds the limit is put back.
  * The service is {@code NonBlockingBodyService} in restheart-test-plugins.</p>
@@ -49,7 +50,7 @@ import com.google.gson.JsonParser;
 public class NonBlockingBodyIT extends AbstactIT {
     private static final URI SERVICE = URI.create("http://localhost:8080/test-non-blocking-body");
     private static final int SMALL = 100 * 1024;
-    private static final int LARGE = 2 * 1024 * 1024;
+    private static final int LARGE = 512 * 1024;
 
     private final HttpClient client = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)

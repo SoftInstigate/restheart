@@ -866,6 +866,10 @@
 /connection-options/MAX_ENTITY_SIZE: 1048576
 /connection-options/MULTIPART_MAX_ENTITY_SIZE: 1048576
 
+# below MAX_ENTITY_SIZE, so that NonBlockingBodyIT can send a body larger than this limit that
+# Undertow still accepts
+/core/non-blocking-content-limit: 262144
+
 # karate/js-sdk-conformance.feature: the configuration the sdkConfig reference plugin reads
 # with `import { config } from "restheart:sdk"`
 /sdkConfig:
