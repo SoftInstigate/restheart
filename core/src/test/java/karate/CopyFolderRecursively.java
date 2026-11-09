@@ -134,6 +134,42 @@ public class CopyFolderRecursively {
         awaitDeployed(plugins);
     }
 
+    /**
+     * Copies a plugins directory the way {@code cp -r} may do it, with the plugin files first and
+     * {@code package.json} last, then waits until RESTHeart has registered the given plugins.
+     *
+     * <p>The deployer skipped a plugin file that appeared before {@code package.json} declared it,
+     * so those plugins were never deployed (#804).</p>
+     *
+     * @param name    the directory under {@code polyglot/src/test/resources}
+     * @param plugins the names of the services and interceptors to wait for
+     */
+    public void copyPackageJsonLast(String name, List<String> plugins) throws IOException, InterruptedException {
+        if (DEPLOYED.add(name)) {
+            var projectRoot = projectRoot();
+            var src = Paths.get(projectRoot, "polyglot/src/test/resources/" + name);
+            var dest = Paths.get(projectRoot, "core/target/plugins/" + name);
+
+            delete(dest);
+            Files.createDirectories(dest);
+            // the deployer sees the directory empty
+            Thread.sleep(1000);
+
+            try (Stream<Path> files = Files.list(src)) {
+                for (var file : files.filter(f -> !f.getFileName().toString().equals("package.json")).toList()) {
+                    copy(file, dest.resolve(file.getFileName()));
+                }
+            }
+
+            // the deployer sees the plugin files, that package.json does not declare yet
+            Thread.sleep(2000);
+
+            copy(src.resolve("package.json"), dest.resolve("package.json"));
+        }
+
+        awaitDeployed(plugins);
+    }
+
     private static void awaitDeployed(Collection<String> plugins) throws InterruptedException {
         var known = plugins.stream().filter(NOT_DEPLOYED::contains).toList();
 

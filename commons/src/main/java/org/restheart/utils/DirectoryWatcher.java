@@ -156,6 +156,10 @@ public class DirectoryWatcher implements Runnable {
                         LambdaUtils.throwsSneakyException(e);
                     }
                     this.onEvent.accept(child, ENTRY_CREATE);
+                } else if (kind.equals(ENTRY_CREATE) && Files.isRegularFile(child)) {
+                    // a new file: where the watch service polls, as on macOS, it gets no ENTRY_MODIFY (#804)
+                    LOGGER.debug("File created: {}", child);
+                    this.onEvent.accept(child, ENTRY_CREATE);
                 } else if (kind.equals(ENTRY_MODIFY) && Files.isRegularFile(child)) {
                     LOGGER.debug("File modified: {}", child);
                     this.onEvent.accept(child, ENTRY_MODIFY);

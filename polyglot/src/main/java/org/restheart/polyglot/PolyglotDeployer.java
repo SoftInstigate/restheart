@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -220,6 +221,14 @@ public class PolyglotDeployer implements Initializer {
                         return;
                     }
 
+                    // package.json written or changed: a plugin file copied before it was skipped,
+                    // since package.json did not declare it yet (#804)
+                    if (isPackageJson(pluginsDirectory, path)
+                            && ("ENTRY_CREATE".equals(kind.name()) || "ENTRY_MODIFY".equals(kind.name()))) {
+                        deployDeclared(path.getParent());
+                        return;
+                    }
+
                     // Handle .mjs file events
                     if (path.toString().endsWith(".mjs")) {
                         switch (kind.name()) {
@@ -260,6 +269,56 @@ public class PolyglotDeployer implements Initializer {
         } catch (final IOException ex) {
             LOGGER.error("Error watching: {}", pluginsDirectory.toAbsolutePath(), ex);
         }
+    }
+
+    /**
+     * @return true if path is the package.json of a plugin directory, i.e. of a direct
+     *         subdirectory of the plugins directory
+     */
+    private boolean isPackageJson(final Path pluginsDirectory, final Path path) {
+        return "package.json".equals(path.getFileName().toString())
+                && path.getParent() != null
+                && path.getParent().equals(pluginPathFromEvent(pluginsDirectory, path));
+    }
+
+    /**
+     * Aligns the deployed plugins of a directory with what its package.json declares:
+     * deploys the declared plugins not deployed yet and undeploys the ones it no longer
+     * declares. A deployed plugin is not deployed again.
+     *
+     * <p>Copying a plugin directory creates its files one by one: a plugin file that
+     * appears before package.json is not declared yet and is skipped by its own event,
+     * so it is deployed here, when package.json appears (#804).</p>
+     */
+    private void deployDeclared(final Path pluginDir) throws IOException, InterruptedException {
+        if (!checkSpiVersion(pluginDir)) {
+            return;
+        }
+
+        final var services = findServices(pluginDir);
+        final var nodeServices = findNodeServices(pluginDir);
+        final var interceptors = findInterceptors(pluginDir);
+
+        final var declared = new HashSet<Path>();
+        services.forEach(p -> declared.add(p.toAbsolutePath()));
+        nodeServices.forEach(p -> declared.add(p.toAbsolutePath()));
+        interceptors.forEach(p -> declared.add(p.toAbsolutePath()));
+
+        final var dir = pluginDir.toAbsolutePath();
+
+        final var noLongerDeclared = DEPLOYEES.keySet().stream()
+                .filter(p -> p.startsWith(dir) && !declared.contains(p))
+                .toList();
+
+        for (final var p : noLongerDeclared) {
+            undeploy(p);
+        }
+
+        deploy(notDeployed(services), notDeployed(nodeServices), notDeployed(interceptors));
+    }
+
+    private static List<Path> notDeployed(final List<Path> plugins) {
+        return plugins.stream().filter(p -> !DEPLOYEES.containsKey(p.toAbsolutePath())).toList();
     }
 
     public static final String PLUGINS_DIRECTORY_XPATH = "/core/plugins-directory";

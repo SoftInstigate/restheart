@@ -1,0 +1,11 @@
+{
+    "name": "restheart-test-js-plugins-late",
+    "description": "copied with package.json last, to verify that plugins created before it are deployed (#804)",
+    "rh:spi": 1,
+    "rh:services": [
+        "late-service.mjs"
+    ],
+    "rh:interceptors": [
+        "late-interceptor.mjs"
+    ]
+}
