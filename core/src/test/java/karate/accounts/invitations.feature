@@ -181,3 +181,38 @@ Feature: Invitations — new and existing users
     And param email = 'nobody@example.com'
     When method GET
     Then status 400
+
+  # ---------------------------------------------------------------------------
+  Scenario: a filter or a sort on the invitation token is refused, even for the admin
+  # ---------------------------------------------------------------------------
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param filter = '{"token":{"$exists":true}}'
+    When method GET
+    Then status 403
+
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param filter = '{"$or":[{"email":"nobody@example.com"},{"token":"x"}]}'
+    When method GET
+    Then status 403
+
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param filter = '{"$expr":{"$eq":["$token","x"]}}'
+    When method GET
+    Then status 403
+
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param sort = '{"token":1}'
+    When method GET
+    Then status 403
+
+    # a filter on the other fields is allowed
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param filter = '{"email":"nobody@example.com"}'
+    And param rep = 's'
+    When method GET
+    Then status 200

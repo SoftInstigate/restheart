@@ -528,6 +528,12 @@ accountsService:
 accountsInitializer:
   enabled: false
 
+# Refuses, with 403, a request whose filter or sort refers to a one-time token of the accounts:
+# token in auth_invitations; emailVerificationToken, passwordResetToken and inviteToken in the
+# users collection. Enabled by default, like denyFilterOnUserPwd.
+#denyFilterOnAccountTokens:
+#  enabled: true
+
 # POST /auth/register — public user signup with email verification
 registerService:
   enabled: false
