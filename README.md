@@ -1,4 +1,4 @@
-# <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
+# <img src="https://restheart.org/images/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
 **A backend for web, mobile, AI and IoT apps.**
 
@@ -22,8 +22,12 @@ RESTHeart is a backend for web, mobile, AI and IoT apps. It gives an application
 
 ### Example
 
+With RESTHeart running locally (see below), create a collection, add a document and query it:
+
 ```bash
-curl "https://demo.restheart.org/messages?filter={\"from\":\"Bob\"}&pagesize=1"
+curl -u admin:secret -X PUT localhost:8080/messages
+curl -u admin:secret -H 'Content-Type: application/json' -d '{"from":"Bob","message":"Hello"}' localhost:8080/messages
+curl -u admin:secret "localhost:8080/messages?filter={\"from\":\"Bob\"}&pagesize=1"
 ```
 
 No route was written for `/messages`. It is a MongoDB collection, and the query parameters (`filter`, `pagesize`, sorting) map directly to MongoDB's query language.
@@ -48,9 +52,9 @@ Distributed as a Docker image and a GraalVM native binary. Built on Java 25, Und
 
 ### Running it
 
-Fully managed, no installation required, and including [Sophia](https://restheart.org/docs/cloud/sophia/mcp), an MCP server and browser assistant that exposes RESTHeart's docs and plugin API to AI coding assistants such as Claude Code, Cursor, or VS Code:
+Managed, on [Ulabase](https://ulabase.com), the platform built on RESTHeart: nothing to install, a free plan to start.
 
-[![Try RESTHeart Cloud for free](https://restheart.org/images/restheart-cloud-button.svg)](https://cloud.restheart.com/signup)
+[![Try Ulabase for free](https://restheart.org/images/ulabase-button.svg)](https://ulabase.com/auth/signup)
 
 Or self-hosted, since the core is free and open source:
 
