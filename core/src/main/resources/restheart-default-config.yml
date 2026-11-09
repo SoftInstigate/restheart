@@ -984,7 +984,9 @@ mongo:
   # https://restheart.org/docs/security/permissions#allowfilter
   default-allow-filter: false
 
-  # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
+  # Check if aggregation variables use operators: all the avars values, and the query parameters
+  # an aggregation or a change stream reads with $var or $ifvar; a value with operators gets 400.
+  # https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
 
   # How often an idle change stream is kept in use: a comment on SSE, a ping on WebSocket.

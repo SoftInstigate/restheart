@@ -87,6 +87,11 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
                             "notify_when": {
                               "fullDocument::tenantId": { "$var": "tid" }
                             }
+                          }, {
+                            "uri": "by-status",
+                            "stages": [
+                              { "_$match": { "fullDocument.status": { "_$var": "status" } } }
+                            ]
                           }]
                         }
                         """)
@@ -110,8 +115,12 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
     }
 
     private HttpRequest sse(String query) {
+        return sse(STREAM_URI, query);
+    }
+
+    private HttpRequest sse(String streamUri, String query) {
         return HttpRequest.newBuilder()
-                .uri(URI.create(STREAM_URI + query))
+                .uri(URI.create(streamUri + query))
                 .header("Accept", "text/event-stream")
                 .header("Authorization", ADMIN_BASIC)
                 .build();
@@ -240,6 +249,34 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
         var resp = CLIENT.send(sse(""), BodyHandlers.ofInputStream());
         resp.body().close();
         assertEquals(400, resp.statusCode(), "A client without ?tid must be rejected");
+    }
+
+    /** The {@code notify_when} variable bound from a query parameter with an operator is refused. */
+    @Test
+    void notifyWhenVarWithOperatorIsRejected() throws Exception {
+        var resp = CLIENT.send(sse("?tid=" + encode("{\"$ne\":null}")), BodyHandlers.ofInputStream());
+        resp.body().close();
+        assertEquals(400, resp.statusCode(), "?tid with an operator must be rejected");
+    }
+
+    /** A query parameter with an operator that the stream does not read is not a variable of it. */
+    @Test
+    void parameterWithOperatorNotReadByTheStreamIsAccepted() throws Exception {
+        var resp = CLIENT.send(sse("?tid=tenant-A&extra=" + encode("{\"$match\":{}}")), BodyHandlers.ofInputStream());
+        resp.body().close();
+        assertEquals(200, resp.statusCode(), "?extra is not read by the stream");
+    }
+
+    /** A stage variable bound from a query parameter with an operator is refused. */
+    @Test
+    void stageVarWithOperatorIsRejected() throws Exception {
+        var resp = CLIENT.send(sse(TEST_COLL + "/_streams/by-status", "?status=" + encode("{\"$ne\":null}")), BodyHandlers.ofInputStream());
+        resp.body().close();
+        assertEquals(400, resp.statusCode(), "?status with an operator must be rejected");
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     /** {@code avars} without the variable does not bind it either. */

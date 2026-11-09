@@ -30,6 +30,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.exchange.IllegalQueryParameterException;
+import org.restheart.exchange.IllegalQueryVariableException;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -183,6 +184,12 @@ public class GetAggregationHandler extends PipelinedHandler {
                 } catch (InvalidMetadataException ex) {
                     response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "invalid aggregation", ex);
                     LOGGER.error("invalid aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
+                    next(exchange);
+                    return;
+                } catch (IllegalQueryVariableException iqve) {
+                    // a query parameter the pipeline reads contains operators
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, iqve.getMessage());
+                    LOGGER.debug("illegal variable for aggregation /{}/{}/_aggrs/{}: {}", request.getDBName(), request.getCollectionName(), queryUri, iqve.getMessage());
                     next(exchange);
                     return;
                 } catch (QueryVariableNotBoundException qvnbe) {

@@ -33,6 +33,7 @@ Scenario: create the database, the collection and its documents
     # limited   — {"$var": "max"} used where MongoDB demands a number, so a 200 proves
     #             the flat value was parsed as one rather than passed through as a string
     # byPage    — {"$var": "page"} on a RESERVED name: must never be bound from ?page=
+    # optionalStatus — an $ifvar on "onlyA", that the stages read with no $var
     # byStatusExpr, labelled — a $var in an expression, where a string starting with "$"
     #             is bound in $literal
     * header Authorization = admin
@@ -66,6 +67,13 @@ Scenario: create the database, the collection and its documents
           "stages": [
             { "$match": { "$expr": { "$eq": [ "$status", { "$var": "status" } ] } } },
             { "$project": { "_id": 0, "item": 1 } }
+          ]
+        },
+        {
+          "uri": "optionalStatus",
+          "stages": [
+            { "$ifvar": [ "onlyA", { "$match": { "status": "A" } } ] },
+            { "$group": { "_id": "$item", "total": { "$sum": "$qty" } } }
           ]
         },
         {

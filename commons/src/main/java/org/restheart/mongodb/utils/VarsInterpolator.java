@@ -21,15 +21,19 @@
 package org.restheart.mongodb.utils;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.exchange.IllegalQueryVariableException;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
+
+import io.undertow.util.AttachmentKey;
 
 /**
  * Utility class for interpolating variables within a BsonDocument or BsonArray by using a specific format,
@@ -169,7 +173,45 @@ public class VarsInterpolator {
                     : Optional.empty();
         }
 
+        // a @ name is never read from the query parameters, so only the others are checked
+        checkOperatorQueryParameters(name, request);
+
         return values == null ? Optional.empty() : BsonUtils.get(values, name);
+    }
+
+    /**
+     * The names of the flat query parameters whose value contains operators, attached to the
+     * exchange of an aggregation or a change stream when aggregation-check-operators is enabled.
+     *
+     * <p>They are bound as variables, but a pipeline that reads one of them fails with
+     * {@link IllegalQueryVariableException}. The check runs when the variables are bound, not
+     * when the parameters are parsed: only then are the stages known, also those an interceptor
+     * declares for the request. A parameter the pipeline does not read never reaches it.</p>
+     *
+     * @since 9.15.3
+     */
+    public static final AttachmentKey<Set<String>> OPERATOR_QUERY_PARAMETERS = AttachmentKey.create(Set.class);
+
+    /**
+     * @throws IllegalQueryVariableException if {@code name}, or the parameter it reads a field
+     *         of (dot notation), is one of {@link #OPERATOR_QUERY_PARAMETERS}
+     */
+    public static void checkOperatorQueryParameters(String name, Request<?> request) throws IllegalQueryVariableException {
+        if (name == null || request == null || request.getExchange() == null) {
+            return;
+        }
+
+        var params = request.getExchange().getAttachment(OPERATOR_QUERY_PARAMETERS);
+
+        if (params == null || params.isEmpty()) {
+            return;
+        }
+
+        for (var param : params) {
+            if (name.equals(param) || name.startsWith(param + ".") || param.startsWith(name + ".")) {
+                throw new IllegalQueryVariableException(param);
+            }
+        }
     }
 
     public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {

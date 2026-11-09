@@ -30,6 +30,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
+import org.restheart.exchange.IllegalQueryVariableException;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -42,6 +43,7 @@ import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.security.MongoPermissions;
 import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.mongodb.utils.StagesInterpolator.STAGE_OPERATOR;
+import org.restheart.mongodb.utils.VarsInterpolator;
 import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ThreadsUtils;
@@ -200,6 +202,11 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 LOGGER.warn(error);
                 response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, error);
             }
+        } catch (IllegalQueryVariableException iqve) {
+            // a query parameter the stream reads contains operators
+            response.setInError(HttpStatus.SC_BAD_REQUEST, iqve.getMessage());
+            LOGGER.debug("Cannot open change stream: {}", iqve.getMessage());
+            next(exchange);
         } catch (SecurityException se) {
             var error = "Cannot open change stream: " + se.getMessage();
             LOGGER.warn(error, se);
@@ -388,6 +395,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             return Map.of(varName, value.get());
         }
 
+        // notify_when reads its variable here, not through the stages
+        VarsInterpolator.checkOperatorQueryParameters(varName, request);
         var vars = request.getAggregationVars();
         var value = vars != null ? vars.get(varName) : null;
         if (value == null) {

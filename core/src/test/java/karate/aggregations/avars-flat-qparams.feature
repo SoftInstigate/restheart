@@ -117,7 +117,8 @@ Scenario: an avars value with an operator is refused
 
 Scenario: a flat query parameter with an operator is refused, like avars
 
-    # before 9.15.3 the flat form skipped the check that avars has
+    # before 9.15.3 the flat form skipped the check that avars has: now a parameter the
+    # pipeline reads with $var or $ifvar is checked
     * header Authorization = admin
     Given path aggr
     And param status = '{"$gt": ""}'
@@ -125,6 +126,50 @@ Scenario: a flat query parameter with an operator is refused, like avars
     When method GET
     Then status 400
     And match response.message contains 'illegal query parameter status'
+
+
+Scenario: a query parameter with an operator that the pipeline does not read is not a variable
+
+    # byStatus reads only status: extra never reaches the pipeline, so it is not checked
+    * header Authorization = admin
+    Given path aggr
+    And param status = 'A'
+    And param extra = '{"$match": {}}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == '#[2]'
+
+
+Scenario: an avars value with an operator is refused even if the pipeline does not read it
+
+    # avars declares variables: all of them are checked
+    * header Authorization = admin
+    Given path aggr
+    And param status = 'A'
+    And param avars = '{"x": {"$ne": 1}}'
+    And param rep = 's'
+    When method GET
+    Then status 400
+
+
+Scenario: a query parameter with an operator that an $ifvar reads is refused
+
+    * header Authorization = admin
+    Given path coll + '/_aggrs/optionalStatus'
+    And param onlyA = '{"$ne": null}'
+    And param rep = 's'
+    When method GET
+    Then status 400
+    And match response.message contains 'illegal query parameter onlyA'
+
+    * header Authorization = admin
+    Given path coll + '/_aggrs/optionalStatus'
+    And param onlyA = true
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == '#[2]'
 
 
 Scenario: in $match a string starting with "$" is a value
