@@ -98,4 +98,12 @@ public class RequestFiltersSortTest {
         assertThrows(IllegalArgumentException.class, () -> sort("{\"createdAt\": \"@qparams['dir']\"}", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> sort("{\"createdAt\": 2}", Map.of()));
     }
+
+    @Test
+    public void aPlainNameIsTheQueryParameter() {
+        assertEquals(BsonDocument.parse("{\"_id\": -1}"), sort("{\"_id\": {\"$var\": \"a\"}}", Map.of("a", "-1")));
+        assertEquals(BsonDocument.parse("{\"name\": 1, \"_id\": 1}"),
+                sort("{\"$ifvar\": [\"order\", {\"by-name\": {\"name\": 1}}]}", Map.of("order", "by-name")));
+        assertThrows(IllegalArgumentException.class, () -> sort("{\"_id\": {\"$var\": \"a\"}}", Map.of()));
+    }
 }

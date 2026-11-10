@@ -84,18 +84,23 @@ public class RequestFilters implements MongoInterceptor {
             }
         }
 
-        if (request.isGet() && mongoPermissions.getReadFilter() != null) {
-            LOGGER.debug("read filter: {}", mongoPermissions.getReadFilter());
-            addFilter(request, mongoPermissions.getReadFilter());
-        } else if ((request.isPatch()
-                || request.isPut()
-                || request.isPost()
-                || request.isDelete())
-                && mongoPermissions.getWriteFilter() != null) {
-            LOGGER.debug("write filter to add: {}", mongoPermissions.getWriteFilter());
-            addFilter(request, mongoPermissions.getWriteFilter());
-        } else {
-            LOGGER.trace("predicate specifies no filter");
+        try {
+            if (request.isGet() && mongoPermissions.getReadFilter() != null) {
+                LOGGER.debug("read filter: {}", mongoPermissions.getReadFilter());
+                addFilter(request, mongoPermissions.getReadFilter());
+            } else if ((request.isPatch()
+                    || request.isPut()
+                    || request.isPost()
+                    || request.isDelete())
+                    && mongoPermissions.getWriteFilter() != null) {
+                LOGGER.debug("write filter to add: {}", mongoPermissions.getWriteFilter());
+                addFilter(request, mongoPermissions.getWriteFilter());
+            } else {
+                LOGGER.trace("predicate specifies no filter");
+            }
+        } catch (IllegalArgumentException e) {
+            // a query parameter bound by {"$var": "<name>"} that carries an operator
+            response.setInError(HttpStatus.SC_BAD_REQUEST, e.getMessage());
         }
     }
 
@@ -123,7 +128,7 @@ public class RequestFilters implements MongoInterceptor {
 
         if (clause.size() == 1 && clause.containsKey(AclVarsInterpolator.IFVAR)) {
             var args = clause.get(AclVarsInterpolator.IFVAR).asArray();
-            var picked = AclVarsInterpolator.interpolatePropValue(request, null, args.get(0).asString().getValue());
+            var picked = AclVarsInterpolator.resolveName(request, args.get(0).asString().getValue());
 
             if (!picked.isNull()) {
                 var name = picked.isString() ? picked.asString().getValue() : picked.toString();

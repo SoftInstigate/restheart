@@ -66,3 +66,47 @@ Scenario: the client cannot send a sort of its own
     And param sort = '{"n": 1}'
     When method GET
     Then status 403
+
+Scenario: a plain name is a query parameter, with its default
+
+    * header Authorization = user
+    Given path '/test-permission-sort/plain'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    # the kitchen ones by default, newest n first
+    And match response[*]._id == ['b', 'a']
+
+    * header Authorization = user
+    Given path '/test-permission-sort/plain'
+    And param cat = 'office'
+    And param dir = '1'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response[*]._id == ['c', 'd']
+
+Scenario: a query parameter that carries an operator is refused
+
+    * header Authorization = user
+    Given path '/test-permission-sort/plain'
+    And param cat = '{"$ne": null}'
+    When method GET
+    Then status 400
+
+Scenario: a permission whose mongo block is not valid is refused when written
+
+    * header Authorization = adminAuth
+    Given path '/restheart-test/acl/permissionSortInvalid'
+    And param wm = 'upsert'
+    And request { "roles": ["allow-filter-role"], "predicate": "path-prefix('/nowhere') and method(GET)", "priority": 100, "mongo": { "sort": { "_id": { "$var": [1] } } } }
+    When method PUT
+    Then status 400
+    And match response.message contains '$var takes'
+
+Scenario: a stored permission that is not valid allows nothing
+
+    * header Authorization = user
+    Given path '/test-permission-sort/broken'
+    When method GET
+    Then status 403

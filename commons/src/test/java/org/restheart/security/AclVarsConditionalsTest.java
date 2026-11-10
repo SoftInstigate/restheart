@@ -112,13 +112,13 @@ public class AclVarsConditionalsTest {
     @Test
     public void aMalformedIfvarIsRefusedWhenThePermissionIsLoaded() {
         assertThrows(IllegalArgumentException.class,
-                () -> AclVarsInterpolator.checkConditionals(BsonDocument.parse("{\"$ifvar\": [\"category\", {}]}")));
+                () -> AclVarsInterpolator.checkConditionals(BsonDocument.parse("{\"$ifvar\": [\"\", {}]}")));
         assertThrows(IllegalArgumentException.class,
                 () -> AclVarsInterpolator.checkConditionals(BsonDocument.parse("{\"$ifvar\": [\"@qparams['c']\"]}")));
         assertThrows(IllegalArgumentException.class,
                 () -> AclVarsInterpolator.checkConditionals(BsonDocument.parse("{\"a\": {\"$var\": [\"@qparams['c']\", 1, 2]}}")));
 
-        var permission = BsonDocument.parse("{\"mongo\": {\"readFilter\": {\"$ifvar\": [\"nope\", {}]}}}");
+        var permission = BsonDocument.parse("{\"mongo\": {\"readFilter\": {\"$ifvar\": [1, {}]}}}");
         assertThrows(ConfigurationException.class, () -> MongoPermissions.from(permission));
     }
 
@@ -130,5 +130,44 @@ public class AclVarsConditionalsTest {
 
         var notAnObject = BsonDocument.parse("{\"mongo\": {\"sort\": \"name\"}}");
         assertThrows(ConfigurationException.class, () -> MongoPermissions.from(notAnObject));
+    }
+
+    @Test
+    public void aPlainNameIsAQueryParameterReadAsJson() {
+        var clause = BsonDocument.parse("{\"n\": {\"$var\": \"a\"}}");
+
+        assertEquals(BsonDocument.parse("{\"n\": 1}"), AclVarsInterpolator.interpolateFilter(requestWith(Map.of("a", "1")), clause));
+        assertEquals(BsonDocument.parse("{\"n\": \"desk\"}"), AclVarsInterpolator.interpolateFilter(requestWith(Map.of("a", "desk")), clause));
+
+        var withDefault = BsonDocument.parse("{\"n\": {\"$var\": [\"a\", 7]}}");
+        assertEquals(BsonDocument.parse("{\"n\": 7}"), AclVarsInterpolator.interpolateFilter(requestWith(Map.of()), withDefault));
+    }
+
+    @Test
+    public void aQueryParameterWithAnOperatorIsRefused() {
+        var clause = BsonDocument.parse("{\"n\": {\"$var\": \"a\"}}");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> AclVarsInterpolator.interpolateFilter(requestWith(Map.of("a", "{\"$ne\": null}")), clause));
+        assertThrows(IllegalArgumentException.class,
+                () -> AclVarsInterpolator.interpolateFilter(requestWith(Map.of("a", "[{\"$gt\": 1}]")), clause));
+    }
+
+    @Test
+    public void anIfvarOnAPlainName() {
+        var clause = BsonDocument.parse("{\"$and\": [{\"published\": true}, {\"$ifvar\": [\"category\", {\"category\": {\"$var\": \"category\"}}]}]}");
+
+        assertEquals(BsonDocument.parse("{\"$and\": [{\"published\": true}, {\"category\": \"desk\"}]}"),
+                AclVarsInterpolator.interpolateFilter(requestWith(Map.of("category", "desk")), clause));
+        assertEquals(BsonDocument.parse("{\"$and\": [{\"published\": true}]}"),
+                AclVarsInterpolator.interpolateFilter(requestWith(Map.of()), clause));
+    }
+
+    @Test
+    public void anUnboundPlainNameInAFilterMatchesNoDocument() {
+        var filter = AclVarsInterpolator.interpolateFilter(requestWith(Map.of()), BsonDocument.parse("{\"owner\": {\"$var\": \"a\"}}"));
+
+        // a random value, never null, which would match the documents without an owner
+        assertEquals(true, filter.asDocument().get("owner").isString());
     }
 }

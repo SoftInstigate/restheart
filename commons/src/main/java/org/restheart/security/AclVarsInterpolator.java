@@ -304,21 +304,76 @@ public class AclVarsInterpolator {
         checkVar(args);
 
         if (args.isString()) {
-            return interpolateString(request, null, args.asString().getValue(), filter);
+            var name = args.asString().getValue();
+            if (name.startsWith("@")) {
+                return interpolateString(request, null, name, filter);
+            }
+            // a query parameter: unbound in a filter matches no document, as an unbound @ variable
+            var value = resolveName(request, name);
+            return value.isNull() && filter ? new BsonString(nextToken()) : value;
         }
 
         var name = args.asArray().get(0).asString().getValue();
-        var value = interpolatePropValue(request, null, name);
+        var value = resolveName(request, name);
 
         return value.isNull() ? args.asArray().get(1) : value;
     }
 
-    private static boolean allBound(final Request<?> request, final BsonValue vars) {
-        if (vars.isString()) {
-            return !interpolatePropValue(request, null, vars.asString().getValue()).isNull();
+    /**
+     * The value of a variable of {@code $var} or {@code $ifvar}. A name starting with {@code @} is
+     * an ACL variable, as {@code @user._id} or {@code @qparams['a']}. Any other name is a query
+     * parameter, as in aggregations: {@code {"$var": "a"}} is the value of {@code ?a=}, read as
+     * JSON when it parses as such ({@code ?a=1} is the number 1), and refused when it carries an
+     * operator, a key starting with {@code $}, so that it can never become a query.
+     *
+     * @throws IllegalArgumentException when the query parameter carries an operator
+     * @since 9.16.0
+     */
+    public static BsonValue resolveName(final Request<?> request, final String name) {
+        if (name.startsWith("@")) {
+            return interpolatePropValue(request, null, name);
         }
 
-        return vars.asArray().stream().allMatch(v -> !interpolatePropValue(request, null, v.asString().getValue()).isNull());
+        var exchange = request == null ? null : request.getExchange();
+        var params = exchange == null ? null : exchange.getQueryParameters();
+        if (params == null || params.get(name) == null || params.get(name).isEmpty()) {
+            return BsonNull.VALUE;
+        }
+
+        var raw = params.get(name).getFirst();
+        BsonValue value;
+        try {
+            value = org.restheart.utils.BsonUtils.parse(raw);
+        } catch (Exception e) {
+            value = null;
+        }
+        if (value == null) {
+            value = new BsonString(raw);
+        }
+
+        if (carriesOperator(value)) {
+            throw new IllegalArgumentException("the query parameter " + name + " cannot carry an operator");
+        }
+
+        return value;
+    }
+
+    private static boolean carriesOperator(final BsonValue value) {
+        if (value.isDocument()) {
+            return value.asDocument().entrySet().stream()
+                    .anyMatch(e -> e.getKey().startsWith("$") || carriesOperator(e.getValue()));
+        } else if (value.isArray()) {
+            return value.asArray().stream().anyMatch(AclVarsInterpolator::carriesOperator);
+        }
+        return false;
+    }
+
+    private static boolean allBound(final Request<?> request, final BsonValue vars) {
+        if (vars.isString()) {
+            return !resolveName(request, vars.asString().getValue()).isNull();
+        }
+
+        return vars.asArray().stream().allMatch(v -> !resolveName(request, v.asString().getValue()).isNull());
     }
 
     /**
@@ -361,7 +416,7 @@ public class AclVarsInterpolator {
 
         var vars = args.asArray().get(0);
         if (!isVarName(vars) && !(vars.isArray() && !vars.asArray().isEmpty() && vars.asArray().stream().allMatch(AclVarsInterpolator::isVarName))) {
-            throw new IllegalArgumentException(IFVAR + " takes an @ variable, or an array of them, as its first element");
+            throw new IllegalArgumentException(IFVAR + " takes a variable, or an array of them, as its first element");
         }
     }
 
@@ -371,12 +426,13 @@ public class AclVarsInterpolator {
         }
 
         if (!args.isArray() || args.asArray().size() != 2 || !isVarName(args.asArray().get(0))) {
-            throw new IllegalArgumentException(VAR + " takes an @ variable, or [@ variable, default]");
+            throw new IllegalArgumentException(VAR + " takes a variable, or [variable, default]");
         }
     }
 
+    /** A variable name: an ACL variable with {@code @}, or the name of a query parameter. */
     private static boolean isVarName(final BsonValue value) {
-        return value.isString() && value.asString().getValue().startsWith("@");
+        return value.isString() && !value.asString().getValue().isBlank();
     }
 
     private static BsonValue interpolateString(final Request<?> request, final String key, final String value, final boolean filter) {
@@ -1074,13 +1130,13 @@ public class AclVarsInterpolator {
         sortedKeys.stream().filter(key -> flatten.get(key) != null)
                 .filter(key -> isJsonPrimitive(flatten.get(key)))
                 .forEach(key -> ret[0] = ret[0].replaceAll(Pattern.quote(prefix.concat(key)),
-                        quote(jsonPrimitiveValue(flatten.get(key)))));
+                        Matcher.quoteReplacement(quote(jsonPrimitiveValue(flatten.get(key))))));
 
         // interpolate arrays
         sortedKeys.stream().filter(key -> flatten.get(key) != null)
                 .filter(key -> isJsonArray(flatten.get(key)))
                 .forEach(key -> ret[0] = ret[0].replaceAll(Pattern.quote(prefix.concat(key)),
-                        jsonArrayValue(flatten.get(key).asArray())));
+                        Matcher.quoteReplacement(jsonArrayValue(flatten.get(key).asArray()))));
 
         // remove unboud variables
         flatten.keySet().stream().forEach(key -> ret[0] = removeUnboundVariables(prefix, ret[0]));
@@ -1221,6 +1277,12 @@ public class AclVarsInterpolator {
     private static final String DOUBLE_QUOTE_PLACEHOLDER = "___RESTHEART_DOUBLE_QUOTE___";
 
     /**
+     * Placeholder for a backslash in a value substituted into a predicate: a trailing backslash
+     * would escape the closing quote of the literal and make the predicate unparsable.
+     */
+    private static final String BACKSLASH_PLACEHOLDER = "___RESTHEART_BACKSLASH___";
+
+    /**
      * Puts the quotes back in a value that went through {@link #normalizeQuotes}: the parameter
      * of a predicate as Undertow hands it to its builder. The placeholders exist so that
      * Undertow's parser does not stumble on quotes inside a quoted string; the predicate that
@@ -1237,7 +1299,7 @@ public class AclVarsInterpolator {
         if (value == null) {
             return null;
         }
-        return value.replace(SINGLE_QUOTE_PLACEHOLDER, "'").replace(DOUBLE_QUOTE_PLACEHOLDER, "\"");
+        return value.replace(SINGLE_QUOTE_PLACEHOLDER, "'").replace(DOUBLE_QUOTE_PLACEHOLDER, "\"").replace(BACKSLASH_PLACEHOLDER, "\\");
     }
 
     /**
@@ -1249,8 +1311,9 @@ public class AclVarsInterpolator {
      * @return The string wrapped in single quotes with internal quotes replaced by placeholders
      */
     private static String quote(String s) {
-        // Replace quotes with placeholders
-        var escaped = s.replace("'", SINGLE_QUOTE_PLACEHOLDER).replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
+        // Replace quotes and backslashes with placeholders: the value stays inside its literal
+        var escaped = s.replace("\\", BACKSLASH_PLACEHOLDER)
+                .replace("'", SINGLE_QUOTE_PLACEHOLDER).replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
         return "'".concat(escaped).concat("'");
     }
 
