@@ -38,7 +38,8 @@ Scenario: _queries and _aggrs run the same aggregation
     And param rep = 's'
     When method GET
     Then status 200
-    And match response == viaQueries
+    # $group gives no order: the same results, in any order
+    And match response contains only viaQueries
 
 
 Scenario: _queries alone answers as _aggrs alone
