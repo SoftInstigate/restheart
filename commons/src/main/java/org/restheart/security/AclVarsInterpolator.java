@@ -148,7 +148,7 @@ public class AclVarsInterpolator {
      * @see #
      */
     public static BsonValue interpolateBson(final Request<?> request, final BsonValue bson) {
-        var interpolated = interpolateBson(request, bson, false);
+        var interpolated = interpolateBson(request, bson, false, false);
         return interpolated == DROPPED ? new BsonDocument() : interpolated;
     }
 
@@ -179,7 +179,7 @@ public class AclVarsInterpolator {
      * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
      */
     public static BsonValue interpolateFilter(final Request<?> request, final BsonValue filter) {
-        var interpolated = interpolateBson(request, filter, true);
+        var interpolated = interpolateBson(request, filter, true, false);
 
         // a whole filter that is an $ifvar with nothing to apply sets no condition
         return interpolated == DROPPED ? new BsonDocument() : interpolated;
@@ -233,44 +233,54 @@ public class AclVarsInterpolator {
      */
     private static final BsonValue DROPPED = new BsonDocument("$$dropped", new BsonString("$ifvar"));
 
-    private static BsonValue interpolateBson(final Request<?> request, final BsonValue bson, final boolean filter) {
+    /**
+     * @param expr true under {@code $expr} of a filter, where MongoDB reads a string starting with
+     *        {@code $} as a field path or a variable: there a bound value with such strings is
+     *        wrapped in {@code {"$literal": value}}; under {@code $literal} it is a value again
+     */
+    private static BsonValue interpolateBson(final Request<?> request, final BsonValue bson, final boolean filter, final boolean expr) {
         if (bson.isDocument() && bson.asDocument().size() == 1 && bson.asDocument().containsKey(IFVAR)) {
-            return ifvar(request, bson.asDocument().get(IFVAR), filter);
+            return ifvar(request, bson.asDocument().get(IFVAR), filter, expr);
         } else if (bson.isDocument() && bson.asDocument().size() == 1 && bson.asDocument().containsKey(VAR)) {
-            return varWithDefault(request, bson.asDocument().get(VAR), filter);
+            return varWithDefault(request, bson.asDocument().get(VAR), filter, expr);
         } else if (bson.isDocument()) {
             var ret = new BsonDocument();
             var doc = bson.asDocument();
             doc.keySet().stream().forEach(k -> {
                 var value = doc.get(k);
+                var _expr = filter && switch (k) {
+                    case "$expr" -> true;
+                    case "$literal" -> false;
+                    default -> expr;
+                };
 
                 if (value.isString()) {
-                    ret.put(k, interpolateString(request, k, value.asString().getValue(), filter));
+                    ret.put(k, interpolateString(request, k, value.asString().getValue(), filter, _expr));
                 } else if (value.isDocument()) {
-                    var interpolated = interpolateBson(request, value, filter);
+                    var interpolated = interpolateBson(request, value, filter, _expr);
                     if (interpolated != DROPPED) {
                         ret.put(k, interpolated);
                     }
                 } else if (value.isArray()) {
-                    ret.put(k, interpolateArray(request, value.asArray(), filter));
+                    ret.put(k, interpolateArray(request, value.asArray(), filter, _expr));
                 } else {
                     ret.put(k, value);
                 }
             });
             return ret;
         } else if (bson.isArray()) {
-            return interpolateArray(request, bson.asArray(), filter);
+            return interpolateArray(request, bson.asArray(), filter, expr);
         } else if (bson.isString()) {
-            return interpolateString(request, null, bson.asString().getValue(), filter);
+            return interpolateString(request, null, bson.asString().getValue(), filter, expr);
         } else {
             return bson;
         }
     }
 
-    private static BsonArray interpolateArray(final Request<?> request, final BsonArray array, final boolean filter) {
+    private static BsonArray interpolateArray(final Request<?> request, final BsonArray array, final boolean filter, final boolean expr) {
         var ret = new BsonArray();
         array.stream().forEachOrdered(e -> {
-            var interpolated = interpolateBson(request, e, filter);
+            var interpolated = interpolateBson(request, e, filter, expr);
             if (interpolated != DROPPED) {
                 ret.add(interpolated);
             }
@@ -283,14 +293,14 @@ public class AclVarsInterpolator {
      * bound for the request, else the optional {@code else}, else nothing ({@link #DROPPED}).
      * {@code var} may also be an array of variables, all of which must be bound.
      */
-    private static BsonValue ifvar(final Request<?> request, final BsonValue args, final boolean filter) {
+    private static BsonValue ifvar(final Request<?> request, final BsonValue args, final boolean filter, final boolean expr) {
         checkIfvar(args);
         var array = args.asArray();
 
         if (allBound(request, array.get(0))) {
-            return interpolateBson(request, array.get(1), filter);
+            return interpolateBson(request, array.get(1), filter, expr);
         } else if (array.size() > 2) {
-            return interpolateBson(request, array.get(2), filter);
+            return interpolateBson(request, array.get(2), filter, expr);
         } else {
             return DROPPED;
         }
@@ -300,23 +310,32 @@ public class AclVarsInterpolator {
      * {@code {"$var": [var, default]}}: the value of the ACL variable {@code var}, or
      * {@code default} when it is not bound. {@code {"$var": var}} is the variable alone.
      */
-    private static BsonValue varWithDefault(final Request<?> request, final BsonValue args, final boolean filter) {
+    private static BsonValue varWithDefault(final Request<?> request, final BsonValue args, final boolean filter, final boolean expr) {
         checkVar(args);
 
         if (args.isString()) {
             var name = args.asString().getValue();
             if (name.startsWith("@")) {
-                return interpolateString(request, null, name, filter);
+                return interpolateString(request, null, name, filter, expr);
             }
             // a query parameter: unbound in a filter matches no document, as an unbound @ variable
             var value = resolveName(request, name);
-            return value.isNull() && filter ? new BsonString(nextToken()) : value;
+            return value.isNull() && filter ? new BsonString(nextToken()) : literalUnderExpr(value, expr);
         }
 
         var name = args.asArray().get(0).asString().getValue();
         var value = resolveName(request, name);
 
-        return value.isNull() ? args.asArray().get(1) : value;
+        // the default comes from the permission, not from the request: it is left as it is
+        return value.isNull() ? args.asArray().get(1) : literalUnderExpr(value, expr);
+    }
+
+    /**
+     * A query parameter's value under {@code $expr}, where MongoDB reads a string starting with
+     * {@code $} as a field path or a variable: in {@code {"$literal": value}} if it holds one.
+     */
+    private static BsonValue literalUnderExpr(final BsonValue value, final boolean expr) {
+        return expr && containsDollarString(value) ? new BsonDocument("$literal", value) : value;
     }
 
     /**
@@ -435,7 +454,7 @@ public class AclVarsInterpolator {
         return value.isString() && !value.asString().getValue().isBlank();
     }
 
-    private static BsonValue interpolateString(final Request<?> request, final String key, final String value, final boolean filter) {
+    private static BsonValue interpolateString(final Request<?> request, final String key, final String value, final boolean filter, final boolean expr) {
         var interpolated = interpolatePropValue(request, key, value);
 
         if (filter && interpolated.isNull() && value.startsWith("@")) {
@@ -452,7 +471,31 @@ public class AclVarsInterpolator {
             return new BsonString(nextToken());
         }
 
+        // under $expr a string starting with $ is a field path or a variable: a bound value is a
+        // value, so it goes in $literal
+        if (expr && value.startsWith("@") && !operatorsAllowed(value) && containsDollarString(interpolated)) {
+            return new BsonDocument("$literal", interpolated);
+        }
+
         return interpolated;
+    }
+
+    /**
+     * @return true if {@code value} is, or holds at any depth, a string starting with {@code $}
+     * @since 9.15.3
+     */
+    public static boolean containsDollarString(BsonValue value) {
+        if (value == null) {
+            return false;
+        } else if (value.isString()) {
+            return value.asString().getValue().startsWith("$");
+        } else if (value.isDocument()) {
+            return value.asDocument().values().stream().anyMatch(AclVarsInterpolator::containsDollarString);
+        } else if (value.isArray()) {
+            return value.asArray().stream().anyMatch(AclVarsInterpolator::containsDollarString);
+        }
+
+        return false;
     }
 
     /**

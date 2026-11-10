@@ -72,6 +72,47 @@ public class OperatorsInVarsTest {
     }
 
     @Test
+    public void underExprAStringStartingWithDollarIsBoundInLiteral() {
+        var request = withBody("""
+                {"owner": "$owner"}""");
+        var filter = BsonDocument.parse("""
+                {"$expr": {"$eq": ["$owner", "@request.body.owner"]}}""");
+
+        var interpolated = AclVarsInterpolator.interpolateFilter(request, filter).asDocument();
+        var bound = interpolated.getDocument("$expr").getArray("$eq").get(1);
+
+        assertEquals(BsonDocument.parse("""
+                {"$literal": "$owner"}"""), bound);
+        // the field path written in the filter is left as it is
+        assertEquals("$owner", interpolated.getDocument("$expr").getArray("$eq").get(0).asString().getValue());
+    }
+
+    @Test
+    public void outsideExprAStringStartingWithDollarIsAValue() {
+        var request = withBody("""
+                {"owner": "$owner"}""");
+        var filter = BsonDocument.parse("""
+                {"owner": "@request.body.owner"}""");
+
+        var interpolated = AclVarsInterpolator.interpolateFilter(request, filter).asDocument();
+
+        assertEquals("$owner", interpolated.getString("owner").getValue());
+    }
+
+    @Test
+    public void underLiteralTheValueIsLeftAsItIs() {
+        var request = withBody("""
+                {"owner": "$owner"}""");
+        var filter = BsonDocument.parse("""
+                {"$expr": {"$eq": ["$owner", {"$literal": "@request.body.owner"}]}}""");
+
+        var interpolated = AclVarsInterpolator.interpolateFilter(request, filter).asDocument();
+        var bound = interpolated.getDocument("$expr").getArray("$eq").get(1).asDocument();
+
+        assertEquals("$owner", bound.getString("$literal").getValue());
+    }
+
+    @Test
     public void inAnAggregationAValueWithOperatorsIsRefused() {
         var request = withBody("""
                 {"owner": {"$ne": null}}""");
