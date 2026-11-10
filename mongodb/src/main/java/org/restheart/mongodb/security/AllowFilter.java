@@ -32,6 +32,7 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Authorizer;
 import org.restheart.security.BaseAclPermission;
 import org.restheart.security.BaseAclPermissionTransformer;
 import org.restheart.security.MongoPermissions;
@@ -45,6 +46,10 @@ import org.restheart.security.MongoPermissions;
  * {@code allowFilter} takes the {@code default-allow-filter} of the mongo configuration,
  * {@code false} by default.
  * The application queries through aggregations, which bind only the variables they declare.</p>
+ *
+ * <p>The 403 says why: when the permission would have allowed the read but for the query
+ * parameters, its message names them and points to an aggregation. The permission's own predicate
+ * is checked first, so a permission that does not apply to the request leaves no message.</p>
  *
  * <p>Writes are not affected: a bulk {@code PATCH} or {@code DELETE} needs a filter, and
  * {@code allowBulkPatch} and {@code allowBulkDelete} decide about it. Neither are the root role and
@@ -88,13 +93,27 @@ public class AllowFilter extends BaseAllowInitializer implements Initializer {
             return true;
         }
 
+        boolean allowed;
         try {
-            return MongoPermissions.from(p).isAllowFilter(MongoServiceConfiguration.get().getDefaultAllowFilter());
+            allowed = MongoPermissions.from(p).isAllowFilter(MongoServiceConfiguration.get().getDefaultAllowFilter());
         } catch (IllegalArgumentException e) {
             // fail closed: a permission whose allowFilter cannot be read does not allow filter
-            return false;
+            allowed = false;
         }
+
+        // the reason of the 403, if no other permission allows the request; a reason already
+        // attached by another authorizer is kept
+        if (!allowed && mr.attachedParam(Authorizer.VETO_MESSAGE) == null) {
+            mr.attachParam(Authorizer.VETO_MESSAGE, MESSAGE);
+        }
+
+        return allowed;
     };
+
+    /**
+     * The message of the 403 for a read refused by this check.
+     */
+    static final String MESSAGE = "filter, sort and sort_by are not allowed by this permission: query through an aggregation, or ask for a permission with mongo.allowFilter";
 
     /**
      * @return true if the request has a filter, sort or sort_by query parameter
