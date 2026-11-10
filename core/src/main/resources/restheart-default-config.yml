@@ -977,6 +977,13 @@ mongo:
   get-collection-cache-ttl: 10_000 # Time To Live, in milliseconds default 10 seconds
   get-collection-cache-docs: 1_000 # number of documents to cache for each request
 
+  # The value of mongo.allowFilter when an ACL permission does not set it: whether a read may carry
+  # the filter, sort and sort_by query parameters. A read with one of them, through a permission
+  # that does not allow it, does not match the permission: the application queries through
+  # aggregations. Since 9.16 it is false: set it to true to keep the behaviour of 9.15. The root
+  # role can always use them. Bulk PATCH and DELETE follow allowBulkPatch and allowBulkDelete.
+  default-allow-filter: false
+
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
 
