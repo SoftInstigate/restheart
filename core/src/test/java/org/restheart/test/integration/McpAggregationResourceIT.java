@@ -59,9 +59,9 @@ public class McpAggregationResourceIT extends AbstactIT {
     private static final String TEST_DB = BASE + "/test-mcp-aggrs";
     private static final String TEST_COLL = TEST_DB + "/purchases";
 
-    private static final String BY_STATUS = TEST_COLL + "/_queries/byStatus";
-    private static final String WITH_DEFAULT = TEST_COLL + "/_queries/withDefault";
-    private static final String UNSAFE = TEST_COLL + "/_queries/unsafe";
+    private static final String BY_STATUS = TEST_COLL + "/_aggrs/byStatus";
+    private static final String WITH_DEFAULT = TEST_COLL + "/_aggrs/withDefault";
+    private static final String UNSAFE = TEST_COLL + "/_aggrs/unsafe";
 
     private static final String ADMIN_BASIC = "Basic " + Base64.getEncoder().encodeToString("admin:secret".getBytes());
 
@@ -233,7 +233,7 @@ public class McpAggregationResourceIT extends AbstactIT {
                 {"resource":"%s","action":"execute"}
                 """.formatted(UNSAFE));
 
-        assertTrue(descriptor.getString("url").getValue().contains("/_queries/unsafe"),
+        assertTrue(descriptor.getString("url").getValue().contains("/_aggrs/unsafe"),
                 "expected a composed descriptor: " + descriptor.toJson());
     }
 

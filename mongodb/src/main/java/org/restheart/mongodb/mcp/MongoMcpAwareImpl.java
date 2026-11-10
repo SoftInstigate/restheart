@@ -278,24 +278,20 @@ public final class MongoMcpAwareImpl {
     /**
      * The URI of the collection a resource reads from, or {@code null} when there is none to watch.
      *
-     * <p>An aggregation URI is the collection's with {@code /_queries/<name>} appended, or
-     * {@code /_aggrs/<name>}, the name kept for backward compatibility. The mount resolver rejects
-     * those extra segments, so the suffix is dropped before resolving rather than resolved through.
+     * <p>An aggregation URI is the collection's with {@code /_aggrs/<name>} appended, and the mount
+     * resolver rejects those extra segments, so the suffix is dropped before resolving rather than
+     * resolved through.
      *
      * <p>A change stream gets nothing: it is a live channel consumed over a websocket and is not
      * readable through {@code resources/read}, so there would be nothing to re-read when told it
      * changed.
      */
-    static String sourceCollectionUri(String resourceUri) {
+    private static String sourceCollectionUri(String resourceUri) {
         if (resourceUri.contains("/_streams/")) {
             return null;
         }
 
-        // an aggregation's URI, under _queries or under _aggrs, the name kept for backward compatibility
-        var aggrs = resourceUri.indexOf("/_queries/");
-        if (aggrs < 0) {
-            aggrs = resourceUri.indexOf("/_aggrs/");
-        }
+        var aggrs = resourceUri.indexOf("/_aggrs/");
 
         return aggrs < 0 ? resourceUri : resourceUri.substring(0, aggrs);
     }

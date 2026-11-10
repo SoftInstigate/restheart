@@ -234,7 +234,7 @@ public class McpResourcesIT extends AbstactIT {
     @Test
     public void parameterlessAggregation_isAConcreteResource() throws Exception {
         // "totals" declares no $var: a bare read always works, so it needs no template
-        var aggrUri = TEST_COLL + "/_queries/totals";
+        var aggrUri = TEST_COLL + "/_aggrs/totals";
         var resources = resourceUris();
 
         assertTrue(resources.contains(aggrUri),
@@ -294,7 +294,7 @@ public class McpResourcesIT extends AbstactIT {
 
     @Test
     public void readingAParameterlessAggregation_executesIt() throws Exception {
-        var text = mcp.readResource(TEST_COLL + "/_queries/totals");
+        var text = mcp.readResource(TEST_COLL + "/_aggrs/totals");
 
         // the pipeline groups by item and sums qty — proof it actually ran, not just resolved
         assertTrue(text.contains("notebook"), text);

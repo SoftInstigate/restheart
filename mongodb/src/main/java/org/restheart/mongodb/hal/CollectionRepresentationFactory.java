@@ -30,7 +30,7 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import static org.restheart.exchange.ExchangeKeys._QUERIES;
+import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
 import static org.restheart.exchange.ExchangeKeys._STREAMS;
 import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
@@ -196,7 +196,7 @@ class CollectionRepresentationFactory
                                 new Link(uri,
                                         requestPath
                                                 + "/"
-                                                + _QUERIES + "/"
+                                                + _AGGREGATIONS + "/"
                                                 + uri));
                     }
                 }

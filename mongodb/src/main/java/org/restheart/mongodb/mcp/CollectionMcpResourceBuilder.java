@@ -203,7 +203,7 @@ public final class CollectionMcpResourceBuilder {
                     ex.get("args") instanceof BsonDocument args ? BsonJava.toMap(args) : Map.of());
         });
 
-        var aggregationUris = enabledLinkedUris(collectionUri, "/_queries/", aggrs);
+        var aggregationUris = enabledLinkedUris(collectionUri, "/_aggrs/", aggrs);
         if (!aggregationUris.isEmpty()) {
             builder.extra("aggregations", aggregationUris);
         }

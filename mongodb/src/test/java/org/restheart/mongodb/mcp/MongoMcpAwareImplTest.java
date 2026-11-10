@@ -150,7 +150,7 @@ public class MongoMcpAwareImplTest {
 
         var uris = resources.stream().map(r -> r.uri()).toList();
         assertTrue(uris.contains("https://host/warehouse/inventory"));
-        assertTrue(uris.contains("https://host/warehouse/inventory/_queries/byLoc"));
+        assertTrue(uris.contains("https://host/warehouse/inventory/_aggrs/byLoc"));
         assertTrue(uris.contains("https://host/warehouse/inventory/_streams/lowStock"));
     }
 
@@ -216,13 +216,5 @@ public class MongoMcpAwareImplTest {
 
         assertTrue(resources.stream().noneMatch(r -> "database".equals(r.kind())));
         assertTrue(resources.stream().anyMatch(r -> "collection".equals(r.kind())));
-    }
-
-    @Test
-    void anAggregationUriUnderEitherNameReadsFromItsCollection() {
-        assertEquals("https://host/db/orders", MongoMcpAwareImpl.sourceCollectionUri("https://host/db/orders/_queries/byStatus"));
-        assertEquals("https://host/db/orders", MongoMcpAwareImpl.sourceCollectionUri("https://host/db/orders/_aggrs/byStatus"));
-        assertEquals("https://host/db/orders", MongoMcpAwareImpl.sourceCollectionUri("https://host/db/orders"));
-        assertNull(MongoMcpAwareImpl.sourceCollectionUri("https://host/db/orders/_streams/all"));
     }
 }

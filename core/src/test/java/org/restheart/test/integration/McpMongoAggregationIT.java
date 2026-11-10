@@ -43,7 +43,7 @@ public class McpMongoAggregationIT extends AbstactIT {
     private static final String BASE = "http://localhost:8080";
     private static final String TEST_DB = BASE + "/test-mcp-aggregation";
     private static final String TEST_COLL = TEST_DB + "/sales";
-    private static final String AGGR_URI = TEST_COLL + "/_queries/byRegion";
+    private static final String AGGR_URI = TEST_COLL + "/_aggrs/byRegion";
 
     private static final String ADMIN_BASIC = "Basic " + Base64.getEncoder().encodeToString("admin:secret".getBytes());
 

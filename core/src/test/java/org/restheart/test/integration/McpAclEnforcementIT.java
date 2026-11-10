@@ -163,7 +163,7 @@ public class McpAclEnforcementIT extends AbstactIT {
         // a parameterless aggregation is a bare resource: its URI takes no query string, so the
         // read answers in the deployment's representation (HAL here), and so does the GET it is
         // compared with
-        var viaMcp = mcp.readResource(TEST_COLL + "/_queries/everything");
+        var viaMcp = mcp.readResource(TEST_COLL + "/_aggrs/everything");
         var viaRest = Unirest.get(TEST_COLL + "/_aggrs/everything").basicAuth("aclowner1", "secret").asString().getBody();
 
         assertEquals(itemsIn(viaRest), itemsIn(viaMcp),
