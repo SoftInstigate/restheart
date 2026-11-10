@@ -303,7 +303,7 @@ final class BuiltInVarResolvers {
                 return BsonNull.VALUE;
             }
 
-            var doc = permissions.asBson();
+            var doc = asApplied(request, permissions);
 
             if (var.equals("@mongoPermissions")) {
                 return doc;
@@ -324,6 +324,35 @@ final class BuiltInVarResolvers {
 
             return BsonNull.VALUE;
         }
+    }
+
+    /**
+     * The permission as it applies to {@code request}: the filters unescaped and interpolated
+     * with the request's variables, e.g. {@code @user._id}, as {@code readFilter} applies to a
+     * {@code GET}. {@link MongoPermissions#asBson()} holds them as stored, escaped and not
+     * interpolated, so a pipeline matching on {@code @mongoPermissions.readFilter} matched
+     * nothing (restheart#809).
+     */
+    private static BsonDocument asApplied(Request<?> request, MongoPermissions permissions) {
+        var doc = permissions.asBson();
+
+        doc.put("readFilter", permissions.getReadFilter() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateFilter(request, permissions.getReadFilter()));
+
+        doc.put("writeFilter", permissions.getWriteFilter() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateFilter(request, permissions.getWriteFilter()));
+
+        doc.put("mergeRequest", permissions.getMergeRequest() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateBson(request, permissions.getMergeRequest()));
+
+        doc.put("projectResponse", permissions.getProjectResponse() == null
+                ? BsonNull.VALUE
+                : permissions.getProjectResponse());
+
+        return doc;
     }
 
     /**

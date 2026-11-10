@@ -139,6 +139,10 @@
     - userid: unboundreader
       password: secret
       roles: [ unboundreader ]
+    # aggregations/predefined-vars.feature: its permission, in restheart-test/acl, is for this role
+    - userid: aggrvars-user
+      password: secret
+      roles: [ aggrvars-role ]
 
 /mongoRealmAuthenticator/users-db: restheart-test
 
