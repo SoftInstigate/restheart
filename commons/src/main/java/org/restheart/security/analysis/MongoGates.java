@@ -42,7 +42,14 @@ import org.restheart.security.MongoPermissions;
  *     <td>a {@code PATCH} or {@code DELETE} over many documents at once</td></tr>
  * <tr><td>{@code allowWriteMode}</td>
  *     <td>a write carrying {@code ?wm=}</td></tr>
+ * <tr><td>{@code allowFilter}</td>
+ *     <td>a read carrying {@code ?filter=}, {@code ?sort=} or {@code ?sort_by=}; when a permission
+ *     does not set it, the mongo option {@code default-allow-filter} decides</td></tr>
  * </table>
+ *
+ * <p>{@code allowWriteMode} and {@code allowFilter} refuse a parameter, not an action: the call
+ * without it is always available, so they never make a resource or an action disappear. The
+ * catalog leaves out the parameters instead, see {@link #allowsFilter}.
  */
 public final class MongoGates {
 
@@ -97,5 +104,29 @@ public final class MongoGates {
         }
 
         return Truth.TRUE;
+    }
+
+    /**
+     * Whether {@code permissions} lets a read carry {@code filter}, {@code sort} or
+     * {@code sort_by}, the query parameters {@code allowFilter} decides.
+     *
+     * <p>{@link Truth#TRUE} or {@link Truth#FALSE}, like {@link #allows}: a property of the
+     * permission and of the configured default, both in hand. A permission whose
+     * {@code allowFilter} cannot be read does not allow it, as the check at request time refuses.
+     *
+     * @param defaultAllowFilter the mongo option {@code default-allow-filter}, for a permission
+     *                           that does not set {@code allowFilter}
+     * @since 9.16.0
+     */
+    public static Truth allowsFilter(MongoPermissions permissions, boolean defaultAllowFilter) {
+        if (permissions == null) {
+            return Truth.TRUE;
+        }
+
+        try {
+            return permissions.isAllowFilter(defaultAllowFilter) ? Truth.TRUE : Truth.FALSE;
+        } catch (IllegalArgumentException e) {
+            return Truth.FALSE;
+        }
     }
 }

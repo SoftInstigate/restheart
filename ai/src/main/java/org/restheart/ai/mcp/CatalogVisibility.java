@@ -220,6 +220,17 @@ final class CatalogVisibility {
      */
     static Map<String, Object> verdict(AclPermissions permissions, Request<?> request, McpResource resource,
                                        String actionName) {
+        return verdict(permissions, request, resource, actionName, true);
+    }
+
+    /**
+     * The same, with the mongo option {@code default-allow-filter}: the value of
+     * {@code allowFilter} for a permission that does not set it.
+     *
+     * @since 9.16.0
+     */
+    static Map<String, Object> verdict(AclPermissions permissions, Request<?> request, McpResource resource,
+                                       String actionName, boolean defaultAllowFilter) {
         var action = resource.actions().get(actionName);
 
         if (action == null) {
@@ -228,12 +239,27 @@ final class CatalogVisibility {
 
         var path = pathOf(resource.uri()) + (action.pathTemplate() == null ? "" : action.pathTemplate());
 
-        return verdict(permissions.of(request), new RequestListingContext(request, path, methodOf(action)), action, path);
+        return verdict(permissions.of(request), new RequestListingContext(request, path, methodOf(action)), action, path,
+                defaultAllowFilter);
     }
 
     /** The same question with the rules and the context already in hand. Visible for testing. */
     static Map<String, Object> verdict(Collection<BaseAclPermission> rules, ListingContext context,
                                        McpResource.Action action, String path) {
+        return verdict(rules, context, action, path, true);
+    }
+
+    /**
+     * The same question, with {@code default-allow-filter}. Visible for testing.
+     *
+     * <p>A read whose params include {@code filter}, {@code sort} or {@code sort_by} gets
+     * {@code withheld_params} when no rule that could apply allows them ({@code allowFilter}): the
+     * call without them works, the one with them gets 403, so the description leaves them out.
+     *
+     * @since 9.16.0
+     */
+    static Map<String, Object> verdict(Collection<BaseAclPermission> rules, ListingContext context,
+                                       McpResource.Action action, String path, boolean defaultAllowFilter) {
         var asked = askedOf(action);
 
         if (rules.isEmpty()) {
@@ -245,6 +271,7 @@ final class CatalogVisibility {
         var bestIgnoringSwitches = Truth.FALSE;
         var decidingInputs = new LinkedHashSet<String>();
         var filterInputs = new LinkedHashSet<String>();
+        var queryAllowed = Truth.FALSE;
         Set<String> serverSets = null;
 
         for (var permission : rules) {
@@ -261,6 +288,7 @@ final class CatalogVisibility {
             // the fields every rule that could apply sets itself: whichever one does, they are the server's
             if (truth.mayBeTrue()) {
                 filterInputs.addAll(filterInputsOf(permission, methodOf(action)));
+                queryAllowed = queryAllowed.or(allowsFilter(permission, defaultAllowFilter));
 
                 var merged = mergedFieldsOf(permission);
                 if (serverSets == null) {
@@ -289,7 +317,33 @@ final class CatalogVisibility {
             verdict.put("server_sets", List.copyOf(serverSets));
         }
 
+        var queryParams = queryParamsOf(action);
+        if (best.mayBeTrue() && !queryParams.isEmpty() && queryAllowed == Truth.FALSE) {
+            verdict.put("withheld_params", queryParams);
+        }
+
         return verdict;
+    }
+
+    /** The query parameters {@code allowFilter} decides. */
+    private static final List<String> QUERY_PARAMS = List.of("filter", "sort", "sort_by");
+
+    /** The params of a read that {@code allowFilter} decides, in their declared order. */
+    private static List<String> queryParamsOf(McpResource.Action action) {
+        if (!"GET".equalsIgnoreCase(methodOf(action)) || action.params() == null) {
+            return List.of();
+        }
+
+        return action.params().keySet().stream().filter(QUERY_PARAMS::contains).toList();
+    }
+
+    /** {@code allowFilter} of a permission; one that cannot be read does not allow, as at request time. */
+    private static Truth allowsFilter(BaseAclPermission permission, boolean defaultAllowFilter) {
+        try {
+            return MongoGates.allowsFilter(MongoPermissions.from(permission), defaultAllowFilter);
+        } catch (Exception e) {
+            return Truth.FALSE;
+        }
     }
 
     /**

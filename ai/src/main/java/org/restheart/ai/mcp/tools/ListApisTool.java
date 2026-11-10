@@ -133,6 +133,18 @@ public final class ListApisTool {
                 if (verdict.get("server_sets") instanceof List<?> set && action.get("body_schema") instanceof Map<?, ?> schema) {
                     action.put("body_schema", withoutRequired(schema, set));
                 }
+
+                // What the caller's rules do not allow on a read (filter, sort, sort_by without
+                // mongo.allowFilter) is not offered: the call without it works, with it gets 403
+                if (verdict.get("withheld_params") instanceof List<?> withheldParams && action.get("params") instanceof Map<?, ?> params) {
+                    var kept = new LinkedHashMap<String, Object>();
+                    params.forEach((k, v) -> {
+                        if (!withheldParams.contains(k)) {
+                            kept.put(String.valueOf(k), v);
+                        }
+                    });
+                    action.put("params", kept);
+                }
             }
         }
 
@@ -257,6 +269,10 @@ public final class ListApisTool {
 
         if (action.bodySchema() != null || List.of("POST", "PUT", "PATCH").contains(action.method())) {
             names.add("body");
+        }
+
+        if (verdict.get("withheld_params") instanceof List<?> withheld) {
+            names.removeIf(withheld::contains);
         }
 
         return List.copyOf(names);

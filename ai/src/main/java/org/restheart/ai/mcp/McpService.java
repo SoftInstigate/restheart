@@ -39,6 +39,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.restheart.configuration.Configuration;
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.ai.mcp.tools.CachedResourceLookup;
 import org.restheart.ai.mcp.tools.CallApiTool;
@@ -176,6 +177,10 @@ public class McpService implements ByteArrayService {
 
     @Inject("config")
     private Map<String, Object> config;
+
+    /** The whole configuration, for the mongo option {@code default-allow-filter}. */
+    @Inject("rh-config")
+    private Configuration rhConfig;
 
     /** Runs a {@code call_api} request through this server's own handler chain — see {@link CallApiTool}. */
     @Inject("in-process-dispatcher")
@@ -1765,7 +1770,18 @@ public class McpService implements ByteArrayService {
             return ListApisTool.Verdicts.NONE;
         }
 
-        return (resource, actionName) -> CatalogVisibility.verdict(permissions, request, resource, actionName);
+        var defaultAllowFilter = defaultAllowFilter();
+        return (resource, actionName) -> CatalogVisibility.verdict(permissions, request, resource, actionName, defaultAllowFilter);
+    }
+
+    /**
+     * The mongo option {@code default-allow-filter}: the {@code allowFilter} of a permission that
+     * does not set it, {@code false} when the option is not there, as the mongo service reads it.
+     */
+    private boolean defaultAllowFilter() {
+        return rhConfig != null
+                && rhConfig.toMap().get("mongo") instanceof Map<?, ?> mongo
+                && Boolean.TRUE.equals(mongo.get("default-allow-filter"));
     }
 
     /**

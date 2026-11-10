@@ -262,6 +262,35 @@ public class ListApisToolTest {
         assertEquals(List.of("_id", "type"), branches.get(1).get("required"));
     }
 
+    /**
+     * A read the caller's rules allow without {@code filter} (no {@code mongo.allowFilter}) is
+     * described without it: the call with it would get 403, and the agent is told why it is missing.
+     */
+    @Test
+    public void withheldParamsAreLeftOutOfTheAction() {
+        var resource = McpResource.builder()
+                .uri("https://host/todos")
+                .kind("collection")
+                .action("query", a -> {
+                    a.method("GET");
+                    a.param("filter", "object", false);
+                    a.param("page", "integer", false);
+                })
+                .build();
+        var tool = toolWith(new RegisteredMcpAware(fixed(resource), "p1", "/todos", Map.of()));
+        ListApisTool.Verdicts noFilter = (r, name) -> Map.of("permitted", "yes", "withheld_params", List.of("filter"));
+
+        var described = tool.list(null, "https://host", McpScopeProvider.UNPARTITIONED, "https://host/todos",
+                null, null, null, null, VISIBLE, noFilter);
+
+        @SuppressWarnings("unchecked")
+        var query = (Map<String, Object>) ((Map<String, Object>) described.get("actions")).get("query");
+        @SuppressWarnings("unchecked")
+        var params = (Map<String, Object>) query.get("params");
+        assertEquals(java.util.Set.of("page"), params.keySet(), "filter is not offered");
+        assertEquals(List.of("filter"), query.get("withheld_params"), "said, so the agent knows why it is missing");
+    }
+
     @Test
     public void resourceMode_returnsFullContext_ignoresOtherFilters() {
         var tool = toolWith(new RegisteredMcpAware(fixed(resource("https://host/a", "collection", "A")), "p1", "/a", Map.of()));
