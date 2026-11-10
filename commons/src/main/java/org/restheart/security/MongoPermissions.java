@@ -102,6 +102,7 @@ public class MongoPermissions {
     private final BsonDocument projectResponse;
     private final BsonDocument readFilter;
     private final BsonDocument writeFilter;
+    private final BsonDocument sort;
 
     /**
      * A predefined instance that allows all MongoDB operations without restrictions.
@@ -151,6 +152,7 @@ public class MongoPermissions {
         this.writeFilter = null;
         this.mergeRequest = null;
         this.projectResponse = null;
+        this.sort = null;
     }
 
     /**
@@ -194,6 +196,13 @@ public class MongoPermissions {
     MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
                      boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode, Boolean allowFilter,
                      BsonDocument mergeRequest, BsonDocument projectResponse) {
+        this(readFilter, writeFilter, allowManagementRequests, allowBulkPatch, allowBulkDelete, allowWriteMode,
+                allowFilter, mergeRequest, projectResponse, null);
+    }
+
+    MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
+                     boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode, Boolean allowFilter,
+                     BsonDocument mergeRequest, BsonDocument projectResponse, BsonDocument sort) {
         this.readFilter = readFilter == null
                 ? null
                 : readFilter.isNull()
@@ -214,6 +223,7 @@ public class MongoPermissions {
 
         this.mergeRequest = mergeRequest;
         this.projectResponse = projectResponse;
+        this.sort = sort == null || sort.isEmpty() ? null : sort;
     }
 
     /**
@@ -400,10 +410,22 @@ public class MongoPermissions {
                 projectResponse = null;
             }
 
+            var _sort = mongoDoc.get("sort");
+
+            if (!(_sort == null || _sort.isNull()) && !_sort.isDocument()) {
+                throw new ConfigurationException("Wrong permission: sort must be a JSON object or null");
+            }
+
+            var sort = _sort == null || _sort.isNull() ? null : _sort.asDocument();
+
+            checkConditionals("readFilter", readFilter);
+            checkConditionals("writeFilter", writeFilter);
+            checkConditionals("sort", sort);
+
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(mongoDoc, "allowManagementRequests"),
                     parseBooleanArg(mongoDoc, "allowBulkPatch"), parseBooleanArg(mongoDoc, "allowBulkDelete"),
                     parseBooleanArg(mongoDoc, "allowWriteMode"), parseOptionalBooleanArg(mongoDoc, "allowFilter"),
-                    mergeRequest, projectResponse);
+                    mergeRequest, projectResponse, sort);
         }
     }
 
@@ -430,6 +452,9 @@ public class MongoPermissions {
         }
         map.put("readFilter", this.readFilter);
         map.put("writeFilter", this.writeFilter);
+        if (this.sort != null) {
+            map.put("sort", this.sort);
+        }
 
         return BsonUtils.toBsonDocument(map);
     }
@@ -682,10 +707,29 @@ public class MongoPermissions {
                 projectResponse = null;
             }
 
+            BsonDocument sort = null;
+
+            if (args.containsKey("sort")) {
+                try {
+                    String __sort = argValue(args, "sort");
+
+                    if (__sort != null && !__sort.isBlank()) {
+                        sort = BsonDocument.parse(__sort);
+                    }
+                } catch (ClassCastException | JsonParseException jpe) {
+                    throw new ConfigurationException(
+                            "Wrong permission: the sort is not a string defining a JSON Object", jpe);
+                }
+            }
+
+            checkConditionals("readFilter", readFilter);
+            checkConditionals("writeFilter", writeFilter);
+            checkConditionals("sort", sort);
+
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
                     parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
                     parseBooleanArg(args, "allowWriteMode"), parseOptionalBooleanArg(args, "allowFilter"),
-                    mergeRequest, projectResponse);
+                    mergeRequest, projectResponse, sort);
         }
     }
 
@@ -778,6 +822,35 @@ public class MongoPermissions {
      *
      * @return The read filter as a BsonDocument, or null if no read filter is defined
      */
+    /**
+     * The order of the reads this permission authorizes, applied by the server to a {@code GET}
+     * on a collection when the client sends no {@code sort} of its own. It may hold
+     * {@code {"$ifvar": [var, alternatives, else]}}, picking one of the named alternatives by the
+     * value of an ACL variable, and directions from ACL variables, with defaults:
+     * {@code {"createdAt": {"$var": ["@qparams['dir']", -1]}}}.
+     *
+     * @return the sort clause, or null if the permission does not set one
+     * @since 9.16.0
+     */
+    public BsonDocument getSort() {
+        return this.sort;
+    }
+
+    /**
+     * Checks the {@code $ifvar} and {@code $var} of a clause when the permission is loaded.
+     */
+    private static void checkConditionals(String what, BsonDocument clause) {
+        if (clause == null) {
+            return;
+        }
+
+        try {
+            AclVarsInterpolator.checkConditionals(BsonUtils.unescapeKeys(clause));
+        } catch (IllegalArgumentException e) {
+            throw new ConfigurationException("Wrong permission: " + what + ": " + e.getMessage());
+        }
+    }
+
     public BsonDocument getReadFilter() {
         return readFilter == null || readFilter.isNull()
                 ? null

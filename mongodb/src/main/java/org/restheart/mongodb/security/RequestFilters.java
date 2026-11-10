@@ -21,7 +21,11 @@
 package org.restheart.mongodb.security;
 
 import java.util.ArrayDeque;
+import java.util.List;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonValue;
+import org.restheart.utils.HttpStatus;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.Inject;
@@ -36,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name = "mongoPermissionFilters",
-        description = "enforces the filters according to the mongo.readFilter and mongo.writeFilter ACL permission",
+        description = "enforces the filters according to the mongo.readFilter and mongo.writeFilter ACL permission, and the order of mongo.sort",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 public class RequestFilters implements MongoInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestFilters.class);
@@ -67,6 +71,19 @@ public class RequestFilters implements MongoInterceptor {
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var mongoPermissions = MongoPermissions.of(request);
 
+        // the permission's order, when the client sends none of its own
+        if (request.isGet() && request.isCollection() && mongoPermissions.getSort() != null && request.getSortBy() == null) {
+            try {
+                var sort = resolveSort(request, mongoPermissions.getSort());
+                if (sort != null) {
+                    request.setSortBy(new ArrayDeque<>(List.of(sort.toJson())));
+                }
+            } catch (IllegalArgumentException e) {
+                response.setInError(HttpStatus.SC_BAD_REQUEST, e.getMessage());
+                return;
+            }
+        }
+
         if (request.isGet() && mongoPermissions.getReadFilter() != null) {
             LOGGER.debug("read filter: {}", mongoPermissions.getReadFilter());
             addFilter(request, mongoPermissions.getReadFilter());
@@ -87,6 +104,75 @@ public class RequestFilters implements MongoInterceptor {
         return enabled
                 && request.isHandledBy("mongo")
                 && MongoPermissions.of(request) != null;
+    }
+
+    /**
+     * The order a permission's {@code sort} gives this request, or null when it gives none.
+     *
+     * <p>A top-level {@code {"$ifvar": [var, alternatives, else]}} picks, by the value of the ACL
+     * variable, one of the named alternatives; when the variable is not bound, the optional
+     * {@code else} applies. The direction of each field may come from an ACL variable, also with a
+     * default ({@code {"$var": [var, default]}}), and must be 1 or -1. When the order does not name
+     * {@code _id}, {@code _id} is appended, so that a page is the same page every time.
+     *
+     * @throws IllegalArgumentException when the request picks an alternative the permission does
+     *                                  not declare, or a direction that is not 1 or -1
+     */
+    static BsonDocument resolveSort(final MongoRequest request, final BsonDocument clause) {
+        var chosen = clause;
+
+        if (clause.size() == 1 && clause.containsKey(AclVarsInterpolator.IFVAR)) {
+            var args = clause.get(AclVarsInterpolator.IFVAR).asArray();
+            var picked = AclVarsInterpolator.interpolatePropValue(request, null, args.get(0).asString().getValue());
+
+            if (!picked.isNull()) {
+                var name = picked.isString() ? picked.asString().getValue() : picked.toString();
+                var alternatives = args.get(1).asDocument();
+
+                if (!alternatives.containsKey(name) || !alternatives.get(name).isDocument()) {
+                    throw new IllegalArgumentException("sort: '" + name + "' is not one of the orders this permission declares: "
+                            + String.join(", ", alternatives.keySet()));
+                }
+
+                chosen = alternatives.get(name).asDocument();
+            } else if (args.size() > 2 && args.get(2).isDocument()) {
+                chosen = args.get(2).asDocument();
+            } else {
+                return null;
+            }
+        }
+
+        var resolved = new BsonDocument();
+
+        for (var field : chosen.keySet()) {
+            var direction = chosen.get(field);
+
+            if (direction.isString() || direction.isDocument()) {
+                direction = AclVarsInterpolator.interpolateBson(request, direction);
+            }
+
+            resolved.put(field, direction(field, direction));
+        }
+
+        if (!resolved.containsKey("_id")) {
+            resolved.put("_id", new BsonInt32(1));
+        }
+
+        return resolved;
+    }
+
+    private static BsonInt32 direction(final String field, final BsonValue value) {
+        if (value.isNumber() && (value.asNumber().intValue() == 1 || value.asNumber().intValue() == -1)
+                && value.asNumber().doubleValue() == value.asNumber().intValue()) {
+            return new BsonInt32(value.asNumber().intValue());
+        }
+
+        if (value.isString() && ("1".equals(value.asString().getValue().trim()) || "-1".equals(value.asString().getValue().trim()))) {
+            return new BsonInt32(Integer.parseInt(value.asString().getValue().trim()));
+        }
+
+        throw new IllegalArgumentException("sort: the direction of " + field + " must be 1 or -1"
+                + (value.isNull() ? ", and its variable is not bound: give it, or a default with $var" : ""));
     }
 
     private void addFilter(final MongoRequest request, final BsonDocument filter) {

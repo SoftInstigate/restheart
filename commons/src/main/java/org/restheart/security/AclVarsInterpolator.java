@@ -148,7 +148,8 @@ public class AclVarsInterpolator {
      * @see #
      */
     public static BsonValue interpolateBson(final Request<?> request, final BsonValue bson) {
-        return interpolateBson(request, bson, false);
+        var interpolated = interpolateBson(request, bson, false);
+        return interpolated == DROPPED ? new BsonDocument() : interpolated;
     }
 
     /**
@@ -165,6 +166,11 @@ public class AclVarsInterpolator {
      *
      * <p>Note that negations ({@code $ne}, {@code $nin}, {@code $not}) of an unbound variable still
      * match: avoid them with {@code @} variables in filters.</p>
+     * <p>Since 9.16 a filter can also hold the two conditional forms of aggregations, resolved over
+     * the ACL variables. {@code {"$ifvar": [var, then, else]}} applies {@code then} when the
+     * variable is bound, else the optional {@code else}, else nothing: an element of an
+     * {@code $and}, for instance, is removed. {@code {"$var": [var, default]}} is the value of the
+     * variable, or {@code default} when it is not bound.</p>
      *
      * @param request the current request
      * @param filter the filter to interpolate
@@ -173,7 +179,10 @@ public class AclVarsInterpolator {
      * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
      */
     public static BsonValue interpolateFilter(final Request<?> request, final BsonValue filter) {
-        return interpolateBson(request, filter, true);
+        var interpolated = interpolateBson(request, filter, true);
+
+        // a whole filter that is an $ifvar with nothing to apply sets no condition
+        return interpolated == DROPPED ? new BsonDocument() : interpolated;
     }
 
     /**
@@ -212,8 +221,24 @@ public class AclVarsInterpolator {
         return Optional.empty();
     }
 
+    /** The operator of a conditional element, as in aggregations: {@code {"$ifvar": [var, then, else]}}. */
+    public static final String IFVAR = "$ifvar";
+
+    /** The operator of a variable with a default, as in aggregations: {@code {"$var": [var, default]}}. */
+    public static final String VAR = "$var";
+
+    /**
+     * What an {@code $ifvar} with an unbound variable and no third element leaves: nothing. The
+     * element is removed from the array or the document that holds it. Compared by identity.
+     */
+    private static final BsonValue DROPPED = new BsonDocument("$$dropped", new BsonString("$ifvar"));
+
     private static BsonValue interpolateBson(final Request<?> request, final BsonValue bson, final boolean filter) {
-        if (bson.isDocument()) {
+        if (bson.isDocument() && bson.asDocument().size() == 1 && bson.asDocument().containsKey(IFVAR)) {
+            return ifvar(request, bson.asDocument().get(IFVAR), filter);
+        } else if (bson.isDocument() && bson.asDocument().size() == 1 && bson.asDocument().containsKey(VAR)) {
+            return varWithDefault(request, bson.asDocument().get(VAR), filter);
+        } else if (bson.isDocument()) {
             var ret = new BsonDocument();
             var doc = bson.asDocument();
             doc.keySet().stream().forEach(k -> {
@@ -222,25 +247,136 @@ public class AclVarsInterpolator {
                 if (value.isString()) {
                     ret.put(k, interpolateString(request, k, value.asString().getValue(), filter));
                 } else if (value.isDocument()) {
-                    ret.put(k, interpolateBson(request, value, filter));
+                    var interpolated = interpolateBson(request, value, filter);
+                    if (interpolated != DROPPED) {
+                        ret.put(k, interpolated);
+                    }
                 } else if (value.isArray()) {
-                    var array = new BsonArray();
-                    value.asArray().stream().forEachOrdered(e -> array.add(interpolateBson(request, e, filter)));
-                    ret.put(k, array);
+                    ret.put(k, interpolateArray(request, value.asArray(), filter));
                 } else {
                     ret.put(k, value);
                 }
             });
             return ret;
         } else if (bson.isArray()) {
-            var ret = new BsonArray();
-            bson.asArray().stream().forEachOrdered(ae -> ret.add(interpolateBson(request, ae, filter)));
-            return ret;
+            return interpolateArray(request, bson.asArray(), filter);
         } else if (bson.isString()) {
             return interpolateString(request, null, bson.asString().getValue(), filter);
         } else {
             return bson;
         }
+    }
+
+    private static BsonArray interpolateArray(final Request<?> request, final BsonArray array, final boolean filter) {
+        var ret = new BsonArray();
+        array.stream().forEachOrdered(e -> {
+            var interpolated = interpolateBson(request, e, filter);
+            if (interpolated != DROPPED) {
+                ret.add(interpolated);
+            }
+        });
+        return ret;
+    }
+
+    /**
+     * {@code {"$ifvar": [var, then, else]}}: {@code then} when the ACL variable {@code var} is
+     * bound for the request, else the optional {@code else}, else nothing ({@link #DROPPED}).
+     * {@code var} may also be an array of variables, all of which must be bound.
+     */
+    private static BsonValue ifvar(final Request<?> request, final BsonValue args, final boolean filter) {
+        checkIfvar(args);
+        var array = args.asArray();
+
+        if (allBound(request, array.get(0))) {
+            return interpolateBson(request, array.get(1), filter);
+        } else if (array.size() > 2) {
+            return interpolateBson(request, array.get(2), filter);
+        } else {
+            return DROPPED;
+        }
+    }
+
+    /**
+     * {@code {"$var": [var, default]}}: the value of the ACL variable {@code var}, or
+     * {@code default} when it is not bound. {@code {"$var": var}} is the variable alone.
+     */
+    private static BsonValue varWithDefault(final Request<?> request, final BsonValue args, final boolean filter) {
+        checkVar(args);
+
+        if (args.isString()) {
+            return interpolateString(request, null, args.asString().getValue(), filter);
+        }
+
+        var name = args.asArray().get(0).asString().getValue();
+        var value = interpolatePropValue(request, null, name);
+
+        return value.isNull() ? args.asArray().get(1) : value;
+    }
+
+    private static boolean allBound(final Request<?> request, final BsonValue vars) {
+        if (vars.isString()) {
+            return !interpolatePropValue(request, null, vars.asString().getValue()).isNull();
+        }
+
+        return vars.asArray().stream().allMatch(v -> !interpolatePropValue(request, null, v.asString().getValue()).isNull());
+    }
+
+    /**
+     * Checks the {@code $ifvar} and {@code $var} of a permission's {@code readFilter},
+     * {@code writeFilter} or {@code sort} when it is loaded, so that a malformed one is refused
+     * then rather than at the first request.
+     *
+     * @param bson the clause to check
+     * @throws IllegalArgumentException naming what is wrong
+     * @since 9.16.0
+     */
+    public static void checkConditionals(final BsonValue bson) {
+        if (bson == null) {
+            return;
+        }
+
+        if (bson.isDocument()) {
+            var doc = bson.asDocument();
+            if (doc.containsKey(IFVAR)) {
+                if (doc.size() != 1) {
+                    throw new IllegalArgumentException(IFVAR + " must be the only key of its document");
+                }
+                checkIfvar(doc.get(IFVAR));
+            } else if (doc.containsKey(VAR)) {
+                if (doc.size() != 1) {
+                    throw new IllegalArgumentException(VAR + " must be the only key of its document");
+                }
+                checkVar(doc.get(VAR));
+            }
+            doc.values().forEach(AclVarsInterpolator::checkConditionals);
+        } else if (bson.isArray()) {
+            bson.asArray().forEach(AclVarsInterpolator::checkConditionals);
+        }
+    }
+
+    private static void checkIfvar(final BsonValue args) {
+        if (!args.isArray() || args.asArray().size() < 2 || args.asArray().size() > 3) {
+            throw new IllegalArgumentException(IFVAR + " takes [var, then] or [var, then, else]");
+        }
+
+        var vars = args.asArray().get(0);
+        if (!isVarName(vars) && !(vars.isArray() && !vars.asArray().isEmpty() && vars.asArray().stream().allMatch(AclVarsInterpolator::isVarName))) {
+            throw new IllegalArgumentException(IFVAR + " takes an @ variable, or an array of them, as its first element");
+        }
+    }
+
+    private static void checkVar(final BsonValue args) {
+        if (isVarName(args)) {
+            return;
+        }
+
+        if (!args.isArray() || args.asArray().size() != 2 || !isVarName(args.asArray().get(0))) {
+            throw new IllegalArgumentException(VAR + " takes an @ variable, or [@ variable, default]");
+        }
+    }
+
+    private static boolean isVarName(final BsonValue value) {
+        return value.isString() && value.asString().getValue().startsWith("@");
     }
 
     private static BsonValue interpolateString(final Request<?> request, final String key, final String value, final boolean filter) {
