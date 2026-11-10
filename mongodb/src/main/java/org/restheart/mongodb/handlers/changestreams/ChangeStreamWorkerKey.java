@@ -25,7 +25,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
+import org.restheart.exchange.InvalidMetadataException;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.QueryNotFoundException;
+import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
 
@@ -72,6 +78,30 @@ public class ChangeStreamWorkerKey {
 
         this.stages = exchange.getAttachment(GetChangeStreamHandler.STAGES_ATTACHMENT_KEY);
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
+    }
+
+    /**
+     * The key of the worker that serves {@code request}: the one the request opens or shares. It is
+     * built as the change stream handler builds it, the stages of the stream resolved with the
+     * variables of the request, so that a plugin can tell whether a request opens a new cursor
+     * (for instance to cap the cursors of a database) without repeating that logic.
+     *
+     * @param request a change stream request, with the collection properties loaded
+     * @return the key of the worker for the request
+     * @throws QueryNotFoundException if the collection does not declare the stream
+     * @throws QueryVariableNotBoundException if a variable of the stages is not bound
+     * @throws InvalidMetadataException if the definition of the stream is not valid
+     * @since 9.16.0
+     */
+    public static ChangeStreamWorkerKey of(MongoRequest request)
+            throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException {
+        var avars = request.getAggregationVars() == null ? new BsonDocument() : request.getAggregationVars().clone();
+        StagesInterpolator.injectAvars(request, avars);
+
+        var stages = new BsonArray();
+        GetChangeStreamHandler.resolveStages(request, avars).forEach(stages::add);
+
+        return new ChangeStreamWorkerKey(encode(request.getExchange().getRequestPath()), stages, request.getJsonMode());
     }
 
     @Override

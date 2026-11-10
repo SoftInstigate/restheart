@@ -291,9 +291,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
     private List<BsonDocument> getResolvedStagesAsList(MongoRequest request)
             throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException, SecurityException {
-        var pipeline = findOperation(request);
         var avars = request.getExchange().getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
-        var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request);
+        var resolvedStages = resolveStages(request, avars);
 
         var stagesArray = new BsonArray();
         resolvedStages.forEach(stagesArray::add);
@@ -343,7 +342,16 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     }
 
     /** Finds the matching {@link ChangeStreamOperation} for the current request. */
-    private ChangeStreamOperation findOperation(MongoRequest request)
+    /**
+     * The stages of the requested stream, with its variables resolved from {@code avars}.
+     */
+    static List<BsonDocument> resolveStages(MongoRequest request, BsonDocument avars)
+            throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException {
+        var pipeline = findOperation(request);
+        return StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request);
+    }
+
+    private static ChangeStreamOperation findOperation(MongoRequest request)
             throws InvalidMetadataException, QueryNotFoundException {
         var changesStreamOperation = request.getChangeStreamOperation();
         var streams = ChangeStreamOperation.getFromJson(request.getCollectionProps());
