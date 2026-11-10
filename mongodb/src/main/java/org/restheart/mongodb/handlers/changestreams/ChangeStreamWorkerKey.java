@@ -24,7 +24,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-import org.bson.BsonDocument;
+import org.bson.BsonArray;
 import org.bson.json.JsonMode;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
@@ -33,18 +33,22 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 /**
- * Idendifies a ChangeStreamWorker
+ * Identifies a ChangeStreamWorker: the URL of the stream, its resolved stages and the JSON mode.
+ *
+ * <p>Nothing else of the request is part of it (since 9.16): two clients of a stream share the
+ * worker, and its cursor, when its stages resolve the same, whoever they are and whatever their
+ * {@code notify_when} variable, which is evaluated per session on the shared events.</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ChangeStreamWorkerKey {
     private final String url;
-    private final BsonDocument avars;
+    private final BsonArray stages;
     private final JsonMode jsonMode;
 
-    public ChangeStreamWorkerKey(String url, BsonDocument avars, JsonMode jsonMode) {
+    public ChangeStreamWorkerKey(String url, BsonArray stages, JsonMode jsonMode) {
         this.url = url;
-        this.avars = avars;
+        this.stages = stages;
         this.jsonMode = jsonMode;
     }
 
@@ -59,20 +63,20 @@ public class ChangeStreamWorkerKey {
             this.url = encode(exchange.getRequestURI());
         }
 
-        this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
+        this.stages = exchange.getAttachment(GetChangeStreamHandler.STAGES_ATTACHMENT_KEY);
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
     }
 
     public ChangeStreamWorkerKey(HttpServerExchange exchange) {
         this.url = encode(exchange.getRequestPath());
 
-        this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
+        this.stages = exchange.getAttachment(GetChangeStreamHandler.STAGES_ATTACHMENT_KEY);
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getUrl(), getAvars(), getJsonMode());
+        return Objects.hash(getUrl(), getStages(), getJsonMode());
     }
 
     @Override
@@ -88,7 +92,7 @@ public class ChangeStreamWorkerKey {
     public String toString() {
         var _url = this.url == null ? null : URLUtils.decodeQueryString(this.url);
 
-        return "ChangeStreamWorkerKey{url: " + _url + ", avars: " + BsonUtils.toJson(this.avars) + ", jsonMode: " + this.jsonMode + "}";
+        return "ChangeStreamWorkerKey{url: " + _url + ", stages: " + BsonUtils.toJson(this.stages) + ", jsonMode: " + this.jsonMode + "}";
     }
 
     private static String encode(String queryString) {
@@ -103,10 +107,10 @@ public class ChangeStreamWorkerKey {
     }
 
     /**
-     * @return the avars
+     * @return the resolved stages of the stream
      */
-    public BsonDocument getAvars() {
-        return avars;
+    public BsonArray getStages() {
+        return stages;
     }
 
     /**

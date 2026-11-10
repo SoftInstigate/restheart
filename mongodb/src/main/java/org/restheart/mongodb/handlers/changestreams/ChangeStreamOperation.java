@@ -39,6 +39,17 @@ public class ChangeStreamOperation {
     public static final String NOTIFY_WHEN_ELEMENT_NAME = "notify_when";
 
     /**
+     * {@code "segregation": "none"} declares a stream meant for every event, also under a
+     * permission with a {@code readFilter}, which change streams do not apply since 9.16.
+     *
+     * @since 9.16.0
+     */
+    public static final String SEGREGATION_ELEMENT_NAME = "segregation";
+
+    /** The value of {@link #SEGREGATION_ELEMENT_NAME} for a stream meant for every event. */
+    public static final String SEGREGATION_NONE = "none";
+
+    /**
      *
      * @param collProps
      * @return
@@ -81,6 +92,7 @@ public class ChangeStreamOperation {
     private final String uri;
     private final BsonArray stages;
     private final BsonDocument notifyWhen;
+    private final String segregation;
 
     /**
      *
@@ -126,6 +138,22 @@ public class ChangeStreamOperation {
                     + " has invalid '" + NOTIFY_WHEN_ELEMENT_NAME + "': must be a document");
         }
         this.notifyWhen = (_notifyWhen != null && _notifyWhen.isDocument()) ? _notifyWhen.asDocument() : null;
+
+        var _segregation = properties.get(SEGREGATION_ELEMENT_NAME);
+        if (_segregation != null && !(_segregation.isString() && SEGREGATION_NONE.equals(_segregation.asString().getValue()))) {
+            throw new InvalidMetadataException("query /" + this.uri
+                    + " has invalid '" + SEGREGATION_ELEMENT_NAME + "': the only value is \"" + SEGREGATION_NONE + "\"");
+        }
+        this.segregation = _segregation == null ? null : SEGREGATION_NONE;
+    }
+
+    /**
+     * @return true when the stream declares {@code "segregation": "none"}: it is meant for every
+     *         event, also under a permission with a {@code readFilter}
+     * @since 9.16.0
+     */
+    public boolean declaresNoSegregation() {
+        return SEGREGATION_NONE.equals(this.segregation);
     }
 
     /**

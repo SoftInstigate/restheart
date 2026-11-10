@@ -20,6 +20,8 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
+import org.bson.BsonValue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -46,10 +48,10 @@ public class WebSocketSession {
     private final String id;
     private final WebSocketChannel channel;
     private final ChangeStreamWorker changeStreamWorker;
-    private final Map<String, String> boundVars;
+    private final Map<String, BsonValue> boundVars;
     private final XnioExecutor.Key keepAlive;
 
-    public WebSocketSession(WebSocketChannel channel, ChangeStreamWorker csw, Map<String, String> boundVars) {
+    public WebSocketSession(WebSocketChannel channel, ChangeStreamWorker csw, Map<String, BsonValue> boundVars) {
         this.id = new SecureRandomSessionIdGenerator().createSessionId();
         this.channel = channel;
         this.channel.getReceiveSetter().set(new ClientFramesListener());
@@ -126,7 +128,7 @@ public class WebSocketSession {
         return this.channel;
     }
 
-    public Map<String, String> getBoundVars() {
+    public Map<String, BsonValue> getBoundVars() {
         return boundVars;
     }
 

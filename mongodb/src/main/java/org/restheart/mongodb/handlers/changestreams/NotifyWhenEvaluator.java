@@ -106,9 +106,10 @@ public class NotifyWhenEvaluator {
      * </ul>
      *
      * @param event     the change event document (as returned by {@code ChangeStreamWorker.getDocument})
-     * @param boundVars the session's bound variables (query parameter or {@code avars})
+     * @param boundVars the session's bound variables: from the query parameter or {@code avars},
+     *                  or, for an {@code @} variable, resolved by the server for the session
      */
-    public boolean matches(BsonDocument event, Map<String, String> boundVars) {
+    public boolean matches(BsonDocument event, Map<String, BsonValue> boundVars) {
         if (boundVars == null || !boundVars.containsKey(varName)) {
             return false; // unbound variable → nothing is dispatched
         }
@@ -128,21 +129,35 @@ public class NotifyWhenEvaluator {
         var fv = fieldValue.get();
 
         if (fv.isArray()) {
-            // array membership: varValue must be a string element of the array
-            return fv.asArray().getValues().stream()
-                    .filter(BsonValue::isString)
-                    .anyMatch(v -> v.asString().getValue().equals(varValue));
-        } else if (fv.isString()) {
-            return fv.asString().getValue().equals(varValue);
+            // array membership: varValue must be an element of the array
+            return fv.asArray().getValues().stream().anyMatch(v -> sameValue(v, varValue));
         } else {
-            // Non-string, non-array field — no match
-            LOGGER.debug("notify_when field '{}::{}' value is neither string nor array — no match",
-                    topLevelField, fieldPath);
-            return false;
+            return sameValue(fv, varValue);
         }
     }
 
-    /** The query parameter name whose value is used for filtering. */
+    /**
+     * Compares BSON values, so that an {@code ObjectId} owner matches an {@code ObjectId}
+     * {@code @user._id}; a string bound from the request matches a string field, as before.
+     */
+    private static boolean sameValue(BsonValue field, BsonValue var) {
+        if (var == null || var.isNull()) {
+            return false;
+        }
+
+        return field.equals(var);
+    }
+
+    /**
+     * @return true when the variable is one the server resolves for the session, as
+     *         {@code @user._id}, never one taken from the request
+     * @since 9.16.0
+     */
+    public boolean usesServerVariable() {
+        return varName.startsWith("@");
+    }
+
+    /** The name of the variable whose value is used for filtering. */
     public String getVarName() {
         return varName;
     }

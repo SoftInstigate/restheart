@@ -50,7 +50,7 @@ public class ChangeStreamWorkerSseTest {
 
     @BeforeEach
     void setUp() {
-        var key = new ChangeStreamWorkerKey("http://localhost/db/coll/_streams/s", new BsonDocument(), JsonMode.RELAXED);
+        var key = new ChangeStreamWorkerKey("http://localhost/db/coll/_streams/s", new org.bson.BsonArray(), JsonMode.RELAXED);
         worker = new ChangeStreamWorker(key, List.of(), "db", "coll");
     }
 
@@ -105,7 +105,7 @@ public class ChangeStreamWorkerSseTest {
     @Test
     void workerWithResumeToken_storesToken() {
         var token = BsonDocument.parse("{\"_data\": \"resume-token-value\"}");
-        var key = new ChangeStreamWorkerKey("http://localhost/db/coll/_streams/s", new BsonDocument(), JsonMode.RELAXED);
+        var key = new ChangeStreamWorkerKey("http://localhost/db/coll/_streams/s", new org.bson.BsonArray(), JsonMode.RELAXED);
         var workerWithToken = new ChangeStreamWorker(key, List.of(), "db", "coll", token);
 
         // the worker is created without error — startChangeStream() would use the token

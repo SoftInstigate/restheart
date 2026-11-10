@@ -307,8 +307,8 @@
     - role: keynarrow
       predicate: path-prefix[path="/token"]
       priority: 0
-    # ChangeStreamPermissionsIT — readFilter and projectResponse apply to change streams as they
-    # do to a GET.
+    # ChangeStreamPermissionsIT: since 9.16 change streams do not apply this readFilter and
+    # projectResponse; a stream under this permission must segregate its events, or is refused.
     - role: aclreader
       predicate: method(GET) and path-prefix[path="/test-cs-acl"]
       priority: 0
