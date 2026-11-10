@@ -47,9 +47,10 @@ import org.restheart.security.MongoPermissions;
  * {@code false} by default.
  * The application queries through aggregations, which bind only the variables they declare.</p>
  *
- * <p>The 403 says why: when the permission would have allowed the read but for the query
- * parameters, its message names them and points to an aggregation. The permission's own predicate
- * is checked first, so a permission that does not apply to the request leaves no message.</p>
+ * <p>When the permission would have allowed the read but for the query parameters, the 403 tells
+ * the client only that they are not allowed, and the log of RESTHeart says what would allow the
+ * request. The permission's own predicate is checked first, so a permission that does not apply
+ * to the request leaves no message.</p>
  *
  * <p>Writes are not affected: a bulk {@code PATCH} or {@code DELETE} needs a filter, and
  * {@code allowBulkPatch} and {@code allowBulkDelete} decide about it. Neither are the root role and
@@ -105,15 +106,18 @@ public class AllowFilter extends BaseAllowInitializer implements Initializer {
         // attached by another authorizer is kept
         if (!allowed && mr.attachedParam(Authorizer.VETO_MESSAGE) == null) {
             mr.attachParam(Authorizer.VETO_MESSAGE, MESSAGE);
+            mr.attachParam(Authorizer.VETO_LOG_MESSAGE, LOG_MESSAGE);
         }
 
         return allowed;
     };
 
-    /**
-     * The message of the 403 for a read refused by this check.
-     */
-    static final String MESSAGE = "filter, sort and sort_by are not allowed by this permission: query through an aggregation, or ask for a permission with mongo.allowFilter";
+    /** The message of the 403 for a read refused by this check, for the client. */
+    static final String MESSAGE = "filter, sort and sort_by are not allowed";
+
+    /** The reason of the same 403, for the log. */
+    static final String LOG_MESSAGE = "filter, sort and sort_by are not allowed by the permission that matches the "
+            + "request: query through an aggregation, or set mongo.allowFilter on the permission";
 
     /**
      * @return true if the request has a filter, sort or sort_by query parameter

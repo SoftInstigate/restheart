@@ -25,28 +25,28 @@ Scenario: allowFilter false refuses filter, sort and sort_by, and allows the pla
     And param filter = '{"status":"A"}'
     When method GET
     Then status 403
-    And match response.message contains 'query through an aggregation'
+    And match response.message == 'filter, sort and sort_by are not allowed'
 
     * header Authorization = user
     Given path '/test-allow-filter/denied/_size'
     And param filter = '{"status":"A"}'
     When method GET
     Then status 403
-    And match response.message contains 'query through an aggregation'
+    And match response.message == 'filter, sort and sort_by are not allowed'
 
     * header Authorization = user
     Given path '/test-allow-filter/denied'
     And param sort = '{"status":1}'
     When method GET
     Then status 403
-    And match response.message contains 'query through an aggregation'
+    And match response.message == 'filter, sort and sort_by are not allowed'
 
     * header Authorization = user
     Given path '/test-allow-filter/denied'
     And param sort_by = 'status'
     When method GET
     Then status 403
-    And match response.message contains 'query through an aggregation'
+    And match response.message == 'filter, sort and sort_by are not allowed'
 
 Scenario: with allowFilter false the aggregation answers the query
 

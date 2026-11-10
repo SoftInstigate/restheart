@@ -90,7 +90,10 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     /** The resolved stages of the stream, part of the {@link ChangeStreamWorkerKey}. */
     public static final AttachmentKey<BsonArray> STAGES_ATTACHMENT_KEY = AttachmentKey.create(BsonArray.class);
 
-    /** The reason a stream under a permission with a readFilter is refused when it does not segregate. */
+    /** What the client is told when a stream is refused for not segregating its events. */
+    static final String NOT_ALLOWED = "not allowed";
+
+    /** The reason a stream under a permission with a readFilter is refused when it does not segregate, for the log. */
     static final String NOT_SEGREGATED = "this change stream is allowed by a permission with a readFilter, which change "
             + "streams do not apply since 9.16: segregate the events with notify_when on @user._id, or in the stages, "
             + "or declare \"segregation\": \"none\" for a stream meant for every event";
@@ -335,7 +338,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             return;
         }
 
-        throw new SecurityException(NOT_SEGREGATED);
+        LOGGER.warn("Change stream {} refused: {}", request.getPath(), NOT_SEGREGATED);
+        throw new SecurityException(NOT_ALLOWED);
     }
 
     /** Finds the matching {@link ChangeStreamOperation} for the current request. */

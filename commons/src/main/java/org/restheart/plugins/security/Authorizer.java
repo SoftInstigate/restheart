@@ -120,6 +120,19 @@ public interface Authorizer extends ConfigurablePlugin {
     public static final String VETO_MESSAGE = "veto-message";
 
     /**
+     * Key of the {@link Request#attachParam(String, Object) attached parameter} an authorizer can
+     * set to explain a denial in the log of RESTHeart, and not to the client.
+     * <p>
+     * When the request is denied, {@code AuthorizersHandler} logs its value at INFO, with the
+     * method and the path of the request. It is the place for what helps whoever writes the
+     * permissions, such as which option would allow the request, while {@link #VETO_MESSAGE}
+     * tells the client only what it needs.
+     *
+     * @since 9.16.0
+     */
+    public static final String VETO_LOG_MESSAGE = "veto-log-message";
+
+    /**
      * Enumeration defining the two types of authorization behavior.
      * <p>
      * The authorization type determines how the authorizer participates in the

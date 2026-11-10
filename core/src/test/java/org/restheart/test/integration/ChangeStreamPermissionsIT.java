@@ -160,7 +160,9 @@ public class ChangeStreamPermissionsIT extends AbstactIT {
         var answer = open("aclowner1", "all");
 
         assertTrue(answer.startsWith("403"), "a stream with no segregation must be refused; got: " + answer);
-        assertTrue(answer.contains("notify_when"), "the refusal must say what to write; got: " + answer);
+        // what to write goes to the log, not to the client
+        assertTrue(answer.contains("not allowed") && !answer.contains("readFilter"),
+                "the client must get a short refusal that says nothing of the permission; got: " + answer);
     }
 
     @Test

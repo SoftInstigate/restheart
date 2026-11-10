@@ -126,6 +126,12 @@ public class AuthorizersHandler extends PipelinedHandler {
             // an authorizer (e.g. a VETOER) can attach a specific denial reason via
             // request.attachParam(Authorizer.VETO_MESSAGE, "..."); when present, return
             // it as the response body instead of an empty 403
+            // the reason for whoever writes the permissions, in the log only
+            final String vetoLogMessage = (String) request.attachedParam(Authorizer.VETO_LOG_MESSAGE);
+            if (vetoLogMessage != null) {
+                LOGGER.info("403 for {} {}: {}", exchange.getRequestMethod(), exchange.getRequestPath(), vetoLogMessage);
+            }
+
             final String vetoMessage = (String) request.attachedParam(Authorizer.VETO_MESSAGE);
             if (vetoMessage != null) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Exchange.JSON_MEDIA_TYPE);
