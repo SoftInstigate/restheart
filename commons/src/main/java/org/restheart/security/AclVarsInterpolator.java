@@ -444,7 +444,42 @@ public class AclVarsInterpolator {
             return new BsonString(nextToken());
         }
 
+        // a value that may come from outside the configuration is data: with operators it would
+        // change the filter it is put in, so it matches no document, as an unbound variable does
+        if (filter && value.startsWith("@") && !operatorsAllowed(value) && containsOperators(interpolated)) {
+            LOGGER.warn("ACL filter variable {} holds operators for request {} {}, it will match no document",
+                    value, request.getMethod(), request.getPath());
+            return new BsonString(nextToken());
+        }
+
         return interpolated;
+    }
+
+    /**
+     * @return true if the resolver of {@code var} declares that its values may hold operators,
+     *         see {@link VarResolver#operatorsAllowed()}
+     * @since 9.15.3
+     */
+    public static boolean operatorsAllowed(String var) {
+        return var != null && var.startsWith("@") && var.length() > 1
+                && AclVarsRegistryImpl.getInstance().resolver(varName(var)).map(VarResolver::operatorsAllowed).orElse(false);
+    }
+
+    /**
+     * @return true if {@code value} has a key starting with {@code $}, at any depth
+     * @since 9.15.3
+     */
+    public static boolean containsOperators(BsonValue value) {
+        if (value == null) {
+            return false;
+        } else if (value.isDocument()) {
+            return value.asDocument().keySet().stream().anyMatch(k -> k.startsWith("$"))
+                    || value.asDocument().values().stream().anyMatch(AclVarsInterpolator::containsOperators);
+        } else if (value.isArray()) {
+            return value.asArray().stream().anyMatch(AclVarsInterpolator::containsOperators);
+        }
+
+        return false;
     }
 
     /**

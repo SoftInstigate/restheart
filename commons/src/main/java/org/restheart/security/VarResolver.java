@@ -133,4 +133,23 @@ public interface VarResolver {
     default EvaluationScope.Scope scope() {
         return EvaluationScope.Scope.CALL;
     }
+
+    /**
+     * Whether a value of this variable may hold MongoDB operators (keys starting with {@code $})
+     * where it is interpolated into a query: a {@code readFilter}, a {@code writeFilter}, the
+     * stages of an aggregation.
+     *
+     * <p>Defaults to {@code false}: a value that may come from outside the server's configuration,
+     * e.g. a property the account can write or a field of the request body, is data, and with
+     * operators it would change the query it is put in. Where it is interpolated, such a value
+     * matches no document in a permission filter, and refuses the request in an aggregation.</p>
+     *
+     * <p>{@code true} only for values that are queries by definition and are checked elsewhere,
+     * e.g. {@code @mongoPermissions.readFilter}, the server's own configuration.</p>
+     *
+     * @since 9.15.3
+     */
+    default boolean operatorsAllowed() {
+        return false;
+    }
 }

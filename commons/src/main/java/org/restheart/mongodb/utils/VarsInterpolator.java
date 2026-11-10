@@ -170,6 +170,14 @@ public class VarsInterpolator {
                     // request instead, and an author who wants a fallback writes one:
                     // {"$var": ["@user._id", <default>]}
                     ? AclVarsInterpolator.resolveRegisteredVar(request, name).filter(v -> !v.isNull())
+                            .map(v -> {
+                                // a value that may come from outside the configuration is data:
+                                // with operators it would change the pipeline it is put in
+                                if (!AclVarsInterpolator.operatorsAllowed(name) && AclVarsInterpolator.containsOperators(v)) {
+                                    throw new IllegalQueryVariableException(name);
+                                }
+                                return v;
+                            })
                     : Optional.empty();
         }
 

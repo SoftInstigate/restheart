@@ -258,6 +258,12 @@ final class BuiltInVarResolvers {
             return "filter";
         }
 
+        /** The client's ?filter, a query by definition, already checked by filterOperatorsBlacklist. */
+        @Override
+        public boolean operatorsAllowed() {
+            return true;
+        }
+
         @Override
         public BsonValue resolve(Request<?> request, String var) {
             return request instanceof MongoRequest mongoRequest ? mongoRequest.getFiltersDocument() : BsonNull.VALUE;
@@ -294,6 +300,12 @@ final class BuiltInVarResolvers {
         @Override
         public String name() {
             return "mongoPermissions";
+        }
+
+        /** The permission's own filters: the server's configuration, queries by definition. */
+        @Override
+        public boolean operatorsAllowed() {
+            return true;
         }
 
         @Override
