@@ -200,8 +200,20 @@ public interface ExchangeKeys {
      */
     public static final String _SCHEMAS = "_schemas";
 
-    /** Special resource name for aggregation operations. */
+    /**
+     * Special resource name for aggregation operations, kept for backward compatibility: since
+     * 9.16 the suggested one is {@link #_QUERIES}. Both address the same aggregations.
+     */
     public static final String _AGGREGATIONS = "_aggrs";
+
+    /**
+     * Special resource name for aggregation operations, the suggested one since 9.16:
+     * {@code /db/coll/_queries/<name>} runs the aggregation {@code <name>} declared on the
+     * collection, as {@code /db/coll/_aggrs/<name>} does.
+     *
+     * @since 9.16.0
+     */
+    public static final String _QUERIES = "_queries";
 
     /** Special resource name for change stream operations. */
     public static final String _STREAMS = "_streams";

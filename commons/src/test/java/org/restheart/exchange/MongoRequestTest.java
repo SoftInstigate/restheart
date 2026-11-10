@@ -101,6 +101,14 @@ public class MongoRequestTest {
 
         pathTokens = "/db/collection/_aggrs/test".split("/");
         assertEquals(ExchangeKeys.TYPE.AGGREGATION, MongoRequest.selectRequestType(pathTokens));
+
+        // _queries, the suggested name since 9.16, addresses the same aggregations
+        pathTokens = "/db/collection/_queries/test".split("/");
+        assertEquals(ExchangeKeys.TYPE.AGGREGATION, MongoRequest.selectRequestType(pathTokens));
+
+        // alone, like _aggrs, it is not a resource
+        pathTokens = "/db/collection/_queries".split("/");
+        assertEquals(ExchangeKeys.TYPE.INVALID, MongoRequest.selectRequestType(pathTokens));
     }
 
     /**

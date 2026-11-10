@@ -215,7 +215,7 @@ public class CollectionMcpResourceBuilderTest {
 
         var resource = CollectionMcpResourceBuilder.build(COLLECTION_URI, mcp, null, aggrs, streams).orElseThrow();
 
-        assertEquals(List.of(COLLECTION_URI + "/_aggrs/byStatus"), resource.extra().get("aggregations"));
+        assertEquals(List.of(COLLECTION_URI + "/_queries/byStatus"), resource.extra().get("aggregations"));
         assertEquals(List.of(COLLECTION_URI + "/_streams/lowStock"), resource.extra().get("streams"));
     }
 

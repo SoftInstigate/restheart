@@ -64,12 +64,12 @@ public class AggregationMcpResourceBuilderTest {
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
 
-        assertEquals(COLLECTION_URI + "/_aggrs/byStatus", resource.uri());
+        assertEquals(COLLECTION_URI + "/_queries/byStatus", resource.uri());
         assertEquals("aggregation", resource.kind());
         assertEquals("Orders grouped by status", resource.description());
         assertEquals("GET", resource.actions().get("execute").method());
         // path_template is relative to the resource's own uri (which already ends in
-        // "/_aggrs/byStatus") — how_to_call composes url = resource.uri() + path_template,
+        // "/_queries/byStatus") — how_to_call composes url = resource.uri() + path_template,
         // so this must be empty or the rendered URL would double up the aggregation path
         assertEquals("", resource.actions().get("execute").pathTemplate());
     }

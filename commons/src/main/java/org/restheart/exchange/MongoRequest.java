@@ -440,7 +440,7 @@ public class MongoRequest extends BsonRequest {
                 || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
                 || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
                 || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
-                || (type == TYPE.INVALID && _AGGREGATIONS.equalsIgnoreCase(sdi))
+                || (type == TYPE.INVALID && isAggregations(sdi))
                 || (type == TYPE.INVALID && _STREAMS.equalsIgnoreCase(sdi))) {
             return false;
         } else {
@@ -473,6 +473,14 @@ public class MongoRequest extends BsonRequest {
      */
     public static String schemaStore() {
         return schemaStore;
+    }
+
+    /**
+     * Whether a path element names the aggregations of a collection: {@code _queries}, the
+     * suggested name since 9.16, or {@code _aggrs}, kept for backward compatibility.
+     */
+    static boolean isAggregations(String pathElement) {
+        return _QUERIES.equalsIgnoreCase(pathElement) || _AGGREGATIONS.equalsIgnoreCase(pathElement);
     }
 
     static TYPE selectRequestType(String[] pathTokens) {
@@ -530,7 +538,7 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.FILE;
             } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.INDEX;
-            } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+            } else if (pathTokens.length > 4 && isAggregations(pathTokens[3])) {
                 type = TYPE.AGGREGATION;
             } else if (pathTokens.length > 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES)
                     && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
@@ -557,9 +565,9 @@ public class MongoRequest extends BsonRequest {
             type = TYPE.BULK_DOCUMENTS;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
-        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+        } else if (pathTokens.length == 4 && isAggregations(pathTokens[3])) {
             type = TYPE.INVALID;
-        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+        } else if (pathTokens.length > 4 && isAggregations(pathTokens[3])) {
             type = TYPE.AGGREGATION;
         } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_STREAMS)) {
             type = TYPE.INVALID;

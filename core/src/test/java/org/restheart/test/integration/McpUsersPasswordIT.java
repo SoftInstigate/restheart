@@ -130,7 +130,7 @@ public class McpUsersPasswordIT extends AbstactIT {
 
     @Test
     public void aggregation_neverReturnsThePassword() throws Exception {
-        var text = mcp.readResource(USERS_COLL + "/_aggrs/all");
+        var text = mcp.readResource(USERS_COLL + "/_queries/all");
 
         var docs = McpTestClient.documentsIn(text);
         assertTrue(docs.stream().map(d -> d.asDocument().get("_id")).anyMatch(id -> id != null && id.isString() && USER_ID.equals(id.asString().getValue())),
@@ -180,7 +180,7 @@ public class McpUsersPasswordIT extends AbstactIT {
         var tenant = new McpTestClient(BASE, ADMIN_BASIC, OVERRIDE_QUERY);
         tenant.initialize();
 
-        var text = tenant.readResource(OVERRIDE_COLL + "/_aggrs/all");
+        var text = tenant.readResource(OVERRIDE_COLL + "/_queries/all");
         var docs = McpTestClient.documentsIn(text);
         assertEquals(1, docs.size(), "the user must be in the aggregation output: " + text);
         assertNoPassword(docs.get(0).asDocument(), text);

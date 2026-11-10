@@ -80,7 +80,7 @@ public final class AggregationMcpResourceBuilder {
             return Optional.empty();
         }
 
-        var pathTemplate = "/_aggrs/" + aggrUri;
+        var pathTemplate = "/_queries/" + aggrUri;
         var declaredParams = mcp.get("params") instanceof BsonDocument pd ? pd : new BsonDocument();
         var scanResult = PipelineParamScanner.scan(stages);
         var referencedNames = scanResult.names();
