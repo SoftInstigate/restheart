@@ -143,6 +143,10 @@
     - userid: aggrvars-user
       password: secret
       roles: [ aggrvars-role ]
+    # allow-filter.feature: its permissions, in restheart-test/acl, are for this role
+    - userid: allow-filter-user
+      password: secret
+      roles: [ allow-filter-role ]
 
 /mongoRealmAuthenticator/users-db: restheart-test
 
@@ -522,6 +526,11 @@
         allowWriteMode: true
 
 /mongoAclAuthorizer/acl-db: restheart-test
+
+# Since 9.16 a permission that does not set mongo.allowFilter refuses filter, sort and sort_by. The
+# suite keeps the behaviour of 9.15, as an upgrade would; allow-filter.feature sets allowFilter on
+# its permissions, and the unit tests cover the false default.
+/mongo/default-allow-filter: true
 /mongoAclAuthorizer/cache-enabled: false
 
 /mongo/mongo-mounts:
