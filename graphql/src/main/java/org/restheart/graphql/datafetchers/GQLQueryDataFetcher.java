@@ -59,6 +59,9 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
         int_args = queryMapping.interpolateArgs(env);
 
+        // the bound find and sort, checked as the aggregation mappings are
+        checkQuery(securityChecker, int_args, queryMapping.getDb());
+
         var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument() : new BsonDocument();
         var _sort = int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null ? int_args.get(SORT_FIELD).asDocument() : null;
         var _skip = int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null ? int_args.get(SKIP_FIELD).asInt32().getValue() : null;

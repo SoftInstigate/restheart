@@ -49,6 +49,9 @@ public class GQLBatchDataFetcher extends GraphQLDataFetcher {
 
         var int_args = queryMapping.interpolateArgs(env);
 
+        // the bound find and sort, checked as the aggregation mappings are
+        checkQuery(securityChecker, int_args, queryMapping.getDb());
+
         return dataLoader.load(int_args, env).thenApply(
                 results -> {
                     if (isList(env.getFieldDefinition().getType())) {

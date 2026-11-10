@@ -20,6 +20,7 @@
  */
 package org.restheart.graphql.datafetchers;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.graphql.models.FieldMapping;
 import org.restheart.security.AggregationPipelineSecurityChecker;
@@ -89,5 +90,39 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
         return ctx.containsKey("query-time-limit-left") ?
                 ctx.get("query-time-limit-left").asInt64().getValue()
                 : maxTimeTotal(env);
+    }
+
+    /**
+     * Checks the find and sort of a query mapping, with its arguments already bound, against the
+     * aggregationSecurity blacklists that guard the aggregation mappings, so that an operator such as
+     * $where reaches MongoDB from neither kind of mapping. It matters most with check-operators off,
+     * when a BsonDocument argument may carry operators on purpose.
+     *
+     * @param checker the aggregationSecurity checker; null or disabled checks nothing
+     * @param intArgs the query mapping with its arguments bound, as QueryMapping.interpolateArgs returns it
+     * @param db the database of the mapping
+     * @throws RuntimeException if the find or the sort uses a blacklisted operator
+     */
+    public static void checkQuery(AggregationPipelineSecurityChecker checker, BsonDocument intArgs, String db) {
+        if (checker == null || !checker.isEnabled() || intArgs == null) {
+            return;
+        }
+
+        // the find and the sort as the $match and $sort stages they are equivalent to
+        var stages = new BsonArray();
+        var find = intArgs.get("find");
+        if (find != null && find.isDocument()) {
+            stages.add(new BsonDocument("$match", find));
+        }
+        var sort = intArgs.get("sort");
+        if (sort != null && sort.isDocument()) {
+            stages.add(new BsonDocument("$sort", sort));
+        }
+
+        try {
+            checker.validatePipelineOrThrow(stages, db);
+        } catch (SecurityException se) {
+            throw new RuntimeException("GraphQL query security violation: " + se.getMessage());
+        }
     }
 }
