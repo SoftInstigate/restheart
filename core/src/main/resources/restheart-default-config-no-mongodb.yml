@@ -407,6 +407,13 @@ mongo:
   get-collection-cache-ttl: 10_000 # Time To Live, in milliseconds, default 10 seconds
   get-collection-cache-docs: 1_000 # number of documents to cache for each request
 
+  # Whether a read may send its own query with the filter, sort and sort_by query parameters.
+  # Each permission can decide it with mongo.allowFilter; this value applies when it does not.
+  # Since v9.16 it is false, and the application queries through aggregations.
+  # Set it to true to keep the behaviour of earlier versions.
+  # https://restheart.org/docs/security/permissions#allowfilter
+  default-allow-filter: false
+
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
 
