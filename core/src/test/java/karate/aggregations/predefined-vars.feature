@@ -1,10 +1,11 @@
 Feature: the predefined variables of aggregations
 
-  @page, @pagesize, @limit and @skip are the page the client asks for (restheart#808), and
-  @mongoPermissions.readFilter is the read filter of the permission as it applies to the request,
-  interpolated and with its operators (restheart#809). Since restheart#727 a @ name is resolved
-  only by a registered resolver: before 9.15.3 the first four were never bound, and the read
-  filter arrived as stored, with "@user.userid" as a literal string and "_$or" as a field name.
+  The paging variables (page, pagesize, limit, skip) are the page the client asks for
+  (restheart#808), and the readFilter of mongoPermissions is the read filter of the permission as
+  it applies to the request, interpolated and with its operators (restheart#809). Since
+  restheart#727 a name starting with the at sign is resolved only by a registered resolver: before
+  9.15.3 the paging variables were never bound, and the read filter arrived as stored, with the
+  user variable as a literal string and its operators escaped.
 
 Background:
     * url baseUrl
