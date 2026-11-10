@@ -58,10 +58,12 @@ public class QueryMapping extends FieldMapping implements Batchable {
         super(fieldName);
         this.db = db; // DB!!!
         this.collection = collection;
-        this.find = find;
-        this.sort = sort;
-        this.limit = limit;
-        this.skip = skip;
+        // {"$arg": "name", "operators": true}: the argument may carry operators, see check-operators
+        var declared = declareOperatorArgs(find, sort, limit, skip);
+        this.find = declared[0] == null ? null : declared[0].asDocument();
+        this.sort = declared[1] == null ? null : declared[1].asDocument();
+        this.limit = declared[2];
+        this.skip = declared[3];
         this.dataLoaderSettings = dataLoaderSettings;
     }
 

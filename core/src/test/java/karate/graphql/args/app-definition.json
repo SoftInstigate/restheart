@@ -6,7 +6,7 @@
     "enabled": true,
     "uri": "test-args"
   },
-  "schema": "type Thing { name: String owner: String } type Query { byOwnerExpr(owner: String): [Thing] byOwnerFindExpr(owner: String): [Thing] byOwnerFind(owner: String): [Thing] byOwnerDoc(owner: BsonDocument): [Thing] }",
+  "schema": "type Thing { name: String owner: String } type Query { byOwnerExpr(owner: String): [Thing] byOwnerFindExpr(owner: String): [Thing] byOwnerFind(owner: String): [Thing] byOwnerDoc(owner: BsonDocument): [Thing] byFilter(filter: BsonDocument): [Thing] byFilterFind(filter: BsonDocument!): [Thing] byFilterAndOwner(filter: BsonDocument, owner: BsonDocument): [Thing] }",
   "mappings": {
     "Query": {
       "byOwnerExpr": {
@@ -34,6 +34,30 @@
         "collection": "test-args",
         "find": { "owner": { "$arg": "owner" } },
         "sort": { "name": 1 }
+      },
+      "byFilter": {
+        "db": "test-graphql",
+        "collection": "test-args",
+        "stages": [
+          { "$match": { "owner": { "$exists": true } } },
+          { "$ifarg": [ "filter", { "$match": { "$arg": "filter", "operators": true } } ] },
+          { "$sort": { "name": 1 } }
+        ]
+      },
+      "byFilterFind": {
+        "db": "test-graphql",
+        "collection": "test-args",
+        "find": { "$arg": "filter", "operators": true },
+        "sort": { "name": 1 }
+      },
+      "byFilterAndOwner": {
+        "db": "test-graphql",
+        "collection": "test-args",
+        "stages": [
+          { "$ifarg": [ "filter", { "$match": { "$arg": "filter", "operators": true } } ] },
+          { "$ifarg": [ "owner", { "$match": { "owner": { "$arg": "owner" } } } ] },
+          { "$sort": { "name": 1 } }
+        ]
       }
     }
   }

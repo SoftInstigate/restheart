@@ -55,7 +55,8 @@ public class AggregationMapping extends FieldMapping implements Batchable {
 
     public AggregationMapping(String fieldName, BsonString db, BsonString collection, BsonArray stages, BsonBoolean allowDiskUse, DataLoaderSettings settings) {
         super(fieldName);
-        this.stages = stages;
+        // {"$arg": "name", "operators": true}: the argument may carry operators, see check-operators
+        this.stages = stages == null ? null : declareOperatorArgs(stages)[0].asArray();
         this.db = db; // DB!!!
         this.collection = collection;
         this.allowDiskUse = allowDiskUse;
@@ -128,7 +129,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     }
 
     public void setStages(BsonArray stages) {
-        this.stages = stages;
+        this.stages = stages == null ? null : declareOperatorArgs(stages)[0].asArray();
     }
 
     public BsonString getDb() {

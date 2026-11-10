@@ -88,3 +88,65 @@ Background:
     When method POST
     Then status 200
     And match $.data.byOwnerDoc == []
+
+  Scenario: an argument declared with "operators": true accepts operators in an aggregation
+
+    * text query =
+    """
+    query q($f: BsonDocument) { byFilter(filter: $f) { name } }
+    """
+    * def variables = { f: { owner: { "$in": ['aclowner2'] } } }
+
+    Given header Content-Type = contTypeJson
+    And header Authorization = admin
+    And request { query: '#(query)', variables: '#(variables)' }
+    When method POST
+    Then status 200
+    And match $.errors == '#notpresent'
+    And match $.data.byFilter == [ { name: 'charlie' }, { name: 'future' } ]
+
+  Scenario: an argument declared with "operators": true accepts operators in a query mapping
+
+    * text query =
+    """
+    query q($f: BsonDocument!) { byFilterFind(filter: $f) { name } }
+    """
+    * def variables = { f: { owner: { "$in": ['aclowner1'] } } }
+
+    Given header Content-Type = contTypeJson
+    And header Authorization = admin
+    And request { query: '#(query)', variables: '#(variables)' }
+    When method POST
+    Then status 200
+    And match $.errors == '#notpresent'
+    And match $.data.byFilterFind == [ { name: 'alpha' }, { name: 'bravo' } ]
+
+  Scenario: the other arguments of the same mapping are still checked
+
+    * text query =
+    """
+    query q($f: BsonDocument, $o: BsonDocument) { byFilterAndOwner(filter: $f, owner: $o) { name } }
+    """
+    * def variables = { f: { name: { "$ne": 'alpha' } }, o: { "$ne": null } }
+
+    Given header Content-Type = contTypeJson
+    And header Authorization = admin
+    And request { query: '#(query)', variables: '#(variables)' }
+    When method POST
+    Then match $.errors == '#[_ > 0]'
+    And match $.data.byFilterAndOwner == '#null'
+
+  Scenario: a JavaScript operator in an argument declared with "operators": true is still refused
+
+    * text query =
+    """
+    query q($f: BsonDocument!) { byFilterFind(filter: $f) { name } }
+    """
+    * def variables = { f: { "$where": 'true' } }
+
+    Given header Content-Type = contTypeJson
+    And header Authorization = admin
+    And request { query: '#(query)', variables: '#(variables)' }
+    When method POST
+    Then match $.errors == '#[_ > 0]'
+    And match $.data.byFilterFind == '#null'
