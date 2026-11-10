@@ -27,6 +27,7 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -61,7 +62,50 @@ final class BuiltInVarResolvers {
                 new RndVarResolver(),
                 new RolesVarResolver(),
                 new AuthenticatedVarResolver(),
-                new QparamsVarResolver());
+                new QparamsVarResolver(),
+                new PagingVarResolver("page"),
+                new PagingVarResolver("pagesize"),
+                new PagingVarResolver("limit"),
+                new PagingVarResolver("skip"));
+    }
+
+    /**
+     * {@code @page}, {@code @pagesize}, {@code @limit} and {@code @skip}: the page the client asks
+     * for with {@code ?page} and {@code ?pagesize}, for an aggregation that pages itself, e.g.
+     * {@code {"$skip": {"$var": "@skip"}}, {"$limit": {"$var": "@limit"}}}.
+     *
+     * <p>{@code StagesInterpolator.injectAvars} used to supply them among the values of the
+     * variables, but since restheart#727 a {@code @} name is resolved only by a registered
+     * resolver, and the values are not consulted for it: they were never bound (restheart#808).
+     * Unbound outside a MongoDB request.</p>
+     *
+     * @since 9.15.3
+     */
+    private static final class PagingVarResolver implements VarResolver {
+        private final String name;
+
+        PagingVarResolver(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public BsonValue resolve(Request<?> request, String var) {
+            if (!(request instanceof MongoRequest mreq) || !var.equals("@" + name)) {
+                return BsonNull.VALUE;
+            }
+
+            return switch (name) {
+                case "page" -> new BsonInt32(mreq.getPage());
+                case "pagesize", "limit" -> new BsonInt32(mreq.getPagesize());
+                case "skip" -> new BsonInt32(mreq.getPagesize() * (mreq.getPage() - 1));
+                default -> BsonNull.VALUE;
+            };
+        }
     }
 
     /** {@code @user}, {@code @user.<property>} — the authenticated account. */
