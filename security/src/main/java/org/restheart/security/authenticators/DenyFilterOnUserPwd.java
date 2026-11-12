@@ -41,16 +41,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Refuses, with 403 Forbidden, a request on the users collection of
+ * {@code mongoRealmAuthenticator} whose {@code filter} or {@code sort} refers to the password
+ * property.
+ *
+ * <p>The password is never returned, but a condition on it would still tell, request by request,
+ * something about the stored hash: a read by the documents it returns, a bulk {@code PATCH} or
+ * {@code DELETE} by the number of documents it matches. The check applies to every method, and
+ * runs before the request is executed, so a refused write changes nothing.</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * DenyFilterOnUserPasswordPredicate checks if a request has a filter involving
- * the password field
- *
  */
 @RegisterPlugin(name = "denyFilterOnUserPwd",
-        description = "forbids request with filter on the password property",
-        interceptPoint = InterceptPoint.RESPONSE,
-        requiresContent = true)
+        description = "forbids requests with a filter or a sort on the password property",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 public class DenyFilterOnUserPwd implements MongoInterceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(DenyFilterOnUserPwd.class);
 
@@ -95,15 +99,34 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
-                && request.isGet()
                 && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
                 && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
-                && (refersToPassword(request.getFiltersDocument()) || sortsByPassword(request));
+                && (filtersOnPassword(request) || sortsByPassword(request));
     }
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         response.setInError(HttpStatus.SC_FORBIDDEN, "Using filters on the password property is forbidden");
+    }
+
+    /**
+     * @return true if a filter query parameter refers to the password property
+     */
+    private boolean filtersOnPassword(MongoRequest request) {
+        var filter = request.getFilter();
+
+        if (filter == null || filter.isEmpty()) {
+            return false;
+        }
+
+        return filter.stream().anyMatch(f -> {
+            try {
+                return refersToPassword(BsonUtils.parse(f));
+            } catch (Throwable t) {
+                // not JSON: the request is never executed, its handler answers 400
+                return false;
+            }
+        });
     }
 
     /**
