@@ -16,7 +16,7 @@
 
 ## What RESTHeart is
 
-RESTHeart is a backend for web, mobile, AI and IoT apps. It gives an application the backend it would otherwise have to write — AI agents and RAG, accounts, permissions, data APIs, live data, email, payments — as configuration, not code. What an application needs beyond it goes into plugins, in Java, Kotlin, JavaScript or TypeScript.
+RESTHeart puts an API on your MongoDB data and handles what every app needs around it: sign-up and login, permissions per document, changes pushed to clients, an MCP server for AI agents.
 
 ![RESTHeart logical architecture](docs/restheart_logic_architecture.png)
 
