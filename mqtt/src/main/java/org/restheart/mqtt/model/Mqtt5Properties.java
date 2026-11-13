@@ -83,7 +83,7 @@ public final class Mqtt5Properties {
      *                               {@code null} if none; see the class javadoc
      */
     public Mqtt5Properties(List<UserProperty> userProperties, String contentType, byte[] correlationData,
-            String responseTopic, Integer payloadFormatIndicator, Long messageExpiryInterval) {
+                           String responseTopic, Integer payloadFormatIndicator, Long messageExpiryInterval) {
         this.userProperties = userProperties == null ? List.of() : List.copyOf(userProperties);
         this.contentType = contentType;
         // Copied, like MqttMessage's payload: correlation data is bytes, and the caller still holds
@@ -100,11 +100,11 @@ public final class Mqtt5Properties {
      */
     public boolean isEmpty() {
         return userProperties.isEmpty()
-            && contentType == null
-            && correlationData == null
-            && responseTopic == null
-            && payloadFormatIndicator == null
-            && messageExpiryInterval == null;
+                && contentType == null
+                && correlationData == null
+                && responseTopic == null
+                && payloadFormatIndicator == null
+                && messageExpiryInterval == null;
     }
 
     /**
@@ -155,11 +155,11 @@ public final class Mqtt5Properties {
     @Override
     public String toString() {
         return "Mqtt5Properties{userProperties=" + userProperties.size()
-            + ", contentType=" + contentType
-            + ", correlationData=" + (correlationData == null ? "null" : correlationData.length + " bytes")
-            + ", responseTopic=" + responseTopic
-            + ", payloadFormatIndicator=" + payloadFormatIndicator
-            + ", messageExpiryInterval=" + messageExpiryInterval + "}";
+                + ", contentType=" + contentType
+                + ", correlationData=" + (correlationData == null ? "null" : correlationData.length + " bytes")
+                + ", responseTopic=" + responseTopic
+                + ", payloadFormatIndicator=" + payloadFormatIndicator
+                + ", messageExpiryInterval=" + messageExpiryInterval + "}";
     }
 
     @Override
@@ -171,16 +171,16 @@ public final class Mqtt5Properties {
             return false;
         }
         return Objects.equals(userProperties, other.userProperties)
-            && Objects.equals(contentType, other.contentType)
-            && Arrays.equals(correlationData, other.correlationData)
-            && Objects.equals(responseTopic, other.responseTopic)
-            && Objects.equals(payloadFormatIndicator, other.payloadFormatIndicator)
-            && Objects.equals(messageExpiryInterval, other.messageExpiryInterval);
+                && Objects.equals(contentType, other.contentType)
+                && Arrays.equals(correlationData, other.correlationData)
+                && Objects.equals(responseTopic, other.responseTopic)
+                && Objects.equals(payloadFormatIndicator, other.payloadFormatIndicator)
+                && Objects.equals(messageExpiryInterval, other.messageExpiryInterval);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(userProperties, contentType, Arrays.hashCode(correlationData),
-            responseTopic, payloadFormatIndicator, messageExpiryInterval);
+                responseTopic, payloadFormatIndicator, messageExpiryInterval);
     }
 }

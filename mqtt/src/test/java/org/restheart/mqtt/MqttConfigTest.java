@@ -41,14 +41,14 @@ public class MqttConfigTest {
 
     private static MqttConfig.Builder validBuilder() {
         return new MqttConfig.Builder()
-            .brokerUrl("tcp://localhost:1883")
-            .protocolVersion(3)
-            .clientId("test-client")
-            .cleanSession(false)
-            .keepAliveSeconds(60)
-            .sessionExpirySeconds(0xFFFFFFFFL)
-            .connectTimeoutSeconds(10)
-            .tlsEnabled(false);
+                .brokerUrl("tcp://localhost:1883")
+                .protocolVersion(3)
+                .clientId("test-client")
+                .cleanSession(false)
+                .keepAliveSeconds(60)
+                .sessionExpirySeconds(0xFFFFFFFFL)
+                .connectTimeoutSeconds(10)
+                .tlsEnabled(false);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class MqttConfigTest {
     @DisplayName("build() rejects any protocol-version other than 3 or 5, naming the key")
     public void testRejectedProtocolVersions(int version) {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().protocolVersion(version).build());
+                () -> validBuilder().protocolVersion(version).build());
         assertTrue(ex.getMessage().contains("protocol-version"));
     }
 
@@ -79,7 +79,7 @@ public class MqttConfigTest {
     @DisplayName("build() rejects a null broker-url, naming the key")
     public void testNullBrokerUrlRejected() {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().brokerUrl(null).build());
+                () -> validBuilder().brokerUrl(null).build());
         assertTrue(ex.getMessage().contains("broker-url"));
     }
 
@@ -87,7 +87,7 @@ public class MqttConfigTest {
     @DisplayName("build() rejects a blank broker-url, naming the key")
     public void testBlankBrokerUrlRejected() {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().brokerUrl("   ").build());
+                () -> validBuilder().brokerUrl("   ").build());
         assertTrue(ex.getMessage().contains("broker-url"));
     }
 
@@ -95,7 +95,7 @@ public class MqttConfigTest {
     @DisplayName("build() rejects a broker-url without a host, naming the key")
     public void testBrokerUrlWithoutHostRejected() {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().brokerUrl("tcp://").build());
+                () -> validBuilder().brokerUrl("tcp://").build());
         assertTrue(ex.getMessage().contains("broker-url"));
     }
 
@@ -103,7 +103,7 @@ public class MqttConfigTest {
     @DisplayName("build() rejects a broker-url with an unsupported scheme, listing supported schemes")
     public void testBrokerUrlUnsupportedSchemeRejected() {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().brokerUrl("http://localhost:1883").build());
+                () -> validBuilder().brokerUrl("http://localhost:1883").build());
         assertTrue(ex.getMessage().contains("broker-url"));
         assertTrue(ex.getMessage().contains("tcp"));
         assertTrue(ex.getMessage().contains("wss"));
@@ -113,7 +113,7 @@ public class MqttConfigTest {
     @DisplayName("build() rejects a negative keep-alive-seconds, naming the key")
     public void testNegativeKeepAliveRejected() {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().keepAliveSeconds(-1).build());
+                () -> validBuilder().keepAliveSeconds(-1).build());
         assertTrue(ex.getMessage().contains("keep-alive-seconds"));
     }
 
@@ -128,7 +128,7 @@ public class MqttConfigTest {
     @DisplayName("build() rejects a zero connect-timeout-seconds, naming the key")
     public void testZeroConnectTimeoutRejected() {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().connectTimeoutSeconds(0).build());
+                () -> validBuilder().connectTimeoutSeconds(0).build());
         assertTrue(ex.getMessage().contains("connect-timeout-seconds"));
     }
 
@@ -136,7 +136,7 @@ public class MqttConfigTest {
     @DisplayName("build() rejects a negative connect-timeout-seconds, naming the key")
     public void testNegativeConnectTimeoutRejected() {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().connectTimeoutSeconds(-5).build());
+                () -> validBuilder().connectTimeoutSeconds(-5).build());
         assertTrue(ex.getMessage().contains("connect-timeout-seconds"));
     }
 
@@ -146,7 +146,7 @@ public class MqttConfigTest {
     public void testInvalidWillQosRejected(int qos) {
         var willConfig = new MqttConfig.WillConfig("topic", "payload", qos, false, 0L, null);
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> validBuilder().willConfig(willConfig).build());
+                () -> validBuilder().willConfig(willConfig).build());
         assertTrue(ex.getMessage().contains("will/qos"));
     }
 
@@ -274,7 +274,7 @@ public class MqttConfigTest {
     @DisplayName("an unrecognised scheme fails fast, listing the supported schemes")
     public void testUnknownSchemeFailsFast() {
         var ex = assertThrows(IllegalArgumentException.class,
-            () -> MqttClientSingleton.resolveEndpoint("http://broker.example.com", false));
+                () -> MqttClientSingleton.resolveEndpoint("http://broker.example.com", false));
         assertTrue(ex.getMessage().contains("tcp"));
         assertTrue(ex.getMessage().contains("wss"));
     }
@@ -283,6 +283,6 @@ public class MqttConfigTest {
     @DisplayName("a broker-url without a host fails fast")
     public void testMissingHostFailsFast() {
         assertThrows(IllegalArgumentException.class,
-            () -> MqttClientSingleton.resolveEndpoint("tcp://", false));
+                () -> MqttClientSingleton.resolveEndpoint("tcp://", false));
     }
 }

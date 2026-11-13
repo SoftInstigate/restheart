@@ -64,7 +64,7 @@ public class MqttRestLastValueIT extends MqttITBase {
         var resp = httpClient().send(req, BodyHandlers.ofString());
 
         assertEquals(404, resp.statusCode(),
-            "GET /mqtt for a topic nothing has ever published to must be a 404; got body: " + resp.body());
+                "GET /mqtt for a topic nothing has ever published to must be a 404; got body: " + resp.body());
     }
 
     @Test
@@ -81,10 +81,10 @@ public class MqttRestLastValueIT extends MqttITBase {
         var resp = httpClient().send(req, BodyHandlers.ofString());
 
         assertEquals(200, resp.statusCode(),
-            "GET /mqtt for a topic that was published to must be a 200; got body: " + resp.body());
+                "GET /mqtt for a topic that was published to must be a 200; got body: " + resp.body());
         assertTrue(resp.body().contains("\"topic\":\"" + topic + "\""),
-            "the response body must carry the 'topic' property MqttRestService adds; got: " + resp.body());
+                "the response body must carry the 'topic' property MqttRestService adds; got: " + resp.body());
         assertTrue(resp.body().contains("42"),
-            "the response body must carry the published payload; got: " + resp.body());
+                "the response body must carry the published payload; got: " + resp.body());
     }
 }

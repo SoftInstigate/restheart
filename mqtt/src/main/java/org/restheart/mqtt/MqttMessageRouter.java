@@ -21,7 +21,6 @@
 
 package org.restheart.mqtt;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -179,7 +178,7 @@ public class MqttMessageRouter {
         registerGlobalPublishConsumer();
 
         LOGGER.info("MqttMessageRouter initialized: maxRate={}/s, cache={}, maxCacheSize={}",
-            maxMessagesPerSecond, cacheEnabled, maxCacheSize);
+                maxMessagesPerSecond, cacheEnabled, maxCacheSize);
     }
 
     /**
@@ -196,7 +195,7 @@ public class MqttMessageRouter {
             mqtt3Client.publishes(MqttGlobalPublishFilter.ALL, this::handleMqtt3Message, true);
         } else {
             LOGGER.error("Unsupported MQTT client type: {}; unable to register publish consumer",
-                client == null ? "null" : client.getClass().getName());
+                    client == null ? "null" : client.getClass().getName());
         }
     }
 
@@ -469,7 +468,7 @@ public class MqttMessageRouter {
         // evicted along with the broker subscription, while its owner believed it was subscribed
         // and simply never received anything. Two SSE clients opening and closing on one topic
         // filter is enough to hit it.
-        var remaining = new int[] { -1 };
+        var remaining = new int[]{-1};
         listeners.compute(topicFilter, (k, list) -> {
             if (list == null) {
                 return null;
@@ -509,31 +508,31 @@ public class MqttMessageRouter {
         MqttQos brokerQos = MqttQos.fromCode(qos.code());
         if (client instanceof Mqtt5AsyncClient mqtt5Client) {
             mqtt5Client.subscribeWith()
-                .topicFilter(topicFilter)
-                .qos(brokerQos)
-                .send()
-                .whenComplete((subAck, throwable) -> {
-                    if (throwable != null) {
-                        LOGGER.error("Failed to subscribe to topic filter: {}", topicFilter, throwable);
-                    } else {
-                        LOGGER.info("Subscribed to topic filter: {} with QoS {}", topicFilter, qos);
-                    }
-            });
+                    .topicFilter(topicFilter)
+                    .qos(brokerQos)
+                    .send()
+                    .whenComplete((subAck, throwable) -> {
+                        if (throwable != null) {
+                            LOGGER.error("Failed to subscribe to topic filter: {}", topicFilter, throwable);
+                        } else {
+                            LOGGER.info("Subscribed to topic filter: {} with QoS {}", topicFilter, qos);
+                        }
+                    });
         } else if (client instanceof Mqtt3AsyncClient mqtt3Client) {
             mqtt3Client.subscribeWith()
-                .topicFilter(topicFilter)
-                .qos(brokerQos)
-                .send()
-                .whenComplete((subAck, throwable) -> {
-                    if (throwable != null) {
-                        LOGGER.error("Failed to subscribe to topic filter: {}", topicFilter, throwable);
-                    } else {
-                        LOGGER.info("Subscribed to topic filter: {} with QoS {}", topicFilter, qos);
-                    }
-                });
+                    .topicFilter(topicFilter)
+                    .qos(brokerQos)
+                    .send()
+                    .whenComplete((subAck, throwable) -> {
+                        if (throwable != null) {
+                            LOGGER.error("Failed to subscribe to topic filter: {}", topicFilter, throwable);
+                        } else {
+                            LOGGER.info("Subscribed to topic filter: {} with QoS {}", topicFilter, qos);
+                        }
+                    });
         } else {
             LOGGER.error("Unsupported MQTT client type: {}; unable to subscribe to topic filter: {}",
-                client == null ? "null" : client.getClass().getName(), topicFilter);
+                    client == null ? "null" : client.getClass().getName(), topicFilter);
         }
     }
 
@@ -546,29 +545,29 @@ public class MqttMessageRouter {
     private void unsubscribeFromBroker(String topicFilter) {
         if (client instanceof Mqtt5AsyncClient mqtt5Client) {
             mqtt5Client.unsubscribeWith()
-                .topicFilter(topicFilter)
-                .send()
-                .whenComplete((unsubAck, throwable) -> {
-                    if (throwable != null) {
-                        LOGGER.error("Failed to unsubscribe from topic filter: {}", topicFilter, throwable);
-                    } else {
-                        LOGGER.info("Unsubscribed from topic filter: {}", topicFilter);
-                    }
-                });
+                    .topicFilter(topicFilter)
+                    .send()
+                    .whenComplete((unsubAck, throwable) -> {
+                        if (throwable != null) {
+                            LOGGER.error("Failed to unsubscribe from topic filter: {}", topicFilter, throwable);
+                        } else {
+                            LOGGER.info("Unsubscribed from topic filter: {}", topicFilter);
+                        }
+                    });
         } else if (client instanceof Mqtt3AsyncClient mqtt3Client) {
             mqtt3Client.unsubscribeWith()
-                .topicFilter(topicFilter)
-                .send()
-                .whenComplete((unsubAck, throwable) -> {
-                    if (throwable != null) {
-                        LOGGER.error("Failed to unsubscribe from topic filter: {}", topicFilter, throwable);
-                    } else {
-                        LOGGER.info("Unsubscribed from topic filter: {}", topicFilter);
-                    }
-                });
+                    .topicFilter(topicFilter)
+                    .send()
+                    .whenComplete((unsubAck, throwable) -> {
+                        if (throwable != null) {
+                            LOGGER.error("Failed to unsubscribe from topic filter: {}", topicFilter, throwable);
+                        } else {
+                            LOGGER.info("Unsubscribed from topic filter: {}", topicFilter);
+                        }
+                    });
         } else {
             LOGGER.error("Unsupported MQTT client type: {}; unable to unsubscribe from topic filter: {}",
-                client == null ? "null" : client.getClass().getName(), topicFilter);
+                    client == null ? "null" : client.getClass().getName(), topicFilter);
         }
     }
 
@@ -588,15 +587,15 @@ public class MqttMessageRouter {
         messagesReceivedCount.incrementAndGet();
 
         MqttMessage message = new MqttMessage(
-            publish.getTopic().toString(),
-            // The bytes, not new String(..., UTF_8): that substituted U+FFFD for anything that was
-            // not text and destroyed the payload here, before any consumer or the database could
-            // see it. MqttMessage decodes strictly and reports what it got.
-            publish.getPayloadAsBytes(),
-            publish.getQos().getCode(),
-            Instant.now(),
-            publish.isRetain(),
-            mqtt5PropertiesOf(publish)
+                publish.getTopic().toString(),
+                // The bytes, not new String(..., UTF_8): that substituted U+FFFD for anything that was
+                // not text and destroyed the payload here, before any consumer or the database could
+                // see it. MqttMessage decodes strictly and reports what it got.
+                publish.getPayloadAsBytes(),
+                publish.getQos().getCode(),
+                Instant.now(),
+                publish.isRetain(),
+                mqtt5PropertiesOf(publish)
         );
 
         if (cacheEnabled) {
@@ -622,24 +621,24 @@ public class MqttMessageRouter {
      */
     private static Mqtt5Properties mqtt5PropertiesOf(Mqtt5Publish publish) {
         var userProperties = publish.getUserProperties().asList().stream()
-            .map(p -> new Mqtt5Properties.UserProperty(p.getName().toString(), p.getValue().toString()))
-            .toList();
+                .map(p -> new Mqtt5Properties.UserProperty(p.getName().toString(), p.getValue().toString()))
+                .toList();
 
         var properties = new Mqtt5Properties(
-            userProperties,
-            publish.getContentType().map(Object::toString).orElse(null),
-            publish.getCorrelationData().map(buffer -> {
-                // A read-only view into the client's buffer: copied into a byte[] here, and copied
-                // again by Mqtt5Properties, rather than handing out something that moves.
-                var bytes = new byte[buffer.remaining()];
-                buffer.duplicate().get(bytes);
-                return bytes;
-            }).orElse(null),
-            publish.getResponseTopic().map(Object::toString).orElse(null),
-            publish.getPayloadFormatIndicator().map(indicator -> indicator.getCode()).orElse(null),
-            publish.getMessageExpiryInterval().isPresent()
-                ? publish.getMessageExpiryInterval().getAsLong()
-                : null);
+                userProperties,
+                publish.getContentType().map(Object::toString).orElse(null),
+                publish.getCorrelationData().map(buffer -> {
+                    // A read-only view into the client's buffer: copied into a byte[] here, and copied
+                    // again by Mqtt5Properties, rather than handing out something that moves.
+                    var bytes = new byte[buffer.remaining()];
+                    buffer.duplicate().get(bytes);
+                    return bytes;
+                }).orElse(null),
+                publish.getResponseTopic().map(Object::toString).orElse(null),
+                publish.getPayloadFormatIndicator().map(indicator -> indicator.getCode()).orElse(null),
+                publish.getMessageExpiryInterval().isPresent()
+                        ? publish.getMessageExpiryInterval().getAsLong()
+                        : null);
 
         return properties.isEmpty() ? null : properties;
     }
@@ -660,16 +659,16 @@ public class MqttMessageRouter {
         messagesReceivedCount.incrementAndGet();
 
         MqttMessage message = new MqttMessage(
-            publish.getTopic().toString(),
-            // The bytes, not new String(..., UTF_8): that substituted U+FFFD for anything that was
-            // not text and destroyed the payload here, before any consumer or the database could
-            // see it. MqttMessage decodes strictly and reports what it got.
-            publish.getPayloadAsBytes(),
-            publish.getQos().getCode(),
-            Instant.now(),
-            publish.isRetain()
-            // No MQTT 5 properties: 3.1.1 has none, so the message carries null rather than an
-            // empty object, and a consumer can tell the protocol apart from a silent publisher.
+                publish.getTopic().toString(),
+                // The bytes, not new String(..., UTF_8): that substituted U+FFFD for anything that was
+                // not text and destroyed the payload here, before any consumer or the database could
+                // see it. MqttMessage decodes strictly and reports what it got.
+                publish.getPayloadAsBytes(),
+                publish.getQos().getCode(),
+                Instant.now(),
+                publish.isRetain()
+        // No MQTT 5 properties: 3.1.1 has none, so the message carries null rather than an
+        // empty object, and a consumer can tell the protocol apart from a silent publisher.
         );
 
         if (cacheEnabled) {
@@ -779,7 +778,7 @@ public class MqttMessageRouter {
                             listener.accept(message);
                         } catch (Exception e) {
                             LOGGER.error("Error dispatching message to listener for topic {}",
-                                message.getTopic(), e);
+                                    message.getTopic(), e);
                         }
                     }
                 }
@@ -810,7 +809,7 @@ public class MqttMessageRouter {
                 // claiming it did would lose it for good. It stays unacknowledged and the broker
                 // redelivers it on the next session - at the cost of an in-flight slot until then.
                 LOGGER.error("Durable listener threw for topic {}; the message stays unacknowledged "
-                    + "and will be redelivered", message.getTopic(), e);
+                        + "and will be redelivered", message.getTopic(), e);
             }
         }
     }
@@ -897,11 +896,11 @@ public class MqttMessageRouter {
      */
     public RouterStats getStats() {
         return new RouterStats(
-            filterQos.size(),
-            listeners.values().stream().mapToInt(List::size).sum(),
-            lastMessageCache.size(),
-            messagesReceivedCount.get(),
-            droppedCount.get()
+                filterQos.size(),
+                listeners.values().stream().mapToInt(List::size).sum(),
+                lastMessageCache.size(),
+                messagesReceivedCount.get(),
+                droppedCount.get()
         );
     }
 
@@ -927,7 +926,7 @@ public class MqttMessageRouter {
          * @param messagesDropped  the cumulative number of messages dropped due to rate limiting
          */
         public RouterStats(int topicFilters, int totalListeners, int cachedMessages,
-                          long messagesReceived, long messagesDropped) {
+                           long messagesReceived, long messagesDropped) {
             this.topicFilters = topicFilters;
             this.totalListeners = totalListeners;
             this.cachedMessages = cachedMessages;
@@ -938,29 +937,40 @@ public class MqttMessageRouter {
         /**
          * @return the number of distinct topic filters currently subscribed on the broker
          */
-        public int getTopicFilters() { return topicFilters; }
+        public int getTopicFilters() {
+            return topicFilters;
+        }
 
         /**
          * @return the total number of listeners registered across all topic filters
          */
-        public int getTotalListeners() { return totalListeners; }
+        public int getTotalListeners() {
+            return totalListeners;
+        }
 
         /**
          * @return the number of topics currently present in the last-message cache
          */
-        public int getCachedMessages() { return cachedMessages; }
+        public int getCachedMessages() {
+            return cachedMessages;
+        }
 
         /**
          * @return the cumulative number of messages actually received (i.e. not dropped by the
          *         rate limiter)
          */
-        public long getMessagesReceived() { return messagesReceived; }
+        public long getMessagesReceived() {
+            return messagesReceived;
+        }
 
         /**
          * @return the cumulative number of messages dropped due to rate limiting
          */
-        public long getMessagesDropped() { return messagesDropped; }
+        public long getMessagesDropped() {
+            return messagesDropped;
+        }
     }
+
     /**
      * A consumer that the router waits for before acknowledging a message to the broker.
      * <p>

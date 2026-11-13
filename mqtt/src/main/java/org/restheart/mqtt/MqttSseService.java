@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.restheart.mqtt.model.Mqtt5Properties;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.model.Qos;
 import org.restheart.mqtt.pipeline.FilterStage;
@@ -103,11 +102,11 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-sse",
-    description = "Streams MQTT topic messages as Server-Sent Events",
-    defaultURI = "/mqtt-sse",
-    secure = true,
-    enabledByDefault = false
+        name = "mqtt-sse",
+        description = "Streams MQTT topic messages as Server-Sent Events",
+        defaultURI = "/mqtt-sse",
+        secure = true,
+        enabledByDefault = false
 )
 public class MqttSseService implements SseService {
 
@@ -164,7 +163,7 @@ public class MqttSseService implements SseService {
 
     /** Guards the one-off warning about binary payloads in the raw (non-envelope) format. */
     private final java.util.concurrent.atomic.AtomicBoolean rawBinaryWarningPending =
-        new java.util.concurrent.atomic.AtomicBoolean();
+            new java.util.concurrent.atomic.AtomicBoolean();
 
     @OnInit
     public void init() {
@@ -184,9 +183,9 @@ public class MqttSseService implements SseService {
         Metrics.registerGauge(MetricNameAndLabels.of("mqtt_sse_open_connections"), this::totalOpenConnections);
 
         LOGGER.info("MqttSseService initialized: defaultTopic={}, defaultQos={}, queueCapacity={}, envelope={}, "
-            + "maxConnectionsPerTopic={}, keepAliveMs={}",
-            defaultTopic, defaultQos, perConnectionQueueCapacity, payloadEnvelope,
-            maxConnectionsPerTopic, keepAliveMs);
+                + "maxConnectionsPerTopic={}, keepAliveMs={}",
+                defaultTopic, defaultQos, perConnectionQueueCapacity, payloadEnvelope,
+                maxConnectionsPerTopic, keepAliveMs);
     }
 
     @Override
@@ -197,7 +196,7 @@ public class MqttSseService implements SseService {
 
         if (!tryAcquireConnectionSlot(topicFilter)) {
             LOGGER.warn("Max connections per topic filter ({}) reached for '{}'; rejecting new SSE connection",
-                maxConnectionsPerTopic, topicFilter);
+                    maxConnectionsPerTopic, topicFilter);
             closeQuietly(conn);
             return;
         }
@@ -234,7 +233,7 @@ public class MqttSseService implements SseService {
                 totalDroppedMessages.incrementAndGet();
                 if (dropped % 1000 == 0) {
                     LOGGER.warn("SSE client queue full for topic {}, dropped {} messages so far",
-                        topicFilter, dropped);
+                            topicFilter, dropped);
                 }
             }
         };
@@ -336,7 +335,7 @@ public class MqttSseService implements SseService {
     private static void validateQos(String key, int value) {
         if (Qos.fromCode(value) == null) {
             throw new IllegalArgumentException(
-                "Invalid value for " + key + ": " + value + ". Accepted values are: 0, 1, 2");
+                    "Invalid value for " + key + ": " + value + ". Accepted values are: 0, 1, 2");
         }
     }
 
@@ -379,8 +378,8 @@ public class MqttSseService implements SseService {
         // wants payload-envelope: true, where the label exists.
         if (rawBinaryWarningPending.compareAndSet(false, true)) {
             LOGGER.warn("Payload on {} is not valid UTF-8 and payload-envelope is false, so it is sent "
-                + "as unlabelled base64: SSE cannot carry raw bytes. Set payload-envelope: true to "
-                + "receive payloadEncoding alongside it. This is logged once.", message.getTopic());
+                    + "as unlabelled base64: SSE cannot carry raw bytes. Set payload-envelope: true to "
+                    + "receive payloadEncoding alongside it. This is logged once.", message.getTopic());
         }
         return message.getPayloadAsBase64();
     }
@@ -562,7 +561,7 @@ public class MqttSseService implements SseService {
             Object rawTopic = entry.get("topic");
             if (!(rawTopic instanceof String topic)) {
                 throw new IllegalArgumentException(
-                    "Pipeline configuration entry is missing a valid 'topic' key: " + entry);
+                        "Pipeline configuration entry is missing a valid 'topic' key: " + entry);
             }
             List<Map<String, Object>> stageConfigs = (List<Map<String, Object>>) entry.get("stages");
 
@@ -634,8 +633,8 @@ public class MqttSseService implements SseService {
                 yield () -> new SlidingWindowAggregator(windowSize, function, field);
             }
             default -> throw new IllegalArgumentException(
-                "Unknown pipeline stage type '" + type + "'; supported types are: "
-                    + "throttle, filter, map, tumbling-window, sliding-window");
+                    "Unknown pipeline stage type '" + type + "'; supported types are: "
+                            + "throttle, filter, map, tumbling-window, sliding-window");
         };
     }
 
@@ -758,8 +757,8 @@ public class MqttSseService implements SseService {
      */
     private static IllegalArgumentException invalidStageParam(String stageType, String key, Object value) {
         return new IllegalArgumentException(
-            "Invalid pipeline stage configuration: stage type '" + stageType + "', parameter '" + key
-                + "' has an invalid value: " + value);
+                "Invalid pipeline stage configuration: stage type '" + stageType + "', parameter '" + key
+                        + "' has an invalid value: " + value);
     }
 
     /**
@@ -777,8 +776,8 @@ public class MqttSseService implements SseService {
             int eq = pair.indexOf('=');
             if (eq > 0) {
                 params.put(
-                    URLDecoder.decode(pair.substring(0, eq), StandardCharsets.UTF_8),
-                    URLDecoder.decode(pair.substring(eq + 1), StandardCharsets.UTF_8)
+                        URLDecoder.decode(pair.substring(0, eq), StandardCharsets.UTF_8),
+                        URLDecoder.decode(pair.substring(eq + 1), StandardCharsets.UTF_8)
                 );
             } else {
                 params.put(URLDecoder.decode(pair, StandardCharsets.UTF_8), "");
@@ -817,7 +816,7 @@ public class MqttSseService implements SseService {
             // Falling back silently is the "configuration that is present but inert" trap this
             // module has a whole sentinel for; say so instead.
             LOGGER.warn("Configuration key '{}' is a {} where a {} was expected; ignoring it and using {}",
-                key, raw.getClass().getSimpleName(), defaultValue.getClass().getSimpleName(), defaultValue);
+                    key, raw.getClass().getSimpleName(), defaultValue.getClass().getSimpleName(), defaultValue);
             return defaultValue;
         }
 

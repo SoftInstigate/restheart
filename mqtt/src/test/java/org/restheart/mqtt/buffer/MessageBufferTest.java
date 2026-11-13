@@ -78,9 +78,12 @@ public class MessageBufferTest {
     void testRingAcceptsUpToCapacity() {
         MessageBuffer buffer = new MessageBuffer(3, Strategy.RING);
 
-        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
-        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { })));
-        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> {
+        })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> {
+        })));
+        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> {
+        })));
         assertEquals(3, buffer.size());
     }
 
@@ -89,9 +92,12 @@ public class MessageBufferTest {
     void testRingDropOldest() {
         MessageBuffer buffer = new MessageBuffer(2, Strategy.RING);
 
-        buffer.offer(new Pending(msg("t", "old"), () -> { }));
-        buffer.offer(new Pending(msg("t", "mid"), () -> { }));
-        buffer.offer(new Pending(msg("t", "new"), () -> { })); // should drop "old"
+        buffer.offer(new Pending(msg("t", "old"), () -> {
+        }));
+        buffer.offer(new Pending(msg("t", "mid"), () -> {
+        }));
+        buffer.offer(new Pending(msg("t", "new"), () -> {
+        })); // should drop "old"
 
         assertEquals(2, buffer.size());
         List<Pending> drained = buffer.drain(10);
@@ -104,9 +110,12 @@ public class MessageBufferTest {
     void testRingAlwaysAccepts() {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.RING);
 
-        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
-        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { }))); // drops "1"
-        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> { }))); // drops "2"
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> {
+        })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> {
+        }))); // drops "1"
+        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> {
+        }))); // drops "2"
         assertEquals(1, buffer.size());
     }
 
@@ -115,16 +124,19 @@ public class MessageBufferTest {
     void testRingDropOldestIsCounted() {
         MessageBuffer buffer = new MessageBuffer(2, Strategy.RING);
 
-        buffer.offer(new Pending(msg("t", "old"), () -> { }));
-        buffer.offer(new Pending(msg("t", "mid"), () -> { }));
-        buffer.offer(new Pending(msg("t", "new"), () -> { })); // "old" is the one dropped
+        buffer.offer(new Pending(msg("t", "old"), () -> {
+        }));
+        buffer.offer(new Pending(msg("t", "mid"), () -> {
+        }));
+        buffer.offer(new Pending(msg("t", "new"), () -> {
+        })); // "old" is the one dropped
 
         assertEquals(1, buffer.droppedCount());
         assertEquals(3, buffer.acceptedCount());
 
         List<Pending> drained = buffer.drain(10);
         assertTrue(drained.stream().noneMatch(m -> "old".equals(m.message().getPayload())),
-            "the dropped message must not still be in the buffer");
+                "the dropped message must not still be in the buffer");
     }
 
     // --- DROP_INCOMING strategy ---
@@ -134,9 +146,12 @@ public class MessageBufferTest {
     void testDropIncomingAcceptsUpToCapacity() {
         MessageBuffer buffer = new MessageBuffer(3, Strategy.DROP_INCOMING);
 
-        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
-        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { })));
-        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> {
+        })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> {
+        })));
+        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> {
+        })));
         assertEquals(3, buffer.size());
     }
 
@@ -145,9 +160,12 @@ public class MessageBufferTest {
     void testDropIncomingRejectsWhenFull() {
         MessageBuffer buffer = new MessageBuffer(2, Strategy.DROP_INCOMING);
 
-        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
-        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { })));
-        assertFalse(buffer.offer(new Pending(msg("t", "3"), () -> { }))); // rejected
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> {
+        })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> {
+        })));
+        assertFalse(buffer.offer(new Pending(msg("t", "3"), () -> {
+        }))); // rejected
         assertEquals(2, buffer.size());
     }
 
@@ -156,8 +174,10 @@ public class MessageBufferTest {
     void testDropIncomingRejectedNotStoredAndCounted() {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.DROP_INCOMING);
 
-        buffer.offer(new Pending(msg("t", "kept"), () -> { }));
-        boolean second = buffer.offer(new Pending(msg("t", "rejected"), () -> { }));
+        buffer.offer(new Pending(msg("t", "kept"), () -> {
+        }));
+        boolean second = buffer.offer(new Pending(msg("t", "rejected"), () -> {
+        }));
 
         assertFalse(second);
         List<Pending> drained = buffer.drain(10);
@@ -175,9 +195,12 @@ public class MessageBufferTest {
     void testBlockingAcceptsUpToCapacity() {
         MessageBuffer buffer = new MessageBuffer(3, Strategy.BLOCKING);
 
-        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> { })));
-        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> { })));
-        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "1"), () -> {
+        })));
+        assertTrue(buffer.offer(new Pending(msg("t", "2"), () -> {
+        })));
+        assertTrue(buffer.offer(new Pending(msg("t", "3"), () -> {
+        })));
         assertEquals(3, buffer.size());
     }
 
@@ -185,7 +208,8 @@ public class MessageBufferTest {
     @DisplayName("BLOCKING: producer blocks when full and proceeds once a consumer drains")
     void testBlockingBlocksUntilSpaceAvailable() throws Exception {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING);
-        buffer.offer(new Pending(msg("t", "1"), () -> { })); // fill the buffer
+        buffer.offer(new Pending(msg("t", "1"), () -> {
+        })); // fill the buffer
 
         CountDownLatch aboutToBlock = new CountDownLatch(1);
         CountDownLatch enqueued = new CountDownLatch(1);
@@ -193,7 +217,8 @@ public class MessageBufferTest {
 
         Thread producer = new Thread(() -> {
             aboutToBlock.countDown();
-            buffer.offer(new Pending(msg("t", "2"), () -> { }));
+            buffer.offer(new Pending(msg("t", "2"), () -> {
+            }));
             enqueued.countDown();
         });
         producer.start();
@@ -217,7 +242,8 @@ public class MessageBufferTest {
     @DisplayName("BLOCKING: interrupting a blocked producer returns false and preserves the interrupt flag")
     void testBlockingInterruptReturnsFalseAndSetsInterruptFlag() throws Exception {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING);
-        buffer.offer(new Pending(msg("t", "1"), () -> { })); // fill the buffer
+        buffer.offer(new Pending(msg("t", "1"), () -> {
+        })); // fill the buffer
 
         CountDownLatch aboutToBlock = new CountDownLatch(1);
         AtomicBoolean offerResult = new AtomicBoolean(true);
@@ -226,7 +252,8 @@ public class MessageBufferTest {
 
         Thread producer = new Thread(() -> {
             aboutToBlock.countDown();
-            boolean result = buffer.offer(new Pending(msg("t", "2"), () -> { }));
+            boolean result = buffer.offer(new Pending(msg("t", "2"), () -> {
+            }));
             offerResult.set(result);
             interruptFlagSet.set(Thread.currentThread().isInterrupted());
             done.countDown();
@@ -251,8 +278,9 @@ public class MessageBufferTest {
     void testDrainBatchSize() {
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
 
-        for (int i = 0; i < 5; i++) {
-            buffer.offer(new Pending(msg("t", String.valueOf(i)), () -> { }));
+        for (int i = 0;i < 5;i++) {
+            buffer.offer(new Pending(msg("t", String.valueOf(i)), () -> {
+            }));
         }
 
         List<Pending> batch = buffer.drain(3);
@@ -275,8 +303,10 @@ public class MessageBufferTest {
     void testDrainLessThanBatch() {
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
 
-        buffer.offer(new Pending(msg("t", "1"), () -> { }));
-        buffer.offer(new Pending(msg("t", "2"), () -> { }));
+        buffer.offer(new Pending(msg("t", "1"), () -> {
+        }));
+        buffer.offer(new Pending(msg("t", "2"), () -> {
+        }));
 
         List<Pending> batch = buffer.drain(100);
         assertEquals(2, batch.size());
@@ -290,8 +320,10 @@ public class MessageBufferTest {
     void testClear() {
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
 
-        buffer.offer(new Pending(msg("t", "1"), () -> { }));
-        buffer.offer(new Pending(msg("t", "2"), () -> { }));
+        buffer.offer(new Pending(msg("t", "1"), () -> {
+        }));
+        buffer.offer(new Pending(msg("t", "2"), () -> {
+        }));
         assertEquals(2, buffer.size());
 
         buffer.clear();
@@ -303,8 +335,10 @@ public class MessageBufferTest {
     void testClearDoesNotResetCounters() {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.DROP_INCOMING);
 
-        buffer.offer(new Pending(msg("t", "1"), () -> { }));
-        buffer.offer(new Pending(msg("t", "2"), () -> { })); // rejected, counted as dropped
+        buffer.offer(new Pending(msg("t", "1"), () -> {
+        }));
+        buffer.offer(new Pending(msg("t", "2"), () -> {
+        })); // rejected, counted as dropped
         assertEquals(1, buffer.acceptedCount());
         assertEquals(1, buffer.droppedCount());
 
@@ -343,7 +377,7 @@ public class MessageBufferTest {
     @DisplayName("fromConfigValue fails fast on an unknown value, naming key, value and accepted set")
     void testFromConfigValueRejectsUnknownValue() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> Strategy.fromConfigValue("overflow-action"));
+                () -> Strategy.fromConfigValue("overflow-action"));
 
         String message = ex.getMessage();
         assertTrue(message.contains("buffer.strategy"), "message should name the config key");
@@ -366,12 +400,13 @@ public class MessageBufferTest {
         ExecutorService executor = Executors.newFixedThreadPool(producers);
         CountDownLatch latch = new CountDownLatch(producers);
 
-        for (int p = 0; p < producers; p++) {
+        for (int p = 0;p < producers;p++) {
             final int producerId = p;
             executor.submit(() -> {
                 try {
-                    for (int i = 0; i < messagesPerProducer; i++) {
-                        buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> { }));
+                    for (int i = 0;i < messagesPerProducer;i++) {
+                        buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> {
+                        }));
                     }
                 } finally {
                     latch.countDown();
@@ -390,7 +425,7 @@ public class MessageBufferTest {
         // Every insert either fits or evicts exactly one message, so
         // accepted - dropped must equal the final buffer size.
         assertEquals(buffer.size(), buffer.acceptedCount() - buffer.droppedCount(),
-            "accepted minus dropped must equal the final buffer size");
+                "accepted minus dropped must equal the final buffer size");
 
         // Drain all and verify no corruption
         List<Pending> all = buffer.drain(capacity + 100);
@@ -413,12 +448,13 @@ public class MessageBufferTest {
         CountDownLatch latch = new CountDownLatch(producers);
         List<Boolean> results = Collections.synchronizedList(new ArrayList<>());
 
-        for (int p = 0; p < producers; p++) {
+        for (int p = 0;p < producers;p++) {
             final int producerId = p;
             executor.submit(() -> {
                 try {
-                    for (int i = 0; i < messagesPerProducer; i++) {
-                        results.add(buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> { })));
+                    for (int i = 0;i < messagesPerProducer;i++) {
+                        results.add(buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> {
+                        })));
                     }
                 } finally {
                     latch.countDown();
@@ -471,12 +507,13 @@ public class MessageBufferTest {
         });
         consumer.start();
 
-        for (int p = 0; p < producers; p++) {
+        for (int p = 0;p < producers;p++) {
             final int producerId = p;
             executor.submit(() -> {
                 try {
-                    for (int i = 0; i < messagesPerProducer; i++) {
-                        buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> { }));
+                    for (int i = 0;i < messagesPerProducer;i++) {
+                        buffer.offer(new Pending(msg("t/" + producerId, String.valueOf(i)), () -> {
+                        }));
                     }
                 } finally {
                     latch.countDown();
@@ -493,16 +530,19 @@ public class MessageBufferTest {
         assertEquals(totalOffered, buffer.acceptedCount(), "BLOCKING never drops under normal operation");
         assertEquals(0, buffer.droppedCount());
     }
+
     // --- BLOCKING is bounded, not indefinite ---
 
     @Test
     @DisplayName("BLOCKING gives up once max-wait-ms elapses, rather than parking forever")
     void testBlockingGivesUpAfterTheCeiling() {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING, 200);
-        assertTrue(buffer.offer(new Pending(msg("t", "first"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "first"), () -> {
+        })));
 
         long startedAt = System.currentTimeMillis();
-        boolean accepted = buffer.offer(new Pending(msg("t", "second"), () -> { }));
+        boolean accepted = buffer.offer(new Pending(msg("t", "second"), () -> {
+        }));
         long waited = System.currentTimeMillis() - startedAt;
 
         // An unbounded wait here would park the dispatching thread for as long as the consumer is
@@ -519,11 +559,13 @@ public class MessageBufferTest {
     @DisplayName("BLOCKING with a non-positive ceiling still waits indefinitely")
     void testBlockingWithoutCeilingStillWaitsForever() throws Exception {
         MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING, 0);
-        assertTrue(buffer.offer(new Pending(msg("t", "first"), () -> { })));
+        assertTrue(buffer.offer(new Pending(msg("t", "first"), () -> {
+        })));
 
         var accepted = new java.util.concurrent.atomic.AtomicBoolean(false);
         var offering = Thread.ofVirtual().start(() ->
-            accepted.set(buffer.offer(new Pending(msg("t", "second"), () -> { }))));
+                accepted.set(buffer.offer(new Pending(msg("t", "second"), () -> {
+                }))));
 
         // Still parked after a moment, because nothing has drained yet.
         Thread.sleep(300);
@@ -540,7 +582,8 @@ public class MessageBufferTest {
 
     /** A message whose payload alone is {@code kb} kilobytes. */
     private Pending heavy(int kb) {
-        return new Pending(msg("t", "x".repeat(kb * 1024)), () -> { });
+        return new Pending(msg("t", "x".repeat(kb * 1024)), () -> {
+        });
     }
 
     @Test
@@ -621,6 +664,6 @@ public class MessageBufferTest {
     @DisplayName("Constructor rejects a non-positive max-bytes")
     void testInvalidMaxBytes() {
         assertThrows(IllegalArgumentException.class,
-            () -> new MessageBuffer(10, Strategy.BLOCKING, 0L, 0));
+                () -> new MessageBuffer(10, Strategy.BLOCKING, 0L, 0));
     }
 }

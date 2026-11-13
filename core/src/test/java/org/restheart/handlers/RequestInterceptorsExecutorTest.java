@@ -219,7 +219,7 @@ public class RequestInterceptorsExecutorTest {
      * and {@link ResponseSender} need, plus the given interceptor lists per {@link InterceptPoint}.
      */
     private static AutoCloseable registryReturning(Service<?, ?> service,
-            List<Interceptor<?, ?>> beforeAuthInterceptors, List<Interceptor<?, ?>> afterAuthInterceptors) {
+                                                   List<Interceptor<?, ?>> beforeAuthInterceptors, List<Interceptor<?, ?>> afterAuthInterceptors) {
         var record = serviceRecord(service);
 
         var registryMock = mock(PluginsRegistryImpl.class);

@@ -133,12 +133,12 @@ public class MqttEventPipeline {
     private List<MqttMessage> drain(Function<MqttEventStage, Optional<MqttMessage>> emitter) {
         List<MqttMessage> emitted = new ArrayList<>();
 
-        for (int i = 0; i < stages.size(); i++) {
+        for (int i = 0;i < stages.size();i++) {
             Optional<MqttMessage> current = emitter.apply(stages.get(i));
 
             if (current.isPresent()) {
                 // Route the emitted message through the remaining stages
-                for (int j = i + 1; j < stages.size(); j++) {
+                for (int j = i + 1;j < stages.size();j++) {
                     if (current.isEmpty()) {
                         break;
                     }

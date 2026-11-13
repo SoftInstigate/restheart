@@ -123,8 +123,8 @@ public class MqttClientSingleton {
         }
         MqttEndpoint endpoint = resolveEndpoint(config.getBrokerUrl(), config.isTlsEnabled());
         mqttClient = config.getProtocolVersion() == 5
-            ? buildMqtt5Client(endpoint)
-            : buildMqtt3Client(endpoint);
+                ? buildMqtt5Client(endpoint)
+                : buildMqtt3Client(endpoint);
     }
 
     /**
@@ -230,25 +230,25 @@ public class MqttClientSingleton {
             CompletableFuture<Void> connectFuture;
             if (client instanceof Mqtt5AsyncClient m5) {
                 connectFuture = m5.connectWith()
-                    .keepAlive(config.getKeepAliveSeconds())
-                    .cleanStart(config.isCleanSession())
-                    .sessionExpiryInterval(config.getSessionExpirySeconds())
-                    .send()
-                    .thenAccept(connAck -> {
-                        connected = true;
-                        BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 5.0)",
-                            ansi().fg(GREEN).bold().a(config.getBrokerUrl()).reset().toString());
-                    });
+                        .keepAlive(config.getKeepAliveSeconds())
+                        .cleanStart(config.isCleanSession())
+                        .sessionExpiryInterval(config.getSessionExpirySeconds())
+                        .send()
+                        .thenAccept(connAck -> {
+                            connected = true;
+                            BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 5.0)",
+                                    ansi().fg(GREEN).bold().a(config.getBrokerUrl()).reset().toString());
+                        });
             } else if (client instanceof Mqtt3AsyncClient m3) {
                 connectFuture = m3.connectWith()
-                    .cleanSession(config.isCleanSession())
-                    .keepAlive(config.getKeepAliveSeconds())
-                    .send()
-                    .thenAccept(connAck -> {
-                        connected = true;
-                        BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 3.1.1)",
-                            ansi().fg(GREEN).bold().a(config.getBrokerUrl()).reset().toString());
-                    });
+                        .cleanSession(config.isCleanSession())
+                        .keepAlive(config.getKeepAliveSeconds())
+                        .send()
+                        .thenAccept(connAck -> {
+                            connected = true;
+                            BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 3.1.1)",
+                                    ansi().fg(GREEN).bold().a(config.getBrokerUrl()).reset().toString());
+                        });
             } else {
                 throw new IllegalStateException("Unknown MQTT client type: " + client.getClass());
             }
@@ -259,12 +259,12 @@ public class MqttClientSingleton {
             connected = false;
             Thread.currentThread().interrupt();
             LOGGER.error("{} Connection interrupted, the application may be shutting down.",
-                ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString(), ie);
+                    ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString(), ie);
         } catch (Exception e) {
             connected = false;
             LOGGER.error("{} Check that the broker is running and the configuration property "
-                + "'/mqtt-client/broker-url' is set properly",
-                ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString(), e);
+                    + "'/mqtt-client/broker-url' is set properly",
+                    ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString(), e);
         }
     }
 
@@ -301,8 +301,8 @@ public class MqttClientSingleton {
             }
 
             final int timeoutSeconds = (config != null && config.getConnectTimeoutSeconds() > 0)
-                ? config.getConnectTimeoutSeconds()
-                : 10;
+                    ? config.getConnectTimeoutSeconds()
+                    : 10;
 
             disconnectFuture.get(timeoutSeconds, TimeUnit.SECONDS);
             BootstrapLogger.standalone(LOGGER, "Disconnected from MQTT broker");
@@ -380,7 +380,7 @@ public class MqttClientSingleton {
         final String scheme = uri.getScheme() == null ? null : uri.getScheme().toLowerCase(Locale.ROOT);
         if (scheme == null || !MqttConfig.SUPPORTED_SCHEMES.contains(scheme)) {
             throw new IllegalArgumentException("'broker-url' has an unsupported scheme '" + scheme
-                + "', supported schemes are: " + MqttConfig.SUPPORTED_SCHEMES);
+                    + "', supported schemes are: " + MqttConfig.SUPPORTED_SCHEMES);
         }
 
         final boolean schemeTls;
@@ -408,7 +408,7 @@ public class MqttClientSingleton {
                 defaultPort = 443;
             }
             default -> throw new IllegalArgumentException("'broker-url' has an unsupported scheme '" + scheme
-                + "', supported schemes are: " + MqttConfig.SUPPORTED_SCHEMES);
+                    + "', supported schemes are: " + MqttConfig.SUPPORTED_SCHEMES);
         }
 
         final boolean tls = schemeTls || tlsOverride;
@@ -416,8 +416,8 @@ public class MqttClientSingleton {
         // when 'tls: true' upgrades a plaintext scheme and no port is given, the default port
         // must follow the effective TLS state: tcp://host with tls:true means 8883, not 1883
         final int defaultPortForTls = !schemeTls && tls
-            ? (webSocket ? 443 : 8883)
-            : defaultPort;
+                ? (webSocket ? 443 : 8883)
+                : defaultPort;
 
         final int port = uri.getPort() > 0 ? uri.getPort() : defaultPortForTls;
         return new MqttEndpoint(host, port, tls, webSocket);
@@ -442,26 +442,26 @@ public class MqttClientSingleton {
      */
     private Mqtt5AsyncClient buildMqtt5Client(MqttEndpoint endpoint) {
         Mqtt5ClientBuilder builder = MqttClient.builder()
-            .useMqttVersion5()
-            .identifier(config.getClientId())
-            .serverHost(endpoint.host())
-            .serverPort(endpoint.port());
+                .useMqttVersion5()
+                .identifier(config.getClientId())
+                .serverHost(endpoint.host())
+                .serverPort(endpoint.port());
 
         if (config.getUsername() != null && config.getPassword() != null) {
             builder.simpleAuth()
-                .username(config.getUsername())
-                .password(config.getPassword().getBytes(StandardCharsets.UTF_8))
-                .applySimpleAuth();
+                    .username(config.getUsername())
+                    .password(config.getPassword().getBytes(StandardCharsets.UTF_8))
+                    .applySimpleAuth();
         }
 
         var willConfig = config.getWillConfig();
         if (willConfig != null && willConfig.getWillTopic() != null && willConfig.getWillPayload() != null) {
             var willPublishBuilder = builder.willPublish()
-                .topic(willConfig.getWillTopic())
-                .payload(willConfig.getWillPayload().getBytes(StandardCharsets.UTF_8))
-                .qos(MqttQos.fromCode(willConfig.getWillQos()))
-                .retain(willConfig.getWillRetain())
-                .delayInterval(willConfig.getWillDelaySeconds());
+                    .topic(willConfig.getWillTopic())
+                    .payload(willConfig.getWillPayload().getBytes(StandardCharsets.UTF_8))
+                    .qos(MqttQos.fromCode(willConfig.getWillQos()))
+                    .retain(willConfig.getWillRetain())
+                    .delayInterval(willConfig.getWillDelaySeconds());
 
             if (willConfig.getWillMessageExpirySeconds() != null) {
                 willPublishBuilder.messageExpiryInterval(willConfig.getWillMessageExpirySeconds());
@@ -473,21 +473,21 @@ public class MqttClientSingleton {
         var reconnectConfig = config.getReconnectConfig();
         if (reconnectConfig != null && reconnectConfig.isEnabled()) {
             builder.automaticReconnect()
-                .initialDelay(reconnectConfig.getInitialDelayMs(), TimeUnit.MILLISECONDS)
-                .maxDelay(reconnectConfig.getMaxDelayMs(), TimeUnit.MILLISECONDS)
-                .applyAutomaticReconnect()
-                .addConnectedListener(context -> {
-                    connected = true;
-                    TypeSwitch.when(context)
-                        .is(Mqtt5ClientConnectedContext.class, q -> {
-                            if (!q.getConnAck().isSessionPresent()) {
-                                LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
-                                notifyNewSessionListeners();
-                            } else {
-                                LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
-                            }
-                        });
-                });
+                    .initialDelay(reconnectConfig.getInitialDelayMs(), TimeUnit.MILLISECONDS)
+                    .maxDelay(reconnectConfig.getMaxDelayMs(), TimeUnit.MILLISECONDS)
+                    .applyAutomaticReconnect()
+                    .addConnectedListener(context -> {
+                        connected = true;
+                        TypeSwitch.when(context)
+                                .is(Mqtt5ClientConnectedContext.class, q -> {
+                                    if (!q.getConnAck().isSessionPresent()) {
+                                        LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
+                                        notifyNewSessionListeners();
+                                    } else {
+                                        LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
+                                    }
+                                });
+                    });
         }
 
         builder.addDisconnectedListener(context -> {
@@ -511,46 +511,46 @@ public class MqttClientSingleton {
      */
     private Mqtt3AsyncClient buildMqtt3Client(MqttEndpoint endpoint) {
         Mqtt3ClientBuilder builder = MqttClient.builder()
-            .useMqttVersion3()
-            .identifier(config.getClientId())
-            .serverHost(endpoint.host())
-            .serverPort(endpoint.port());
+                .useMqttVersion3()
+                .identifier(config.getClientId())
+                .serverHost(endpoint.host())
+                .serverPort(endpoint.port());
 
         if (config.getUsername() != null && config.getPassword() != null) {
             builder.simpleAuth()
-                .username(config.getUsername())
-                .password(config.getPassword().getBytes(StandardCharsets.UTF_8))
-                .applySimpleAuth();
+                    .username(config.getUsername())
+                    .password(config.getPassword().getBytes(StandardCharsets.UTF_8))
+                    .applySimpleAuth();
         }
 
         var willConfig = config.getWillConfig();
         if (willConfig != null && willConfig.getWillTopic() != null && willConfig.getWillPayload() != null) {
             builder.willPublish()
-                .topic(willConfig.getWillTopic())
-                .payload(willConfig.getWillPayload().getBytes(StandardCharsets.UTF_8))
-                .qos(MqttQos.fromCode(willConfig.getWillQos()))
-                .retain(willConfig.getWillRetain())
-                .applyWillPublish();
+                    .topic(willConfig.getWillTopic())
+                    .payload(willConfig.getWillPayload().getBytes(StandardCharsets.UTF_8))
+                    .qos(MqttQos.fromCode(willConfig.getWillQos()))
+                    .retain(willConfig.getWillRetain())
+                    .applyWillPublish();
         }
 
         var reconnectConfig = config.getReconnectConfig();
         if (reconnectConfig != null && reconnectConfig.isEnabled()) {
             builder.automaticReconnect()
-                .initialDelay(reconnectConfig.getInitialDelayMs(), TimeUnit.MILLISECONDS)
-                .maxDelay(reconnectConfig.getMaxDelayMs(), TimeUnit.MILLISECONDS)
-                .applyAutomaticReconnect()
-                .addConnectedListener(context -> {
-                    connected = true;
-                    TypeSwitch.when(context)
-                        .is(Mqtt3ClientConnectedContext.class, q -> {
-                            if (!q.getConnAck().isSessionPresent()) {
-                                LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
-                                notifyNewSessionListeners();
-                            } else {
-                                LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
-                            }
-                        });
-                });
+                    .initialDelay(reconnectConfig.getInitialDelayMs(), TimeUnit.MILLISECONDS)
+                    .maxDelay(reconnectConfig.getMaxDelayMs(), TimeUnit.MILLISECONDS)
+                    .applyAutomaticReconnect()
+                    .addConnectedListener(context -> {
+                        connected = true;
+                        TypeSwitch.when(context)
+                                .is(Mqtt3ClientConnectedContext.class, q -> {
+                                    if (!q.getConnAck().isSessionPresent()) {
+                                        LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
+                                        notifyNewSessionListeners();
+                                    } else {
+                                        LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
+                                    }
+                                });
+                    });
         }
 
         builder.addDisconnectedListener(context -> {
@@ -584,10 +584,10 @@ public class MqttClientSingleton {
             final String trustStorePath = config.getTlsTrustStore();
             if (trustStorePath != null && !trustStorePath.isBlank()) {
                 final TrustManagerFactory trustManagerFactory =
-                    loadTrustManagerFactory(trustStorePath, config.getTlsTrustStorePassword());
+                        loadTrustManagerFactory(trustStorePath, config.getTlsTrustStorePassword());
                 builder.sslConfig(MqttClientSslConfig.builder()
-                    .trustManagerFactory(trustManagerFactory)
-                    .build());
+                        .trustManagerFactory(trustManagerFactory)
+                        .build());
             } else {
                 builder.sslWithDefaultConfig();
             }
@@ -612,12 +612,12 @@ public class MqttClientSingleton {
                 trustStore.load(in, password != null ? password.toCharArray() : null);
             }
             final TrustManagerFactory trustManagerFactory =
-                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                    TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             trustManagerFactory.init(trustStore);
             return trustManagerFactory;
         } catch (Exception e) {
             throw new IllegalStateException(
-                "Cannot load 'tls-trust-store' from '" + path + "': " + e.getMessage(), e);
+                    "Cannot load 'tls-trust-store' from '" + path + "': " + e.getMessage(), e);
         }
     }
 
@@ -637,7 +637,7 @@ public class MqttClientSingleton {
         final MqttClient client = mqttClient;
         if (!initialized || config == null || client == null) {
             throw new IllegalStateException(
-                "MQTT client is not available yet: the 'mqtt-client' plugin has not completed initialization");
+                    "MQTT client is not available yet: the 'mqtt-client' plugin has not completed initialization");
         }
 
         return client;

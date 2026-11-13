@@ -114,21 +114,21 @@ public class MqttMongoOutageIT extends MqttITBase {
         // every message is dispatched on its own virtual thread, so the three can reach an SSE
         // client in any order: read them all rather than stopping at one of them
         var sse = subscribeAsync(() -> readSseLines(
-            authedRequest("/mqtt-sse?topic=" + topic).build(), 9, 30));
+                authedRequest("/mqtt-sse?topic=" + topic).build(), 9, 30));
         StoppableMongo.sleep(1_500);
 
         mongo.stop();
 
-        for (var n = 1; n <= 3; n++) {
+        for (var n = 1;n <= 3;n++) {
             publish(topic, "{\"messageId\":\"restart-" + n + "\",\"value\":" + n + "}");
         }
 
         // the live paths do not depend on the database
         var lines = sse.get(35, TimeUnit.SECONDS);
-        for (var n = 1; n <= 3; n++) {
+        for (var n = 1;n <= 3;n++) {
             var id = "restart-" + n;
             assertTrue(lines.stream().anyMatch(l -> l.contains(id)),
-                "SSE must deliver " + id + " while MongoDB is down; got " + lines);
+                    "SSE must deliver " + id + " while MongoDB is down; got " + lines);
         }
 
         var last = httpClient().send(authedRequest("/mqtt?topic=" + topic).build(), BodyHandlers.ofString());
@@ -138,11 +138,11 @@ public class MqttMongoOutageIT extends MqttITBase {
         mongo.start();
 
         assertTrue(awaitCount(collection, Filters.regex("_id", "^restart-"), 3, 150_000),
-            "the three messages must be written once MongoDB is back; found "
-                + collection.countDocuments(Filters.regex("_id", "^restart-")));
+                "the three messages must be written once MongoDB is back; found "
+                        + collection.countDocuments(Filters.regex("_id", "^restart-")));
         StoppableMongo.sleep(2_000);
         assertEquals(3, collection.countDocuments(Filters.regex("_id", "^restart-")),
-            "each message must be written once");
+                "each message must be written once");
     }
 
     @Test
@@ -154,7 +154,7 @@ public class MqttMongoOutageIT extends MqttITBase {
         collection.deleteMany(Filters.regex("_id", "^bp-"));
 
         var sse = subscribeAsync(() -> readSseLines(
-            authedRequest("/mqtt-sse?topic=" + topic).build(), count * 3, 60));
+                authedRequest("/mqtt-sse?topic=" + topic).build(), count * 3, 60));
         StoppableMongo.sleep(1_500);
 
         mongo.stop();
@@ -162,23 +162,23 @@ public class MqttMongoOutageIT extends MqttITBase {
         // They pile up in the buffer, acknowledged as they arrive. Were they acknowledged only
         // once written, delivery would stop at the 20th and this assertion would fail.
         IntStream.rangeClosed(1, count).forEach(n ->
-            publish(topic, "{\"messageId\":\"bp-" + n + "\",\"value\":" + n + "}"));
+                publish(topic, "{\"messageId\":\"bp-" + n + "\",\"value\":" + n + "}"));
 
         var lines = sse.get(65, TimeUnit.SECONDS);
         var received = IntStream.rangeClosed(1, count)
-            .filter(n -> lines.stream().anyMatch(l -> l.contains("\"bp-" + n + "\"")))
-            .count();
+                .filter(n -> lines.stream().anyMatch(l -> l.contains("\"bp-" + n + "\"")))
+                .count();
         assertEquals(count, received,
-            "every message must reach the SSE client although the buffer is full; got " + lines.size() + " lines");
+                "every message must reach the SSE client although the buffer is full; got " + lines.size() + " lines");
 
         assertEquals(0, metric("mqtt_buffer_dropped") - droppedBefore,
-            "the buffer is far from full: an outage must not drop anything");
+                "the buffer is far from full: an outage must not drop anything");
 
         mongo.start();
 
         assertTrue(awaitCount(collection, Filters.regex("_id", "^bp-"), count, 180_000),
-            "every message received during the outage must be written once MongoDB is back; found "
-                + collection.countDocuments(Filters.regex("_id", "^bp-")));
+                "every message received during the outage must be written once MongoDB is back; found "
+                        + collection.countDocuments(Filters.regex("_id", "^bp-")));
     }
 
 
@@ -187,15 +187,15 @@ public class MqttMongoOutageIT extends MqttITBase {
         var resp = httpClient().send(authedRequest("/metrics/" + name).build(), BodyHandlers.ofString());
         assertEquals(200, resp.statusCode(), "GET /metrics/" + name + ": " + resp.body());
         return resp.body().lines()
-            .filter(l -> l.startsWith(name))
-            .map(l -> l.substring(l.lastIndexOf(' ') + 1))
-            .mapToLong(v -> (long) Double.parseDouble(v))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("no " + name + " in " + resp.body()));
+                .filter(l -> l.startsWith(name))
+                .map(l -> l.substring(l.lastIndexOf(' ') + 1))
+                .mapToLong(v -> (long) Double.parseDouble(v))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("no " + name + " in " + resp.body()));
     }
 
     private boolean awaitCount(MongoCollection<Document> collection, org.bson.conversions.Bson filter,
-            long expected, long timeoutMillis) {
+                               long expected, long timeoutMillis) {
         var deadline = System.currentTimeMillis() + timeoutMillis;
         while (System.currentTimeMillis() < deadline) {
             try {

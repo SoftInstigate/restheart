@@ -58,11 +58,11 @@ import com.google.gson.JsonObject;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-rest",
-    description = "REST endpoint for polling last MQTT message per topic",
-    defaultURI = "/mqtt",
-    secure = true,
-    enabledByDefault = false
+        name = "mqtt-rest",
+        description = "REST endpoint for polling last MQTT message per topic",
+        defaultURI = "/mqtt",
+        secure = true,
+        enabledByDefault = false
 )
 public class MqttRestService implements JsonService {
 

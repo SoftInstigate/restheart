@@ -101,8 +101,8 @@ public class MessageBuffer {
                 case "drop-incoming" -> DROP_INCOMING;
                 case "blocking-queue" -> BLOCKING;
                 default -> throw new IllegalArgumentException(
-                    "Invalid value for buffer.strategy: \"" + value
-                        + "\". Accepted values are: ring-buffer, drop-incoming, blocking-queue");
+                        "Invalid value for buffer.strategy: \"" + value
+                                + "\". Accepted values are: ring-buffer, drop-incoming, blocking-queue");
             };
         }
     }
@@ -197,8 +197,8 @@ public class MessageBuffer {
     private int weigh(Pending message) {
         var payload = message.message().getPayloadBytes();
         var size = (payload == null ? 0 : payload.length)
-            + message.message().getTopic().length() * 2
-            + MESSAGE_OVERHEAD_BYTES;
+                + message.message().getTopic().length() * 2
+                + MESSAGE_OVERHEAD_BYTES;
         return (int) Math.min(size, maxBytes);
     }
 
@@ -310,7 +310,7 @@ public class MessageBuffer {
         long count = droppedCount.incrementAndGet();
         if (count % 1000 == 0) {
             LOGGER.warn("Buffer overflow with strategy {}: {} messages dropped so far (last dropped topic: {})",
-                strategy, count, message.message().getTopic());
+                    strategy, count, message.message().getTopic());
         }
     }
 

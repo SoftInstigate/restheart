@@ -30,11 +30,11 @@ import com.google.gson.JsonObject;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-stats",
-    description = "JSON snapshot of mqtt router runtime statistics",
-    defaultURI = "/mqtt/stats",
-    secure = true,
-    enabledByDefault = false
+        name = "mqtt-stats",
+        description = "JSON snapshot of mqtt router runtime statistics",
+        defaultURI = "/mqtt/stats",
+        secure = true,
+        enabledByDefault = false
 )
 public class MqttStatsService implements JsonService {
 

@@ -21,7 +21,6 @@
 
 package org.restheart.mqtt;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -132,10 +131,10 @@ import com.mongodb.client.model.WriteModel;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-mongo-writer",
-    description = "Persists MQTT messages to MongoDB with buffered async writes",
-    initPoint = InitPoint.AFTER_STARTUP,
-    enabledByDefault = false
+        name = "mqtt-mongo-writer",
+        description = "Persists MQTT messages to MongoDB with buffered async writes",
+        initPoint = InitPoint.AFTER_STARTUP,
+        enabledByDefault = false
 )
 public class MqttMongoWriter implements Initializer {
 
@@ -193,7 +192,8 @@ public class MqttMongoWriter implements Initializer {
     private volatile long writeDeadlineMillis = Long.MAX_VALUE;
 
     /** The buffer no longer carries a per-message callback: see the durable subscription in {@link #onInit()}. */
-    private static final Runnable NO_OP = () -> { };
+    private static final Runnable NO_OP = () -> {
+    };
 
     private final AtomicLong duplicateCount = new AtomicLong();
 
@@ -331,7 +331,7 @@ public class MqttMongoWriter implements Initializer {
         registerShutdownHookOnce(this::close);
 
         LOGGER.info("MqttMongoWriter initialized: sinks={}, buffer={}, batchSize={}",
-            sinks.size(), strategy, batchSize);
+                sinks.size(), strategy, batchSize);
     }
 
     /**
@@ -437,7 +437,7 @@ public class MqttMongoWriter implements Initializer {
                 pending.taken().run();
             } catch (Exception e) {
                 LOGGER.error("Failed to report a message as taken for topic {}",
-                    pending.message().getTopic(), e);
+                        pending.message().getTopic(), e);
             }
         }
     }
@@ -501,16 +501,16 @@ public class MqttMongoWriter implements Initializer {
                 if (duplicates > 0) {
                     duplicateCount.addAndGet(duplicates);
                     LOGGER.debug("{} of {} documents already present in {}.{} (duplicate key) — treated as already stored",
-                        duplicates, pending.size(), sink.database(), sink.collection());
+                            duplicates, pending.size(), sink.database(), sink.collection());
                 }
                 if (failedIndices.isEmpty()) {
                     // every error was a duplicate key: everything in this batch is stored
                     return;
                 }
                 List<Document> retryDocs = failedIndices.stream()
-                    .sorted()
-                    .map(pending::get)
-                    .collect(Collectors.toList());
+                        .sorted()
+                        .map(pending::get)
+                        .collect(Collectors.toList());
                 // These documents were rejected one by one, so MongoDB is reachable and it is
                 // the documents it does not accept - a failed validation, a size or type it
                 // refuses. Retrying a few times covers a transient rejection; past that they are
@@ -519,8 +519,8 @@ public class MqttMongoWriter implements Initializer {
                 attempt++;
                 if (attempt > maxRetries) {
                     LOGGER.error("Giving up on {} of {} documents into {}.{} after {} retries; "
-                        + "dead-lettering them", retryDocs.size(), documents.size(),
-                        sink.database(), sink.collection(), maxRetries, e);
+                            + "dead-lettering them", retryDocs.size(), documents.size(),
+                            sink.database(), sink.collection(), maxRetries, e);
                     deadLetter(sink, retryDocs, e);
                     return;
                 }
@@ -542,17 +542,17 @@ public class MqttMongoWriter implements Initializer {
                     // nobody else is holding them: they are lost, and saying so is the honest
                     // thing to do. The buffer is memory; this is the guarantee, not a surprise.
                     LOGGER.warn("Shutting down with MongoDB unreachable: {} messages for {}.{} are lost",
-                        pending.size(), sink.database(), sink.collection());
+                            pending.size(), sink.database(), sink.collection());
                     return;
                 }
                 if (outageAttempt == 1 || outageAttempt % 10 == 0) {
                     LOGGER.warn("Cannot write {} documents into {}.{} (attempt {}); retrying until "
-                        + "MongoDB is back: {}", pending.size(), sink.database(), sink.collection(),
-                        outageAttempt, e.toString());
+                            + "MongoDB is back: {}", pending.size(), sink.database(), sink.collection(),
+                            outageAttempt, e.toString());
                 }
                 if (!backoff(outageAttempt)) {
                     LOGGER.warn("Interrupted while retrying: {} messages for {}.{} are lost",
-                        pending.size(), sink.database(), sink.collection());
+                            pending.size(), sink.database(), sink.collection());
                     return;
                 }
             }
@@ -591,8 +591,8 @@ public class MqttMongoWriter implements Initializer {
     private static void validateIdStrategy(String value) {
         if (!VALID_ID_STRATEGIES.contains(value)) {
             throw new IllegalArgumentException(
-                "Invalid value for id-strategy: \"" + value
-                    + "\". Accepted values are: auto, payload-field");
+                    "Invalid value for id-strategy: \"" + value
+                            + "\". Accepted values are: auto, payload-field");
         }
     }
 
@@ -611,8 +611,8 @@ public class MqttMongoWriter implements Initializer {
     private static void validateIdField(String idStrategy, String idField) {
         if ("payload-field".equals(idStrategy) && (idField == null || idField.isBlank())) {
             throw new IllegalArgumentException(
-                "Invalid value for id-field: \"" + idField
-                    + "\". It must not be null or blank when id-strategy is \"payload-field\"");
+                    "Invalid value for id-field: \"" + idField
+                            + "\". It must not be null or blank when id-strategy is \"payload-field\"");
         }
     }
 
@@ -635,8 +635,8 @@ public class MqttMongoWriter implements Initializer {
         Object value = sinkConfig.get(key);
         if (!(value instanceof String s)) {
             throw new IllegalArgumentException(
-                "Invalid mongo-sink entry: missing or invalid \"" + key + "\": " + value
-                    + " in entry " + sinkConfig);
+                    "Invalid mongo-sink entry: missing or invalid \"" + key + "\": " + value
+                            + " in entry " + sinkConfig);
         }
         return s;
     }
@@ -713,29 +713,29 @@ public class MqttMongoWriter implements Initializer {
         }
 
         var entries = documents.stream()
-            .map(doc -> new Document(doc).append("_deadLetter", new Document()
-                .append("collection", sink.collection())
-                .append("reason", cause == null ? null : cause.getMessage())
-                .append("at", Date.from(Instant.now()))))
-            .toList();
+                .map(doc -> new Document(doc).append("_deadLetter", new Document()
+                        .append("collection", sink.collection())
+                        .append("reason", cause == null ? null : cause.getMessage())
+                        .append("at", Date.from(Instant.now()))))
+                .toList();
 
         try {
             mclient.getDatabase(sink.database())
-                .getCollection(deadLetterCollection)
-                .insertMany(entries, new InsertManyOptions().ordered(false));
+                    .getCollection(deadLetterCollection)
+                    .insertMany(entries, new InsertManyOptions().ordered(false));
             LOGGER.warn("Wrote {} documents refused by {}.{} to {}.{}", entries.size(),
-                sink.database(), sink.collection(), sink.database(), deadLetterCollection);
+                    sink.database(), sink.collection(), sink.database(), deadLetterCollection);
         } catch (MongoBulkWriteException e) {
             var refused = e.getWriteErrors().stream()
-                .filter(err -> err.getCode() != DUPLICATE_KEY_ERROR_CODE)
-                .count();
+                    .filter(err -> err.getCode() != DUPLICATE_KEY_ERROR_CODE)
+                    .count();
             if (refused > 0) {
                 LOGGER.error("{} of {} documents could not be written to {}.{} either; they are lost",
-                    refused, entries.size(), sink.database(), deadLetterCollection, e);
+                        refused, entries.size(), sink.database(), deadLetterCollection, e);
             }
         } catch (Exception e) {
             LOGGER.error("Cannot write {} dead-lettered documents to {}.{}; they are lost",
-                entries.size(), sink.database(), deadLetterCollection, e);
+                    entries.size(), sink.database(), deadLetterCollection, e);
         }
     }
 
@@ -891,7 +891,7 @@ public class MqttMongoWriter implements Initializer {
         var remaining = buffer.size();
         if (remaining > 0) {
             LOGGER.info("Shutting down with {} buffered messages; draining for up to {} ms",
-                remaining, shutdownTimeoutMs);
+                    remaining, shutdownTimeoutMs);
         }
         drainUntilEmptyOrDeadline(System.currentTimeMillis() + shutdownTimeoutMs);
 
@@ -902,7 +902,7 @@ public class MqttMongoWriter implements Initializer {
         var stranded = buffer.drain(Integer.MAX_VALUE);
         if (!stranded.isEmpty()) {
             LOGGER.warn("Shutdown deadline of {} ms elapsed with {} buffered messages not written "
-                + "to MongoDB; they are lost", shutdownTimeoutMs, stranded.size());
+                    + "to MongoDB; they are lost", shutdownTimeoutMs, stranded.size());
         }
     }
 
@@ -926,7 +926,8 @@ public class MqttMongoWriter implements Initializer {
     /**
      * A topic → database.collection mapping.
      */
-    record MongoSink(String topic, String database, String collection) {}
+    record MongoSink(String topic, String database, String collection) {
+    }
 
     @SuppressWarnings("unchecked")
     private <V> V configOrDefault(Map<String, ?> args, String key, V defaultValue) {
@@ -955,7 +956,7 @@ public class MqttMongoWriter implements Initializer {
             // Falling back silently is the "configuration that is present but inert" trap this
             // module has a whole sentinel for; say so instead.
             LOGGER.warn("Configuration key '{}' is a {} where a {} was expected; ignoring it and using {}",
-                key, raw.getClass().getSimpleName(), defaultValue.getClass().getSimpleName(), defaultValue);
+                    key, raw.getClass().getSimpleName(), defaultValue.getClass().getSimpleName(), defaultValue);
             return defaultValue;
         }
 

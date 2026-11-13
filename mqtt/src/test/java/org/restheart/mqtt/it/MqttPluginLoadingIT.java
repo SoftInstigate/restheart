@@ -57,15 +57,15 @@ public class MqttPluginLoadingIT extends MqttITBase {
         var logs = restheartLogs();
         var summaryLine = summaryLine(logs);
         assertNotNull(summaryLine,
-            "restheart logs must show the mqtt-status initializer's 'mqtt module active:' summary; got:\n" + logs);
+                "restheart logs must show the mqtt-status initializer's 'mqtt module active:' summary; got:\n" + logs);
 
         for (var expectedActive : List.of("mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest",
                 "mqtt-topic-authorizer")) {
             assertTrue(activePart(summaryLine).contains(expectedActive),
-                expectedActive + " must be named as active; got: " + summaryLine);
+                    expectedActive + " must be named as active; got: " + summaryLine);
         }
         assertTrue(inactivePart(summaryLine).contains("mqtt-mongo-writer"),
-            "mqtt-mongo-writer must be named as inactive; got: " + summaryLine);
+                "mqtt-mongo-writer must be named as inactive; got: " + summaryLine);
     }
 
     @Test
@@ -90,7 +90,7 @@ public class MqttPluginLoadingIT extends MqttITBase {
         var req = authedRequest("/mqtt").build();
         var resp = httpClient().send(req, BodyHandlers.ofString());
         assertEquals(400, resp.statusCode(),
-            "/mqtt with no 'topic' query parameter must be bound and answer 400; got body: " + resp.body());
+                "/mqtt with no 'topic' query parameter must be bound and answer 400; got body: " + resp.body());
     }
 
     @Test
@@ -100,7 +100,7 @@ public class MqttPluginLoadingIT extends MqttITBase {
         // broker-url is passed through RHO either - a dormant instance must have no mqtt-*
         // configuration whatsoever, not even a broker it never connects to.
         var dormantOverrides = Path.of("src", "test", "resources", "etc", "it-overrides-dormant.yml")
-            .toAbsolutePath().normalize();
+                .toAbsolutePath().normalize();
 
         // try/finally, not try-with-resources with a var declared in the try clause: the
         // assertions below need the instance in scope, and RestheartInstance.close() is itself
@@ -108,22 +108,22 @@ public class MqttPluginLoadingIT extends MqttITBase {
         var dormant = startRestheart(dormantOverrides, List.of(), "MqttPluginLoadingIT-dormant.log");
         try {
             var req = HttpRequest.newBuilder()
-                .uri(URI.create(dormant.baseUrl() + "/mqtt-sse"))
-                .header("Authorization", ADMIN_BASIC)
-                .GET()
-                .build();
+                    .uri(URI.create(dormant.baseUrl() + "/mqtt-sse"))
+                    .header("Authorization", ADMIN_BASIC)
+                    .GET()
+                    .build();
             var resp = httpClient().send(req, BodyHandlers.discarding());
             // Not 404: RESTHeart's own RequestNotManagedHandler answers every request that
             // matches no registered path with 502 Bad Gateway, not 404 - there is no "not found"
             // routing outcome in this server for a path nothing ever claimed.
             assertEquals(502, resp.statusCode(),
-                "/mqtt-sse must be unbound - answered by RequestNotManagedHandler's 502 - when "
-                    + "mqtt-client is never switched on");
+                    "/mqtt-sse must be unbound - answered by RequestNotManagedHandler's 502 - when "
+                            + "mqtt-client is never switched on");
 
             var logs = dormant.logs();
             assertTrue(logs.contains("mqtt module is installed but inactive"),
-                "restheart logs must show the mqtt-status initializer's 'installed but inactive' finding; got:\n"
-                    + logs);
+                    "restheart logs must show the mqtt-status initializer's 'installed but inactive' finding; got:\n"
+                            + logs);
         } finally {
             dormant.close();
         }

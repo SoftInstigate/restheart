@@ -77,7 +77,7 @@ public class MqttMongoDeadLetterIT extends MqttITBase {
         db.getCollection(COLLECTION).drop();
         db.getCollection(DEAD_LETTER).drop();
         db.createCollection(COLLECTION, new CreateCollectionOptions().validationOptions(
-            new ValidationOptions().validator(Filters.ne("topic", TOPIC))));
+                new ValidationOptions().validator(Filters.ne("topic", TOPIC))));
     }
 
     @Override
@@ -99,20 +99,20 @@ public class MqttMongoDeadLetterIT extends MqttITBase {
 
         var deadLetters = mongo.client().getDatabase(DB).getCollection(DEAD_LETTER);
         assertTrue(awaitDocument(deadLetters, "dl1", 60_000),
-            "a document MongoDB refuses must end up in the dead-letter collection; found "
-                + deadLetters.countDocuments());
+                "a document MongoDB refuses must end up in the dead-letter collection; found "
+                        + deadLetters.countDocuments());
 
         var recorded = deadLetters.find(Filters.eq("_id", "dl1")).first();
         assertEquals(TOPIC, recorded.getString("topic"), "the message is kept as it was");
         var why = recorded.get("_deadLetter", Document.class);
         assertEquals(COLLECTION, why.getString("collection"), "with the collection it was meant for");
         assertTrue(why.getString("reason").toLowerCase().contains("validation"),
-            "and why MongoDB refused it: " + why.getString("reason"));
+                "and why MongoDB refused it: " + why.getString("reason"));
 
         // the sink is unblocked: a message on a topic the collection accepts is written as usual
         publish("sensors/accepted", "{\"messageId\":\"ok1\",\"value\":1}");
         assertTrue(awaitDocument(mongo.client().getDatabase(DB).getCollection(COLLECTION), "ok1", 60_000),
-            "one refused document must not stop the ones after it");
+                "one refused document must not stop the ones after it");
     }
 
 

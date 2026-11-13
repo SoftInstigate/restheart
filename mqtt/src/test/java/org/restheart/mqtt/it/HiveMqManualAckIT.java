@@ -101,7 +101,7 @@ public class HiveMqManualAckIT extends MqttITBase {
         }
 
         assertTrue(gotThree.await(20, TimeUnit.SECONDS),
-            "the first session must receive all three; got " + received);
+                "the first session must receive all three; got " + received);
         first.disconnect().get(10, TimeUnit.SECONDS);
 
         // --- second session, same identifier: what does the broker replay? ---
@@ -124,11 +124,11 @@ public class HiveMqManualAckIT extends MqttITBase {
         // the module would have to own a durable spool from the first message rather than only
         // under pressure.
         assertTrue(replayed,
-            "messages 2 and 3 were never acknowledged, so a resumed session must be given them "
-                + "again; the broker replayed " + redelivered + " instead");
+                "messages 2 and 3 were never acknowledged, so a resumed session must be given them "
+                        + "again; the broker replayed " + redelivered + " instead");
         assertEquals(List.of("2", "3"), redelivered.stream().sorted().toList(),
-            "exactly the unacknowledged messages must come back - not the acknowledged one, and "
-                + "not nothing; got " + redelivered);
+                "exactly the unacknowledged messages must come back - not the acknowledged one, and "
+                        + "not nothing; got " + redelivered);
     }
 
     /**
@@ -175,7 +175,7 @@ public class HiveMqManualAckIT extends MqttITBase {
             }
 
             assertTrue(gotThree.await(20, TimeUnit.SECONDS),
-                "the first session must receive all three; got " + received);
+                    "the first session must receive all three; got " + received);
             // Note: first.disconnect() is intentionally omitted to simulate a crash
 
             // --- second session, same identifier: session takeover, what does the broker replay? ---
@@ -196,10 +196,10 @@ public class HiveMqManualAckIT extends MqttITBase {
             // The claim under test: unacknowledged messages survive a session takeover (crash).
             // If this fails, the durability design has to change.
             assertTrue(replayed,
-                "messages 2 and 3 were never acknowledged, so a session takeover must still deliver them "
-                    + "again; the broker replayed " + redelivered + " instead");
+                    "messages 2 and 3 were never acknowledged, so a session takeover must still deliver them "
+                            + "again; the broker replayed " + redelivered + " instead");
             assertEquals(List.of("2", "3"), redelivered.stream().sorted().toList(),
-                "exactly the unacknowledged messages must come back after session takeover; got " + redelivered);
+                    "exactly the unacknowledged messages must come back after session takeover; got " + redelivered);
         } finally {
             // Clean up both clients, ignoring exceptions from the taken-over connection
             if (first != null) {
@@ -233,11 +233,11 @@ public class HiveMqManualAckIT extends MqttITBase {
      */
     private Mqtt3AsyncClient newClientWithId(String clientId) {
         return MqttClient.builder()
-            .useMqttVersion3()
-            .identifier(clientId)
-            .serverHost("localhost")
-            .serverPort(brokerPort)
-            .buildAsync();
+                .useMqttVersion3()
+                .identifier(clientId)
+                .serverHost("localhost")
+                .serverPort(brokerPort)
+                .buildAsync();
     }
 
     private static String payloadOf(Mqtt3Publish publish) {

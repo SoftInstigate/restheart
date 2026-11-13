@@ -70,10 +70,10 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-status",
-    description = "Logs a startup diagnostic summary of the mqtt module's enablement and configuration",
-    enabledByDefault = true,
-    initPoint = InitPoint.AFTER_STARTUP
+        name = "mqtt-status",
+        description = "Logs a startup diagnostic summary of the mqtt module's enablement and configuration",
+        enabledByDefault = true,
+        initPoint = InitPoint.AFTER_STARTUP
 )
 public class MqttStatusInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttStatusInitializer.class);
@@ -82,8 +82,8 @@ public class MqttStatusInitializer implements Initializer {
      * The six plugins that make up the {@code mqtt} module, in the order they are reported.
      */
     private static final List<String> MQTT_PLUGIN_NAMES = List.of(
-        "mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest", "mqtt-mongo-writer",
-        "mqtt-topic-authorizer", "mqtt-connector");
+            "mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest", "mqtt-mongo-writer",
+            "mqtt-topic-authorizer", "mqtt-connector");
 
     /**
      * The full RESTHeart configuration, used to read the configuration blocks of the other
@@ -170,19 +170,19 @@ public class MqttStatusInitializer implements Initializer {
         // the gate without reinstating the bundling.
         if (!clientActive) {
             findings.add(new Finding(Level.INFO,
-                "mqtt module is installed but inactive: mqtt-client is the root of its injection graph and is "
-                    + "disabled, so mqtt-router, mqtt-sse, mqtt-rest, mqtt-mongo-writer and mqtt-topic-authorizer "
-                    + "are all unreachable regardless of their own configuration; set /mqtt-client/enabled to "
-                    + "true to activate the module"));
+                    "mqtt module is installed but inactive: mqtt-client is the root of its injection graph and is "
+                            + "disabled, so mqtt-router, mqtt-sse, mqtt-rest, mqtt-mongo-writer and mqtt-topic-authorizer "
+                            + "are all unreachable regardless of their own configuration; set /mqtt-client/enabled to "
+                            + "true to activate the module"));
         }
 
         for (var name : MQTT_PLUGIN_NAMES) {
             var block = asMap(confMap.get(name));
             if (block != null && !block.containsKey("enabled") && !isActive(registry, name)) {
                 findings.add(new Finding(Level.WARN,
-                    "configuration block '" + name + "' is present but has no 'enabled' key, and " + name
-                        + " is not currently active; without an explicit 'enabled: true' this configuration has "
-                        + "no effect"));
+                        "configuration block '" + name + "' is present but has no 'enabled' key, and " + name
+                                + " is not currently active; without an explicit 'enabled: true' this configuration has "
+                                + "no effect"));
             }
         }
 
@@ -209,9 +209,9 @@ public class MqttStatusInitializer implements Initializer {
             }
             if (!mqtt5OnlyKeys.isEmpty()) {
                 findings.add(new Finding(Level.WARN,
-                    "mqtt-client sets " + String.join(", ", mqtt5OnlyKeys) + ", which exist only in MQTT 5.0, "
-                        + "while protocol-version is 3; these settings are silently ignored on a 3.1.1 "
-                        + "connection - set /mqtt-client/protocol-version to 5, or remove them"));
+                        "mqtt-client sets " + String.join(", ", mqtt5OnlyKeys) + ", which exist only in MQTT 5.0, "
+                                + "while protocol-version is 3; these settings are silently ignored on a 3.1.1 "
+                                + "connection - set /mqtt-client/protocol-version to 5, or remove them"));
             }
         }
 
@@ -220,10 +220,10 @@ public class MqttStatusInitializer implements Initializer {
         // builds the client and nothing ever connects it.
         if (clientActive && !isActive(registry, "mqtt-connector")) {
             findings.add(new Finding(Level.WARN,
-                "mqtt-client is enabled but mqtt-connector is not, so nothing ever connects to the broker. "
-                    + "mqtt-client only builds the client; connecting is deferred until every consumer "
-                    + "registered at startup exists, because whatever the broker redelivers on a resumed "
-                    + "session is lost if it arrives before them. Set /mqtt-connector/enabled to true"));
+                    "mqtt-client is enabled but mqtt-connector is not, so nothing ever connects to the broker. "
+                            + "mqtt-client only builds the client; connecting is deferred until every consumer "
+                            + "registered at startup exists, because whatever the broker redelivers on a resumed "
+                            + "session is lost if it arrives before them. Set /mqtt-connector/enabled to true"));
         }
 
         var restActive = isActive(registry, "mqtt-rest");
@@ -239,23 +239,23 @@ public class MqttStatusInitializer implements Initializer {
 
         if (restActive && (!lastMessageCacheEnabled || (!hasSubscriptions && !hasMongoSink && !sseActive))) {
             findings.add(new Finding(Level.WARN,
-                "mqtt-rest is active but nothing will populate its last-message cache (no mqtt-router.subscriptions, "
-                    + "no mqtt-mongo-writer.mongo-sink, and mqtt-sse is not active) or mqtt-router.last-message-cache "
-                    + "is disabled; GET /mqtt will answer 404 until something subscribes"));
+                    "mqtt-rest is active but nothing will populate its last-message cache (no mqtt-router.subscriptions, "
+                            + "no mqtt-mongo-writer.mongo-sink, and mqtt-sse is not active) or mqtt-router.last-message-cache "
+                            + "is disabled; GET /mqtt will answer 404 until something subscribes"));
         }
 
         if (mongoWriterActive && !hasMongoSink) {
             findings.add(new Finding(Level.WARN,
-                "mqtt-mongo-writer is active but mqtt-mongo-writer.mongo-sink is empty or absent; its drain loop "
-                    + "will run but write nothing to MongoDB"));
+                    "mqtt-mongo-writer is active but mqtt-mongo-writer.mongo-sink is empty or absent; its drain loop "
+                            + "will run but write nothing to MongoDB"));
         }
 
         var authorizerBlock = asMap(confMap.get("mqtt-topic-authorizer"));
         var hasAcl = isNonEmptyMap(authorizerBlock == null ? null : authorizerBlock.get("acl"));
         if ((sseActive || restActive) && !hasAcl) {
             findings.add(new Finding(Level.WARN,
-                "mqtt-sse or mqtt-rest is active while mqtt-topic-authorizer.acl is empty or absent; every request "
-                    + "will be denied with 403"));
+                    "mqtt-sse or mqtt-rest is active while mqtt-topic-authorizer.acl is empty or absent; every request "
+                            + "will be denied with 403"));
         }
 
         // Same reasoning as the "installed but inactive" line above: the module is installed on
@@ -264,8 +264,8 @@ public class MqttStatusInitializer implements Initializer {
             var active = MQTT_PLUGIN_NAMES.stream().filter(name -> isActive(registry, name)).toList();
             var inactive = MQTT_PLUGIN_NAMES.stream().filter(name -> !isActive(registry, name)).toList();
             findings.add(new Finding(Level.INFO,
-                "mqtt module active: " + String.join(", ", active)
-                    + (inactive.isEmpty() ? "" : "; inactive: " + String.join(", ", inactive))));
+                    "mqtt module active: " + String.join(", ", active)
+                            + (inactive.isEmpty() ? "" : "; inactive: " + String.join(", ", inactive))));
         }
 
         return findings;
@@ -281,10 +281,10 @@ public class MqttStatusInitializer implements Initializer {
      */
     private static boolean isActive(PluginsRegistry registry, String name) {
         return containsActive(registry.getProviders(), name)
-            || containsActive(registry.getServices(), name)
-            || containsActive(registry.getSseServices(), name)
-            || containsActive(registry.getInitializers(), name)
-            || containsActive(registry.getInterceptors(), name);
+                || containsActive(registry.getServices(), name)
+                || containsActive(registry.getSseServices(), name)
+                || containsActive(registry.getInitializers(), name)
+                || containsActive(registry.getInterceptors(), name);
     }
 
     private static boolean containsActive(Set<? extends PluginRecord<?>> plugins, String name) {

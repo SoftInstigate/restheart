@@ -55,17 +55,17 @@ public class MqttClientSingletonTest {
 
     private static MqttConfig minimalConfig() {
         return new MqttConfig.Builder()
-            .brokerUrl("tcp://localhost:1883")
-            .protocolVersion(3)
-            .clientId("test-client")
-            .cleanSession(true)
-            .keepAliveSeconds(60)
-            .sessionExpirySeconds(0L)
-            .connectTimeoutSeconds(5)
-            .tlsEnabled(false)
-            .reconnectConfig(new MqttConfig.ReconnectConfig(false, 1000L, 30000L))
-            .willConfig(new MqttConfig.WillConfig(null, null, 0, false, 0L, null))
-            .build();
+                .brokerUrl("tcp://localhost:1883")
+                .protocolVersion(3)
+                .clientId("test-client")
+                .cleanSession(true)
+                .keepAliveSeconds(60)
+                .sessionExpirySeconds(0L)
+                .connectTimeoutSeconds(5)
+                .tlsEnabled(false)
+                .reconnectConfig(new MqttConfig.ReconnectConfig(false, 1000L, 30000L))
+                .willConfig(new MqttConfig.WillConfig(null, null, 0, false, 0L, null))
+                .build();
     }
 
     private static void setStatic(String fieldName, Object value) throws Exception {
@@ -111,7 +111,7 @@ public class MqttClientSingletonTest {
     @DisplayName("getClient() before initialization throws IllegalStateException naming the mqtt-client plugin")
     public void testGetClientBeforeInitThrows() {
         var ex = assertThrows(IllegalStateException.class,
-            () -> MqttClientSingleton.getInstance().getClient());
+                () -> MqttClientSingleton.getInstance().getClient());
         assertTrue(ex.getMessage().contains("mqtt-client"));
     }
 
@@ -122,7 +122,7 @@ public class MqttClientSingletonTest {
         setStatic("config", minimalConfig());
 
         var ex = assertThrows(IllegalStateException.class,
-            () -> MqttClientSingleton.getInstance().getClient());
+                () -> MqttClientSingleton.getInstance().getClient());
         assertTrue(ex.getMessage().contains("mqtt-client"));
     }
 

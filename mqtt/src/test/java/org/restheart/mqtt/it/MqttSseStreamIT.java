@@ -61,11 +61,11 @@ public class MqttSseStreamIT extends MqttITBase {
         var lines = linesFuture.get(20, TimeUnit.SECONDS);
 
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("event:mqtt-message")),
-            "SSE event must be typed 'mqtt-message'; got: " + lines);
+                "SSE event must be typed 'mqtt-message'; got: " + lines);
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("data:")),
-            "SSE connection must receive a 'data:' line after publish; got: " + lines);
+                "SSE connection must receive a 'data:' line after publish; got: " + lines);
         assertTrue(lines.stream().anyMatch(l -> l.contains("21.5")),
-            "Received event must carry the published payload; got: " + lines);
+                "Received event must carry the published payload; got: " + lines);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class MqttSseStreamIT extends MqttITBase {
         // This test reads until it sees the one payload it actually published, tolerating however
         // many other topics' replayed events arrive first.
         var linesFuture = subscribeAsync(
-            () -> readSseLinesUntil(req, line -> line.contains("19.0"), 90, 20));
+                () -> readSseLinesUntil(req, line -> line.contains("19.0"), 90, 20));
 
         Thread.sleep(1_500);
 
@@ -97,9 +97,9 @@ public class MqttSseStreamIT extends MqttITBase {
         var lines = linesFuture.get(25, TimeUnit.SECONDS);
 
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("event:mqtt-message")),
-            "wildcard filter 'sensors/#' must match a message published to 'sensors/wildcard-temp'; got: " + lines);
+                "wildcard filter 'sensors/#' must match a message published to 'sensors/wildcard-temp'; got: " + lines);
         assertTrue(lines.stream().anyMatch(l -> l.contains("19.0")),
-            "Received event must carry the published payload; got: " + lines);
+                "Received event must carry the published payload; got: " + lines);
     }
 
     @Test
@@ -118,9 +118,9 @@ public class MqttSseStreamIT extends MqttITBase {
         var b = linesB.get(20, TimeUnit.SECONDS);
 
         assertTrue(a.stream().anyMatch(l -> l.contains("shared")),
-            "client A must receive the message published once both clients are subscribed; got: " + a);
+                "client A must receive the message published once both clients are subscribed; got: " + a);
         assertTrue(b.stream().anyMatch(l -> l.contains("shared")),
-            "client B must receive the same message; got: " + b);
+                "client B must receive the same message; got: " + b);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class MqttSseStreamIT extends MqttITBase {
         // first message - which is why the stopping condition is the content the assertion needs
         // rather than a padded count that the usual six-line run would never reach.
         var linesB = subscribeAsync(
-            () -> readSseLinesUntil(reqB, line -> line.contains("\"n\": 2"), 12, 30));
+                () -> readSseLinesUntil(reqB, line -> line.contains("\"n\": 2"), 12, 30));
 
         // A longer settle than the 1500 ms used for the single-connection cases above: this test
         // opens two SSE connections that must each finish the full request pipeline (security,
@@ -154,7 +154,7 @@ public class MqttSseStreamIT extends MqttITBase {
         // Blocks until A has received its one event and, as a result, disconnected.
         var firstA = linesA.get(15, TimeUnit.SECONDS);
         assertTrue(firstA.stream().anyMatch(l -> l.contains("\"n\": 1")),
-            "client A must receive the first message before it disconnects; got: " + firstA);
+                "client A must receive the first message before it disconnects; got: " + firstA);
 
         // A brief pause for the server to notice the now-closed connection before the next publish.
         Thread.sleep(500);
@@ -163,8 +163,8 @@ public class MqttSseStreamIT extends MqttITBase {
 
         var allB = linesB.get(25, TimeUnit.SECONDS);
         assertTrue(allB.stream().anyMatch(l -> l.contains("\"n\": 2")),
-            "client B, which stayed connected, must still receive a message published after another "
-                + "client on the same filter disconnected; got: " + allB);
+                "client B, which stayed connected, must still receive a message published after another "
+                        + "client on the same filter disconnected; got: " + allB);
     }
 
 }

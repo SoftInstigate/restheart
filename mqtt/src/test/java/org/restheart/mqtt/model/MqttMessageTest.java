@@ -90,7 +90,7 @@ public class MqttMessageTest {
     // anything compressed: destroyed at the door. ---
 
     /** 0x80 is a continuation byte with no lead byte: never valid UTF-8. */
-    private static final byte[] NOT_UTF8 = new byte[] { (byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE };
+    private static final byte[] NOT_UTF8 = new byte[]{(byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE};
 
     @Test
     @DisplayName("a payload that is not valid UTF-8 is kept byte for byte")
@@ -109,7 +109,7 @@ public class MqttMessageTest {
 
         assertEquals(java.util.Base64.getEncoder().encodeToString(NOT_UTF8), msg.getPayloadAsBase64());
         assertArrayEquals(NOT_UTF8, java.util.Base64.getDecoder().decode(msg.getPayloadAsBase64()),
-            "base64 must round-trip, or JSON and SSE consumers cannot recover the payload");
+                "base64 must round-trip, or JSON and SSE consumers cannot recover the payload");
     }
 
     @Test
@@ -124,7 +124,7 @@ public class MqttMessageTest {
     @Test
     @DisplayName("the payload array is copied in and out, so the message stays immutable")
     void testPayloadIsDefensivelyCopied() {
-        byte[] mutable = { 1, 2, 3 };
+        byte[] mutable = {1, 2, 3};
         var msg = new MqttMessage("sensors/raw", mutable, 1, Instant.now(), false);
 
         mutable[0] = 99;
@@ -137,9 +137,9 @@ public class MqttMessageTest {
     @Test
     @DisplayName("equality compares payload contents, not array identity")
     void testEqualityOnPayloadContents() {
-        var a = new MqttMessage("t", new byte[] { 1, 2 }, 1, Instant.EPOCH, false);
-        var b = new MqttMessage("t", new byte[] { 1, 2 }, 1, Instant.EPOCH, false);
-        var c = new MqttMessage("t", new byte[] { 1, 3 }, 1, Instant.EPOCH, false);
+        var a = new MqttMessage("t", new byte[]{1, 2}, 1, Instant.EPOCH, false);
+        var b = new MqttMessage("t", new byte[]{1, 2}, 1, Instant.EPOCH, false);
+        var c = new MqttMessage("t", new byte[]{1, 3}, 1, Instant.EPOCH, false);
 
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());

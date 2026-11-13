@@ -22,23 +22,11 @@
 package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.restheart.metrics.Metrics;
 import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.mqtt.model.MqttMessage;
@@ -63,12 +51,12 @@ public class MqttPipelineTest {
     void testThrottleStageLimitsEvents() throws Exception {
         // Arrange
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(new ThrottleStage(5))  // Max 5 events per second
-            .build();
+                .addStage(new ThrottleStage(5))  // Max 5 events per second
+                .build();
 
         // Act - process 20 messages rapidly
         int processed = 0;
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0;i < 20;i++) {
             MqttMessage msg = new MqttMessage("sensors/temp", "{\"temp\":" + i + "}", 0, Instant.now());
             Optional<MqttMessage> result = pipeline.process(msg);
             if (result.isPresent()) {
@@ -85,12 +73,12 @@ public class MqttPipelineTest {
     void testTumblingWindowAggregatorEmitsAfterWindow() throws Exception {
         // Arrange
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(new TumblingWindowAggregator(500, "count", null))
-            .build();
+                .addStage(new TumblingWindowAggregator(500, "count", null))
+                .build();
 
         // Act - send 5 messages quickly
         int emitted = 0;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0;i < 5;i++) {
             MqttMessage msg = new MqttMessage("sensors/temp", "{\"temp\":" + i + "}", 0, Instant.now());
             Optional<MqttMessage> result = pipeline.process(msg);
             if (result.isPresent()) {
@@ -116,8 +104,8 @@ public class MqttPipelineTest {
     void testFilterStageDropsNonMatchingMessages() throws Exception {
         // Arrange
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(FilterStage.byMinQos(99))  // min QoS 99 = drop all
-            .build();
+                .addStage(FilterStage.byMinQos(99))  // min QoS 99 = drop all
+                .build();
 
         // Act
         MqttMessage msg = new MqttMessage("sensors/temp", "{}", 1, Instant.now());
@@ -131,8 +119,8 @@ public class MqttPipelineTest {
     void testPipelineComposition() throws Exception {
         // Arrange - filter + throttle
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(new ThrottleStage(100))  // High limit, basically no throttle
-            .build();
+                .addStage(new ThrottleStage(100))  // High limit, basically no throttle
+                .build();
 
         // Act
         MqttMessage msg = new MqttMessage("sensors/temp", "{\"temp\":25}", 1, Instant.now());

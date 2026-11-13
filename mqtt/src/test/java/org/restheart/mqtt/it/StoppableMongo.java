@@ -57,8 +57,8 @@ final class StoppableMongo implements AutoCloseable {
         MqttITBase.retryingOnPortCollision("MongoDB", candidatePort -> {
             var candidate = new GenericContainer<>(System.getProperty("mongodb.image", "mongodb/mongodb-atlas-local")
                     + ":" + System.getProperty("mongodb.version", "preview"))
-                .withExposedPorts(27017)
-                .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(90)));
+                    .withExposedPorts(27017)
+                    .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(90)));
             candidate.setPortBindings(List.of(candidatePort + ":27017"));
             try {
                 candidate.start();
@@ -160,8 +160,8 @@ final class StoppableMongo implements AutoCloseable {
         // ["CMD", "/usr/local/bin/runner", "healthcheck"] or ["CMD-SHELL", "<a shell line>"]
         var test = healthcheck.getTest();
         var command = "CMD-SHELL".equals(test.get(0))
-            ? new String[] {"/bin/sh", "-c", test.get(1)}
-            : test.subList(1, test.size()).toArray(String[]::new);
+                ? new String[]{"/bin/sh", "-c", test.get(1)}
+                : test.subList(1, test.size()).toArray(String[]::new);
 
         Exception last = null;
         while (System.currentTimeMillis() < deadline) {

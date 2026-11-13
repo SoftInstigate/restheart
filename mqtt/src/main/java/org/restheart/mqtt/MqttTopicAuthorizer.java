@@ -91,9 +91,9 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-topic-authorizer",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-    description = "Checks MQTT topic access against ACL"
+        name = "mqtt-topic-authorizer",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+        description = "Checks MQTT topic access against ACL"
 )
 public class MqttTopicAuthorizer implements WildcardInterceptor {
 
@@ -155,22 +155,22 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
         for (var entry : rawAcl.entrySet()) {
             if (!(entry.getKey() instanceof String role)) {
                 throw new IllegalArgumentException(
-                    "Invalid mqtt-topic-authorizer 'acl' configuration: role key '" + entry.getKey()
-                        + "' must be a string");
+                        "Invalid mqtt-topic-authorizer 'acl' configuration: role key '" + entry.getKey()
+                                + "' must be a string");
             }
 
             if (!(entry.getValue() instanceof List<?> rawTopics)) {
                 throw new IllegalArgumentException(
-                    "Invalid mqtt-topic-authorizer 'acl' configuration: value of role '" + role
-                        + "' must be a list of topic patterns");
+                        "Invalid mqtt-topic-authorizer 'acl' configuration: value of role '" + role
+                                + "' must be a list of topic patterns");
             }
 
             var topics = new ArrayList<String>(rawTopics.size());
             for (var rawTopic : rawTopics) {
                 if (!(rawTopic instanceof String topic)) {
                     throw new IllegalArgumentException(
-                        "Invalid mqtt-topic-authorizer 'acl' configuration: topic pattern '" + rawTopic
-                            + "' for role '" + role + "' must be a string");
+                            "Invalid mqtt-topic-authorizer 'acl' configuration: topic pattern '" + rawTopic
+                                    + "' for role '" + role + "' must be a string");
                 }
                 topics.add(topic);
             }
@@ -294,7 +294,7 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
             // A sentinel that takes the server down is worse than one that falls back to the
             // documented default - which is also what mqtt-sse will use if its own read fails.
             LOGGER.debug("Could not read mqtt-sse.default-topic; falling back to {}",
-                MqttSseService.DEFAULT_TOPIC, e);
+                    MqttSseService.DEFAULT_TOPIC, e);
         }
         return MqttSseService.DEFAULT_TOPIC;
     }
@@ -390,7 +390,7 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
         String[] requestedLevels = requestedFilter.split("/");
 
         int i = 0;
-        for (; i < patternLevels.length; i++) {
+        for (;i < patternLevels.length;i++) {
             String patternLevel = patternLevels[i];
 
             if ("#".equals(patternLevel)) {

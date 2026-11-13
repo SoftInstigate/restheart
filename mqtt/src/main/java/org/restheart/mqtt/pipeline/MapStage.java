@@ -116,7 +116,7 @@ public class MapStage implements MqttEventStage {
         // U+FFFD, so a binary payload passes through untouched instead.
         if (!message.isTextPayload()) {
             LOGGER.debug("Passing through a non-text payload on {} unchanged: map stages transform text",
-                message.getTopic());
+                    message.getTopic());
             return Optional.of(message);
         }
 
@@ -138,12 +138,12 @@ public class MapStage implements MqttEventStage {
             // retain is carried over: this is the same broker delivery with a rewritten payload, so
             // rewriting must not turn a retained value into something that looks live.
             MqttMessage transformed = new MqttMessage(
-                message.getTopic(),
-                transformedPayload,
-                message.getQos(),
-                message.getReceivedAt(),
-                message.isRetain(),
-                message.getMqtt5Properties()
+                    message.getTopic(),
+                    transformedPayload,
+                    message.getQos(),
+                    message.getReceivedAt(),
+                    message.isRetain(),
+                    message.getMqtt5Properties()
             );
 
             return Optional.of(transformed);

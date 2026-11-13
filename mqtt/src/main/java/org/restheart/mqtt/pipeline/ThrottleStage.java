@@ -53,18 +53,18 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class ThrottleStage implements MqttEventStage {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ThrottleStage.class);
 
     // Aggregates drops across all per-connection instances for the mqtt_throttle_dropped gauge
     private static final AtomicLong TOTAL_DROPPED = new AtomicLong();
     private static final AtomicBoolean METRIC_REGISTERED = new AtomicBoolean(false);
-    
+
     private final int maxEventsPerSecond;
     private final AtomicLong tokens;
     private final AtomicLong lastRefillTime;
     private final AtomicLong droppedCount;
-    
+
     /**
      * Create a throttle stage
      * 
@@ -74,7 +74,7 @@ public class ThrottleStage implements MqttEventStage {
         if (maxEventsPerSecond <= 0) {
             throw new IllegalArgumentException("maxEventsPerSecond must be positive");
         }
-        
+
         this.maxEventsPerSecond = maxEventsPerSecond;
         this.tokens = new AtomicLong(maxEventsPerSecond); // Start with full bucket
         this.lastRefillTime = new AtomicLong(System.nanoTime());
@@ -85,7 +85,7 @@ public class ThrottleStage implements MqttEventStage {
             Metrics.registerGauge(MetricNameAndLabels.of("mqtt_throttle_dropped"), TOTAL_DROPPED::get);
         }
     }
-    
+
     @Override
     public Optional<MqttMessage> process(MqttMessage message) {
         refillTokens();
@@ -103,7 +103,7 @@ public class ThrottleStage implements MqttEventStage {
 
                 if (dropped % 100 == 0) {
                     LOGGER.warn("Throttle stage dropped {} messages (rate limit: {} msg/s)",
-                        dropped, maxEventsPerSecond);
+                            dropped, maxEventsPerSecond);
                 }
 
                 return Optional.empty();
@@ -143,21 +143,21 @@ public class ThrottleStage implements MqttEventStage {
             } while (!tokens.compareAndSet(currentTokens, newTokens));
         }
     }
-    
+
     /**
      * @return Number of messages dropped by this throttle
      */
     public long getDroppedCount() {
         return droppedCount.get();
     }
-    
+
     /**
      * @return Current number of available tokens
      */
     public long getAvailableTokens() {
         return tokens.get();
     }
-    
+
     /**
      * Reset the throttle (refill tokens and clear dropped count)
      */

@@ -189,8 +189,8 @@ public class MqttTopicAuthorizerTest {
     @DisplayName("Well-formed acl config initializes without error")
     void testWellFormedAclConfigInitializes() throws Exception {
         injectConfig(Map.of("acl", Map.of(
-            "iot-reader", List.of("sensors/#", "devices/+/status"),
-            "admin", List.of("#"))));
+                "iot-reader", List.of("sensors/#", "devices/+/status"),
+                "admin", List.of("#"))));
 
         authorizer.init();
 
@@ -353,8 +353,8 @@ public class MqttTopicAuthorizerTest {
     @DisplayName("SECURITY: ACL sensors/+ does NOT cover a request for the broader filter sensors/#")
     void testAclSingleLevelDoesNotCoverBroaderMultiLevelRequest() {
         assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors/#"),
-            "granting sensors/+ must not let a client escalate to sensors/#, which reaches "
-                + "topics like sensors/a/b that sensors/+ never grants");
+                "granting sensors/+ must not let a client escalate to sensors/#, which reaches "
+                        + "topics like sensors/a/b that sensors/+ never grants");
     }
 
     // --- patternCovers: '#' alone covers every request ---
@@ -435,27 +435,27 @@ public class MqttTopicAuthorizerTest {
 
     @Test
     @DisplayName("@RegisterPlugin.interceptPoint() is REQUEST_AFTER_AUTH, "
-        + "which is the only point core's SSE pipeline runs WildcardInterceptors at")
+            + "which is the only point core's SSE pipeline runs WildcardInterceptors at")
     void testRegisteredAtRequestAfterAuth() {
         RegisterPlugin annotation = MqttTopicAuthorizer.class.getAnnotation(RegisterPlugin.class);
         assertEquals(InterceptPoint.REQUEST_AFTER_AUTH, annotation.interceptPoint(),
-            "MqttTopicAuthorizer must be registered at REQUEST_AFTER_AUTH: that is the intercept "
-                + "point PlugSseServiceWiringTest proves core's assembled SSE pipeline actually runs "
-                + "WildcardInterceptors at. Registering it anywhere else means the pipeline never "
-                + "invokes it and /mqtt-sse subscriptions go unauthorized, even though this file's "
-                + "other tests (which call handle()/resolve() directly) would stay green.");
+                "MqttTopicAuthorizer must be registered at REQUEST_AFTER_AUTH: that is the intercept "
+                        + "point PlugSseServiceWiringTest proves core's assembled SSE pipeline actually runs "
+                        + "WildcardInterceptors at. Registering it anywhere else means the pipeline never "
+                        + "invokes it and /mqtt-sse subscriptions go unauthorized, even though this file's "
+                        + "other tests (which call handle()/resolve() directly) would stay green.");
     }
 
     @Test
     @DisplayName("MqttTopicAuthorizer implements WildcardInterceptor, "
-        + "the interceptor kind core's SSE pipeline collects and runs")
+            + "the interceptor kind core's SSE pipeline collects and runs")
     void testImplementsWildcardInterceptor() {
         assertTrue(WildcardInterceptor.class.isAssignableFrom(MqttTopicAuthorizer.class),
-            "MqttTopicAuthorizer must implement WildcardInterceptor: that is the plugin type "
-                + "PlugSseServiceWiringTest proves core resolves and runs for the SSE handshake. "
-                + "If this class implemented a different interceptor interface it would keep "
-                + "compiling and its own unit tests would keep passing, but core's SSE executor "
-                + "would never select it and /mqtt-sse would again be reachable unauthorized.");
+                "MqttTopicAuthorizer must implement WildcardInterceptor: that is the plugin type "
+                        + "PlugSseServiceWiringTest proves core resolves and runs for the SSE handshake. "
+                        + "If this class implemented a different interceptor interface it would keep "
+                        + "compiling and its own unit tests would keep passing, but core's SSE executor "
+                        + "would never select it and /mqtt-sse would again be reachable unauthorized.");
     }
 
     // --- resolve(): the paths this interceptor actually protects ---
@@ -489,28 +489,28 @@ public class MqttTopicAuthorizerTest {
 
     @Test
     @DisplayName("resolve() is true for a sub-path of /mqtt, because MqttRestService is mounted "
-        + "as a URI prefix and every sub-path genuinely reaches it and must still be authorized")
+            + "as a URI prefix and every sub-path genuinely reaches it and must still be authorized")
     void testResolveTrueForMqttSubPath() {
         ServiceRequest<?> request = requestWithPath("/mqtt/sub/path");
         ServiceResponse<?> response = mock(ServiceResponse.class);
 
         assertTrue(authorizer.resolve(request, response),
-            "/mqtt is registered with MATCH_POLICY.PREFIX, so /mqtt/sub/path reaches "
-                + "MqttRestService just like /mqtt does; an exact-match resolve() would let this "
-                + "request bypass the ACL entirely");
+                "/mqtt is registered with MATCH_POLICY.PREFIX, so /mqtt/sub/path reaches "
+                        + "MqttRestService just like /mqtt does; an exact-match resolve() would let this "
+                        + "request bypass the ACL entirely");
     }
 
     @Test
     @DisplayName("resolve() is true for a sub-path of /mqtt-sse, because the SSE pipeline is "
-        + "mounted as a URI prefix and every sub-path genuinely reaches it")
+            + "mounted as a URI prefix and every sub-path genuinely reaches it")
     void testResolveTrueForMqttSseSubPath() {
         ServiceRequest<?> request = requestWithPath("/mqtt-sse/sub");
         ServiceResponse<?> response = mock(ServiceResponse.class);
 
         assertTrue(authorizer.resolve(request, response),
-            "/mqtt-sse is registered with MATCH_POLICY.PREFIX, so /mqtt-sse/sub reaches the SSE "
-                + "pipeline just like /mqtt-sse does; an exact-match resolve() would let this "
-                + "request bypass the ACL entirely");
+                "/mqtt-sse is registered with MATCH_POLICY.PREFIX, so /mqtt-sse/sub reaches the SSE "
+                        + "pipeline just like /mqtt-sse does; an exact-match resolve() would let this "
+                        + "request bypass the ACL entirely");
     }
 
     @Test

@@ -66,10 +66,10 @@ import com.hivemq.client.mqtt.MqttClient;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-router",
-    description = "Provides the MQTT message router",
-    priority = 11,
-    enabledByDefault = false
+        name = "mqtt-router",
+        description = "Provides the MQTT message router",
+        priority = 11,
+        enabledByDefault = false
 )
 public class MqttRouterProvider implements Provider<MqttMessageRouter> {
 
@@ -193,8 +193,8 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
 
         if (qosCode == null || Qos.fromCode(qosCode) == null) {
             throw new IllegalArgumentException(
-                "Invalid value for subscriptions[].qos: " + qosValue + " in entry " + subscription
-                    + ". Accepted values are: 0, 1, 2");
+                    "Invalid value for subscriptions[].qos: " + qosValue + " in entry " + subscription
+                            + ". Accepted values are: 0, 1, 2");
         }
 
         return qosCode;

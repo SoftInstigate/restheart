@@ -45,10 +45,10 @@ import org.restheart.plugins.RegisterPlugin;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-metrics-collector",
-    description = "Registers mqtt router metrics with restheart-metrics",
-    enabledByDefault = true,
-    initPoint = InitPoint.AFTER_STARTUP
+        name = "mqtt-metrics-collector",
+        description = "Registers mqtt router metrics with restheart-metrics",
+        enabledByDefault = true,
+        initPoint = InitPoint.AFTER_STARTUP
 )
 public class MqttMetricsCollector implements Initializer {
 
@@ -74,28 +74,28 @@ public class MqttMetricsCollector implements Initializer {
     @Override
     public void init() {
         Metrics.registerGauge(
-            MetricNameAndLabels.of("mqtt_router_topic_filters"),
-            () -> router.getStats().getTopicFilters()
+                MetricNameAndLabels.of("mqtt_router_topic_filters"),
+                () -> router.getStats().getTopicFilters()
         );
 
         Metrics.registerGauge(
-            MetricNameAndLabels.of("mqtt_router_listeners"),
-            () -> router.getStats().getTotalListeners()
+                MetricNameAndLabels.of("mqtt_router_listeners"),
+                () -> router.getStats().getTotalListeners()
         );
 
         Metrics.registerGauge(
-            MetricNameAndLabels.of("mqtt_router_cached_messages"),
-            () -> router.getStats().getCachedMessages()
+                MetricNameAndLabels.of("mqtt_router_cached_messages"),
+                () -> router.getStats().getCachedMessages()
         );
 
         Metrics.registerGauge(
-            MetricNameAndLabels.of("mqtt_router_messages_received"),
-            () -> router.getStats().getMessagesReceived()
+                MetricNameAndLabels.of("mqtt_router_messages_received"),
+                () -> router.getStats().getMessagesReceived()
         );
 
         Metrics.registerGauge(
-            MetricNameAndLabels.of("mqtt_router_messages_dropped"),
-            () -> router.getStats().getMessagesDropped()
+                MetricNameAndLabels.of("mqtt_router_messages_dropped"),
+                () -> router.getStats().getMessagesDropped()
         );
     }
 }

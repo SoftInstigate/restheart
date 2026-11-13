@@ -94,22 +94,22 @@ public class MqttDurabilityIT extends MqttITBase {
         // buffer - acknowledged to the broker, and nowhere else - when the shutdown starts.
         var count = 50;
         IntStream.rangeClosed(1, count).forEach(n ->
-            publish(TOPIC, "{\"messageId\":\"sd-" + n + "\",\"value\":" + n + "}"));
+                publish(TOPIC, "{\"messageId\":\"sd-" + n + "\",\"value\":" + n + "}"));
         StoppableMongo.sleep(500);
 
         // SIGTERM, which runs the shutdown hook, unlike the SIGKILL of a crash
         restheart.close();
 
         assertEquals(count, collection.countDocuments(Filters.regex("_id", "^sd-")),
-            "a clean shutdown must write what it had buffered, not exit on top of it");
+                "a clean shutdown must write what it had buffered, not exit on top of it");
 
         // and the next instance carries on
         restheart = startRestheart(overridesFile(), allRho(), getClass().getSimpleName() + "-restarted.log",
-            standalone());
+                standalone());
         awaitBrokerConnected();
         publish(TOPIC, "{\"messageId\":\"after\",\"value\":1}");
         assertTrue(awaitDocument(collection, "after", 60_000),
-            "the restarted instance must store what it receives");
+                "the restarted instance must store what it receives");
     }
 
 

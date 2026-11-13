@@ -22,13 +22,10 @@
 package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
@@ -54,7 +51,7 @@ public class MqttOverflowTest {
         AtomicInteger receivedCount = new AtomicInteger(0);
 
         // Act - flood with messages
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0;i < 1000;i++) {
             MqttMessage msg = new MqttMessage("sensors/temp", "{\"temp\":" + i + "}", 0, Instant.now());
             if (!queue.offer(msg)) {
                 // Queue full - this is expected behavior
@@ -75,7 +72,7 @@ public class MqttOverflowTest {
         AtomicInteger droppedCount = new AtomicInteger(0);
 
         // Act - fast producer
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0;i < 50;i++) {
             MqttMessage msg = new MqttMessage("sensors/temp", "{\"temp\":" + i + "}", 0, Instant.now());
             if (!queue.offer(msg)) {
                 droppedCount.incrementAndGet();

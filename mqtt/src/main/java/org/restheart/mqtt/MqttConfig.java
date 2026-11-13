@@ -68,8 +68,8 @@ public class MqttConfig {
         this.brokerUrl = builder.brokerUrl;
         this.protocolVersion = builder.protocolVersion;
         this.clientId = (builder.clientId == null || builder.clientId.isBlank())
-            ? "restheart-" + UUID.randomUUID()
-            : builder.clientId;
+                ? "restheart-" + UUID.randomUUID()
+                : builder.clientId;
         this.username = builder.username;
         this.password = builder.password;
         this.cleanSession = builder.cleanSession;
@@ -185,7 +185,7 @@ public class MqttConfig {
         private final Long willMessageExpirySeconds;
 
         public WillConfig(String topic, String payload, int Qos, boolean retain,
-            long delaySeconds, Long messageExpirySeconds) {
+                          long delaySeconds, Long messageExpirySeconds) {
 
             this.willTopic = topic;
             this.willPayload = payload;
@@ -319,7 +319,7 @@ public class MqttConfig {
         public MqttConfig build() {
             if (protocolVersion != 3 && protocolVersion != 5) {
                 throw new IllegalArgumentException(
-                    "'protocol-version' must be 3 or 5, got: " + protocolVersion);
+                        "'protocol-version' must be 3 or 5, got: " + protocolVersion);
             }
 
             if (brokerUrl == null || brokerUrl.isBlank()) {
@@ -340,17 +340,17 @@ public class MqttConfig {
             final String scheme = uri.getScheme() == null ? null : uri.getScheme().toLowerCase(Locale.ROOT);
             if (scheme == null || !SUPPORTED_SCHEMES.contains(scheme)) {
                 throw new IllegalArgumentException("'broker-url' has an unsupported scheme '" + scheme
-                    + "', supported schemes are: " + SUPPORTED_SCHEMES);
+                        + "', supported schemes are: " + SUPPORTED_SCHEMES);
             }
 
             if (keepAliveSeconds < 0) {
                 throw new IllegalArgumentException(
-                    "'keep-alive-seconds' must be >= 0, got: " + keepAliveSeconds);
+                        "'keep-alive-seconds' must be >= 0, got: " + keepAliveSeconds);
             }
 
             if (connectTimeoutSeconds <= 0) {
                 throw new IllegalArgumentException(
-                    "'connect-timeout-seconds' must be > 0, got: " + connectTimeoutSeconds);
+                        "'connect-timeout-seconds' must be > 0, got: " + connectTimeoutSeconds);
             }
 
             if (willConfig != null) {

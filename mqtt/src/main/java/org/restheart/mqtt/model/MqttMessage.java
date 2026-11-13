@@ -83,7 +83,7 @@ public class MqttMessage {
      * @param retain whether the broker flagged this delivery as retained; see {@link #isRetain()}
      */
     public MqttMessage(String topic, byte[] payload, int qos, Instant receivedAt, boolean retain,
-            Mqtt5Properties mqtt5Properties) {
+                       Mqtt5Properties mqtt5Properties) {
         this.topic = topic;
         // Copied, or this would not be immutable: the caller still holds the array.
         this.payload = payload == null ? null : payload.clone();
@@ -131,9 +131,9 @@ public class MqttMessage {
      * @param mqtt5Properties the MQTT 5 publish properties, or {@code null}
      */
     public MqttMessage(String topic, String payload, int qos, Instant receivedAt, boolean retain,
-            Mqtt5Properties mqtt5Properties) {
+                       Mqtt5Properties mqtt5Properties) {
         this(topic, payload == null ? null : payload.getBytes(StandardCharsets.UTF_8), qos, receivedAt,
-            retain, mqtt5Properties);
+                retain, mqtt5Properties);
     }
 
     /**
@@ -154,8 +154,8 @@ public class MqttMessage {
             return null;
         }
         var decoder = StandardCharsets.UTF_8.newDecoder()
-            .onMalformedInput(CodingErrorAction.REPORT)
-            .onUnmappableCharacter(CodingErrorAction.REPORT);
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT);
         try {
             return decoder.decode(ByteBuffer.wrap(bytes)).toString();
         } catch (CharacterCodingException e) {
@@ -282,8 +282,8 @@ public class MqttMessage {
     @Override
     public String toString() {
         return String.format("MqttMessage{topic='%s', qos=%d, receivedAt=%s, retain=%s, payload=%s}",
-            topic, qos, receivedAt, retain,
-            payloadText != null ? "'" + payloadText + "'" : (payload == null ? "null" : payload.length + " bytes"));
+                topic, qos, receivedAt, retain,
+                payloadText != null ? "'" + payloadText + "'" : (payload == null ? "null" : payload.length + " bytes"));
     }
 
     /**
@@ -302,11 +302,11 @@ public class MqttMessage {
             return false;
         }
         return qos == other.qos
-            && retain == other.retain
-            && Objects.equals(topic, other.topic)
-            && Arrays.equals(payload, other.payload)
-            && Objects.equals(receivedAt, other.receivedAt)
-            && Objects.equals(mqtt5Properties, other.mqtt5Properties);
+                && retain == other.retain
+                && Objects.equals(topic, other.topic)
+                && Arrays.equals(payload, other.payload)
+                && Objects.equals(receivedAt, other.receivedAt)
+                && Objects.equals(mqtt5Properties, other.mqtt5Properties);
     }
 
     /**

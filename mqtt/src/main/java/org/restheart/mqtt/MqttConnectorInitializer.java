@@ -59,11 +59,11 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-connector",
-    description = "Connects the MQTT client after every startup-registered consumer exists",
-    initPoint = InitPoint.AFTER_STARTUP,
-    priority = 1000,
-    enabledByDefault = true
+        name = "mqtt-connector",
+        description = "Connects the MQTT client after every startup-registered consumer exists",
+        initPoint = InitPoint.AFTER_STARTUP,
+        priority = 1000,
+        enabledByDefault = true
 )
 public class MqttConnectorInitializer implements Initializer {
 

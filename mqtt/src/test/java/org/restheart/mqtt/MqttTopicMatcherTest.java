@@ -184,8 +184,8 @@ public class MqttTopicMatcherTest {
                 for (String topic : topics) {
                     if (MqttTopicMatcher.matches(topic, narrower)) {
                         assertTrue(MqttTopicMatcher.matches(topic, broader),
-                            "'" + broader + "' claims to subsume '" + narrower + "' but does not match '"
-                                + topic + "', which '" + narrower + "' does");
+                                "'" + broader + "' claims to subsume '" + narrower + "' but does not match '"
+                                        + topic + "', which '" + narrower + "' does");
                     }
                 }
             }

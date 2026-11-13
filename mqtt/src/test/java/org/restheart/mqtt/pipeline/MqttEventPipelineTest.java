@@ -101,7 +101,7 @@ public class MqttEventPipelineTest {
         assertFalse(stage.process(cold).isPresent());
         assertFalse(stage.process(exact).isPresent());
         assertFalse(stage.process(invalidJson).isPresent());
-        
+
         // Test other operators
         assertTrue(FilterStage.byJsonPath("$.val", ">= 10").process(createMessage("t", "{\"val\": 10}", 1)).isPresent());
         assertTrue(FilterStage.byJsonPath("$.val", "<= 10").process(createMessage("t", "{\"val\": 10}", 1)).isPresent());
@@ -141,7 +141,7 @@ public class MqttEventPipelineTest {
         Optional<MqttMessage> result = stage.process(msg);
 
         assertTrue(result.isPresent());
-        
+
         JsonObject obj = JsonParser.parseString(result.get().getPayload()).getAsJsonObject();
         assertTrue(obj.has("temperature"));
         assertFalse(obj.has("temp"));
@@ -157,7 +157,7 @@ public class MqttEventPipelineTest {
         Optional<MqttMessage> result = stage.process(msg);
 
         assertTrue(result.isPresent());
-        
+
         JsonObject obj = JsonParser.parseString(result.get().getPayload()).getAsJsonObject();
         assertEquals("topic: sensors/1, qos: 2", obj.get("info").getAsString());
         assertEquals(100, obj.get("val").getAsInt());
@@ -186,7 +186,7 @@ public class MqttEventPipelineTest {
         java.lang.reflect.Field lastRefillTimeField = ThrottleStage.class.getDeclaredField("lastRefillTime");
         lastRefillTimeField.setAccessible(true);
         java.util.concurrent.atomic.AtomicLong lastRefillTime = (java.util.concurrent.atomic.AtomicLong) lastRefillTimeField.get(stage);
-        
+
         lastRefillTime.set(System.nanoTime() - 500_000_000L);
         assertTrue(stage.process(msg).isPresent());
         assertEquals(0, stage.getAvailableTokens());
@@ -200,7 +200,7 @@ public class MqttEventPipelineTest {
         assertTrue(stage.process(msg).isPresent());
         assertTrue(stage.process(msg).isPresent());
         assertFalse(stage.process(msg).isPresent());
-        
+
         // Reset
         stage.reset();
         assertEquals(2, stage.getAvailableTokens());
@@ -288,11 +288,11 @@ public class MqttEventPipelineTest {
         // Move time to boundary (1000ms elapsed since window start) and send 3rd message
         windowStartTimeField.setLong(aggregator, System.currentTimeMillis() - 1000);
         Optional<MqttMessage> result3 = aggregator.process(createMessage("t", "{}", 1));
-        
+
         // Window should have flushed! Returning count of 2 (first 2 messages)
         assertTrue(result3.isPresent());
         assertEquals("2", result3.get().getPayload());
-        
+
         // The 3rd message starts the new window
         assertEquals(1, aggregator.getWindowSize());
     }
@@ -307,7 +307,7 @@ public class MqttEventPipelineTest {
         // With messages -> emits aggregated value on close
         aggregator.process(createMessage("t", "{}", 1));
         aggregator.process(createMessage("t", "{}", 1));
-        
+
         Optional<MqttMessage> flushed = aggregator.close();
         assertTrue(flushed.isPresent());
         assertEquals("2", flushed.get().getPayload());
@@ -356,9 +356,9 @@ public class MqttEventPipelineTest {
     @Test
     public void testPipelineCombinationsFilterMap() {
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(FilterStage.byJsonPath("$.temperature", "> 25"))
-            .addStage(MapStage.extract("$.temperature"))
-            .build();
+                .addStage(FilterStage.byJsonPath("$.temperature", "> 25"))
+                .addStage(MapStage.extract("$.temperature"))
+                .build();
 
         // 1. Hot message (passes filter -> mapped to "30")
         MqttMessage hot = createMessage("t", "{\"temperature\": 30}", 1);
@@ -378,9 +378,9 @@ public class MqttEventPipelineTest {
         MapStage map = MapStage.template("{\"v\": ${payload}}");
 
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(throttle)
-            .addStage(map)
-            .build();
+                .addStage(throttle)
+                .addStage(map)
+                .build();
 
         // 1st message passes throttle and gets mapped
         Optional<MqttMessage> res1 = pipeline.process(createMessage("t", "10", 1));
@@ -398,16 +398,16 @@ public class MqttEventPipelineTest {
         // A lambda-based custom stage, not a FilterStage subclass: FilterStage's
         // constructors are private, exposing only the named factory methods.
         MqttEventStage filterCount = message -> message.getPayload().equals("2.0")
-            ? Optional.of(message)
-            : Optional.empty();
+                ? Optional.of(message)
+                : Optional.empty();
 
         MapStage map = MapStage.template("{\"count\": ${payload}}");
 
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(window)
-            .addStage(filterCount)
-            .addStage(map)
-            .build();
+                .addStage(window)
+                .addStage(filterCount)
+                .addStage(map)
+                .build();
 
         // 1st message -> accumulated in window -> empty
         assertFalse(pipeline.process(createMessage("t", "{\"temperature\": 2.0}", 1)).isPresent());
@@ -420,7 +420,7 @@ public class MqttEventPipelineTest {
         windowStartTimeField.setLong(window, System.currentTimeMillis() - 1000);
 
         Optional<MqttMessage> res = pipeline.process(createMessage("t", "{\"temperature\": 5.0}", 1));
-        
+
         // Aggregated average of (2+2)/2 = 2.0 was emitted, which matches filterCount, and mapped to JSON
         assertTrue(res.isPresent());
         assertEquals("{\"count\": 2.0}", res.get().getPayload());
@@ -430,15 +430,15 @@ public class MqttEventPipelineTest {
     public void testPipelineCombinationsTumblingWindowFilterMapClose() {
         TumblingWindowAggregator window = new TumblingWindowAggregator(5000, "count", null);
         MqttEventStage filter = message -> message.getPayload().equals("3")
-            ? Optional.of(message)
-            : Optional.empty();
+                ? Optional.of(message)
+                : Optional.empty();
         MapStage map = MapStage.template("{\"total\": ${payload}}");
 
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(window)
-            .addStage(filter)
-            .addStage(map)
-            .build();
+                .addStage(window)
+                .addStage(filter)
+                .addStage(map)
+                .build();
 
         // Send 3 messages (all accumulated, pipeline returns empty)
         assertFalse(pipeline.process(createMessage("t", "{}", 1)).isPresent());
@@ -494,7 +494,7 @@ public class MqttEventPipelineTest {
             aggregator.process(createMessage("t", "{\"other\": 2}", 1));
 
             assertFalse(aggregator.close().isPresent(),
-                "function '" + function + "' should emit nothing when the window has no numeric values");
+                    "function '" + function + "' should emit nothing when the window has no numeric values");
         }
 
         TumblingWindowAggregator countAgg = new TumblingWindowAggregator(1000, "count", null);
@@ -514,7 +514,7 @@ public class MqttEventPipelineTest {
             Optional<MqttMessage> result = aggregator.process(createMessage("t", "{\"other\": 2}", 1));
 
             assertFalse(result.isPresent(),
-                "function '" + function + "' should emit nothing when the window has no numeric values");
+                    "function '" + function + "' should emit nothing when the window has no numeric values");
         }
 
         SlidingWindowAggregator countAgg = new SlidingWindowAggregator(2, "count", null);
@@ -533,10 +533,10 @@ public class MqttEventPipelineTest {
         // every numeric function - a regression test for the arithmetic
         // duplication that let the two implementations diverge.
         List<String> payloads = List.of(
-            "{\"val\": 10}",
-            "{\"other\": 1}",
-            "{\"val\": -5}",
-            "{\"val\": 20}"
+                "{\"val\": 10}",
+                "{\"other\": 1}",
+                "{\"val\": -5}",
+                "{\"val\": 20}"
         );
 
         for (String function : List.of("avg", "min", "max", "sum")) {
@@ -551,10 +551,10 @@ public class MqttEventPipelineTest {
             Optional<MqttMessage> tumblingResult = tumbling.close();
 
             assertEquals(tumblingResult.isPresent(), slidingResult.isPresent(),
-                "function '" + function + "': aggregators disagree on whether a result was produced");
+                    "function '" + function + "': aggregators disagree on whether a result was produced");
             if (tumblingResult.isPresent()) {
                 assertEquals(tumblingResult.get().getPayload(), slidingResult.get().getPayload(),
-                    "function '" + function + "': aggregators disagree on the computed value");
+                        "function '" + function + "': aggregators disagree on the computed value");
             }
         }
     }
@@ -590,9 +590,9 @@ public class MqttEventPipelineTest {
     public void testPipelinePollExpiredRoutesEmittedMessageThroughLaterStages() throws Exception {
         TumblingWindowAggregator window = new TumblingWindowAggregator(150, "count", null);
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(window)
-            .addStage(FilterStage.byMinQos(99)) // drops everything
-            .build();
+                .addStage(window)
+                .addStage(FilterStage.byMinQos(99)) // drops everything
+                .build();
 
         assertFalse(pipeline.process(createMessage("t", "{}", 1)).isPresent());
 
@@ -606,9 +606,9 @@ public class MqttEventPipelineTest {
     public void testPipelinePollExpiredRoutesEmittedMessageThroughLaterMapStage() throws Exception {
         TumblingWindowAggregator window = new TumblingWindowAggregator(150, "count", null);
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(window)
-            .addStage(MapStage.template("{\"count\": ${payload}}"))
-            .build();
+                .addStage(window)
+                .addStage(MapStage.template("{\"count\": ${payload}}"))
+                .build();
 
         assertFalse(pipeline.process(createMessage("t", "{}", 1)).isPresent());
         assertFalse(pipeline.process(createMessage("t", "{}", 1)).isPresent());
@@ -638,11 +638,11 @@ public class MqttEventPipelineTest {
         CountDownLatch startLatch = new CountDownLatch(1);
 
         List<Future<?>> futures = new ArrayList<>();
-        for (int t = 0; t < threads; t++) {
+        for (int t = 0;t < threads;t++) {
             futures.add(pool.submit(() -> {
                 try {
                     startLatch.await();
-                    for (int i = 0; i < attemptsPerThread; i++) {
+                    for (int i = 0;i < attemptsPerThread;i++) {
                         if (stage.process(createMessage("t", "{}", 1)).isPresent()) {
                             accepted.incrementAndGet();
                         }
@@ -670,9 +670,9 @@ public class MqttEventPipelineTest {
         long refilled = (elapsedNanos * capacity) / 1_000_000_000L;
         long ceiling = capacity + refilled;
         assertTrue(accepted.get() <= ceiling,
-            "accepted " + accepted.get() + " exceeds the bucket's capacity of " + capacity
-                + " plus the " + refilled + " token(s) that refilled during the "
-                + (elapsedNanos / 1_000_000) + " ms the concurrent phase took");
+                "accepted " + accepted.get() + " exceeds the bucket's capacity of " + capacity
+                        + " plus the " + refilled + " token(s) that refilled during the "
+                        + (elapsedNanos / 1_000_000) + " ms the concurrent phase took");
         assertTrue(stage.getAvailableTokens() >= 0 && stage.getAvailableTokens() <= capacity);
     }
 
@@ -689,7 +689,7 @@ public class MqttEventPipelineTest {
         long startNanos = System.nanoTime();
 
         List<Future<?>> futures = new ArrayList<>();
-        for (int t = 0; t < threads; t++) {
+        for (int t = 0;t < threads;t++) {
             futures.add(pool.submit(() -> {
                 try {
                     startLatch.await();
@@ -718,8 +718,8 @@ public class MqttEventPipelineTest {
         long maxPossibleSupply = capacity + (long) Math.ceil(elapsedSeconds * capacity) + 5;
 
         assertTrue(accepted.get() <= maxPossibleSupply,
-            "accepted " + accepted.get() + " exceeds max possible supply " + maxPossibleSupply
-                + " - refill may have resurrected consumed tokens");
+                "accepted " + accepted.get() + " exceeds max possible supply " + maxPossibleSupply
+                        + " - refill may have resurrected consumed tokens");
         assertTrue(stage.getAvailableTokens() >= 0 && stage.getAvailableTokens() <= capacity);
     }
 }

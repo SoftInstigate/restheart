@@ -77,8 +77,8 @@ public class MqttMongoWriterIT extends MqttITBase {
      * silently.
      */
     private static final String MONGO_IMAGE =
-        System.getProperty("mongodb.image", "mongodb/mongodb-atlas-local")
-            + ":" + System.getProperty("mongodb.version", "preview");
+            System.getProperty("mongodb.image", "mongodb/mongodb-atlas-local")
+                    + ":" + System.getProperty("mongodb.version", "preview");
 
     private GenericContainer<?> mongo;
     private MongoClient testMongoClient;
@@ -103,12 +103,12 @@ public class MqttMongoWriterIT extends MqttITBase {
         // newer (SERVER-121912), which current Docker Desktop VMs already are, and a test that
         // cannot run on a maintainer's laptop is not much of a test.
         mongo = new GenericContainer<>(MONGO_IMAGE)
-            .withExposedPorts(27017)
-            // A TCP wait only, deliberately. The default image is mongodb/mongodb-atlas-local,
-            // whose entrypoint also brings up mongot and self-initializes a single-node replica
-            // set - so both "port is open" and any single log line are reached before it can
-            // actually serve a write. Readiness is therefore established below, by the driver.
-            .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(90)));
+                .withExposedPorts(27017)
+                // A TCP wait only, deliberately. The default image is mongodb/mongodb-atlas-local,
+                // whose entrypoint also brings up mongot and self-initializes a single-node replica
+                // set - so both "port is open" and any single log line are reached before it can
+                // actually serve a write. Readiness is therefore established below, by the driver.
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(90)));
         mongo.start();
 
         testMongoClient = MongoClients.create("mongodb://localhost:" + mongo.getMappedPort(27017));
@@ -173,10 +173,10 @@ public class MqttMongoWriterIT extends MqttITBase {
         var doc = awaitDocument(topic, POLL_TIMEOUT);
 
         assertNotNull(doc, "a message published to " + topic + ", which matches the configured "
-            + "mongo-sink filter \"sensors/#\", must be persisted to MongoDB within "
-            + POLL_TIMEOUT.toSeconds() + "s");
+                + "mongo-sink filter \"sensors/#\", must be persisted to MongoDB within "
+                + POLL_TIMEOUT.toSeconds() + "s");
         assertTrue(doc.getString("payload").contains("42"),
-            "the persisted document must carry the published payload; got: " + doc.toJson());
+                "the persisted document must carry the published payload; got: " + doc.toJson());
     }
 
     @Test
@@ -194,8 +194,8 @@ public class MqttMongoWriterIT extends MqttITBase {
         var doc = awaitDocument(topic, POLL_TIMEOUT);
 
         assertNull(doc, "a message published to " + topic + ", which does not match the "
-            + "configured mongo-sink filter \"sensors/#\", must never be persisted to MongoDB; got: "
-            + (doc == null ? null : doc.toJson()));
+                + "configured mongo-sink filter \"sensors/#\", must never be persisted to MongoDB; got: "
+                + (doc == null ? null : doc.toJson()));
     }
 
     /**

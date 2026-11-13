@@ -296,7 +296,7 @@ public class MqttRestServiceTest {
     // is indistinguishable by inspection from a text payload that happens to look like base64. ---
 
     /** 0x80 is a continuation byte with no lead byte: never valid UTF-8. */
-    private static final byte[] NOT_UTF8 = new byte[] { (byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE };
+    private static final byte[] NOT_UTF8 = new byte[]{(byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE};
 
     /** Puts a message straight into the router's cache, which is all mqtt-rest ever reads. */
     private void cacheMessage(String topic, MqttMessage msg) {
@@ -315,7 +315,7 @@ public class MqttRestServiceTest {
     @DisplayName("handle(): a non-text last value is returned as labelled base64")
     void testHandleGetBinaryPayloadIsBase64() {
         cacheMessage("sensors/raw",
-            new MqttMessage("sensors/raw", NOT_UTF8, 1, Instant.parse("2026-01-01T00:00:00Z"), false));
+                new MqttMessage("sensors/raw", NOT_UTF8, 1, Instant.parse("2026-01-01T00:00:00Z"), false));
 
         var service = serviceWithRouter(router);
         var ex = exchangeFor(METHOD.GET, "sensors/raw");
@@ -345,10 +345,10 @@ public class MqttRestServiceTest {
     @DisplayName("handle(): the last value reports its MQTT 5 properties, and omits the field when there are none")
     void testHandleGetReportsMqtt5Properties() {
         var properties = new org.restheart.mqtt.model.Mqtt5Properties(
-            List.of(new org.restheart.mqtt.model.Mqtt5Properties.UserProperty("tenant", "acme")),
-            "application/json", new byte[] { 7 }, "replies/acme", 1, 60L);
+                List.of(new org.restheart.mqtt.model.Mqtt5Properties.UserProperty("tenant", "acme")),
+                "application/json", new byte[]{7}, "replies/acme", 1, 60L);
         cacheMessage("sensors/temp",
-            new MqttMessage("sensors/temp", "{}", 1, Instant.parse("2026-01-01T00:00:00Z"), false, properties));
+                new MqttMessage("sensors/temp", "{}", 1, Instant.parse("2026-01-01T00:00:00Z"), false, properties));
 
         var service = serviceWithRouter(router);
         var ex = exchangeFor(METHOD.GET, "sensors/temp");

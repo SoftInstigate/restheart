@@ -188,7 +188,7 @@ public class MqttClientSingletonPoisoningRegressionTest {
                 Throwable cause = ite.getCause();
                 assertInstanceOf(IllegalStateException.class, cause);
                 assertTrue(cause.getMessage().contains("mqtt-client"),
-                    "exception message must name the 'mqtt-client' plugin, was: " + cause.getMessage());
+                        "exception message must name the 'mqtt-client' plugin, was: " + cause.getMessage());
             }
 
             // step 3: a subsequent, valid init() must not be poisoned by step 1; getInstance() must
@@ -198,7 +198,7 @@ public class MqttClientSingletonPoisoningRegressionTest {
 
             Object instanceAfterInit = assertDoesNotThrowReflectively(() -> getInstance.invoke(null));
             assertSame(instance, instanceAfterInit,
-                "getInstance() must keep returning the same instance after init()");
+                    "getInstance() must keep returning the same instance after init()");
 
             Method isInitialized = singletonClass.getMethod("isInitialized");
             assertEquals(Boolean.TRUE, isInitialized.invoke(null));

@@ -165,7 +165,8 @@ public class MqttRouterProviderTest {
 
         // register one listener so the router has a topic filter to resubscribe
         try {
-            router.subscribe("test/topic", Qos.AT_LEAST_ONCE, msg -> {});
+            router.subscribe("test/topic", Qos.AT_LEAST_ONCE, msg -> {
+            });
         } catch (RuntimeException expected) {
             // simulated broker-subscribe failure; the router still recorded the listener
         }
@@ -210,7 +211,7 @@ public class MqttRouterProviderTest {
     private static final class SubscribeFixture {
         final Mqtt5AsyncClient client = mock(Mqtt5AsyncClient.class);
         final Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete subscribeStage =
-            mock(Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete.class);
+                mock(Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete.class);
 
         SubscribeFixture() {
             when(client.subscribeWith()).thenReturn(subscribeStage);
@@ -227,9 +228,9 @@ public class MqttRouterProviderTest {
         injectField(provider, "mqttClient", fixture.client);
 
         config.put("subscriptions", List.of(
-            Map.of("topic", "sensors/#", "qos", 0),
-            Map.of("topic", "devices/#", "qos", 2),
-            Map.of("topic", "traffic/#") // missing qos -> defaults to 0
+                Map.of("topic", "sensors/#", "qos", 0),
+                Map.of("topic", "devices/#", "qos", 2),
+                Map.of("topic", "traffic/#") // missing qos -> defaults to 0
         ));
 
         provider.init();
@@ -241,7 +242,7 @@ public class MqttRouterProviderTest {
 
         assertEquals(List.of("sensors/#", "devices/#", "traffic/#"), topicCaptor.getAllValues());
         assertEquals(List.of(MqttQos.AT_MOST_ONCE, MqttQos.EXACTLY_ONCE, MqttQos.AT_MOST_ONCE), qosCaptor.getAllValues(),
-            "a missing qos must default to 0, and each entry must be subscribed at its own qos");
+                "a missing qos must default to 0, and each entry must be subscribed at its own qos");
     }
 
     @Test
@@ -258,10 +259,10 @@ public class MqttRouterProviderTest {
         nonStringTopic.put("topic", 42);
 
         config.put("subscriptions", List.of(
-            missingTopic,
-            blankTopic,
-            nonStringTopic,
-            Map.of("topic", "sensors/#", "qos", 1)
+                missingTopic,
+                blankTopic,
+                nonStringTopic,
+                Map.of("topic", "sensors/#", "qos", 1)
         ));
 
         provider.init();

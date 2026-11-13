@@ -141,14 +141,14 @@ public class TumblingWindowAggregator implements MqttEventStage {
             // module computed, not a retained delivery from the broker, whatever the messages
             // it was computed from were.
             MqttMessage aggregated = new MqttMessage(
-                topic,
-                aggregatedPayload.get(),
-                qos,
-                Instant.now()
+                    topic,
+                    aggregatedPayload.get(),
+                    qos,
+                    Instant.now()
             );
 
             LOGGER.debug("Emitting aggregated message: {} messages -> {}",
-                window.size(), function);
+                    window.size(), function);
 
             return Optional.of(aggregated);
 
@@ -163,7 +163,7 @@ public class TumblingWindowAggregator implements MqttEventStage {
      */
     private boolean requiresField(String func) {
         return func.equals("avg") || func.equals("min") ||
-               func.equals("max") || func.equals("sum");
+                func.equals("max") || func.equals("sum");
     }
 
     /**
@@ -187,8 +187,8 @@ public class TumblingWindowAggregator implements MqttEventStage {
             return Optional.empty();
         }
         Optional<MqttMessage> result = emitAggregatedMessage(
-            window.get(window.size() - 1).getTopic(),
-            window.get(window.size() - 1).getQos()
+                window.get(window.size() - 1).getTopic(),
+                window.get(window.size() - 1).getQos()
         );
         window.clear();
         return result;
@@ -217,8 +217,8 @@ public class TumblingWindowAggregator implements MqttEventStage {
         }
 
         Optional<MqttMessage> result = emitAggregatedMessage(
-            window.get(window.size() - 1).getTopic(),
-            window.get(window.size() - 1).getQos()
+                window.get(window.size() - 1).getTopic(),
+                window.get(window.size() - 1).getQos()
         );
         window.clear();
         windowStartTime = now;

@@ -91,7 +91,7 @@ import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
 public class MqttMessageRouterTest {
 
     private static Method privateMethod(String name, Class<?>... parameterTypes)
-        throws NoSuchMethodException {
+            throws NoSuchMethodException {
         Method method = MqttMessageRouter.class.getDeclaredMethod(name, parameterTypes);
         method.setAccessible(true);
         return method;
@@ -146,7 +146,7 @@ public class MqttMessageRouterTest {
     private static final class Mqtt5Fixture {
         final Mqtt5AsyncClient client = mock(Mqtt5AsyncClient.class);
         final Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete subscribeStage =
-            mock(Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete.class);
+                mock(Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete.class);
         final Mqtt5UnsubscribeBuilder.Send.Start<CompletableFuture<Mqtt5UnsubAck>> unsubscribeStart;
 
         @SuppressWarnings("unchecked")
@@ -158,7 +158,7 @@ public class MqttMessageRouterTest {
 
             unsubscribeStart = mock(Mqtt5UnsubscribeBuilder.Send.Start.class);
             Mqtt5UnsubscribeBuilder.Send.Complete<CompletableFuture<Mqtt5UnsubAck>> unsubscribeComplete =
-                mock(Mqtt5UnsubscribeBuilder.Send.Complete.class);
+                    mock(Mqtt5UnsubscribeBuilder.Send.Complete.class);
             when(client.unsubscribeWith()).thenReturn(unsubscribeStart);
             when(unsubscribeStart.topicFilter(anyString())).thenReturn(unsubscribeComplete);
             when(unsubscribeComplete.send()).thenReturn(new CompletableFuture<>());
@@ -173,12 +173,14 @@ public class MqttMessageRouterTest {
 
         MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
 
-        Consumer<MqttMessage> listener1 = msg -> {};
-        Consumer<MqttMessage> listener2 = msg -> {};
+        Consumer<MqttMessage> listener1 = msg -> {
+        };
+        Consumer<MqttMessage> listener2 = msg -> {
+        };
 
         // 1st listener -> triggers subscribeOnBroker
         RuntimeException ex1 = assertThrows(RuntimeException.class,
-            () -> router.subscribe("test/topic", Qos.AT_LEAST_ONCE, listener1));
+                () -> router.subscribe("test/topic", Qos.AT_LEAST_ONCE, listener1));
         assertEquals("SubscribeCalled", ex1.getMessage());
 
         // 2nd listener on same topic, same QoS -> does NOT trigger subscribeOnBroker again
@@ -189,7 +191,7 @@ public class MqttMessageRouterTest {
 
         // Unsubscribe listener2 -> last listener, triggers unsubscribeFromBroker
         RuntimeException ex2 = assertThrows(RuntimeException.class,
-            () -> router.unsubscribe("test/topic", listener2));
+                () -> router.unsubscribe("test/topic", listener2));
         assertEquals("UnsubscribeCalled", ex2.getMessage());
 
         // Verify stats
@@ -206,7 +208,8 @@ public class MqttMessageRouterTest {
 
         MqttMessageRouter router = assertDoesNotThrow(() -> new MqttMessageRouter(plainClient, 5000, true, 1000));
 
-        Consumer<MqttMessage> listener = msg -> {};
+        Consumer<MqttMessage> listener = msg -> {
+        };
         assertDoesNotThrow(() -> router.subscribe("a/b", Qos.AT_LEAST_ONCE, listener));
         assertDoesNotThrow(() -> router.unsubscribe("a/b", listener));
     }
@@ -231,7 +234,8 @@ public class MqttMessageRouterTest {
         MqttMessage message = new MqttMessage("test/order", "payload", 1, Instant.now());
 
         Method dispatchMessageMethod = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
-        dispatchMessageMethod.invoke(router, message, (Runnable) () -> { });
+        dispatchMessageMethod.invoke(router, message, (Runnable) () -> {
+        });
 
         assertEquals(3, invocationOrder.size());
         assertEquals("A", invocationOrder.get(0));
@@ -243,7 +247,7 @@ public class MqttMessageRouterTest {
 
     @Test
     void testOverlappingFiltersDeliverReceivedMessageExactlyOnceToEachListener()
-        throws ReflectiveOperationException, InterruptedException {
+            throws ReflectiveOperationException, InterruptedException {
         Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class, RETURNS_DEEP_STUBS);
         MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
 
@@ -311,7 +315,7 @@ public class MqttMessageRouterTest {
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 0, true, 1000);
         Method checkRateLimit = privateMethod("checkRateLimit");
 
-        for (int i = 0; i < 10_000; i++) {
+        for (int i = 0;i < 10_000;i++) {
             assertTrue((Boolean) checkRateLimit.invoke(router), "rate limiting must be disabled when maxMessagePerSecond <= 0");
         }
     }
@@ -324,7 +328,7 @@ public class MqttMessageRouterTest {
         Consumer<Mqtt5Publish> globalConsumer = capturedGlobalConsumer(mockClient);
         Mqtt5Publish publish = mockPublish("sensors/temp", "x", MqttQos.AT_LEAST_ONCE);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0;i < 5;i++) {
             globalConsumer.accept(publish);
         }
 
@@ -339,7 +343,7 @@ public class MqttMessageRouterTest {
         // every durable listener and still persisted, so calling it unreceived would be false,
         // and dropped/received is the loss rate an operator actually wants.
         assertEquals(5, stats.getMessagesReceived(),
-            "every message the broker delivered is received, whatever the rate limiter then does with it");
+                "every message the broker delivered is received, whatever the rate limiter then does with it");
         assertEquals(3, stats.getMessagesDropped(), "three were refused live delivery");
     }
 
@@ -352,9 +356,12 @@ public class MqttMessageRouterTest {
 
         ArgumentCaptor<MqttQos> qosCaptor = ArgumentCaptor.forClass(MqttQos.class);
 
-        router.subscribe("sensors/temp", Qos.AT_MOST_ONCE, msg -> {});
-        router.subscribe("sensors/temp", Qos.EXACTLY_ONCE, msg -> {}); // upgrade: must re-subscribe
-        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {}); // lower than tracked: no new broker call
+        router.subscribe("sensors/temp", Qos.AT_MOST_ONCE, msg -> {
+        });
+        router.subscribe("sensors/temp", Qos.EXACTLY_ONCE, msg -> {
+        }); // upgrade: must re-subscribe
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {
+        }); // lower than tracked: no new broker call
 
         verify(fixture.subscribeStage, times(2)).qos(qosCaptor.capture());
         List<MqttQos> requestedSoFar = qosCaptor.getAllValues();
@@ -368,7 +375,7 @@ public class MqttMessageRouterTest {
         ArgumentCaptor<MqttQos> resubscribeQosCaptor = ArgumentCaptor.forClass(MqttQos.class);
         verify(fixture.subscribeStage, times(3)).qos(resubscribeQosCaptor.capture());
         assertEquals(MqttQos.EXACTLY_ONCE, resubscribeQosCaptor.getAllValues().get(2),
-            "resubscribeAll must use the tracked (highest) QoS, not a constant");
+                "resubscribeAll must use the tracked (highest) QoS, not a constant");
     }
 
     // --- Item 6: startup (configured) subscriptions survive listener churn ---
@@ -380,12 +387,13 @@ public class MqttMessageRouterTest {
 
         router.subscribeFromConfig("sensors/#", Qos.AT_LEAST_ONCE);
 
-        Consumer<MqttMessage> listener = msg -> {};
+        Consumer<MqttMessage> listener = msg -> {
+        };
         router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, listener);
         router.unsubscribe("sensors/#", listener);
 
         assertEquals(1, router.getStats().getTopicFilters(),
-            "a configured filter must remain subscribed after its last listener unsubscribes");
+                "a configured filter must remain subscribed after its last listener unsubscribes");
         verify(mockClient, never()).unsubscribeWith();
     }
 
@@ -394,12 +402,13 @@ public class MqttMessageRouterTest {
         Mqtt5Fixture fixture = new Mqtt5Fixture();
         MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
 
-        Consumer<MqttMessage> listener = msg -> {};
+        Consumer<MqttMessage> listener = msg -> {
+        };
         router.subscribe("devices/status", Qos.AT_LEAST_ONCE, listener);
         router.unsubscribe("devices/status", listener);
 
         assertEquals(0, router.getStats().getTopicFilters(),
-            "a non-configured filter must be unsubscribed once its last listener leaves");
+                "a non-configured filter must be unsubscribed once its last listener leaves");
         verify(fixture.client, times(1)).unsubscribeWith();
     }
 
@@ -483,7 +492,7 @@ public class MqttMessageRouterTest {
 
     @Test
     void testConcurrentCacheUpdatesDoNotExceedCapacityOrThrow()
-        throws InterruptedException, ExecutionException, TimeoutException, NoSuchMethodException {
+            throws InterruptedException, ExecutionException, TimeoutException, NoSuchMethodException {
         int capacity = 50;
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, capacity);
         Method updateCache = privateMethod("updateCache", MqttMessage.class);
@@ -495,14 +504,14 @@ public class MqttMessageRouterTest {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         List<Future<?>> futures = new ArrayList<>();
 
-        for (int p = 0; p < producers; p++) {
+        for (int p = 0;p < producers;p++) {
             int producerId = p;
             futures.add(executor.submit(() -> {
                 try {
                     start.await();
-                    for (int i = 0; i < messagesPerProducer; i++) {
+                    for (int i = 0;i < messagesPerProducer;i++) {
                         updateCache.invoke(router,
-                            new MqttMessage("topic/" + producerId + "/" + i, "payload", 0, Instant.now()));
+                                new MqttMessage("topic/" + producerId + "/" + i, "payload", 0, Instant.now()));
                     }
                 } catch (Throwable t) {
                     failure.set(t);
@@ -518,11 +527,12 @@ public class MqttMessageRouterTest {
 
         assertNull(failure.get(), "concurrent cache updates must never throw (no check-then-act race)");
         assertTrue(router.getStats().getCachedMessages() <= capacity,
-            "the cache must never exceed its configured capacity under concurrent updates");
+                "the cache must never exceed its configured capacity under concurrent updates");
     }
+
     @Test
     void testConcurrentSubscribeIsNotLostByAnUnsubscribeOfTheLastListener()
-        throws InterruptedException, ExecutionException, TimeoutException {
+            throws InterruptedException, ExecutionException, TimeoutException {
         // Regression test. subscribe() and unsubscribe() used to mutate the listener list and the
         // map that holds it as separate steps: unsubscribe removed the last listener, saw the
         // list was empty, and then called listeners.remove(filter, list). A subscribe() landing
@@ -541,9 +551,11 @@ public class MqttMessageRouterTest {
         var executor = Executors.newFixedThreadPool(2);
         var failure = new AtomicReference<Throwable>();
         try {
-            for (int round = 0; round < 500 && failure.get() == null; round++) {
-                Consumer<MqttMessage> leaving = msg -> { };
-                Consumer<MqttMessage> arriving = msg -> { };
+            for (int round = 0;round < 500 && failure.get() == null;round++) {
+                Consumer<MqttMessage> leaving = msg -> {
+                };
+                Consumer<MqttMessage> arriving = msg -> {
+                };
                 router.subscribe(topic, Qos.AT_LEAST_ONCE, leaving);
 
                 var start = new CountDownLatch(1);
@@ -561,12 +573,12 @@ public class MqttMessageRouterTest {
                 subscribing.get(10, TimeUnit.SECONDS);
 
                 assertEquals(1, router.getStats().getTotalListeners(),
-                    "a subscribe concurrent with the unsubscribe of the last listener must survive "
-                        + "it; round " + round);
+                        "a subscribe concurrent with the unsubscribe of the last listener must survive "
+                                + "it; round " + round);
 
                 router.unsubscribe(topic, arriving);
                 assertEquals(0, router.getStats().getTotalListeners(),
-                    "the filter must be left clean between rounds; round " + round);
+                        "the filter must be left clean between rounds; round " + round);
             }
         } finally {
             executor.shutdown();
@@ -591,12 +603,13 @@ public class MqttMessageRouterTest {
         // The common case - an SSE-only deployment - must behave exactly as it always has. Someone
         // watching a dashboard has no business delaying an acknowledgement.
         MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 100);
-        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, msg -> { });
+        router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, msg -> {
+        });
 
         var acked = new AtomicBoolean(false);
         Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
         dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
-            (Runnable) () -> acked.set(true));
+                (Runnable) () -> acked.set(true));
 
         assertTrue(acked.get(), "with nothing durable registered the message must be acknowledged at once");
     }
@@ -611,7 +624,7 @@ public class MqttMessageRouterTest {
         var acked = new AtomicBoolean(false);
         Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
         dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
-            (Runnable) () -> acked.set(true));
+                (Runnable) () -> acked.set(true));
 
         // This is the whole point: the listener has been handed the message but has not yet taken
         // responsibility for it - it is in an in-memory buffer, not on disk - so the broker must
@@ -634,7 +647,7 @@ public class MqttMessageRouterTest {
         var acked = new AtomicBoolean(false);
         Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
         dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
-            (Runnable) () -> acked.set(true));
+                (Runnable) () -> acked.set(true));
 
         first.get().run();
         assertFalse(acked.get(), "one of two is not enough - the other has not taken it yet");
@@ -657,13 +670,13 @@ public class MqttMessageRouterTest {
         var acked = new AtomicBoolean(false);
         Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
         dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
-            (Runnable) () -> acked.set(true));
+                (Runnable) () -> acked.set(true));
 
         // Acknowledging here would tell the broker the message is safe when it demonstrably is
         // not, and it would never be redelivered. Leaving it unacknowledged costs an in-flight
         // slot; losing it costs the message.
         assertFalse(acked.get(),
-            "a listener that failed to take the message must not have it acknowledged on its behalf");
+                "a listener that failed to take the message must not have it acknowledged on its behalf");
     }
 
     @Test
@@ -678,12 +691,12 @@ public class MqttMessageRouterTest {
         var acked = new AtomicBoolean(false);
         Method dispatch = privateMethod("dispatchMessage", MqttMessage.class, Runnable.class);
         dispatch.invoke(router, new MqttMessage("sensors/temp", "1", 1, Instant.now()),
-            (Runnable) () -> acked.set(true));
+                (Runnable) () -> acked.set(true));
 
         held.get().run();
         assertTrue(acked.get(),
-            "a failing live listener must not affect the durable path - the two have opposite "
-                + "obligations and must not be able to interfere");
+                "a failing live listener must not affect the durable path - the two have opposite "
+                        + "obligations and must not be able to interfere");
     }
 
     /**
@@ -726,7 +739,7 @@ public class MqttMessageRouterTest {
         });
 
         Consumer<Mqtt5Publish> globalConsumer = capturedGlobalConsumer(mockClient);
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0;i < 5;i++) {
             globalConsumer.accept(mockPublish("sensors/temp", "x", MqttQos.AT_LEAST_ONCE));
         }
 
@@ -754,13 +767,14 @@ public class MqttMessageRouterTest {
         MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
 
         router.subscribeFromConfig("sensors/#", Qos.AT_LEAST_ONCE);
-        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {});
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {
+        });
 
         ArgumentCaptor<String> filterCaptor = ArgumentCaptor.forClass(String.class);
         verify(fixture.subscribeStage, times(1)).topicFilter(filterCaptor.capture());
         assertEquals(List.of("sensors/#"), filterCaptor.getAllValues(),
-            "sensors/temp is already delivered by sensors/#; subscribing to both makes the broker "
-                + "send every matching message twice");
+                "sensors/temp is already delivered by sensors/#; subscribing to both makes the broker "
+                        + "send every matching message twice");
     }
 
     @Test
@@ -779,7 +793,7 @@ public class MqttMessageRouterTest {
         // each message against every routed filter locally.
         awaitCondition(() -> delivered.size() == 1, 5_000);
         assertEquals(List.of("hello"), List.copyOf(delivered),
-            "exactly once - the whole point of covering is that it changes nothing but the copies");
+                "exactly once - the whole point of covering is that it changes nothing but the copies");
     }
 
     @Test
@@ -788,7 +802,8 @@ public class MqttMessageRouterTest {
         Mqtt5Fixture fixture = new Mqtt5Fixture();
         MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
 
-        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {});
+        router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, msg -> {
+        });
         router.subscribeFromConfig("sensors/#", Qos.AT_LEAST_ONCE);
 
         ArgumentCaptor<String> subscribed = ArgumentCaptor.forClass(String.class);
@@ -798,7 +813,7 @@ public class MqttMessageRouterTest {
         ArgumentCaptor<String> unsubscribed = ArgumentCaptor.forClass(String.class);
         verify(fixture.unsubscribeStart, times(1)).topicFilter(unsubscribed.capture());
         assertEquals("sensors/temp", unsubscribed.getValue(),
-            "once sensors/# is subscribed, keeping sensors/temp too duplicates every message");
+                "once sensors/# is subscribed, keeping sensors/temp too duplicates every message");
     }
 
     @Test
@@ -815,8 +830,8 @@ public class MqttMessageRouterTest {
         verify(fixture.subscribeStage, times(2)).qos(qosCaptor.capture());
         assertEquals(MqttQos.AT_MOST_ONCE, qosCaptor.getAllValues().get(0));
         assertEquals(MqttQos.AT_LEAST_ONCE, qosCaptor.getAllValues().get(1),
-            "sensors/# now stands in for a QoS 1 durable subscription and must be raised to match, "
-                + "or the durability guarantee is silently lost");
+                "sensors/# now stands in for a QoS 1 durable subscription and must be raised to match, "
+                        + "or the durability guarantee is silently lost");
     }
 
     @Test
@@ -825,7 +840,8 @@ public class MqttMessageRouterTest {
         Mqtt5Fixture fixture = new Mqtt5Fixture();
         MqttMessageRouter router = new MqttMessageRouter(fixture.client, 5000, true, 1000);
 
-        Consumer<MqttMessage> live = msg -> {};
+        Consumer<MqttMessage> live = msg -> {
+        };
         router.subscribeDurable("sensors/temp", Qos.AT_LEAST_ONCE, (msg, taken) -> taken.run());
         router.subscribe("sensors/temp", Qos.AT_LEAST_ONCE, live);
 
@@ -875,8 +891,8 @@ public class MqttMessageRouterTest {
 
         awaitCondition(() -> !router.getLastMessages("sensors/#").isEmpty(), 5_000);
         assertTrue(router.getLastMessages("sensors/#").get(0).isRetain(),
-            "the client that triggers the subscribe and the client that gets the replay must agree "
-                + "that the message was retained");
+                "the client that triggers the subscribe and the client that gets the replay must agree "
+                        + "that the message was retained");
     }
 
     // --- MQTT 5 publish properties. Topic, payload, QoS and retain are not the whole of an MQTT 5
@@ -896,11 +912,11 @@ public class MqttMessageRouterTest {
         // Two properties with the SAME name, which is legal in MQTT 5 and whose order the spec
         // requires preserved - a Map<String,String> model would have dropped one of them silently.
         when(publish.getUserProperties()).thenReturn(Mqtt5UserProperties.of(
-            Mqtt5UserProperty.of("trace", "first"),
-            Mqtt5UserProperty.of("trace", "second"),
-            Mqtt5UserProperty.of("tenant", "acme")));
+                Mqtt5UserProperty.of("trace", "first"),
+                Mqtt5UserProperty.of("trace", "second"),
+                Mqtt5UserProperty.of("tenant", "acme")));
         when(publish.getContentType()).thenReturn(Optional.of(MqttUtf8String.of("application/json")));
-        when(publish.getCorrelationData()).thenReturn(Optional.of(java.nio.ByteBuffer.wrap(new byte[] { 1, 2, 3 })));
+        when(publish.getCorrelationData()).thenReturn(Optional.of(java.nio.ByteBuffer.wrap(new byte[]{1, 2, 3})));
         when(publish.getResponseTopic()).thenReturn(Optional.of(MqttTopic.of("replies/acme")));
         when(publish.getMessageExpiryInterval()).thenReturn(OptionalLong.of(120L));
 
@@ -911,11 +927,11 @@ public class MqttMessageRouterTest {
         assertNotNull(properties, "the MQTT 5 properties must reach the listener");
 
         assertEquals(
-            List.of("trace=first", "trace=second", "tenant=acme"),
-            properties.userProperties().stream().map(p -> p.name() + "=" + p.value()).toList(),
-            "both properties named 'trace' must survive, in the order received");
+                List.of("trace=first", "trace=second", "tenant=acme"),
+                properties.userProperties().stream().map(p -> p.name() + "=" + p.value()).toList(),
+                "both properties named 'trace' must survive, in the order received");
         assertEquals("application/json", properties.contentType());
-        assertArrayEquals(new byte[] { 1, 2, 3 }, properties.correlationData());
+        assertArrayEquals(new byte[]{1, 2, 3}, properties.correlationData());
         assertEquals("replies/acme", properties.responseTopic());
         assertEquals(120L, properties.messageExpiryInterval());
     }
@@ -946,7 +962,7 @@ public class MqttMessageRouterTest {
         var received = new java.util.concurrent.CopyOnWriteArrayList<MqttMessage>();
         router.subscribe("sensors/#", Qos.AT_LEAST_ONCE, received::add);
 
-        byte[] original = { 9, 8, 7 };
+        byte[] original = {9, 8, 7};
         var buffer = java.nio.ByteBuffer.wrap(original);
         Mqtt5Publish publish = mockPublish("sensors/temp", "{}", MqttQos.AT_LEAST_ONCE, false);
         when(publish.getCorrelationData()).thenReturn(Optional.of(buffer));

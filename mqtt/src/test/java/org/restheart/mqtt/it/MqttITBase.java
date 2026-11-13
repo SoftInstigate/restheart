@@ -98,13 +98,13 @@ public abstract class MqttITBase {
      * {@code fileRealmAuthenticator} block defines.
      */
     protected static final String ADMIN_BASIC = "Basic "
-        + Base64.getEncoder().encodeToString((ADMIN_USER + ":" + ADMIN_PASSWORD).getBytes());
+            + Base64.getEncoder().encodeToString((ADMIN_USER + ":" + ADMIN_PASSWORD).getBytes());
 
     // Shared across all requests any mqtt IT makes, exactly as ChangeStreamSseIT.SSE_CLIENT does
     // in core.
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(5))
-        .build();
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
 
     /**
      * The Mosquitto broker container for this test class. Protected, not private: only
@@ -212,7 +212,7 @@ public abstract class MqttITBase {
 
     static void retryingOnPortCollision(String what, IntConsumer startOnPort, IntSupplier freePort) {
         var attempts = 5;
-        for (var attempt = 1; ; attempt++) {
+        for (var attempt = 1;;attempt++) {
             var port = freePort.getAsInt();
             try {
                 startOnPort.accept(port);
@@ -222,14 +222,14 @@ public abstract class MqttITBase {
                     throw e;
                 }
                 LOGGER.warn("{} could not take port {} (attempt {} of {}), trying another one",
-                    what, port, attempt, attempts);
+                        what, port, attempt, attempts);
             }
         }
     }
 
     /** Whether the container failed because something else took the port between probe and bind. */
     private static boolean isPortCollision(Throwable t) {
-        for (var cause = t; cause != null; cause = cause.getCause()) {
+        for (var cause = t;cause != null;cause = cause.getCause()) {
             var message = cause.getMessage();
             if (message != null && (message.contains("address already in use")
                     || message.contains("port is already allocated")
@@ -264,17 +264,16 @@ public abstract class MqttITBase {
 
     private static GenericContainer<?> newMosquitto(int hostPort) {
         var container = new GenericContainer<>("eclipse-mosquitto:2")
-            .withExposedPorts(1883)
-            // eclipse-mosquitto:2 ships /mosquitto-no-auth.conf inside the image, containing
-            // exactly "listener 1883" and "allow_anonymous true" - no config file and no volume
-            // mount of our own needed, unlike the older, now-deleted version of this class which
-            // mounted mqtt/mosquitto.conf.
-            .withCommand("mosquitto", "-c", "/mosquitto-no-auth.conf")
-            .waitingFor(Wait.forListeningPort());
+                .withExposedPorts(1883)
+                // eclipse-mosquitto:2 ships /mosquitto-no-auth.conf inside the image, containing
+                // exactly "listener 1883" and "allow_anonymous true" - no config file and no volume
+                // mount of our own needed, unlike the older, now-deleted version of this class which
+                // mounted mqtt/mosquitto.conf.
+                .withCommand("mosquitto", "-c", "/mosquitto-no-auth.conf")
+                .waitingFor(Wait.forListeningPort());
         container.setPortBindings(List.of(hostPort + ":1883"));
         return container;
     }
-
 
 
     /**
@@ -468,7 +467,7 @@ public abstract class MqttITBase {
      * @throws IOException if the process cannot be started or the log file cannot be prepared
      */
     protected static RestheartInstance startRestheart(Path overridesFile, List<String> extraRho, String logFileName,
-            boolean standalone) throws IOException {
+                                                      boolean standalone) throws IOException {
         var jar = coreJar();
         var port = freePort();
         var logFile = freshLogFile(logFileName);
@@ -522,8 +521,8 @@ public abstract class MqttITBase {
         while (System.currentTimeMillis() < deadline) {
             if (!process.isAlive()) {
                 throw new IllegalStateException(
-                    "RESTHeart exited before becoming ready (exit code " + process.exitValue()
-                        + "); see " + logFile.toAbsolutePath());
+                        "RESTHeart exited before becoming ready (exit code " + process.exitValue()
+                                + "); see " + logFile.toAbsolutePath());
             }
             try {
                 var req = HttpRequest.newBuilder(uri).GET().build();
@@ -545,7 +544,7 @@ public abstract class MqttITBase {
             }
         }
         throw new IllegalStateException(
-            "RESTHeart did not answer 200 on GET /ping within 90s; see " + logFile.toAbsolutePath());
+                "RESTHeart did not answer 200 on GET /ping within 90s; see " + logFile.toAbsolutePath());
     }
 
     /**
@@ -554,7 +553,7 @@ public abstract class MqttITBase {
      */
     private static String javaExecutable() {
         return ProcessHandle.current().info().command()
-            .orElseGet(() -> System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
+                .orElseGet(() -> System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
     }
 
     /**
@@ -567,9 +566,9 @@ public abstract class MqttITBase {
         var jar = Path.of("..", "core", "target", "restheart.jar").toAbsolutePath().normalize();
         if (!Files.isRegularFile(jar)) {
             throw new IllegalStateException(
-                "core/target/restheart.jar not found at " + jar + "; the mqtt ITs run against the core "
-                    + "module built alongside them in the same reactor run - build core first with "
-                    + "'./mvnw -pl mqtt -am verify -Pmqtt-it'.");
+                    "core/target/restheart.jar not found at " + jar + "; the mqtt ITs run against the core "
+                            + "module built alongside them in the same reactor run - build core first with "
+                            + "'./mvnw -pl mqtt -am verify -Pmqtt-it'.");
         }
         return jar;
     }
@@ -635,7 +634,7 @@ public abstract class MqttITBase {
             }
         }
         throw new IllegalStateException("the MQTT client had not connected " + occurrences
-            + " time(s) within " + timeoutSec + "s; see " + logFile.toAbsolutePath());
+                + " time(s) within " + timeoutSec + "s; see " + logFile.toAbsolutePath());
     }
 
     protected static int freePort() throws IOException {
@@ -688,9 +687,9 @@ public abstract class MqttITBase {
      */
     protected HttpRequest.Builder authedRequest(String path) {
         return HttpRequest.newBuilder()
-            .uri(URI.create(baseUrl() + path))
-            .header("Authorization", ADMIN_BASIC)
-            .GET();
+                .uri(URI.create(baseUrl() + path))
+                .header("Authorization", ADMIN_BASIC)
+                .GET();
     }
 
     /**
@@ -730,7 +729,7 @@ public abstract class MqttITBase {
      * @throws Exception if sending the request itself fails
      */
     protected List<String> readSseLinesUntil(HttpRequest req, Predicate<String> done, int maxLines,
-            int timeoutSec) throws Exception {
+                                             int timeoutSec) throws Exception {
         var resp = HTTP_CLIENT.send(req, BodyHandlers.ofInputStream());
         InputStream is = resp.body();
 
@@ -810,10 +809,10 @@ public abstract class MqttITBase {
      */
     protected void publish(String topic, String payload) {
         publisher().publishWith()
-            .topic(topic)
-            .qos(MqttQos.AT_LEAST_ONCE)
-            .payload(payload.getBytes())
-            .send();
+                .topic(topic)
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .payload(payload.getBytes())
+                .send();
     }
 
     /**
@@ -828,11 +827,11 @@ public abstract class MqttITBase {
                 p = publisher;
                 if (p == null) {
                     p = MqttClient.builder()
-                        .useMqttVersion3()
-                        .identifier("mqtt-it-publisher-" + System.nanoTime())
-                        .serverHost("localhost")
-                        .serverPort(brokerPort)
-                        .buildBlocking();
+                            .useMqttVersion3()
+                            .identifier("mqtt-it-publisher-" + System.nanoTime())
+                            .serverHost("localhost")
+                            .serverPort(brokerPort)
+                            .buildBlocking();
                     publisher = p;
                 }
                 if (!p.getConfig().getState().isConnected()) {

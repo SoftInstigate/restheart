@@ -104,7 +104,7 @@ public class MqttReconnectIT extends MqttITBase {
         // only bites when delivery genuinely never resumes, which is the failure this test exists
         // to catch.
         var linesFuture = subscribeAsync(
-            () -> readSseLinesUntil(req, line -> line.contains("\"n\": 2"), 12, 90));
+                () -> readSseLinesUntil(req, line -> line.contains("\"n\": 2"), 12, 90));
 
         // Let the SSE connection and its MQTT subscription settle before publishing, as every
         // other IT in this module does.
@@ -138,11 +138,11 @@ public class MqttReconnectIT extends MqttITBase {
         // leaving it to be inferred from a 60-second log-wait timeout.
         var brokerPortAfterOutage = currentMappedPort();
         assertTrue(brokerPortAfterOutage.equals(brokerPortBeforeOutage),
-            "the broker's mapped port must not change across a stop/start of the same container "
-                + "(before=" + brokerPortBeforeOutage + ", after=" + brokerPortAfterOutage + "); "
-                + "otherwise RESTHeart's broker-url, fixed at launch, would now point at the wrong port. "
-                + "This is a known, verified failure mode of a dynamically-published Testcontainers port "
-                + "across a stop/start - see the class Javadoc.");
+                "the broker's mapped port must not change across a stop/start of the same container "
+                        + "(before=" + brokerPortBeforeOutage + ", after=" + brokerPortAfterOutage + "); "
+                        + "otherwise RESTHeart's broker-url, fixed at launch, would now point at the wrong port. "
+                        + "This is a known, verified failure mode of a dynamically-published Testcontainers port "
+                        + "across a stop/start - see the class Javadoc.");
 
         // MqttMessageRouter#resubscribeAll logs this line at INFO once the client's underlying
         // MQTT session is re-established; polling for it - rather than a fixed sleep - is what
@@ -180,12 +180,12 @@ public class MqttReconnectIT extends MqttITBase {
         var lines = linesFuture.get(100, TimeUnit.SECONDS);
 
         assertTrue(lines.stream().anyMatch(l -> l.contains("\"n\": 1")),
-            "the still-open connection must have received the message published before the broker "
-                + "was restarted; got: " + lines);
+                "the still-open connection must have received the message published before the broker "
+                        + "was restarted; got: " + lines);
         assertTrue(lines.stream().anyMatch(l -> l.contains("\"n\": 2")),
-            "the still-open connection must receive a message published after the broker restarted "
-                + "and the client resubscribed, proving the broker subscription was restored rather "
-                + "than merely the listener still being registered in the router; got: " + lines);
+                "the still-open connection must receive a message published after the broker restarted "
+                        + "and the client resubscribed, proving the broker subscription was restored rather "
+                        + "than merely the listener still being registered in the router; got: " + lines);
     }
 
     /**
@@ -198,8 +198,8 @@ public class MqttReconnectIT extends MqttITBase {
      */
     private void stopBroker() {
         DockerClientFactory.instance().client()
-            .stopContainerCmd(mosquitto.getContainerId())
-            .exec();
+                .stopContainerCmd(mosquitto.getContainerId())
+                .exec();
     }
 
     /**
@@ -209,8 +209,8 @@ public class MqttReconnectIT extends MqttITBase {
      */
     private void startBroker() {
         DockerClientFactory.instance().client()
-            .startContainerCmd(mosquitto.getContainerId())
-            .exec();
+                .startContainerCmd(mosquitto.getContainerId())
+                .exec();
     }
 
     /**
@@ -231,10 +231,10 @@ public class MqttReconnectIT extends MqttITBase {
      */
     private Integer currentMappedPort() {
         var bindings = mosquitto.getCurrentContainerInfo()
-            .getNetworkSettings()
-            .getPorts()
-            .getBindings()
-            .get(new ExposedPort(1883));
+                .getNetworkSettings()
+                .getPorts()
+                .getBindings()
+                .get(new ExposedPort(1883));
         return Integer.valueOf(bindings[0].getHostPortSpec());
     }
 
@@ -272,7 +272,7 @@ public class MqttReconnectIT extends MqttITBase {
         } while (System.currentTimeMillis() < deadline);
 
         fail("restheart logs never contained \"" + needle + "\" (at or after log offset " + fromIndex
-            + ") within " + timeoutSec + "s; got:\n" + logs);
+                + ") within " + timeoutSec + "s; got:\n" + logs);
         return logs; // unreachable: fail() always throws
     }
 }

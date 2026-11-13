@@ -145,12 +145,12 @@ public class MqttStatusInitializerTest {
         assertEquals(1, findings.size(), "only the module-off INFO should fire");
         assertEquals(Level.INFO, findings.get(0).level());
         assertTrue(findings.get(0).message().contains("/mqtt-client/enabled"),
-            "the message must name the switch that would activate the module");
+                "the message must name the switch that would activate the module");
     }
 
     @Test
     @DisplayName("Case 1b: with no mqtt configuration at all the sentinel still speaks, because "
-        + "the module is installed on purpose and is doing nothing")
+            + "the module is installed on purpose and is doing nothing")
     void testInstalledButUnconfiguredModuleStillSpeaks() {
         var config = configOf(Map.of());
         var registry = registryWithActive(); // nothing active
@@ -168,7 +168,7 @@ public class MqttStatusInitializerTest {
         assertEquals(1, findings.size(), "only the module-off INFO should fire; got: " + findings);
         assertEquals(Level.INFO, findings.get(0).level());
         assertTrue(findings.get(0).message().contains("installed but inactive"),
-            "an installed-but-unconfigured module must say so; got: " + findings.get(0).message());
+                "an installed-but-unconfigured module must say so; got: " + findings.get(0).message());
     }
 
     // --- Case 2: the enablement trap (negative control) ---
@@ -184,7 +184,7 @@ public class MqttStatusInitializerTest {
         var findings = MqttStatusInitializer.findings(config, registry);
 
         assertTrue(anyWarnContaining(findings, "mqtt-client"),
-            "a config block with no 'enabled' key, for a plugin that is not active, must produce a WARN naming it");
+                "a config block with no 'enabled' key, for a plugin that is not active, must produce a WARN naming it");
     }
 
     @Test
@@ -198,7 +198,7 @@ public class MqttStatusInitializerTest {
         var findings = MqttStatusInitializer.findings(config, registry);
 
         assertFalse(anyWarnContaining(findings, "no 'enabled' key"),
-            "an explicit 'enabled: false' is a deliberate choice, not the silent-default trap");
+                "an explicit 'enabled: false' is a deliberate choice, not the silent-default trap");
     }
 
     @Test
@@ -212,7 +212,7 @@ public class MqttStatusInitializerTest {
         var findings = MqttStatusInitializer.findings(config, registry);
 
         assertFalse(anyWarnContaining(findings, "mqtt-router"),
-            "mqtt-router defaults to enabled and is active here, so the missing key is not a trap");
+                "mqtt-router defaults to enabled and is active here, so the missing key is not a trap");
     }
 
     // --- Case 3: mqtt-rest active but nothing populates the cache ---
@@ -226,7 +226,7 @@ public class MqttStatusInitializerTest {
         var findings = MqttStatusInitializer.findings(config, registry);
 
         assertTrue(anyWarnContaining(findings, "404"),
-            "mqtt-rest with nothing subscribing and no cache source must warn about answering 404");
+                "mqtt-rest with nothing subscribing and no cache source must warn about answering 404");
     }
 
     @Test
@@ -234,14 +234,14 @@ public class MqttStatusInitializerTest {
     void testMqttRestActiveWithCacheDisabled() {
         Map<String, Object> confMap = new HashMap<>();
         confMap.put("mqtt-router", Map.of("last-message-cache", false,
-            "subscriptions", List.of(Map.of("topic", "sensors/#", "qos", 1))));
+                "subscriptions", List.of(Map.of("topic", "sensors/#", "qos", 1))));
         var config = configOf(confMap);
         var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-rest");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
         assertTrue(anyWarnContaining(findings, "404"),
-            "an explicitly disabled cache means mqtt-rest can never be populated, regardless of subscriptions");
+                "an explicitly disabled cache means mqtt-rest can never be populated, regardless of subscriptions");
     }
 
     @Test
@@ -299,7 +299,7 @@ public class MqttStatusInitializerTest {
     void testMongoWriterActiveWithConfiguredSinkIsFine() {
         Map<String, Object> confMap = new HashMap<>();
         confMap.put("mqtt-mongo-writer", Map.of("mongo-sink",
-            List.of(Map.of("topic", "sensors/#", "database", "iot", "collection", "sensor-events"))));
+                List.of(Map.of("topic", "sensors/#", "database", "iot", "collection", "sensor-events"))));
         var config = configOf(confMap);
         var registry = registryWithActive("mqtt-client", "mqtt-mongo-writer");
 
@@ -366,11 +366,11 @@ public class MqttStatusInitializerTest {
         Map<String, Object> confMap = new HashMap<>();
         confMap.put("mqtt-client", Map.of("enabled", true, "broker-url", "tcp://broker:1883"));
         confMap.put("mqtt-router", Map.of("enabled", true, "last-message-cache", true,
-            "subscriptions", List.of(Map.of("topic", "sensors/#", "qos", 1))));
+                "subscriptions", List.of(Map.of("topic", "sensors/#", "qos", 1))));
         confMap.put("mqtt-sse", Map.of("enabled", true));
         confMap.put("mqtt-rest", Map.of("enabled", true));
         confMap.put("mqtt-mongo-writer", Map.of("enabled", true, "mongo-sink",
-            List.of(Map.of("topic", "sensors/#", "database", "iot", "collection", "sensor-events"))));
+                List.of(Map.of("topic", "sensors/#", "database", "iot", "collection", "sensor-events"))));
         confMap.put("mqtt-topic-authorizer", Map.of("acl", Map.of("iot-reader", List.of("sensors/#"))));
 
         var config = configOf(confMap);
@@ -378,7 +378,7 @@ public class MqttStatusInitializerTest {
         // client, so a setup without it is not healthy - it is a module that never reaches the
         // broker at all.
         var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest",
-            "mqtt-mongo-writer", "mqtt-topic-authorizer", "mqtt-connector");
+                "mqtt-mongo-writer", "mqtt-topic-authorizer", "mqtt-connector");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
@@ -389,7 +389,7 @@ public class MqttStatusInitializerTest {
 
     @Test
     @DisplayName("Case 6: with an mqtt block configured and nothing active, the module-off INFO is "
-        + "the only finding - no separate summary line")
+            + "the only finding - no separate summary line")
     void testConfiguredButInactiveProducesOnlyModuleOffInfo() {
         var config = configOf(Map.of("mqtt-client", Map.of("enabled", false)));
         var registry = registryWithActive();
@@ -427,7 +427,7 @@ public class MqttStatusInitializerTest {
         setField(initializer, "registry", registry);
 
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(initializer::init,
-            "a diagnostic that takes the server down is worse than no diagnostic");
+                "a diagnostic that takes the server down is worse than no diagnostic");
     }
 
     // --- MQTT 5 settings on a 3.1.1 connection ---
@@ -438,8 +438,8 @@ public class MqttStatusInitializerTest {
         // No protocol-version key at all: the default is 3, so this is the shape an operator who
         // copied the setting from MQTT 5 documentation actually ends up with.
         var config = configOf(Map.of("mqtt-client", Map.of(
-            "enabled", true,
-            "session-expiry-seconds", 3600)));
+                "enabled", true,
+                "session-expiry-seconds", 3600)));
         // mqtt-router and mqtt-connector too: without them the sentinel rightly warns that
         // nothing would route or connect, which are different findings from the one under test.
         var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-connector");
@@ -448,22 +448,22 @@ public class MqttStatusInitializerTest {
 
         var warning = onlyWarning(findings);
         assertTrue(warning.message().contains("session-expiry-seconds"),
-            "the warning must name the setting that is being ignored; got: " + warning.message());
+                "the warning must name the setting that is being ignored; got: " + warning.message());
         assertTrue(warning.message().contains("protocol-version"),
-            "and must name the switch that would make it take effect; got: " + warning.message());
+                "and must name the switch that would make it take effect; got: " + warning.message());
     }
 
     @Test
     @DisplayName("both MQTT 5-only will options under protocol-version 3 are reported in one finding")
     void testMqtt5OnlyWillOptionsUnderMqtt3AreReported() {
         var config = configOf(Map.of("mqtt-client", Map.of(
-            "enabled", true,
-            "protocol-version", 3,
-            "will", Map.of(
-                "topic", "status/restheart",
-                "payload", "offline",
-                "delay-seconds", 30,
-                "message-expiry-seconds", 60))));
+                "enabled", true,
+                "protocol-version", 3,
+                "will", Map.of(
+                        "topic", "status/restheart",
+                        "payload", "offline",
+                        "delay-seconds", 30,
+                        "message-expiry-seconds", 60))));
         // mqtt-router and mqtt-connector too: without them the sentinel rightly warns that
         // nothing would route or connect, which are different findings from the one under test.
         var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-connector");
@@ -473,21 +473,21 @@ public class MqttStatusInitializerTest {
         // One finding naming both, not one finding each: they share a single cause, and an
         // operator fixes them with the same one-line change.
         assertTrue(warning.message().contains("will.delay-seconds")
-            && warning.message().contains("will.message-expiry-seconds"),
-            "both ignored will options must be named in the one finding; got: " + warning.message());
+                && warning.message().contains("will.message-expiry-seconds"),
+                "both ignored will options must be named in the one finding; got: " + warning.message());
     }
 
     @Test
     @DisplayName("the same settings under protocol-version 5 are not reported")
     void testMqtt5OnlySettingsUnderMqtt5AreSilent() {
         var config = configOf(Map.of("mqtt-client", Map.of(
-            "enabled", true,
-            "protocol-version", 5,
-            "session-expiry-seconds", 3600,
-            "will", Map.of(
-                "topic", "status/restheart",
-                "payload", "offline",
-                "delay-seconds", 30))));
+                "enabled", true,
+                "protocol-version", 5,
+                "session-expiry-seconds", 3600,
+                "will", Map.of(
+                        "topic", "status/restheart",
+                        "payload", "offline",
+                        "delay-seconds", 30))));
         // mqtt-router and mqtt-connector too: without them the sentinel rightly warns that
         // nothing would route or connect, which are different findings from the one under test.
         var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-connector");
@@ -495,8 +495,8 @@ public class MqttStatusInitializerTest {
         var findings = MqttStatusInitializer.findings(config, registry);
 
         assertTrue(findings.stream().noneMatch(f -> f.message().contains("MQTT 5.0")),
-            "these settings do take effect on a 5.0 connection, so warning about them would be "
-                + "noise an operator cannot act on; got: " + findings);
+                "these settings do take effect on a 5.0 connection, so warning about them would be "
+                        + "noise an operator cannot act on; got: " + findings);
     }
 
     @Test
@@ -506,9 +506,9 @@ public class MqttStatusInitializerTest {
         // produce a warning about a configuration that is in fact correct - the sentinel would
         // then be the thing sending the operator on a false trail.
         var config = configOf(Map.of("mqtt-client", Map.of(
-            "enabled", true,
-            "protocol-version", "5",
-            "session-expiry-seconds", 3600)));
+                "enabled", true,
+                "protocol-version", "5",
+                "session-expiry-seconds", 3600)));
         // mqtt-router and mqtt-connector too: without them the sentinel rightly warns that
         // nothing would route or connect, which are different findings from the one under test.
         var registry = registryWithActive("mqtt-client", "mqtt-router", "mqtt-connector");
@@ -516,7 +516,7 @@ public class MqttStatusInitializerTest {
         var findings = MqttStatusInitializer.findings(config, registry);
 
         assertTrue(findings.stream().noneMatch(f -> f.message().contains("MQTT 5.0")),
-            "protocol-version: \"5\" is 5; got: " + findings);
+                "protocol-version: \"5\" is 5; got: " + findings);
     }
 
     /**

@@ -53,9 +53,9 @@ public class MqttTopicAclIT extends MqttITBase {
         // Built directly with HttpRequest.newBuilder(), not authedRequest(), which always sets
         // the Authorization header - this request must not carry one.
         var req = HttpRequest.newBuilder()
-            .uri(URI.create(baseUrl() + "/mqtt-sse?topic=sensors/acl-anon"))
-            .GET()
-            .build();
+                .uri(URI.create(baseUrl() + "/mqtt-sse?topic=sensors/acl-anon"))
+                .GET()
+                .build();
 
         var resp = httpClient().send(req, BodyHandlers.discarding());
 
@@ -76,9 +76,9 @@ public class MqttTopicAclIT extends MqttITBase {
         var lines = linesFuture.get(20, TimeUnit.SECONDS);
 
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("event:mqtt-message")),
-            "a filter under the granted 'sensors/#' prefix must stream normally; got: " + lines);
+                "a filter under the granted 'sensors/#' prefix must stream normally; got: " + lines);
         assertTrue(lines.stream().anyMatch(l -> l.contains("granted")),
-            "the streamed event must carry the published payload; got: " + lines);
+                "the streamed event must carry the published payload; got: " + lines);
     }
 
     @Test
@@ -97,9 +97,9 @@ public class MqttTopicAclIT extends MqttITBase {
         // "Not authorized for topic: " + topicFilter as the message, so that text is the "msg"
         // property's value, not the raw response body.
         assertTrue(resp.body().contains("\"msg\""),
-            "the 403 body must carry the authorizer's message under the 'msg' JSON property; got: " + resp.body());
+                "the 403 body must carry the authorizer's message under the 'msg' JSON property; got: " + resp.body());
         assertTrue(resp.body().contains("Not authorized for topic: " + deniedFilter),
-            "the 403 body must name the denied topic filter; got: " + resp.body());
+                "the 403 body must name the denied topic filter; got: " + resp.body());
 
         // The whole point of this test: a 403 that still let the broker subscription through
         // would be exactly the fail-open MqttTopicAuthorizer exists to prevent. The interceptor
@@ -114,9 +114,9 @@ public class MqttTopicAclIT extends MqttITBase {
         // happens to have used that topic".
         var logs = restheartLogs();
         assertFalse(logs.contains("Subscribed to topic filter: " + deniedFilter),
-            "a 403-denied filter must never reach MqttMessageRouter#subscribe - a denial that "
-                + "still subscribed would be the fail-open this authorizer exists to prevent; logs:\n"
-                + logs);
+                "a 403-denied filter must never reach MqttMessageRouter#subscribe - a denial that "
+                        + "still subscribed would be the fail-open this authorizer exists to prevent; logs:\n"
+                        + logs);
     }
 
     @Test
@@ -136,11 +136,11 @@ public class MqttTopicAclIT extends MqttITBase {
         var resp = httpClient().send(req, BodyHandlers.ofString());
 
         assertEquals(403, resp.statusCode(),
-            "a request naming no topic is still subscribed to default-topic, so it must be "
-                + "authorized against it; got body: " + resp.body());
+                "a request naming no topic is still subscribed to default-topic, so it must be "
+                        + "authorized against it; got body: " + resp.body());
         assertTrue(resp.body().contains("alarms/#"),
-            "the denial must name the filter actually being refused - the default topic, not the "
-                + "absent parameter; got: " + resp.body());
+                "the denial must name the filter actually being refused - the default topic, not the "
+                        + "absent parameter; got: " + resp.body());
     }
 
 }

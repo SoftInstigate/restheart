@@ -109,7 +109,7 @@ public class MqttMongoWriterTest {
 
     @SuppressWarnings("unchecked")
     private MongoCollection<Document> wireWriterForFlush(MqttMongoWriter writer, String idStrategy,
-            int batchSize, int maxRetries, long retryDelayMs) throws Exception {
+                                                         int batchSize, int maxRetries, long retryDelayMs) throws Exception {
         MongoClient mclient = mock(MongoClient.class);
         MongoDatabase db = mock(MongoDatabase.class);
         MongoCollection<Document> coll = mock(MongoCollection.class);
@@ -131,11 +131,11 @@ public class MqttMongoWriterTest {
 
     private MongoBulkWriteException bulkWriteException(BulkWriteError... errors) {
         return new MongoBulkWriteException(
-            BulkWriteResult.unacknowledged(),
-            Arrays.asList(errors),
-            null,
-            new ServerAddress(),
-            Set.of());
+                BulkWriteResult.unacknowledged(),
+                Arrays.asList(errors),
+                null,
+                new ServerAddress(),
+                Set.of());
     }
 
     // --- constructor injection ---
@@ -157,8 +157,8 @@ public class MqttMongoWriterTest {
     @DisplayName("MqttMongoWriter implements Initializer and is registered for AFTER_STARTUP")
     void testImplementsInitializerWithAfterStartup() {
         assertTrue(Initializer.class.isAssignableFrom(MqttMongoWriter.class),
-            "MqttMongoWriter must implement Initializer, otherwise PluginsScanner never instantiates it "
-                + "and @Inject/@OnInit never fire");
+                "MqttMongoWriter must implement Initializer, otherwise PluginsScanner never instantiates it "
+                        + "and @Inject/@OnInit never fire");
 
         RegisterPlugin registerPlugin = MqttMongoWriter.class.getAnnotation(RegisterPlugin.class);
         assertNotNull(registerPlugin, "MqttMongoWriter must carry @RegisterPlugin");
@@ -169,13 +169,13 @@ public class MqttMongoWriterTest {
     @DisplayName("The @OnInit method is distinct from Initializer.init()")
     void testOnInitMethodDistinctFromInitializerInit() throws Exception {
         List<Method> onInitMethods = Arrays.stream(MqttMongoWriter.class.getDeclaredMethods())
-            .filter(m -> m.isAnnotationPresent(OnInit.class))
-            .toList();
+                .filter(m -> m.isAnnotationPresent(OnInit.class))
+                .toList();
 
         assertEquals(1, onInitMethods.size(), "Exactly one method should be annotated @OnInit");
         Method onInit = onInitMethods.get(0);
         assertNotEquals("init", onInit.getName(),
-            "The @OnInit method must not be named init(), since Initializer already declares init()");
+                "The @OnInit method must not be named init(), since Initializer already declares init()");
 
         // init() overrides Initializer.init() and is not itself annotated @OnInit
         Method init = MqttMongoWriter.class.getMethod("init");
@@ -202,14 +202,14 @@ public class MqttMongoWriterTest {
     }
 
     /** 0x80 is a continuation byte with no lead byte: never valid UTF-8. */
-    private static final byte[] NOT_UTF8 = new byte[] { (byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE };
+    private static final byte[] NOT_UTF8 = new byte[]{(byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE};
 
     @Test
     @DisplayName("a non-text payload is stored as BSON binary, byte for byte")
     void testToDocumentStoresBinaryPayload() {
         MqttMongoWriter writer = new MqttMongoWriter();
         MqttMessage message = new MqttMessage(
-            "sensors/raw", NOT_UTF8, 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), false);
+                "sensors/raw", NOT_UTF8, 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), false);
 
         Document doc = writer.toDocument(message);
 
@@ -263,11 +263,11 @@ public class MqttMongoWriterTest {
             Document doc = writer.toDocument(new MqttMessage("sensors/temp", "{}", 1, original, false));
 
             java.time.Instant reconstructed = java.time.Instant
-                .ofEpochMilli(doc.getDate("receivedAt").getTime())
-                .plusNanos(doc.getInteger("receivedAtNanos"));
+                    .ofEpochMilli(doc.getDate("receivedAt").getTime())
+                    .plusNanos(doc.getInteger("receivedAtNanos"));
 
             assertEquals(original, reconstructed,
-                "receivedAt + receivedAtNanos must give back exactly what arrived: " + original);
+                    "receivedAt + receivedAtNanos must give back exactly what arrived: " + original);
             assertEquals(original.getNano(), reconstructed.getNano(), "nanosecond component lost");
         }
     }
@@ -277,7 +277,7 @@ public class MqttMongoWriterTest {
     void testDeadLetterJsonKeepsBinaryAndDate() {
         MqttMongoWriter writer = new MqttMongoWriter();
         MqttMessage message = new MqttMessage(
-            "sensors/raw", NOT_UTF8, 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), false);
+                "sensors/raw", NOT_UTF8, 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), false);
 
         // The dead-letter file is written with Document.toJson(), so a binary payload and a date
         // both survive as Extended JSON rather than being flattened into something unreadable.
@@ -291,20 +291,20 @@ public class MqttMongoWriterTest {
         Document recovered = Document.parse(json);
         assertArrayEquals(NOT_UTF8, recovered.get("payload", org.bson.types.Binary.class).getData());
         assertEquals(java.util.Date.from(java.time.Instant.parse("2026-01-01T00:00:00Z")),
-            recovered.getDate("receivedAt"));
+                recovered.getDate("receivedAt"));
     }
 
     /** The MQTT 5 properties used by the tests below, including a repeated user-property name. */
     private static Mqtt5Properties mqtt5Sample() {
         return new Mqtt5Properties(
-            List.of(new Mqtt5Properties.UserProperty("trace", "first"),
-                    new Mqtt5Properties.UserProperty("trace", "second"),
-                    new Mqtt5Properties.UserProperty("tenant", "acme")),
-            "application/json",
-            new byte[] { 1, 2, 3 },
-            "replies/acme",
-            1,
-            120L);
+                List.of(new Mqtt5Properties.UserProperty("trace", "first"),
+                        new Mqtt5Properties.UserProperty("trace", "second"),
+                        new Mqtt5Properties.UserProperty("tenant", "acme")),
+                "application/json",
+                new byte[]{1, 2, 3},
+                "replies/acme",
+                1,
+                120L);
     }
 
     // --- MQTT 5 publish properties. A collection that keeps the readings but drops the correlation
@@ -327,11 +327,11 @@ public class MqttMongoWriterTest {
         // name and requires the order preserved, so keying by name would overwrite one of the two.
         assertEquals(3, userProperties.size());
         assertEquals(List.of("trace=first", "trace=second", "tenant=acme"),
-            userProperties.stream().map(d -> d.getString("name") + "=" + d.getString("value")).toList());
+                userProperties.stream().map(d -> d.getString("name") + "=" + d.getString("value")).toList());
 
         assertEquals("application/json", mqtt5.getString("contentType"));
-        assertArrayEquals(new byte[] { 1, 2, 3 },
-            mqtt5.get("correlationData", org.bson.types.Binary.class).getData());
+        assertArrayEquals(new byte[]{1, 2, 3},
+                mqtt5.get("correlationData", org.bson.types.Binary.class).getData());
         assertEquals("replies/acme", mqtt5.getString("responseTopic"));
         assertEquals(1, mqtt5.getInteger("payloadFormatIndicator"));
     }
@@ -368,7 +368,7 @@ public class MqttMongoWriterTest {
     void testToDocumentRecordsRetain() {
         MqttMongoWriter writer = new MqttMongoWriter();
         MqttMessage retained = new MqttMessage(
-            "sensors/temp", "{\"temp\":25}", 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), true);
+                "sensors/temp", "{\"temp\":25}", 1, java.time.Instant.parse("2026-01-01T00:00:00Z"), true);
 
         Document doc = writer.toDocument(retained);
 
@@ -423,15 +423,15 @@ public class MqttMongoWriterTest {
     void testOnInitRejectsUnknownIdStrategy() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
-            "id-strategy", "paylod-field", // typo, must not be silently accepted
-            "mongo-sink", List.of());
+                "id-strategy", "paylod-field", // typo, must not be silently accepted
+                "mongo-sink", List.of());
         setField(writer, "config", config);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
         assertTrue(ex.getMessage().contains("id-strategy"), "message should name the offending key");
         assertTrue(ex.getMessage().contains("paylod-field"), "message should name the offending value");
         assertTrue(ex.getMessage().contains("payload-field") && ex.getMessage().contains("auto"),
-            "message should list the accepted values");
+                "message should list the accepted values");
     }
 
     @Test
@@ -440,9 +440,9 @@ public class MqttMongoWriterTest {
         for (String value : List.of("auto", "payload-field")) {
             MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
             Map<String, Object> config = Map.of(
-                "id-strategy", value,
-                "id-field", "messageId",
-                "mongo-sink", List.of());
+                    "id-strategy", value,
+                    "id-field", "messageId",
+                    "mongo-sink", List.of());
             setField(writer, "config", config);
 
             writer.onInit();
@@ -466,9 +466,9 @@ public class MqttMongoWriterTest {
 
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
-            "id-strategy", "auto",
-            "buffer", Map.of("strategy", "ring-buffer", "capacity", 5),
-            "mongo-sink", List.of());
+                "id-strategy", "auto",
+                "buffer", Map.of("strategy", "ring-buffer", "capacity", 5),
+                "mongo-sink", List.of());
         setField(writer, "config", config);
 
         writer.onInit();
@@ -479,7 +479,8 @@ public class MqttMongoWriterTest {
             assertEquals(0L, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_dropped")));
 
             MessageBuffer buffer = (MessageBuffer) getField(writer, "buffer");
-            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> { }));
+            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> {
+            }));
 
             assertEquals(1, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_size")));
             assertEquals(1L, Metrics.getGaugeValue(MetricNameAndLabels.of("mqtt_buffer_accepted")));
@@ -493,9 +494,9 @@ public class MqttMongoWriterTest {
     void testOnInitRejectsBlankIdFieldForPayloadFieldStrategy() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
-            "id-strategy", "payload-field",
-            "id-field", "   ",
-            "mongo-sink", List.of());
+                "id-strategy", "payload-field",
+                "id-field", "   ",
+                "mongo-sink", List.of());
         setField(writer, "config", config);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
@@ -508,9 +509,9 @@ public class MqttMongoWriterTest {
     void testBlankIdFieldAllowedWhenIdStrategyIsNotPayloadField() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
-            "id-strategy", "auto",
-            "id-field", "",
-            "mongo-sink", List.of());
+                "id-strategy", "auto",
+                "id-field", "",
+                "mongo-sink", List.of());
         setField(writer, "config", config);
 
         writer.onInit();
@@ -526,8 +527,8 @@ public class MqttMongoWriterTest {
     void testOnInitRejectsMongoSinkEntryMissingCollection() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
-            "id-strategy", "auto",
-            "mongo-sink", List.of(Map.of("topic", "sensors/#", "database", "iot")));
+                "id-strategy", "auto",
+                "mongo-sink", List.of(Map.of("topic", "sensors/#", "database", "iot")));
         setField(writer, "config", config);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
@@ -539,8 +540,8 @@ public class MqttMongoWriterTest {
     void testOnInitRejectsMongoSinkEntryMissingTopic() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
-            "id-strategy", "auto",
-            "mongo-sink", List.of(Map.of("database", "iot", "collection", "sensor-events")));
+                "id-strategy", "auto",
+                "mongo-sink", List.of(Map.of("database", "iot", "collection", "sensor-events")));
         setField(writer, "config", config);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
@@ -552,8 +553,8 @@ public class MqttMongoWriterTest {
     void testOnInitRejectsMongoSinkEntryWithNonStringDatabase() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
-            "id-strategy", "auto",
-            "mongo-sink", List.of(Map.of("topic", "sensors/#", "database", 42, "collection", "events")));
+                "id-strategy", "auto",
+                "mongo-sink", List.of(Map.of("topic", "sensors/#", "database", 42, "collection", "events")));
         setField(writer, "config", config);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
@@ -565,10 +566,10 @@ public class MqttMongoWriterTest {
     void testOnInitBuildsSinksFromValidMongoSinkEntries() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
-            "id-strategy", "auto",
-            "mongo-sink", List.of(
-                Map.of("topic", "sensors/#", "database", "iot", "collection", "sensor-events"),
-                Map.of("topic", "traffic/#", "database", "iot", "collection", "traffic-events")));
+                "id-strategy", "auto",
+                "mongo-sink", List.of(
+                        Map.of("topic", "sensors/#", "database", "iot", "collection", "sensor-events"),
+                        Map.of("topic", "traffic/#", "database", "iot", "collection", "traffic-events")));
         setField(writer, "config", config);
 
         writer.onInit();
@@ -645,8 +646,10 @@ public class MqttMongoWriterTest {
         MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 10, 3, 1L);
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> { }));
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> {
+        }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0), () -> {
+        }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -668,8 +671,10 @@ public class MqttMongoWriterTest {
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
         // The payloads carry messageId, which is what payload-field keys on: with no such field
         // there is no id to upsert against and buildUpsertModels falls back to an InsertOneModel.
-        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"a\",\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
-        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"b\",\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"a\",\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> {
+        }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"b\",\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> {
+        }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -701,11 +706,13 @@ public class MqttMongoWriterTest {
 
         // 2 documents; only index 0 is reported as an error (duplicate key) — index 1 succeeded silently
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
-            .thenThrow(bulkWriteException(new BulkWriteError(11000, "E11000 duplicate key error", new BsonDocument(), 0)));
+                .thenThrow(bulkWriteException(new BulkWriteError(11000, "E11000 duplicate key error", new BsonDocument(), 0)));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> {
+        }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> {
+        }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -729,11 +736,13 @@ public class MqttMongoWriterTest {
         // failure, retried until max-retries, and then dead-lettered: documents that were in the
         // database ended up in the dead-letter file, ready to be inserted a second time.
         when(coll.insertMany(anyList(), any(InsertManyOptions.class)))
-            .thenThrow(bulkWriteException(new BulkWriteError(11000, "E11000 duplicate key error", new BsonDocument(), 0)));
+                .thenThrow(bulkWriteException(new BulkWriteError(11000, "E11000 duplicate key error", new BsonDocument(), 0)));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> {
+        }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> {
+        }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -754,12 +763,14 @@ public class MqttMongoWriterTest {
 
         // First attempt: 2 documents submitted, index 0 fails with a genuine (non-duplicate-key) error
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
-            .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)))
-            .thenReturn(mock(BulkWriteResult.class));
+                .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)))
+                .thenReturn(mock(BulkWriteResult.class));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> {
+        }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":2}", 0, Instant.parse("2026-01-01T00:00:01Z")), () -> {
+        }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -783,10 +794,11 @@ public class MqttMongoWriterTest {
         MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 1, 1L);
 
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
-            .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)));
+                .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":42}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":42}", 0, Instant.parse("2026-01-01T00:00:00Z")), () -> {
+        }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
@@ -802,7 +814,7 @@ public class MqttMongoWriterTest {
         // and why it is there, next to the document itself
         assertEquals("coll", deadLettered.get("_deadLetter", Document.class).getString("collection"));
         assertTrue(deadLettered.get("_deadLetter", Document.class).getString("reason").contains("interrupted"),
-            "the reason must say what MongoDB answered");
+                "the reason must say what MongoDB answered");
     }
 
     @Test
@@ -812,14 +824,15 @@ public class MqttMongoWriterTest {
         MongoCollection<Document> coll = wireWriterForFlush(writer, "payload-field", 10, 0, 1L);
 
         when(coll.bulkWrite(anyList(), any(BulkWriteOptions.class)))
-            .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)));
+                .thenThrow(bulkWriteException(new BulkWriteError(11600, "interrupted", new BsonDocument(), 0)));
         // the dead-letter collection refuses it too: nowhere left to put it, but no exception
         // may escape the drain loop
         when(deadLetterColl.insertMany(anyList(), any(InsertManyOptions.class)))
-            .thenThrow(new MongoTimeoutException("Timed out while waiting for a server"));
+                .thenThrow(new MongoTimeoutException("Timed out while waiting for a server"));
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":1}", 0), () -> {
+        }));
         setField(writer, "buffer", buffer);
 
         // must not throw despite the dead-letter write failing
@@ -849,13 +862,14 @@ public class MqttMongoWriterTest {
         });
 
         MessageBuffer buffer = new MessageBuffer(10, Strategy.RING);
-        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"a\",\"temp\":42}", 1), () -> { }));
+        buffer.offer(new Pending(msg("sensors/temp", "{\"messageId\":\"a\",\"temp\":42}", 1), () -> {
+        }));
         setField(writer, "buffer", buffer);
 
         writer.flush();
 
         assertEquals(5, attempts.get(),
-            "an unreachable MongoDB must be retried, not given up on after max-retries");
+                "an unreachable MongoDB must be retried, not given up on after max-retries");
         verify(deadLetterColl, never()).insertMany(anyList(), any(InsertManyOptions.class));
     }
 
@@ -869,8 +883,9 @@ public class MqttMongoWriterTest {
         MongoCollection<Document> coll = wireWriterForFlush(writer, "auto", 2, 3, 1L);
 
         MessageBuffer buffer = new MessageBuffer(20, Strategy.RING);
-        for (int i = 0; i < 7; i++) {
-            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":" + i + "}", 0), () -> { }));
+        for (int i = 0;i < 7;i++) {
+            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":" + i + "}", 0), () -> {
+            }));
         }
         setField(writer, "buffer", buffer);
         setField(writer, "running", true);
@@ -891,8 +906,9 @@ public class MqttMongoWriterTest {
         wireWriterForFlush(writer, "auto", 1, 3, 1L);
 
         MessageBuffer buffer = new MessageBuffer(20, Strategy.RING);
-        for (int i = 0; i < 5; i++) {
-            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":" + i + "}", 0), () -> { }));
+        for (int i = 0;i < 5;i++) {
+            buffer.offer(new Pending(msg("sensors/temp", "{\"temp\":" + i + "}", 0), () -> {
+            }));
         }
         setField(writer, "buffer", buffer);
         setField(writer, "running", true);
@@ -920,6 +936,7 @@ public class MqttMongoWriterTest {
         assertFalse((boolean) getField(writer, "running"));
         verify(mclient, never()).close();
     }
+
     // --- shutdown must not throw away the buffer ---
     //
     // close() used to be `running = false; flush();` - and flush() drains exactly one batch. So a
@@ -937,8 +954,9 @@ public class MqttMongoWriterTest {
         setField(writer, "shutdownTimeoutMs", 10_000L);
 
         MessageBuffer buffer = new MessageBuffer(2000, Strategy.RING);
-        for (int i = 0; i < 1000; i++) {
-            buffer.offer(new Pending(msg("sensors/temp", "{\"n\":" + i + "}", 0), () -> { }));
+        for (int i = 0;i < 1000;i++) {
+            buffer.offer(new Pending(msg("sensors/temp", "{\"n\":" + i + "}", 0), () -> {
+            }));
         }
         setField(writer, "buffer", buffer);
         setField(writer, "running", true);
@@ -962,8 +980,9 @@ public class MqttMongoWriterTest {
         setField(writer, "shutdownTimeoutMs", 0L);
 
         MessageBuffer buffer = new MessageBuffer(2000, Strategy.RING);
-        for (int i = 0; i < 1000; i++) {
-            buffer.offer(new Pending(msg("sensors/temp", "{\"n\":" + i + "}", 0), () -> { }));
+        for (int i = 0;i < 1000;i++) {
+            buffer.offer(new Pending(msg("sensors/temp", "{\"n\":" + i + "}", 0), () -> {
+            }));
         }
         setField(writer, "buffer", buffer);
         setField(writer, "running", true);
@@ -991,12 +1010,12 @@ public class MqttMongoWriterTest {
         // buffer.max-bytes.
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         setField(writer, "config", Map.of(
-            "id-strategy", "auto",
-            "mongo-sink", List.of(),
-            "drain", Map.of(
-                "retry-delay-ms", 2000,        // Integer where a Long is expected
-                "flush-interval-ms", 250,
-                "shutdown-timeout-ms", 7000)));
+                "id-strategy", "auto",
+                "mongo-sink", List.of(),
+                "drain", Map.of(
+                        "retry-delay-ms", 2000,        // Integer where a Long is expected
+                        "flush-interval-ms", 250,
+                        "shutdown-timeout-ms", 7000)));
 
         writer.onInit();
         try {
@@ -1013,9 +1032,9 @@ public class MqttMongoWriterTest {
     void testUnusableSettingTypeFallsBackToDefault() throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         setField(writer, "config", Map.of(
-            "id-strategy", "auto",
-            "mongo-sink", List.of(),
-            "drain", Map.of("batch-size", "not a number")));
+                "id-strategy", "auto",
+                "mongo-sink", List.of(),
+                "drain", Map.of("batch-size", "not a number")));
 
         writer.onInit();
         try {
@@ -1039,10 +1058,10 @@ public class MqttMongoWriterTest {
         var router = mock(MqttMessageRouter.class);
         MqttMongoWriter writer = new MqttMongoWriter(router);
         setField(writer, "config", Map.of(
-            "id-strategy", "auto",
-            "buffer", Map.of("strategy", "drop-incoming", "capacity", 1),
-            "mongo-sink", List.of(Map.of(
-                "topic", "sensors/#", "database", "db", "collection", "coll"))));
+                "id-strategy", "auto",
+                "buffer", Map.of("strategy", "drop-incoming", "capacity", 1),
+                "mongo-sink", List.of(Map.of(
+                        "topic", "sensors/#", "database", "db", "collection", "coll"))));
 
         // The drain loop starts inside onInit and will reach for MongoDB; a deep-stub keeps it from
         // tripping over a null client. What is written there is not what this test is about.
@@ -1064,7 +1083,7 @@ public class MqttMongoWriterTest {
             // is counted as dropped and acknowledged too, since nothing else is holding it.
             listener.getValue().onMessage(msg("sensors/temp", "{\"n\":2}", 1), ack);
             assertEquals(2, acknowledged.get(),
-                "a dropped message must be acknowledged rather than hold an in-flight slot");
+                    "a dropped message must be acknowledged rather than hold an in-flight slot");
         } finally {
             writer.close();
         }

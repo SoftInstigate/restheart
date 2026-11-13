@@ -71,7 +71,7 @@ public final class MqttTopicMatcher {
 
         boolean topicIsSystem = topicLevels.length > 0 && topicLevels[0].startsWith("$");
         boolean filterStartsWithWildcard = filterLevels.length > 0
-            && ("#".equals(filterLevels[0]) || "+".equals(filterLevels[0]));
+                && ("#".equals(filterLevels[0]) || "+".equals(filterLevels[0]));
         if (topicIsSystem && filterStartsWithWildcard) {
             return false;
         }

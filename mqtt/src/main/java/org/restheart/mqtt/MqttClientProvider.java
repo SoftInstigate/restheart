@@ -66,12 +66,12 @@ import com.hivemq.client.mqtt.MqttClient;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mqtt-client",
-    description = "Provides a connected MQTT client",
-    priority = 10,
-    enabledByDefault = false
+        name = "mqtt-client",
+        description = "Provides a connected MQTT client",
+        priority = 10,
+        enabledByDefault = false
 )
-public class MqttClientProvider implements Provider<MqttClient>{
+public class MqttClientProvider implements Provider<MqttClient> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttClientProvider.class);
 
@@ -158,29 +158,29 @@ public class MqttClientProvider implements Provider<MqttClient>{
         final Long willMessageExpirySeconds = argOrDefault(willConfigMap, "message-expiry-seconds", null);
 
         // Build configuration objects
-        MqttConfig.ReconnectConfig reconnectConfig= new MqttConfig.ReconnectConfig(
-            reconnectEnabled, 
-            initialDelayMs, 
-            maxDelayMs);
+        MqttConfig.ReconnectConfig reconnectConfig = new MqttConfig.ReconnectConfig(
+                reconnectEnabled,
+                initialDelayMs,
+                maxDelayMs);
 
         MqttConfig.WillConfig willConfig = new MqttConfig.WillConfig(willTopic, willPayload, willQos, willRetain, willDelaySeconds, willMessageExpirySeconds);
 
         MqttConfig mqttConfig = new MqttConfig.Builder()
-            .brokerUrl(brokerUrl)
-            .protocolVersion(protocolVersion)
-            .clientId(clientId)
-            .username(username)
-            .password(password)
-            .cleanSession(cleanSession)
-            .keepAliveSeconds(keepAliveSeconds)
-            .sessionExpirySeconds(sessionExpirySeconds)
-            .connectTimeoutSeconds(connectTimeoutSeconds)
-            .tlsEnabled(tlsEnabled)
-            .tlsTrustStore(tlsTrustStore)
-            .tlsTrustStorePassword(tlsTrustStorePassword)
-            .reconnectConfig(reconnectConfig)
-            .willConfig(willConfig)
-            .build();
+                .brokerUrl(brokerUrl)
+                .protocolVersion(protocolVersion)
+                .clientId(clientId)
+                .username(username)
+                .password(password)
+                .cleanSession(cleanSession)
+                .keepAliveSeconds(keepAliveSeconds)
+                .sessionExpirySeconds(sessionExpirySeconds)
+                .connectTimeoutSeconds(connectTimeoutSeconds)
+                .tlsEnabled(tlsEnabled)
+                .tlsTrustStore(tlsTrustStore)
+                .tlsTrustStorePassword(tlsTrustStorePassword)
+                .reconnectConfig(reconnectConfig)
+                .willConfig(willConfig)
+                .build();
 
         // Initialize the singleton with configuration
         MqttClientSingleton.init(mqttConfig);
@@ -266,10 +266,10 @@ public class MqttClientProvider implements Provider<MqttClient>{
 
         if (!cleanSession && "default".equals(instanceName)) {
             LOGGER.warn("mqtt-client has no client-id and this instance still carries the stock name "
-                + "'default', so the identifier is 'restheart-default'. With clean-session: false the "
-                + "broker keys the resumable session on that identifier - two RESTHeart instances "
-                + "sharing it will disconnect each other in a loop. Set /mqtt-client/client-id, or "
-                + "give each instance its own /core/name");
+                    + "'default', so the identifier is 'restheart-default'. With clean-session: false the "
+                    + "broker keys the resumable session on that identifier - two RESTHeart instances "
+                    + "sharing it will disconnect each other in a loop. Set /mqtt-client/client-id, or "
+                    + "give each instance its own /core/name");
         }
 
         return "restheart-" + instanceName;

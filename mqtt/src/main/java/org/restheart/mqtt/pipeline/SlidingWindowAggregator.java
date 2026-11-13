@@ -112,10 +112,10 @@ public class SlidingWindowAggregator implements MqttEventStage {
                 // module computed, not a retained delivery from the broker, whatever the messages
                 // it was computed from were.
                 MqttMessage aggregated = new MqttMessage(
-                    message.getTopic(),
-                    aggregatedPayload.get(),
-                    message.getQos(),
-                    Instant.now()
+                        message.getTopic(),
+                        aggregatedPayload.get(),
+                        message.getQos(),
+                        Instant.now()
                 );
 
                 return Optional.of(aggregated);
@@ -135,7 +135,7 @@ public class SlidingWindowAggregator implements MqttEventStage {
      */
     private boolean requiresField(String func) {
         return func.equals("avg") || func.equals("min") ||
-               func.equals("max") || func.equals("sum");
+                func.equals("max") || func.equals("sum");
     }
 
     /**

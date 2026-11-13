@@ -285,9 +285,9 @@ public class MqttSseServiceTest {
     /** MQTT 5 properties including a repeated user-property name, which a map model would lose. */
     private static Mqtt5Properties mqtt5Sample() {
         return new Mqtt5Properties(
-            List.of(new Mqtt5Properties.UserProperty("trace", "first"),
-                    new Mqtt5Properties.UserProperty("trace", "second")),
-            "application/json", new byte[] { 1, 2, 3 }, "replies/acme", 1, 120L);
+                List.of(new Mqtt5Properties.UserProperty("trace", "first"),
+                        new Mqtt5Properties.UserProperty("trace", "second")),
+                "application/json", new byte[]{1, 2, 3}, "replies/acme", 1, 120L);
     }
 
     @Test
@@ -310,8 +310,8 @@ public class MqttSseServiceTest {
 
         assertEquals("application/json", mqtt5.get("contentType").getAsString());
         // base64: correlation data is binary and JSON cannot carry bytes.
-        assertArrayEquals(new byte[] { 1, 2, 3 },
-            java.util.Base64.getDecoder().decode(mqtt5.get("correlationData").getAsString()));
+        assertArrayEquals(new byte[]{1, 2, 3},
+                java.util.Base64.getDecoder().decode(mqtt5.get("correlationData").getAsString()));
         assertEquals("replies/acme", mqtt5.get("responseTopic").getAsString());
         assertEquals(120L, mqtt5.get("messageExpiryInterval").getAsLong());
     }
@@ -330,7 +330,7 @@ public class MqttSseServiceTest {
     }
 
     /** 0x80 is a continuation byte with no lead byte: never valid UTF-8. */
-    private static final byte[] NOT_UTF8 = new byte[] { (byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE };
+    private static final byte[] NOT_UTF8 = new byte[]{(byte) 0x80, (byte) 0xFF, 0x00, (byte) 0xFE};
 
     // --- JSON cannot carry arbitrary bytes and SSE is a UTF-8 text protocol, so a non-text payload
     // has to be base64 - and a base64 string is indistinguishable by inspection from a text payload
@@ -376,12 +376,12 @@ public class MqttSseServiceTest {
         callInit();
 
         assertEquals("{\"t\":25}",
-            service.formatPayload(new MqttMessage("sensors/temp", "{\"t\":25}", 1, Instant.now(), false), false));
+                service.formatPayload(new MqttMessage("sensors/temp", "{\"t\":25}", 1, Instant.now(), false), false));
 
         // Unlabelled, because the raw format has nowhere to put a label - which is exactly why the
         // service warns once and the README tells anyone carrying binary to enable the envelope.
         assertEquals(java.util.Base64.getEncoder().encodeToString(NOT_UTF8),
-            service.formatPayload(new MqttMessage("sensors/raw", NOT_UTF8, 1, Instant.now(), false), false));
+                service.formatPayload(new MqttMessage("sensors/raw", NOT_UTF8, 1, Instant.now(), false), false));
     }
 
     @Test
@@ -409,7 +409,7 @@ public class MqttSseServiceTest {
         String payload = service.formatPayload(retained, true);
 
         assertTrue(payload.contains("\"retain\":true"),
-            "two clients must not disagree about whether a message was retained: " + payload);
+                "two clients must not disagree about whether a message was retained: " + payload);
         assertTrue(payload.contains("\"replay\":true"), payload);
     }
 
@@ -433,11 +433,11 @@ public class MqttSseServiceTest {
     void testExactTopicMatchWinsOverWildcard() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                Map.of("type", "throttle", "max-events-per-second", 10))),
-            Map.of("topic", "sensors/temp", "stages", List.of(
-                Map.of("type", "filter", "min-qos", 99)) // drops everything
-            )
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        Map.of("type", "throttle", "max-events-per-second", 10))),
+                Map.of("topic", "sensors/temp", "stages", List.of(
+                        Map.of("type", "filter", "min-qos", 99)) // drops everything
+                )
         ));
         callInit();
 
@@ -453,8 +453,8 @@ public class MqttSseServiceTest {
     void testWildcardEntryMatchesRequestedFilter() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                Map.of("type", "filter", "min-qos", 99))) // drops everything
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        Map.of("type", "filter", "min-qos", 99))) // drops everything
         ));
         callInit();
 
@@ -468,8 +468,8 @@ public class MqttSseServiceTest {
     void testNoMatchingEntryYieldsIdentityPipeline() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "traffic/#", "stages", List.of(
-                Map.of("type", "filter", "min-qos", 99)))
+                Map.of("topic", "traffic/#", "stages", List.of(
+                        Map.of("type", "filter", "min-qos", 99)))
         ));
         callInit();
 
@@ -485,8 +485,8 @@ public class MqttSseServiceTest {
     void testTwoConnectionsOnSameTopicDoNotShareThrottleState() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                Map.of("type", "throttle", "max-events-per-second", 1)))
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        Map.of("type", "throttle", "max-events-per-second", 1)))
         ));
         callInit();
 
@@ -504,7 +504,7 @@ public class MqttSseServiceTest {
 
         // connection2 must still have its own, untouched token bucket.
         assertTrue(connection2.process(msg).isPresent(),
-            "connection2 must have its own throttle state, unaffected by connection1's consumption");
+                "connection2 must have its own throttle state, unaffected by connection1's consumption");
     }
 
     @Test
@@ -512,8 +512,8 @@ public class MqttSseServiceTest {
     void testTwoConnectionsOnSameTopicDoNotShareAggregationState() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                Map.of("type", "tumbling-window", "window-ms", 5000, "function", "count")))
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        Map.of("type", "tumbling-window", "window-ms", 5000, "function", "count")))
         ));
         callInit();
 
@@ -540,8 +540,8 @@ public class MqttSseServiceTest {
     void testQuotedNumericStageParameterFailsAtInit() {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                Map.of("type", "tumbling-window", "window-ms", "not-a-number", "function", "count")))
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        Map.of("type", "tumbling-window", "window-ms", "not-a-number", "function", "count")))
         ));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, this::callInitUnchecked);
@@ -554,8 +554,8 @@ public class MqttSseServiceTest {
     void testUnknownStageTypeFailsAtInit() {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                Map.of("type", "not-a-real-stage")))
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        Map.of("type", "not-a-real-stage")))
         ));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, this::callInitUnchecked);
@@ -581,7 +581,7 @@ public class MqttSseServiceTest {
     void testPipelineEntryMissingTopicFailsAtInit() {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("stages", List.of(Map.of("type", "throttle", "max-events-per-second", 10)))
+                Map.of("stages", List.of(Map.of("type", "throttle", "max-events-per-second", 10)))
         ));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, this::callInitUnchecked);
@@ -595,8 +595,8 @@ public class MqttSseServiceTest {
     void testFilterStageFromTopicRegexAndMinQos() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                Map.of("type", "filter", "topic-regex", "sensors/temp", "min-qos", 1)))
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        Map.of("type", "filter", "topic-regex", "sensors/temp", "min-qos", 1)))
         ));
         callInit();
 
@@ -670,8 +670,8 @@ public class MqttSseServiceTest {
     void testDrainLoopFlushesExpiredWindowWithNoFurtherMessages() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                Map.of("type", "tumbling-window", "window-ms", 150, "function", "count")))
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        Map.of("type", "tumbling-window", "window-ms", 150, "function", "count")))
         ));
         callInit();
 
@@ -695,7 +695,7 @@ public class MqttSseServiceTest {
             // No further message arrives: the drain loop's queue.poll(1s) times
             // out, and pollExpired() must flush the window on that same iteration.
             assertTrue(sent.await(1200, TimeUnit.MILLISECONDS),
-                "pollExpired() must flush the window through the drain loop with no further message arriving");
+                    "pollExpired() must flush the window through the drain loop with no further message arriving");
         } finally {
             open.set(false);
         }
@@ -706,9 +706,9 @@ public class MqttSseServiceTest {
     void testCloseTaskFlushesPartiallyFilledWindow() throws Exception {
         config.put("default-topic", "sensors/#");
         config.put("pipeline", List.of(
-            Map.of("topic", "sensors/#", "stages", List.of(
-                // Window large enough that it will not expire on its own during the test.
-                Map.of("type", "tumbling-window", "window-ms", 60_000, "function", "count")))
+                Map.of("topic", "sensors/#", "stages", List.of(
+                        // Window large enough that it will not expire on its own during the test.
+                        Map.of("type", "tumbling-window", "window-ms", 60_000, "function", "count")))
         ));
         callInit();
 
@@ -860,7 +860,7 @@ public class MqttSseServiceTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<ChannelListener<ServerSentEventConnection>> closeTaskCaptor
-            = ArgumentCaptor.forClass(ChannelListener.class);
+                = ArgumentCaptor.forClass(ChannelListener.class);
 
         service.onConnect(conn, null);
         verify(conn).addCloseTask(closeTaskCaptor.capture());
@@ -933,7 +933,7 @@ public class MqttSseServiceTest {
 
         MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
         when(mockRouter.getLastMessages(anyString()))
-            .thenReturn(List.of(new MqttMessage("sensors/temp", "{}", 1, Instant.now())));
+                .thenReturn(List.of(new MqttMessage("sensors/temp", "{}", 1, Instant.now())));
         injectMockRouter(mockRouter);
 
         AtomicBoolean open = new AtomicBoolean(true);
@@ -1013,13 +1013,13 @@ public class MqttSseServiceTest {
         verify(conn).addCloseTask(closeTaskCaptor.capture());
 
         assertEquals(before + 1, ((Number) Metrics.getGaugeValue(gaugeName)).longValue(),
-            "gauge must increase by one when a connection opens");
+                "gauge must increase by one when a connection opens");
 
         open.set(false);
         closeTaskCaptor.getValue().handleEvent(conn);
 
         assertEquals(before, ((Number) Metrics.getGaugeValue(gaugeName)).longValue(),
-            "gauge must decrease back when the connection closes");
+                "gauge must decrease back when the connection closes");
     }
 
     @Test
@@ -1048,6 +1048,6 @@ public class MqttSseServiceTest {
         listener.accept(new MqttMessage("sensors/temp", "2", 0, Instant.now()));
 
         assertEquals(before + 1, ((Number) Metrics.getGaugeValue(gaugeName)).longValue(),
-            "gauge must increase by one when a message is dropped on a full queue");
+                "gauge must increase by one when a message is dropped on a full queue");
     }
 }

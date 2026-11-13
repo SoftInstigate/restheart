@@ -131,7 +131,7 @@ public class FilterStage implements MqttEventStage {
         // Check topic filter
         if (topicPattern != null && !topicPattern.matcher(message.getTopic()).matches()) {
             LOGGER.debug("Message dropped: topic '{}' doesn't match pattern '{}'",
-                message.getTopic(), topicPattern.pattern());
+                    message.getTopic(), topicPattern.pattern());
             return Optional.empty();
         }
 

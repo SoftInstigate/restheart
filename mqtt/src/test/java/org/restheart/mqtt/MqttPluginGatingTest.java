@@ -43,78 +43,78 @@ public class MqttPluginGatingTest {
 
     @Test
     @DisplayName("Tier 1: mqtt-client is disabled by default, so dropping the jar in plugins/ "
-        + "does not, by itself, open a connection to an MQTT broker")
+            + "does not, by itself, open a connection to an MQTT broker")
     void testMqttClientDisabledByDefault() {
         RegisterPlugin annotation = MqttClientProvider.class.getAnnotation(RegisterPlugin.class);
         assertFalse(annotation.enabledByDefault(),
-            "mqtt-client is the root of the module's injection graph; enabling it by default would "
-                + "make every plugin that installs the mqtt jar start a broker connection loop "
-                + "immediately, which is the defect this two-tier scheme fixes");
+                "mqtt-client is the root of the module's injection graph; enabling it by default would "
+                        + "make every plugin that installs the mqtt jar start a broker connection loop "
+                        + "immediately, which is the defect this two-tier scheme fixes");
     }
 
     @Test
     @DisplayName("Tier 1: mqtt-router is gated with the client, rather than relying on the "
-        + "injection graph to disable it")
+            + "injection graph to disable it")
     void testMqttRouterGatedWithTheClient() {
         RegisterPlugin annotation = MqttRouterProvider.class.getAnnotation(RegisterPlugin.class);
         assertFalse(annotation.enabledByDefault(),
-            "mqtt-router must be enabledByDefault = false. It used to keep the annotation default "
-                + "of true, on the reasoning that ProvidersChecker would follow mqtt-client through "
-                + "the injection graph and disable this provider with it. It does disable it, and "
-                + "quietly - mqtt-client's descriptor is still in PluginsScanner.providers(), so "
-                + "the check takes the 'the provider is disabled' branch, at DEBUG. But that drops "
-                + "mqtt-router from the set of valid providers, and every plugin still enabled that "
-                + "injects it then takes the 'no provider found' branch instead, at ERROR - "
-                + "mqtt-metrics-collector for one, which is enabledByDefault = true");
+                "mqtt-router must be enabledByDefault = false. It used to keep the annotation default "
+                        + "of true, on the reasoning that ProvidersChecker would follow mqtt-client through "
+                        + "the injection graph and disable this provider with it. It does disable it, and "
+                        + "quietly - mqtt-client's descriptor is still in PluginsScanner.providers(), so "
+                        + "the check takes the 'the provider is disabled' branch, at DEBUG. But that drops "
+                        + "mqtt-router from the set of valid providers, and every plugin still enabled that "
+                        + "injects it then takes the 'no provider found' branch instead, at ERROR - "
+                        + "mqtt-metrics-collector for one, which is enabledByDefault = true");
     }
 
     @Test
     @DisplayName("Tier 2: mqtt-sse is disabled by default, so arming the module does not, by "
-        + "itself, expose the /mqtt-sse endpoint")
+            + "itself, expose the /mqtt-sse endpoint")
     void testMqttSseDisabledByDefault() {
         RegisterPlugin annotation = MqttSseService.class.getAnnotation(RegisterPlugin.class);
         assertFalse(annotation.enabledByDefault(),
-            "mqtt-sse must opt in separately from mqtt-client, so that a consumer of the "
-                + "injectable mqtt-router alone (e.g. examples/mqtt-logger) does not get /mqtt-sse "
-                + "exposed as an unrequested side effect of enabling mqtt-client");
+                "mqtt-sse must opt in separately from mqtt-client, so that a consumer of the "
+                        + "injectable mqtt-router alone (e.g. examples/mqtt-logger) does not get /mqtt-sse "
+                        + "exposed as an unrequested side effect of enabling mqtt-client");
     }
 
     @Test
     @DisplayName("Tier 2: mqtt-rest is disabled by default, so arming the module does not, by "
-        + "itself, expose the /mqtt endpoint")
+            + "itself, expose the /mqtt endpoint")
     void testMqttRestDisabledByDefault() {
         RegisterPlugin annotation = MqttRestService.class.getAnnotation(RegisterPlugin.class);
         assertFalse(annotation.enabledByDefault(),
-            "mqtt-rest must opt in separately from mqtt-client, so that a consumer of the "
-                + "injectable mqtt-router alone (e.g. examples/mqtt-logger) does not get /mqtt "
-                + "exposed as an unrequested side effect of enabling mqtt-client");
+                "mqtt-rest must opt in separately from mqtt-client, so that a consumer of the "
+                        + "injectable mqtt-router alone (e.g. examples/mqtt-logger) does not get /mqtt "
+                        + "exposed as an unrequested side effect of enabling mqtt-client");
     }
 
     @Test
     @DisplayName("Tier 2: mqtt-mongo-writer is disabled by default, so arming the module does "
-        + "not, by itself, start persisting MQTT traffic to MongoDB")
+            + "not, by itself, start persisting MQTT traffic to MongoDB")
     void testMqttMongoWriterDisabledByDefault() {
         RegisterPlugin annotation = MqttMongoWriter.class.getAnnotation(RegisterPlugin.class);
         assertFalse(annotation.enabledByDefault(),
-            "mqtt-mongo-writer must opt in separately from mqtt-client, so that a consumer of the "
-                + "injectable mqtt-router alone (e.g. examples/mqtt-logger) does not get every "
-                + "message it publishes silently written to MongoDB as an unrequested side effect "
-                + "of enabling mqtt-client");
+                "mqtt-mongo-writer must opt in separately from mqtt-client, so that a consumer of the "
+                        + "injectable mqtt-router alone (e.g. examples/mqtt-logger) does not get every "
+                        + "message it publishes silently written to MongoDB as an unrequested side effect "
+                        + "of enabling mqtt-client");
     }
 
     @Test
     @DisplayName("mqtt-topic-authorizer is NOT disabled by default: leaving it enabled while "
-        + "mqtt-sse/mqtt-rest are off is a security decision, not an inconsistency to \"fix\"")
+            + "mqtt-sse/mqtt-rest are off is a security decision, not an inconsistency to \"fix\"")
     void testMqttTopicAuthorizerNotDisabledByDefaultIsASecurityDecision() {
         RegisterPlugin annotation = MqttTopicAuthorizer.class.getAnnotation(RegisterPlugin.class);
         assertTrue(annotation.enabledByDefault(),
-            "mqtt-topic-authorizer must keep enabledByDefault = true even though every other mqtt "
-                + "plugin defaults to false: its resolve() only matches /mqtt and /mqtt-sse, so "
-                + "while those Tier 2 endpoints are off it is never invoked and costs nothing; but "
-                + "the moment an operator opts one of them back in, this interceptor must already "
-                + "be active and fail closed with no ACL configured, otherwise there would be a "
-                + "window - however brief - where a re-enabled endpoint is reachable with topic "
-                + "access completely unchecked. Do not disable this by default for consistency "
-                + "with the other five plugins; that would reopen exactly that fail-open window");
+                "mqtt-topic-authorizer must keep enabledByDefault = true even though every other mqtt "
+                        + "plugin defaults to false: its resolve() only matches /mqtt and /mqtt-sse, so "
+                        + "while those Tier 2 endpoints are off it is never invoked and costs nothing; but "
+                        + "the moment an operator opts one of them back in, this interceptor must already "
+                        + "be active and fail closed with no ACL configured, otherwise there would be a "
+                        + "window - however brief - where a re-enabled endpoint is reachable with topic "
+                        + "access completely unchecked. Do not disable this by default for consistency "
+                        + "with the other five plugins; that would reopen exactly that fail-open window");
     }
 }
