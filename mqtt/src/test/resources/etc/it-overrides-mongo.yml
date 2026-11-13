@@ -1,0 +1,67 @@
+# RESTHeart configuration overrides for MqttMongoWriterIT, the one mqtt IT that exercises
+# mqtt-mongo-writer end to end and therefore needs a real MongoDB.
+#
+# Applied with `-o` to the core/target/restheart.jar that MqttITBase launches as a subprocess.
+# Unlike it-overrides.yml, MqttMongoWriterIT overrides standalone() to false, so the server is
+# started WITHOUT --standalone: Bootstrapper then loads restheart-default-config.yml (with
+# MongoDB) instead of restheart-default-config-no-mongodb.yml.
+#
+# NOT set here: /core/plugins-directory, for the same reason it-overrides.yml does not set it -
+# see that file's own comment.
+
+---
+# Same admin block as it-overrides.yml: fileRealmAuthenticator ships its built-in "admin" user
+# with password: null (disabled), so it is redeclared here with a real password and the roles the
+# mqtt topic ACL below grants by.
+/fileRealmAuthenticator:
+  enabled: true
+  users:
+    - userid: admin
+      password: secret
+      roles: [admin, user]
+
+# Without --standalone, restheart-default-config.yml wires /basicAuthMechanism/authenticator to
+# mongoRealmAuthenticator, which would try to provision its own admin user directly in MongoDB.
+# Forcing the file realm here keeps authentication identical to every other mqtt IT - this test is
+# about mqtt-mongo-writer, not about mongoRealmAuthenticator - and matches what
+# core/src/test/resources/etc/conf-overrides.yml does for the same reason.
+/basicAuthMechanism/authenticator: fileRealmAuthenticator
+
+# INFO, not DEBUG - see it-overrides.yml's comment; the same log-scraping concern applies here in
+# principle even though this class does not currently scrape the log itself.
+/logging/log-level: INFO
+/logging/no-colors: true
+
+# --- restheart-mqtt ---------------------------------------------------------------------
+# The module is dormant on installation: mqtt-client is enabledByDefault=false.
+/mqtt-client/enabled: true
+/mqtt-client/broker-url: tcp://localhost:1883
+
+# mqtt-router is gated explicitly rather than following mqtt-client through the provider graph -
+# see it-overrides.yml's comment on the same line. No /mqtt-router/subscriptions entry is set
+# here, unlike it-overrides.yml: that block exists purely to fill the last-message cache for
+# mqtt-rest's late joiners (see MqttRestLastValueIT), and mqtt-rest/mqtt-sse are not enabled in
+# this file at all - MqttMongoWriterIT proves persistence, not the REST/SSE surface, so it needs
+# neither. mqtt-mongo-writer subscribes to its own configured sinks directly, via router.subscribe
+# in its @OnInit (see MqttMongoWriter#onInit), which is on its own sufficient to make the router
+# issue the broker subscription this test relies on - a redundant subscriptions entry here would
+# duplicate, not enable, that.
+/mqtt-router/enabled: true
+
+# mqtt-topic-authorizer is enabledByDefault=true and fails closed with no acl at all, but this
+# class never calls /mqtt-sse or /mqtt (both are left off, see above), so no acl entry is needed
+# for it here.
+
+# The plugin under test. topic sensors/# matches the same "sensors/" prefix every other mqtt IT
+# uses for its own topics, so MqttMongoWriterIT's own literal (chosen unique to this class, per
+# MqttITBase's convention) is guaranteed to be in scope.
+/mqtt-mongo-writer/enabled: true
+/mqtt-mongo-writer/mongo-sink:
+  - topic: "sensors/#"
+    database: "test-mqtt"
+    collection: "sensor-events"
+
+# NOT set here: /mclient/connection-string. The MongoDB container's host port is assigned by
+# Testcontainers at runtime and cannot be known when this static file is written - exactly the
+# same reasoning it-overrides.yml gives for broker-url. MqttMongoWriterIT supplies it through the
+# extraRho() hook instead, once its container has actually started.

@@ -1,0 +1,15 @@
+<configuration>
+    <!-- Keep RESTHeart MQTT logs at DEBUG for test visibility -->
+    <logger name="org.restheart.mqtt" level="DEBUG" />
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- %ex{5}: bound stack traces so intentionally-triggered test exceptions don't dump the full JUnit/Surefire chain -->
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%ex{5}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+</configuration>
