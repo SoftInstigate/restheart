@@ -118,6 +118,7 @@ class JwtHelperTest {
         assertNull(decoded.getClaim("password").asString());
         assertEquals("pro", decoded.getClaim("plan").asString());
     }
+
     @Test
     void theActiveTeamIsNotAClaimUnlessListed() {
         // since 9.12.0 no issuer adds the team on its own: a rule reads @team, a deployment that wants

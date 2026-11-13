@@ -112,7 +112,7 @@ public class RhLogger {
 
         var out = new Object[args.length];
 
-        for (var i = 0; i < args.length; i++) {
+        for (var i = 0;i < args.length;i++) {
             out[i] = format(args[i]);
         }
 

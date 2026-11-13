@@ -369,7 +369,7 @@ public class RegisterService implements JsonService {
         if (email.length() > EMAIL_MAX || !EMAIL.matcher(email).matches()) {
             return "Invalid email address";
         }
-        for (var field : new String[][] { { "firstName", firstName }, { "lastName", lastName }, { "teamName", teamName } }) {
+        for (var field : new String[][]{{"firstName", firstName}, {"lastName", lastName}, {"teamName", teamName}}) {
             var value = field[1];
             if (value.length() > NAME_MAX) {
                 return field[0] + ": at most " + NAME_MAX + " characters";

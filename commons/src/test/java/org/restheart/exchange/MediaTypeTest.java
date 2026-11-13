@@ -36,16 +36,16 @@ public class MediaTypeTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "application/json",
-        "application/json; charset=utf-8",
-        "Application/JSON",
-        "application/json ;charset=UTF-8",
-        "application/problem+json",
-        "application/vnd.api+json",
-        "application/vnd.benchmark+json; charset=utf-8",
-        "application/hal+json",
-        "text/x-json",
-        "application/jsonrequest"
+            "application/json",
+            "application/json; charset=utf-8",
+            "Application/JSON",
+            "application/json ;charset=UTF-8",
+            "application/problem+json",
+            "application/vnd.api+json",
+            "application/vnd.benchmark+json; charset=utf-8",
+            "application/hal+json",
+            "text/x-json",
+            "application/jsonrequest"
     })
     public void jsonMediaTypes(String contentType) {
         assertTrue(Exchange.isJsonMediaType(contentType), contentType);
@@ -54,17 +54,17 @@ public class MediaTypeTest {
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = {
-        "",
-        " ",
-        "text/plain",
-        "application/xml",
-        "application/x-www-form-urlencoded",
-        "application/jsonp",
-        "application/json-patch",
-        "/+json",
-        "application/+json",
-        "+json",
-        "multipart/form-data; boundary=x"
+            "",
+            " ",
+            "text/plain",
+            "application/xml",
+            "application/x-www-form-urlencoded",
+            "application/jsonp",
+            "application/json-patch",
+            "/+json",
+            "application/+json",
+            "+json",
+            "multipart/form-data; boundary=x"
     })
     public void notJsonMediaTypes(String contentType) {
         assertFalse(Exchange.isJsonMediaType(contentType), String.valueOf(contentType));

@@ -261,7 +261,7 @@ public class RhCollection {
 
         var models = new ArrayList<WriteModel<BsonDocument>>();
 
-        for (var i = 0L; i < operations.getArraySize(); i++) {
+        for (var i = 0L;i < operations.getArraySize();i++) {
             var op = operations.getArrayElement(i);
             if (op.hasMember("insertOne")) {
                 models.add(new InsertOneModel<>(document(op.getMember("insertOne").getMember("document"), "document")));
@@ -367,7 +367,7 @@ public class RhCollection {
 
         var docs = new ArrayList<BsonDocument>();
 
-        for (var i = 0L; i < v.getArraySize(); i++) {
+        for (var i = 0L;i < v.getArraySize();i++) {
             docs.add(document(v.getArrayElement(i), what + "[" + i + "]"));
         }
 
@@ -408,7 +408,7 @@ public class RhCollection {
     /** A result object from key, value pairs; a null value is kept, as a null member. */
     private static Object result(Object... kv) {
         var m = new LinkedHashMap<String, Object>();
-        for (var i = 0; i < kv.length; i += 2) {
+        for (var i = 0;i < kv.length;i += 2) {
             m.put((String) kv[i], kv[i + 1]);
         }
         return new MapProxy(m);

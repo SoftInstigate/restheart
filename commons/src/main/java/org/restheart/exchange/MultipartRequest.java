@@ -186,7 +186,7 @@ public class MultipartRequest extends ServiceRequest<FormData> {
 
         // the boundary alphabet excludes ';', so splitting on it is safe
         final var params = contentType.split(";");
-        for (int i = 1; i < params.length; i++) {
+        for (int i = 1;i < params.length;i++) {
             final var param = params[i];
             final int eq = param.indexOf('=');
 
@@ -231,7 +231,7 @@ public class MultipartRequest extends ServiceRequest<FormData> {
             return false;
         }
 
-        for (int i = 0; i < len; i++) {
+        for (int i = 0;i < len;i++) {
             final char c = boundary.charAt(i);
             final boolean alnum = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 

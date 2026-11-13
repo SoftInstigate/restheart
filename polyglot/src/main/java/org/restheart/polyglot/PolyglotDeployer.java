@@ -557,8 +557,8 @@ public class PolyglotDeployer implements Initializer {
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
             LOGGER.info(ansi().fg(GREEN)
-                    .a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}. Content: {}{}")
-                    .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy(),
+                            .a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}. Content: {}{}")
+                            .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy(),
                     def.contentKind().key(), def.sdk() ? "" : " (legacy plugin, see the JavaScript SDK docs)");
         } catch (PluginLoader.MissingCapabilityException e) {
             LOGGER.error("Service not deployed: {}", e.getMessage());

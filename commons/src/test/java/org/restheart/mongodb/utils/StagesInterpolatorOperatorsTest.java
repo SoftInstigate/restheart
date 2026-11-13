@@ -35,18 +35,18 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class StagesInterpolatorOperatorsTest {
     @ParameterizedTest
     @ValueSource(strings = {
-        "{\"v\": \"A\"}",
-        "{\"v\": 5}",
-        "{\"v\": \"$\"}",
-        "{\"v\": \"$ 5\"}",
-        "{\"v\": \"costs $5\"}",
-        "{\"v\": {\"a\": [1, \"x\", {\"b\": \"$ \"}]}}",
-        "{\"v\": {\"$oid\": \"5f0c2b1e9d3b2a1c4e8f7a6b\"}}",
-        "{\"v\": {\"$date\": \"2026-11-09T00:00:00Z\"}}",
-        "{\"v\": \"$5\"}",
-        "{\"v\": \"$name\"}",
-        "{\"v\": \"$$ROOT\"}",
-        "{\"v\": [\"a\", \"$name\"]}"
+            "{\"v\": \"A\"}",
+            "{\"v\": 5}",
+            "{\"v\": \"$\"}",
+            "{\"v\": \"$ 5\"}",
+            "{\"v\": \"costs $5\"}",
+            "{\"v\": {\"a\": [1, \"x\", {\"b\": \"$ \"}]}}",
+            "{\"v\": {\"$oid\": \"5f0c2b1e9d3b2a1c4e8f7a6b\"}}",
+            "{\"v\": {\"$date\": \"2026-11-09T00:00:00Z\"}}",
+            "{\"v\": \"$5\"}",
+            "{\"v\": \"$name\"}",
+            "{\"v\": \"$$ROOT\"}",
+            "{\"v\": [\"a\", \"$name\"]}"
     })
     public void allowed(String json) {
         assertDoesNotThrow(() -> StagesInterpolator.shouldNotContainOperators(BsonDocument.parse(json)));
@@ -54,9 +54,9 @@ public class StagesInterpolatorOperatorsTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "{\"v\": {\"$gt\": \"\"}}",
-        "{\"v\": {\"a\": {\"$ne\": null}}}",
-        "{\"v\": [{\"$gt\": 1}]}"
+            "{\"v\": {\"$gt\": \"\"}}",
+            "{\"v\": {\"a\": {\"$ne\": null}}}",
+            "{\"v\": [{\"$gt\": 1}]}"
     })
     public void refused(String json) {
         assertThrows(SecurityException.class, () -> StagesInterpolator.shouldNotContainOperators(BsonDocument.parse(json)));

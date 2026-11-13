@@ -154,7 +154,7 @@ public final class GuestValues {
             return new BsonBinary(typedBytes(v));
         } else if (v.hasArrayElements()) {
             var a = new BsonArray();
-            for (var i = 0L; i < v.getArraySize(); i++) {
+            for (var i = 0L;i < v.getArraySize();i++) {
                 a.add(toBson(v.getArrayElement(i)));
             }
             return a;
@@ -375,7 +375,7 @@ public final class GuestValues {
             return new JsonPrimitive(Base64.getEncoder().encodeToString(typedBytes(v)));
         } else if (v.hasArrayElements()) {
             var a = new JsonArray();
-            for (var i = 0L; i < v.getArraySize(); i++) {
+            for (var i = 0L;i < v.getArraySize();i++) {
                 a.add(toJson(v.getArrayElement(i)));
             }
             return a;
@@ -458,7 +458,7 @@ public final class GuestValues {
             return ja.array();
         } else if (o instanceof org.graalvm.polyglot.proxy.ProxyArray pa) {
             var a = new JsonArray();
-            for (var i = 0L; i < pa.getSize(); i++) {
+            for (var i = 0L;i < pa.getSize();i++) {
                 a.add(javaToJson(pa.get(i)));
             }
             return a;
@@ -508,7 +508,7 @@ public final class GuestValues {
         } else if (v.hasArrayElements()) {
             var size = (int) v.getArraySize();
             var bytes = new byte[size];
-            for (var i = 0; i < size; i++) {
+            for (var i = 0;i < size;i++) {
                 bytes[i] = (byte) v.getArrayElement(i).asInt();
             }
             return bytes;
@@ -529,7 +529,7 @@ public final class GuestValues {
     private static byte[] typedBytes(Value v) {
         var size = (int) v.getArraySize();
         var bytes = new byte[size];
-        for (var i = 0; i < size; i++) {
+        for (var i = 0;i < size;i++) {
             bytes[i] = (byte) v.getArrayElement(i).asInt();
         }
         return bytes;
@@ -538,7 +538,7 @@ public final class GuestValues {
     private static byte[] bufferBytes(Value v) {
         var size = (int) v.getBufferSize();
         var bytes = new byte[size];
-        for (var i = 0; i < size; i++) {
+        for (var i = 0;i < size;i++) {
             bytes[i] = v.readBufferByte(i);
         }
         return bytes;

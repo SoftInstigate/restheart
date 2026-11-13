@@ -285,7 +285,7 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
     public static String variableClaimName(String entry) {
         var rest = entry.substring(1);
 
-        for (var i = 0; i < rest.length(); i++) {
+        for (var i = 0;i < rest.length();i++) {
             var c = rest.charAt(i);
             if (c == '.' || c == '(' || c == '[') {
                 return rest.substring(0, i);

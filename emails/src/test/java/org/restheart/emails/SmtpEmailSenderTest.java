@@ -181,7 +181,9 @@ class SmtpEmailSenderTest {
     @Test
     void permitted_refusesARequestEmailWhenTheGateFails() throws Exception {
         sender = new SmtpEmailSender();
-        setGate(sender, (r, to, own) -> { throw new IllegalStateException("db down"); });
+        setGate(sender, (r, to, own) -> {
+            throw new IllegalStateException("db down");
+        });
 
         assertFalse(permitted(sender, mock(Request.class), "to@example.com"));
     }
@@ -189,7 +191,9 @@ class SmtpEmailSenderTest {
     @Test
     void permitted_sendsANoticeWithNoRequestWhenTheGateFails() throws Exception {
         sender = new SmtpEmailSender();
-        setGate(sender, (r, to, own) -> { throw new IllegalStateException("db down"); });
+        setGate(sender, (r, to, own) -> {
+            throw new IllegalStateException("db down");
+        });
 
         assertTrue(permitted(sender, null, "ops@example.com"));
     }
@@ -197,8 +201,11 @@ class SmtpEmailSenderTest {
     @Test
     void permitted_tellsTheGateOwnSenderOnlyForACompleteSmtpServer() throws Exception {
         sender = new SmtpEmailSender();
-        var seen = new boolean[] { true };
-        setGate(sender, (r, to, own) -> { seen[0] = own; return EmailGate.Decision.allow(); });
+        var seen = new boolean[]{true};
+        setGate(sender, (r, to, own) -> {
+            seen[0] = own;
+            return EmailGate.Decision.allow();
+        });
 
         Request<?> partial = mock(Request.class);
         when(partial.attachedParam("override-emails-sender-email")).thenReturn("anything@example.com");

@@ -603,7 +603,7 @@ public class McpService implements ByteArrayService {
                 var scope = effectiveScope(ctx);
                 if (maxSubscriptionsPerScope > 0 && subscriptions(scope) >= maxSubscriptionsPerScope) {
                     writeJsonRpcError(res, rpc, "too many subscriptions: %d alive in this scope, %d allowed. Unsubscribe from one first"
-                        .formatted(subscriptions(scope), maxSubscriptionsPerScope));
+                            .formatted(subscriptions(scope), maxSubscriptionsPerScope));
                     return false;
                 }
 

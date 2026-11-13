@@ -425,7 +425,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             if (maxSessions > 0 && sessions.size() >= maxSessions) {
                 try {
                     var error = new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
-                        "too many MCP sessions: %d alive, %d allowed. End one with DELETE, or wait for an idle one to expire".formatted(sessions.size(), maxSessions));
+                            "too many MCP sessions: %d alive, %d allowed. End one with DELETE, or wait for an idle one to expire".formatted(sessions.size(), maxSessions));
                     res.setContentType("application/json");
                     res.setContent(jsonMapper.writeValueAsString(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, rpcReq.id(), null, error)));
                 } catch (Exception e) {

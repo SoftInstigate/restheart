@@ -34,7 +34,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -258,7 +257,7 @@ public class OAuthCallback implements StringService {
                             req.attachedParams(),
                             activated,
                             RequestOverrides.accountPropertiesClaims(req, conf),
-                req);
+                            req);
                     setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin", callbackResult.returnTo());
                     return;
                 }
@@ -291,7 +290,7 @@ public class OAuthCallback implements StringService {
                         req.attachedParams(),
                         db(req).findUser(email).orElse(user),
                         RequestOverrides.accountPropertiesClaims(req, conf),
-                req);
+                        req);
                 setAuthCookieAndRedirect(res, req, jwtToken, "signin", callbackResult.returnTo());
                 return;
             }
@@ -303,7 +302,7 @@ public class OAuthCallback implements StringService {
                     req.attachedParams(),
                     user,
                     RequestOverrides.accountPropertiesClaims(req, conf),
-                req);
+                    req);
             setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin", callbackResult.returnTo());
 
         } catch (OAuthService.OAuthException e) {
