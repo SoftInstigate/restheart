@@ -72,7 +72,7 @@ public class MqttLoggerService implements JsonService {
     public void init() {
         // With no "mqtt-logger" block in the configuration - the ordinary case for a plugin that is
         // enabled by default and has a sensible default topic - the injected config is an empty
-        // map, so getOrDefault is all that is needed. Before RESTHeart 10 it was null instead, and
+        // map, so getOrDefault is all that is needed. Up to RESTHeart 9.17 it was null instead, and
         // this line threw inside @OnInit and stopped the whole server from starting (#732).
         subscribedTopic = (String) config.getOrDefault("topic", DEFAULT_TOPIC);
 
