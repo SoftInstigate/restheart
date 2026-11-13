@@ -29,16 +29,19 @@ name: restheart-mqtt
 services:
   # RESTHeart API server, with the mqtt plugin mounted and enabled
   restheart:
-    # softinstigate/restheart-snapshot:latest, not softinstigate/restheart:latest.
-    # Per-topic ACL enforcement on /mqtt-sse needs the mqtt-topic-authorizer /
-    # SseWildcardInterceptorsExecutor fix, which is on unreleased master and not
-    # yet in any released restheart:* image; restheart-snapshot:latest is built
-    # from master on every push to it (.github/workflows/branch.yml), so it has
-    # the fix. Against restheart:latest, a topic outside the ACL is silently
-    # accepted on /mqtt-sse instead of rejected with 403 - do not "tidy" this
-    # back to restheart:latest, that would quietly reopen that hole. Once a
-    # release contains the fix, this can move back to the released image.
-    image: softinstigate/restheart-snapshot:latest
+    # The released image by default. When this checkout is ahead of the latest
+    # release (on master, typically), run the core built from master instead:
+    #
+    #     RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest docker compose up
+    #
+    # restheart-snapshot:latest is built from master on every push to it
+    # (.github/workflows/branch.yml).
+    #
+    # Never an image older than 9.9.0. Per-topic ACL enforcement on /mqtt-sse
+    # needs SseWildcardInterceptorsExecutor, which RESTHeart has from 9.9.0;
+    # before it, a topic outside the ACL is silently accepted on /mqtt-sse
+    # instead of rejected with 403.
+    image: ${RESTHEART_IMAGE:-softinstigate/restheart:latest}
     # No CMD in core/Dockerfile's ENTRYPOINT, so this is appended as an
     # argument to `java -jar restheart.jar`. --standalone (-s) makes
     # Bootstrapper load restheart-default-config-no-mongodb.yml, which needs

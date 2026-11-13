@@ -37,7 +37,7 @@ cp examples/mqtt-logger/target/mqtt-logger.jar core/target/plugins/mqtt/
 java -jar core/target/restheart.jar -s
 ```
 
-The `lib/` directory is not optional. It holds `hivemq-mqtt-client` and its Netty and RxJava dependencies; without them `mqtt-client` cannot be loaded. The subdirectory keeps those jars out of the shared `plugins/lib`, and the plugin scanner treats any `lib` directory as classpath-only, so the layout above is picked up as it is — it is the same layout the module's installable archive and its integration tests use.
+The `lib/` directory is not optional. It holds `hivemq-mqtt-client` and its Netty and RxJava dependencies; without them `mqtt-client` cannot be loaded. The subdirectory keeps those jars out of the shared `plugins/lib`, and the plugin scanner treats any `lib` directory as classpath-only, so the layout above is picked up as it is — it is the same layout the module's installable archive and its integration tests use. In a RESTHeart you did not build yourself, install that archive instead of copying from `mqtt/target`: see "Installing" in the [module README](../../mqtt/README.md#installing).
 
 The server requires an MQTT broker running on `localhost:1883` (the default), and configuration to enable the `mqtt-client` and `mqtt-router` providers and this plugin. See `mqtt/README.md` for full configuration details.
 
