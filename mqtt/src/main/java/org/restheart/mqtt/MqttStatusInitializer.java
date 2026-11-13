@@ -79,10 +79,20 @@ public class MqttStatusInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttStatusInitializer.class);
 
     /**
+     * Name of the plugin that builds the MQTT client, the root of the module's injection graph.
+     */
+    private static final String CLIENT_PLUGIN_NAME = "mqtt-client";
+
+    /**
+     * Name of the plugin that persists MQTT messages to MongoDB.
+     */
+    private static final String MONGO_WRITER_PLUGIN_NAME = "mqtt-mongo-writer";
+
+    /**
      * The six plugins that make up the {@code mqtt} module, in the order they are reported.
      */
     private static final List<String> MQTT_PLUGIN_NAMES = List.of(
-            "mqtt-client", "mqtt-router", "mqtt-sse", "mqtt-rest", "mqtt-mongo-writer",
+            CLIENT_PLUGIN_NAME, "mqtt-router", "mqtt-sse", "mqtt-rest", MONGO_WRITER_PLUGIN_NAME,
             "mqtt-topic-authorizer", "mqtt-connector");
 
     /**
@@ -157,7 +167,7 @@ public class MqttStatusInitializer implements Initializer {
         var confMap = config.toMap();
         var findings = new ArrayList<Finding>();
 
-        var clientActive = isActive(registry, "mqtt-client");
+        var clientActive = isActive(registry, CLIENT_PLUGIN_NAME);
         // Unconditional, deliberately. This module is not part of the RESTHeart distribution: its
         // jar is on the classpath only because someone installed it on purpose, so its mere
         // presence IS the expression of intent - and an operator who installed it and configured
@@ -194,7 +204,7 @@ public class MqttStatusInitializer implements Initializer {
         // that fires immediately instead of after the delay they asked for. Same shape as the
         // plugins-args trap this sentinel was written for - a configuration that is silently
         // inert - which is why it belongs here rather than in MqttClientSingleton.
-        var clientBlock = asMap(confMap.get("mqtt-client"));
+        var clientBlock = asMap(confMap.get(CLIENT_PLUGIN_NAME));
         if (clientBlock != null && asInt(clientBlock.get("protocol-version"), 3) != 5) {
             var willBlock = asMap(clientBlock.get("will"));
             var mqtt5OnlyKeys = new ArrayList<String>();
@@ -228,13 +238,13 @@ public class MqttStatusInitializer implements Initializer {
 
         var restActive = isActive(registry, "mqtt-rest");
         var sseActive = isActive(registry, "mqtt-sse");
-        var mongoWriterActive = isActive(registry, "mqtt-mongo-writer");
+        var mongoWriterActive = isActive(registry, MONGO_WRITER_PLUGIN_NAME);
 
         var routerBlock = asMap(confMap.get("mqtt-router"));
         var lastMessageCacheEnabled = asBoolean(routerBlock == null ? null : routerBlock.get("last-message-cache"), true);
         var hasSubscriptions = isNonEmptyList(routerBlock == null ? null : routerBlock.get("subscriptions"));
 
-        var mongoWriterBlock = asMap(confMap.get("mqtt-mongo-writer"));
+        var mongoWriterBlock = asMap(confMap.get(MONGO_WRITER_PLUGIN_NAME));
         var hasMongoSink = isNonEmptyList(mongoWriterBlock == null ? null : mongoWriterBlock.get("mongo-sink"));
 
         if (restActive && (!lastMessageCacheEnabled || (!hasSubscriptions && !hasMongoSink && !sseActive))) {

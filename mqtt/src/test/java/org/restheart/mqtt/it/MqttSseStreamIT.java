@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttSseStreamIT extends MqttITBase {
+class MqttSseStreamIT extends MqttITBase {
 
     @Test
     void publishedMessageArrivesOverSse() throws Exception {

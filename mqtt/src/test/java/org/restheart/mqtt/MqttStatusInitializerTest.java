@@ -30,9 +30,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.restheart.configuration.Configuration;
 import org.restheart.mqtt.MqttStatusInitializer.Finding;
 import org.restheart.mqtt.MqttStatusInitializer.Level;
@@ -58,7 +62,7 @@ import org.restheart.plugins.SseService;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttStatusInitializerTest {
+class MqttStatusInitializerTest {
 
     private static Configuration configOf(Map<String, Object> confMap) {
         var config = mock(Configuration.class);
@@ -310,28 +314,26 @@ public class MqttStatusInitializerTest {
 
     // --- Case 5: mqtt-sse/mqtt-rest active with no ACL ---
 
-    @Test
-    @DisplayName("Case 5: mqtt-sse active with mqtt-topic-authorizer.acl absent -> WARN about 403")
-    void testSseActiveWithAbsentAcl() {
-        var config = configOf(Map.of());
-        var registry = registryWithActive("mqtt-client", "mqtt-sse", "mqtt-topic-authorizer");
-
-        var findings = MqttStatusInitializer.findings(config, registry);
-
-        assertTrue(anyWarnContaining(findings, "403"));
+    static Stream<Arguments> endpointsActiveWithNoAcl() {
+        Map<String, Object> emptyAcl = new HashMap<>();
+        emptyAcl.put("mqtt-topic-authorizer", Map.of("acl", Map.of()));
+        return Stream.of(
+                Arguments.of("mqtt-sse", "absent", Map.of()),
+                Arguments.of("mqtt-rest", "an empty map", emptyAcl));
     }
 
-    @Test
-    @DisplayName("Case 5: mqtt-rest active with mqtt-topic-authorizer.acl an empty map -> WARN about 403")
-    void testRestActiveWithEmptyAcl() {
-        Map<String, Object> confMap = new HashMap<>();
-        confMap.put("mqtt-topic-authorizer", Map.of("acl", Map.of()));
+    @ParameterizedTest(name = "Case 5: {0} active with mqtt-topic-authorizer.acl {1} -> WARN about 403")
+    @MethodSource("endpointsActiveWithNoAcl")
+    @DisplayName("Case 5: mqtt-sse or mqtt-rest active with mqtt-topic-authorizer.acl absent or an empty map "
+            + "-> WARN about 403")
+    void testEndpointActiveWithNoAcl(String endpoint, String aclState, Map<String, Object> confMap) {
         var config = configOf(confMap);
-        var registry = registryWithActive("mqtt-client", "mqtt-rest", "mqtt-topic-authorizer");
+        var registry = registryWithActive("mqtt-client", endpoint, "mqtt-topic-authorizer");
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
-        assertTrue(anyWarnContaining(findings, "403"));
+        assertTrue(anyWarnContaining(findings, "403"),
+                endpoint + " active with mqtt-topic-authorizer.acl " + aclState + " must WARN about 403");
     }
 
     @Test

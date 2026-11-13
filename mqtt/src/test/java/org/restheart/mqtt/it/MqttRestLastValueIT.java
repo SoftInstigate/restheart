@@ -48,7 +48,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttRestLastValueIT extends MqttITBase {
+class MqttRestLastValueIT extends MqttITBase {
 
     @Test
     void missingTopicParameterIsBadRequest() throws Exception {

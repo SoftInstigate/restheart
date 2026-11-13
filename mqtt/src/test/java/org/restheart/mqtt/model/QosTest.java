@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class QosTest {
+class QosTest {
 
     @Test
     @DisplayName("code() returns the wire value each constant is named after")

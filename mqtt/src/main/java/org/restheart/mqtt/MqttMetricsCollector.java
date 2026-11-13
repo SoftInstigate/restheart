@@ -59,6 +59,7 @@ public class MqttMetricsCollector implements Initializer {
      * Default constructor used by RESTHeart plugin instantiation.
      */
     public MqttMetricsCollector() {
+        // nothing to do: RESTHeart instantiates the plugin through this no-arg constructor
     }
 
     /**

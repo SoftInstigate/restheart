@@ -22,6 +22,7 @@
 package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -51,7 +52,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttClientSingletonTest {
+class MqttClientSingletonTest {
 
     private static MqttConfig minimalConfig() {
         return new MqttConfig.Builder()
@@ -88,7 +89,7 @@ public class MqttClientSingletonTest {
     }
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         // trigger holder construction if this is the very first access in the JVM; the
         // constructor never throws, so no static state needs to be set up beforehand
         MqttClientSingleton.getInstance();
@@ -101,7 +102,7 @@ public class MqttClientSingletonTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         resetInstanceState();
         setStatic("initialized", false);
         setStatic("config", null);
@@ -109,26 +110,26 @@ public class MqttClientSingletonTest {
 
     @Test
     @DisplayName("getClient() before initialization throws IllegalStateException naming the mqtt-client plugin")
-    public void testGetClientBeforeInitThrows() {
-        var ex = assertThrows(IllegalStateException.class,
-                () -> MqttClientSingleton.getInstance().getClient());
+    void testGetClientBeforeInitThrows() {
+        MqttClientSingleton singleton = MqttClientSingleton.getInstance();
+        var ex = assertThrows(IllegalStateException.class, singleton::getClient);
         assertTrue(ex.getMessage().contains("mqtt-client"));
     }
 
     @Test
     @DisplayName("getClient() after init() but before a client has been built still throws IllegalStateException")
-    public void testGetClientAfterInitBeforeConnectThrows() throws Exception {
+    void testGetClientAfterInitBeforeConnectThrows() throws Exception {
         setStatic("initialized", true);
         setStatic("config", minimalConfig());
 
-        var ex = assertThrows(IllegalStateException.class,
-                () -> MqttClientSingleton.getInstance().getClient());
+        MqttClientSingleton singleton = MqttClientSingleton.getInstance();
+        var ex = assertThrows(IllegalStateException.class, singleton::getClient);
         assertTrue(ex.getMessage().contains("mqtt-client"));
     }
 
     @Test
     @DisplayName("close() is a no-op when the client was never connected")
-    public void testCloseWithoutConnectIsSafe() throws Exception {
+    void testCloseWithoutConnectIsSafe() throws Exception {
         setStatic("initialized", true);
         setStatic("config", minimalConfig());
 
@@ -137,7 +138,7 @@ public class MqttClientSingletonTest {
 
     @Test
     @DisplayName("close() is safe to call twice")
-    public void testCloseCalledTwiceIsSafe() throws Exception {
+    void testCloseCalledTwiceIsSafe() throws Exception {
         setStatic("initialized", true);
         setStatic("config", minimalConfig());
 
@@ -148,10 +149,10 @@ public class MqttClientSingletonTest {
 
     @Test
     @DisplayName("isConnected() is false before any connection attempt")
-    public void testIsConnectedFalseInitially() throws Exception {
+    void testIsConnectedFalseInitially() throws Exception {
         setStatic("initialized", true);
         setStatic("config", minimalConfig());
 
-        assertTrue(!MqttClientSingleton.getInstance().isConnected());
+        assertFalse(MqttClientSingleton.getInstance().isConnected());
     }
 }

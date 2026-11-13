@@ -20,6 +20,7 @@
  */
 package org.restheart.mqtt.it;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -82,7 +83,7 @@ import com.github.dockerjava.api.model.ExposedPort;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttReconnectIT extends MqttITBase {
+class MqttReconnectIT extends MqttITBase {
 
     /**
      * The topic filter {@code mqtt-router.subscriptions} establishes in {@code it-overrides.yml},
@@ -137,7 +138,7 @@ public class MqttReconnectIT extends MqttITBase {
         // a port nothing listens on - and this check is what names the real cause instead of
         // leaving it to be inferred from a 60-second log-wait timeout.
         var brokerPortAfterOutage = currentMappedPort();
-        assertTrue(brokerPortAfterOutage.equals(brokerPortBeforeOutage),
+        assertEquals(brokerPortBeforeOutage, brokerPortAfterOutage,
                 "the broker's mapped port must not change across a stop/start of the same container "
                         + "(before=" + brokerPortBeforeOutage + ", after=" + brokerPortAfterOutage + "); "
                         + "otherwise RESTHeart's broker-url, fixed at launch, would now point at the wrong port. "

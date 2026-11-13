@@ -39,11 +39,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.metrics.Metrics;
@@ -82,7 +86,7 @@ import com.mongodb.client.model.WriteModel;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttMongoWriterTest {
+class MqttMongoWriterTest {
 
     private MqttMessage msg(String topic, String payload, int qos) {
         return new MqttMessage(topic, payload, qos, Instant.parse("2026-01-01T00:00:00Z"));
@@ -217,7 +221,7 @@ public class MqttMongoWriterTest {
         // Storing new String(bytes, UTF_8) here - the old behaviour - replaced every undecodable
         // sequence with U+FFFD, and nothing downstream could tell or undo it.
         Object payload = doc.get("payload");
-        assertTrue(payload instanceof org.bson.types.Binary, "expected BSON binary, got " + payload);
+        assertInstanceOf(org.bson.types.Binary.class, payload, "expected BSON binary, got " + payload);
         assertArrayEquals(NOT_UTF8, ((org.bson.types.Binary) payload).getData());
     }
 
@@ -522,43 +526,32 @@ public class MqttMongoWriterTest {
     // silently dropped - it must fail fast, naming the missing/invalid key and the offending
     // entry, the same way an unrecognized id-strategy already does) ---
 
-    @Test
-    @DisplayName("onInit() rejects a mongo-sink entry missing the collection key, naming the key and the entry")
-    void testOnInitRejectsMongoSinkEntryMissingCollection() throws Exception {
-        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
-        Map<String, Object> config = Map.of(
-                "id-strategy", "auto",
-                "mongo-sink", List.of(Map.of("topic", "sensors/#", "database", "iot")));
-        setField(writer, "config", config);
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
-        assertTrue(ex.getMessage().contains("collection"), "message should name the missing key");
+    static Stream<Arguments> badMongoSinkEntries() {
+        return Stream.of(
+                Arguments.of("missing the collection key, naming the key and the entry",
+                        Map.of("topic", "sensors/#", "database", "iot"),
+                        "collection", "message should name the missing key"),
+                Arguments.of("missing the topic key",
+                        Map.of("database", "iot", "collection", "sensor-events"),
+                        "topic", "message should name the missing key"),
+                Arguments.of("whose database is not a String",
+                        Map.of("topic", "sensors/#", "database", 42, "collection", "events"),
+                        "database", "message should name the offending key"));
     }
 
-    @Test
-    @DisplayName("onInit() rejects a mongo-sink entry missing the topic key")
-    void testOnInitRejectsMongoSinkEntryMissingTopic() throws Exception {
+    @ParameterizedTest(name = "onInit() rejects a mongo-sink entry {0}")
+    @MethodSource("badMongoSinkEntries")
+    @DisplayName("onInit() rejects an incomplete or malformed mongo-sink entry, naming the key")
+    void testOnInitRejectsBadMongoSinkEntry(String defect, Map<String, Object> entry, String namedKey,
+            String assertionMessage) throws Exception {
         MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
         Map<String, Object> config = Map.of(
                 "id-strategy", "auto",
-                "mongo-sink", List.of(Map.of("database", "iot", "collection", "sensor-events")));
+                "mongo-sink", List.of(entry));
         setField(writer, "config", config);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
-        assertTrue(ex.getMessage().contains("topic"), "message should name the missing key");
-    }
-
-    @Test
-    @DisplayName("onInit() rejects a mongo-sink entry whose database is not a String")
-    void testOnInitRejectsMongoSinkEntryWithNonStringDatabase() throws Exception {
-        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
-        Map<String, Object> config = Map.of(
-                "id-strategy", "auto",
-                "mongo-sink", List.of(Map.of("topic", "sensors/#", "database", 42, "collection", "events")));
-        setField(writer, "config", config);
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
-        assertTrue(ex.getMessage().contains("database"), "message should name the offending key");
+        assertTrue(ex.getMessage().contains(namedKey), assertionMessage);
     }
 
     @Test
@@ -608,33 +601,27 @@ public class MqttMongoWriterTest {
     // These tests only confirm that MqttMongoWriter.flush()'s sink routing exercises that shared
     // matcher correctly for the sink-filter shapes used in this module's configuration.
 
-    @Test
-    @DisplayName("topic matching: exact match")
-    void testTopicMatchesExact() {
-        assertTrue(MqttTopicMatcher.matches("sensors/temp", "sensors/temp"));
-        assertFalse(MqttTopicMatcher.matches("sensors/humidity", "sensors/temp"));
+    static Stream<Arguments> topicMatchingCases() {
+        return Stream.of(
+                Arguments.of("exact match", "sensors/temp", "sensors/temp", true),
+                Arguments.of("exact match", "sensors/humidity", "sensors/temp", false),
+
+                Arguments.of("# wildcard matches all", "any/topic", "#", true),
+
+                Arguments.of("prefix/# wildcard", "sensors/temp", "sensors/#", true),
+                Arguments.of("prefix/# wildcard", "sensors/room1/temp", "sensors/#", true),
+                Arguments.of("prefix/# wildcard", "traffic/flow", "sensors/#", false),
+
+                Arguments.of("prefix/+ wildcard", "sensors/temp", "sensors/+", true),
+                Arguments.of("prefix/+ wildcard", "sensors/room1/temp", "sensors/+", false),
+                Arguments.of("prefix/+ wildcard", "traffic/flow", "sensors/+", false));
     }
 
-    @Test
-    @DisplayName("topic matching: # wildcard matches all")
-    void testTopicMatchesHash() {
-        assertTrue(MqttTopicMatcher.matches("any/topic", "#"));
-    }
-
-    @Test
-    @DisplayName("topic matching: prefix/# wildcard")
-    void testTopicMatchesPrefixHash() {
-        assertTrue(MqttTopicMatcher.matches("sensors/temp", "sensors/#"));
-        assertTrue(MqttTopicMatcher.matches("sensors/room1/temp", "sensors/#"));
-        assertFalse(MqttTopicMatcher.matches("traffic/flow", "sensors/#"));
-    }
-
-    @Test
-    @DisplayName("topic matching: prefix/+ wildcard")
-    void testTopicMatchesPrefixPlus() {
-        assertTrue(MqttTopicMatcher.matches("sensors/temp", "sensors/+"));
-        assertFalse(MqttTopicMatcher.matches("sensors/room1/temp", "sensors/+"));
-        assertFalse(MqttTopicMatcher.matches("traffic/flow", "sensors/+"));
+    @ParameterizedTest(name = "topic matching: {0}: matches({1}, {2}) is {3}")
+    @MethodSource("topicMatchingCases")
+    @DisplayName("topic matching: exact match, # wildcard, prefix/# wildcard, prefix/+ wildcard")
+    void testTopicMatches(String scenario, String topic, String filter, boolean expected) {
+        assertEquals(expected, MqttTopicMatcher.matches(topic, filter), "topic matching: " + scenario);
     }
 
     // --- write strategy: insertMany (auto) vs. upserting bulkWrite (dedup strategies) ---
@@ -690,7 +677,7 @@ public class MqttMongoWriterTest {
         List<WriteModel<Document>> models = modelsCaptor.getValue();
         assertEquals(2, models.size());
         for (WriteModel<Document> model : models) {
-            assertTrue(model instanceof ReplaceOneModel, "expected an upserting ReplaceOneModel, got " + model.getClass());
+            assertInstanceOf(ReplaceOneModel.class, model, "expected an upserting ReplaceOneModel, got " + model.getClass());
             ReplaceOneModel<Document> replaceModel = (ReplaceOneModel<Document>) model;
             assertTrue(replaceModel.getReplaceOptions().isUpsert(), "ReplaceOneModel must upsert");
         }

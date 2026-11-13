@@ -281,9 +281,16 @@ public class MqttMessage {
 
     @Override
     public String toString() {
+        final String payloadDescription;
+        if (payloadText != null) {
+            payloadDescription = "'" + payloadText + "'";
+        } else if (payload == null) {
+            payloadDescription = "null";
+        } else {
+            payloadDescription = payload.length + " bytes";
+        }
         return String.format("MqttMessage{topic='%s', qos=%d, receivedAt=%s, retain=%s, payload=%s}",
-                topic, qos, receivedAt, retain,
-                payloadText != null ? "'" + payloadText + "'" : (payload == null ? "null" : payload.length + " bytes"));
+                topic, qos, receivedAt, retain, payloadDescription);
     }
 
     /**

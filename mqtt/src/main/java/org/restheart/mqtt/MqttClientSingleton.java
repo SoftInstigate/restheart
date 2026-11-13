@@ -193,6 +193,7 @@ public class MqttClientSingleton {
      * </p>
      */
     private MqttClientSingleton() {
+        // nothing to do: private only to enforce the singleton, configuration arrives later through init
     }
 
     /**
@@ -415,8 +416,9 @@ public class MqttClientSingleton {
 
         // when 'tls: true' upgrades a plaintext scheme and no port is given, the default port
         // must follow the effective TLS state: tcp://host with tls:true means 8883, not 1883
+        final int tlsDefaultPort = webSocket ? 443 : 8883;
         final int defaultPortForTls = !schemeTls && tls
-                ? (webSocket ? 443 : 8883)
+                ? tlsDefaultPort
                 : defaultPort;
 
         final int port = uri.getPort() > 0 ? uri.getPort() : defaultPortForTls;

@@ -79,6 +79,9 @@ public class MqttMessageRouter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttMessageRouter.class);
 
+    /** What the logs report as the client type when there is no client at all. */
+    private static final String NO_CLIENT_TYPE = "null";
+
     /** The underlying MQTT client used to (un)subscribe on the broker. */
     private final MqttClient client;
 
@@ -195,7 +198,7 @@ public class MqttMessageRouter {
             mqtt3Client.publishes(MqttGlobalPublishFilter.ALL, this::handleMqtt3Message, true);
         } else {
             LOGGER.error("Unsupported MQTT client type: {}; unable to register publish consumer",
-                    client == null ? "null" : client.getClass().getName());
+                    client == null ? NO_CLIENT_TYPE : client.getClass().getName());
         }
     }
 
@@ -532,7 +535,7 @@ public class MqttMessageRouter {
                     });
         } else {
             LOGGER.error("Unsupported MQTT client type: {}; unable to subscribe to topic filter: {}",
-                    client == null ? "null" : client.getClass().getName(), topicFilter);
+                    client == null ? NO_CLIENT_TYPE : client.getClass().getName(), topicFilter);
         }
     }
 
@@ -567,7 +570,7 @@ public class MqttMessageRouter {
                     });
         } else {
             LOGGER.error("Unsupported MQTT client type: {}; unable to unsubscribe from topic filter: {}",
-                    client == null ? "null" : client.getClass().getName(), topicFilter);
+                    client == null ? NO_CLIENT_TYPE : client.getClass().getName(), topicFilter);
         }
     }
 

@@ -49,7 +49,7 @@ import com.mongodb.client.model.Filters;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttDurabilityIT extends MqttITBase {
+class MqttDurabilityIT extends MqttITBase {
 
     private static final String TOPIC = "sensors/durability";
     private static final String DB = "test-mqtt";

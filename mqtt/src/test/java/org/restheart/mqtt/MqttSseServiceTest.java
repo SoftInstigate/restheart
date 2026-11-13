@@ -52,6 +52,8 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.restheart.metrics.MetricNameAndLabels;
 import org.restheart.metrics.Metrics;
@@ -73,7 +75,7 @@ import org.xnio.ChannelListener;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttSseServiceTest {
+class MqttSseServiceTest {
 
     private MqttSseService service;
     private Map<String, Object> config;
@@ -175,26 +177,19 @@ public class MqttSseServiceTest {
     // as null and blow up the router's "highest QoS wins" tracking for everyone subscribed to
     // the same filter. ---
 
-    @Test
-    @DisplayName("Out-of-range QoS above 2 in query string falls back to default QoS")
-    void testAboveRangeQosFallsBackToDefault() throws Exception {
+    @ParameterizedTest(name = "Out-of-range QoS {0} in query string falls back to default QoS {1}")
+    @CsvSource({
+        "7, 1", // above 2
+        "-1, 2" // below 0
+    })
+    @DisplayName("Out-of-range QoS above 2 or below 0 in query string falls back to default QoS")
+    void testOutOfRangeQosFallsBackToDefault(int queryQos, int defaultQos) throws Exception {
         config.put("default-topic", "sensors/#");
-        config.put("default-qos", 1);
+        config.put("default-qos", defaultQos);
         callInit();
 
-        int qos = service.resolveQos(service.parseQueryString("topic=sensors/&qos=7"));
-        assertEquals(1, qos, "qos=7 is out of Qos's 0..2 range and must fall back to default-qos");
-    }
-
-    @Test
-    @DisplayName("Out-of-range QoS below 0 in query string falls back to default QoS")
-    void testBelowRangeQosFallsBackToDefault() throws Exception {
-        config.put("default-topic", "sensors/#");
-        config.put("default-qos", 2);
-        callInit();
-
-        int qos = service.resolveQos(service.parseQueryString("topic=sensors/&qos=-1"));
-        assertEquals(2, qos, "qos=-1 is out of Qos's 0..2 range and must fall back to default-qos");
+        int qos = service.resolveQos(service.parseQueryString("topic=sensors/&qos=" + queryQos));
+        assertEquals(defaultQos, qos, "qos=" + queryQos + " is out of Qos's 0..2 range and must fall back to default-qos");
     }
 
     // --- Fix 2: default-qos itself must be validated at init, since resolveQos() now falls back

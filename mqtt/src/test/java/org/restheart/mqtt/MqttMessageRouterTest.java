@@ -88,7 +88,7 @@ import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttMessageRouterTest {
+class MqttMessageRouterTest {
 
     private static Method privateMethod(String name, Class<?>... parameterTypes)
             throws NoSuchMethodException {

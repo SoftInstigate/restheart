@@ -39,7 +39,7 @@ import org.restheart.plugins.RegisterPlugin;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttPluginGatingTest {
+class MqttPluginGatingTest {
 
     @Test
     @DisplayName("Tier 1: mqtt-client is disabled by default, so dropping the jar in plugins/ "

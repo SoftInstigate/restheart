@@ -63,7 +63,7 @@ import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class HiveMqManualAckIT extends MqttITBase {
+class HiveMqManualAckIT extends MqttITBase {
 
     private static final String TOPIC = "sensors/manual-ack";
 

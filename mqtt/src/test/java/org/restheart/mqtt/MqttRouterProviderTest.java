@@ -63,7 +63,7 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttRouterProviderTest {
+class MqttRouterProviderTest {
 
     private MqttRouterProvider provider;
     private Map<String, Object> config;

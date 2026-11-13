@@ -146,6 +146,12 @@ public class MqttMongoWriter implements Initializer {
     /** Upper bound for the exponential retry backoff delay. */
     private static final long MAX_BACKOFF_MS = 30_000L;
 
+    /** The {@code id-strategy} value that takes a document's {@code _id} from a field of the payload. */
+    private static final String ID_STRATEGY_PAYLOAD_FIELD = "payload-field";
+
+    /** The name of the field holding a MongoDB document's identifier. */
+    private static final String ID_KEY = "_id";
+
     /** Guards against registering the shutdown hook more than once per classloader. */
     private static final AtomicBoolean SHUTDOWN_HOOK_REGISTERED = new AtomicBoolean(false);
 
@@ -201,6 +207,7 @@ public class MqttMongoWriter implements Initializer {
      * Default constructor used by RESTHeart plugin instantiation.
      */
     public MqttMongoWriter() {
+        // nothing to do: RESTHeart instantiates the plugin through this no-arg constructor
     }
 
     /**
@@ -341,6 +348,7 @@ public class MqttMongoWriter implements Initializer {
      */
     @Override
     public void init() {
+        // intentionally empty: all real setup happens in onInit()
     }
 
     /**
@@ -429,7 +437,8 @@ public class MqttMongoWriter implements Initializer {
         // loop rather than per sink, because one message can match several sinks and must not be
         // reported taken until the last of them is done with it.
         //
-        // insertWithRetry never propagates: a batch it cannot write ends in the dead-letter file.
+        // insertWithRetry never propagates: a batch it cannot write ends in the dead-letter
+        // collection.
         // If that ever changes, this release has to move inside the success path, or a message
         // would be acknowledged without being anywhere.
         for (MessageBuffer.Pending pending : batch) {
@@ -455,8 +464,8 @@ public class MqttMongoWriter implements Initializer {
      * or dead-lettered.
      * </p>
      * <p>
-     * Once {@code max-retries} is exhausted for the documents still failing, they are appended
-     * to the dead-letter file via {@link #deadLetter(List)}.
+     * Once {@code max-retries} is exhausted for the documents still failing, they are written
+     * to the dead-letter collection via {@link #deadLetter(MongoSink, List, Exception)}.
      * </p>
      *
      * @param sink      the sink (database + collection) to write to
@@ -514,7 +523,7 @@ public class MqttMongoWriter implements Initializer {
                 // These documents were rejected one by one, so MongoDB is reachable and it is
                 // the documents it does not accept - a failed validation, a size or type it
                 // refuses. Retrying a few times covers a transient rejection; past that they are
-                // dead-lettered, which is what a dead-letter file is for. An outage takes the
+                // dead-lettered, which is what a dead-letter collection is for. An outage takes the
                 // other branch below and is never dead-lettered.
                 attempt++;
                 if (attempt > maxRetries) {
@@ -573,11 +582,11 @@ public class MqttMongoWriter implements Initializer {
      * </p>
      */
     private boolean isDeduplicatingStrategy() {
-        return "payload-field".equals(idStrategy);
+        return ID_STRATEGY_PAYLOAD_FIELD.equals(idStrategy);
     }
 
     /** The only accepted values for the {@code id-strategy} configuration key. */
-    private static final Set<String> VALID_ID_STRATEGIES = Set.of("auto", "payload-field");
+    private static final Set<String> VALID_ID_STRATEGIES = Set.of("auto", ID_STRATEGY_PAYLOAD_FIELD);
 
     /**
      * Validates the {@code id-strategy} configuration key, failing fast at {@link #onInit()}
@@ -609,7 +618,7 @@ public class MqttMongoWriter implements Initializer {
      *                                  {@code idField} is {@code null} or blank
      */
     private static void validateIdField(String idStrategy, String idField) {
-        if ("payload-field".equals(idStrategy) && (idField == null || idField.isBlank())) {
+        if (ID_STRATEGY_PAYLOAD_FIELD.equals(idStrategy) && (idField == null || idField.isBlank())) {
             throw new IllegalArgumentException(
                     "Invalid value for id-field: \"" + idField
                             + "\". It must not be null or blank when id-strategy is \"payload-field\"");
@@ -654,9 +663,9 @@ public class MqttMongoWriter implements Initializer {
     private List<WriteModel<Document>> buildUpsertModels(List<Document> documents) {
         List<WriteModel<Document>> models = new ArrayList<>(documents.size());
         for (Document doc : documents) {
-            Object id = doc.get("_id");
+            Object id = doc.get(ID_KEY);
             if (id != null) {
-                models.add(new ReplaceOneModel<>(Filters.eq("_id", id), doc, new ReplaceOptions().upsert(true)));
+                models.add(new ReplaceOneModel<>(Filters.eq(ID_KEY, id), doc, new ReplaceOptions().upsert(true)));
             } else {
                 models.add(new InsertOneModel<>(doc));
             }
@@ -685,13 +694,6 @@ public class MqttMongoWriter implements Initializer {
     }
 
     /**
-     * Appends documents that could not be written after exhausting retries to the dead-letter
-     * file, one JSON document per line, so they are not silently lost. A failure to write the
-     * dead-letter file is logged but never propagated: it must not stop the drain loop.
-     *
-     * @param documents the documents to append; a null or empty list is a no-op
-     */
-    /**
      * Records documents MongoDB refused in the dead-letter collection of the sink's database.
      *
      * <p>Only documents the database rejected one by one reach this: a wrong type, a failed
@@ -703,8 +705,11 @@ public class MqttMongoWriter implements Initializer {
      * reason under {@code _deadLetter}. A duplicate key here means this message is already
      * recorded, which is not a failure.</p>
      *
+     * <p>A failure to write the dead letters is logged but never propagated: it must not stop the
+     * drain loop.</p>
+     *
      * @param sink      the sink whose write failed
-     * @param documents the documents MongoDB refused
+     * @param documents the documents MongoDB refused; a null or empty list is a no-op
      * @param cause     what MongoDB answered
      */
     private void deadLetter(MongoSink sink, List<Document> documents, Exception cause) {
@@ -785,27 +790,20 @@ public class MqttMongoWriter implements Initializer {
         }
 
         // Apply ID strategy
-        if (idStrategy != null) {
-            switch (idStrategy) {
-                case "payload-field" -> {
-                    // Only a text payload can be parsed for a field. A binary one falls through to
-                    // the auto strategy rather than relying on the catch below.
-                    if (!msg.isTextPayload()) {
-                        break;
-                    }
-                    try {
-                        Document payload = Document.parse(msg.getPayload());
-                        Object idValue = payload.get(idField);
-                        if (idValue != null) {
-                            doc.append("_id", idValue);
-                        }
-                    } catch (Exception e) {
-                        // Payload is not valid JSON or field missing — use auto
-                    }
+        // Only a text payload can be parsed for a field. A binary one falls through to
+        // the auto strategy rather than relying on the catch below.
+        if (ID_STRATEGY_PAYLOAD_FIELD.equals(idStrategy) && msg.isTextPayload()) {
+            try {
+                Document payload = Document.parse(msg.getPayload());
+                Object idValue = payload.get(idField);
+                if (idValue != null) {
+                    doc.append(ID_KEY, idValue);
                 }
-                // "auto" — let MongoDB generate ObjectId
+            } catch (Exception e) {
+                // Payload is not valid JSON or field missing — use auto
             }
         }
+        // "auto" — let MongoDB generate ObjectId
 
         return doc;
     }
