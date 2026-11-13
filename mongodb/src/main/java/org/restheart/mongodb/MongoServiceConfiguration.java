@@ -83,6 +83,7 @@ public class MongoServiceConfiguration {
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
     private final boolean aggregationCheckOperators;
+    private final boolean defaultAllowFilter;
     private final long changeStreamsKeepAliveMs;
 
     private final String constraintsGuardCollection;
@@ -176,6 +177,7 @@ public class MongoServiceConfiguration {
         queryTimeLimit = asLong(conf, QUERY_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationTimeLimit = asLong(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationCheckOperators = asBoolean(conf, AGGREGATION_CHECK_OPERATORS, true, silent);
+        defaultAllowFilter = asBoolean(conf, DEFAULT_ALLOW_FILTER, false, silent);
         changeStreamsKeepAliveMs = asLong(conf, CHANGE_STREAMS_KEEP_ALIVE_MS, DEFAULT_CHANGE_STREAMS_KEEP_ALIVE_MS, silent);
 
         constraintsGuardCollection = asString(conf, CONSTRAINTS_GUARD_COLLECTION_KEY,
@@ -269,7 +271,7 @@ public class MongoServiceConfiguration {
                 + ", docEtagCheckPolicy="
                 + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
                 + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
-                + aggregationCheckOperators + ", cursorBatchSize=" + cursorBatchSize + ", defaultPagesize="
+                + aggregationCheckOperators + ", defaultAllowFilter=" + defaultAllowFilter + ", cursorBatchSize=" + cursorBatchSize + ", defaultPagesize="
                 + defaultPagesize + ", maxPagesize=" + maxPagesize + ", configurationFileMap=" + mongoSrvConfiguration
                 + '}';
     }
@@ -318,6 +320,14 @@ public class MongoServiceConfiguration {
      */
     public boolean getAggregationCheckOperators() {
         return aggregationCheckOperators;
+    }
+
+    /**
+     * @return the value of mongo.allowFilter when a permission does not set it
+     * @since 9.16.0
+     */
+    public boolean getDefaultAllowFilter() {
+        return defaultAllowFilter;
     }
 
     /**

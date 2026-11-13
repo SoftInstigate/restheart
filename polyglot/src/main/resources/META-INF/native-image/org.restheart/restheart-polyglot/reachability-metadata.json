@@ -30,6 +30,54 @@
     {
       "type": "java.lang.Thread",
       "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhRuntime",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhRuntime$Providers",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhLogger",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhCrypto",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhEncode",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhResource",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhBson",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhHttp",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhMongo",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhMongo$RhDb",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhCollection",
+      "allPublicMethods": true
+    },
+    {
+      "type": "org.restheart.polyglot.spi.RhMail",
+      "allPublicMethods": true
     }
   ]
 }

@@ -61,6 +61,11 @@ import static org.restheart.configuration.Utils.getOrDefault;
  * @param directBuffers if true, uses direct (off-heap) buffers
  * @param forceGzipEncoding if true, forces GZIP encoding for all responses
  * @param allowUnescapedCharsInUrl if true, allows unescaped characters in URLs
+ * @param responseCompression if false, responses are never compressed, even when the client accepts gzip or deflate
+ * @param nonBlockingContentLimit maximum request body, in bytes, that the core reads for a non-blocking service;
+ *        larger bodies are left in the request for the service to read
+ * @param blockingContentPrebufferLimit request bodies of blocking services with a Content-Length up to this size,
+ *        in bytes, are read on the IO thread before the dispatch to the virtual thread; 0 disables it
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 1.0
@@ -77,7 +82,10 @@ public record CoreModule(String name,
                          int bufferSize,
                          boolean directBuffers,
                          boolean forceGzipEncoding,
-                         boolean allowUnescapedCharsInUrl) {
+                         boolean allowUnescapedCharsInUrl,
+                         boolean responseCompression,
+                         int nonBlockingContentLimit,
+                         int blockingContentPrebufferLimit) {
 
     /**
      * Configuration key for the core section in the configuration file.
@@ -150,6 +158,21 @@ public record CoreModule(String name,
     public static final String ALLOW_UNESCAPED_CHARS_IN_ULR_KEY = "allow-unescaped-characters-in-url";
 
     /**
+     * Configuration key for enabling response compression (gzip or deflate, when the client accepts it).
+     */
+    public static final String RESPONSE_COMPRESSION_KEY = "response-compression";
+
+    /**
+     * Configuration key for the maximum request body read by the core for non-blocking services.
+     */
+    public static final String NON_BLOCKING_CONTENT_LIMIT_KEY = "non-blocking-content-limit";
+
+    /**
+     * Configuration key for the maximum request body of blocking services read before the dispatch.
+     */
+    public static final String BLOCKING_CONTENT_PREBUFFER_LIMIT_KEY = "blocking-content-prebuffer-limit";
+
+    /**
      * Default CoreModule configuration used when no configuration is provided.
      * 
      * <p>Default values:</p>
@@ -164,9 +187,12 @@ public record CoreModule(String name,
      *   <li>direct-buffers: true</li>
      *   <li>force-gzip-encoding: false</li>
      *   <li>allow-unescaped-characters-in-url: true</li>
+     *   <li>response-compression: true</li>
+     *   <li>non-blocking-content-limit: 1048576 bytes</li>
+     *   <li>blocking-content-prebuffer-limit: 65536 bytes</li>
      * </ul>
      */
-    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", new ArrayList<>(), false, null, 0, 0, 256, true, 16364, true, false, true);
+    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", new ArrayList<>(), false, null, 0, 0, 256, true, 16364, true, false, true, true, 1024 * 1024, 64 * 1024);
 
     /**
      * Creates a CoreModule from a configuration map.
@@ -193,7 +219,11 @@ public record CoreModule(String name,
                 // following is optional, so get it always in silent mode
                 getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, DEFAULT_CORE_MODULE.forceGzipEncoding(), true),
                 // following is optional, so get it always in silent mode
-                getOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_ULR_KEY, DEFAULT_CORE_MODULE.allowUnescapedCharsInUrl(), true));
+                getOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_ULR_KEY, DEFAULT_CORE_MODULE.allowUnescapedCharsInUrl(), true),
+                // following are optional, so get them always in silent mode
+                getOrDefault(conf, RESPONSE_COMPRESSION_KEY, DEFAULT_CORE_MODULE.responseCompression(), true),
+                getOrDefault(conf, NON_BLOCKING_CONTENT_LIMIT_KEY, DEFAULT_CORE_MODULE.nonBlockingContentLimit(), true),
+                getOrDefault(conf, BLOCKING_CONTENT_PREBUFFER_LIMIT_KEY, DEFAULT_CORE_MODULE.blockingContentPrebufferLimit(), true));
     }
 
     /**

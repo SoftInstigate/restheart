@@ -1,4 +1,31 @@
 {
-    "rh:services": ["hello.mjs"],
-    "rh:interceptors": ["hello-interceptor.mjs"]
+    "name": "restheart-test-js-plugins",
+    "description": "the reference plugins of the JavaScript SDK conformance suite, plus two legacy plugins",
+    "rh:spi": 1,
+    "rh:services": [
+        "hello.mjs",
+        "sdk-request.mjs",
+        "sdk-echo.mjs",
+        "sdk-content-string.mjs",
+        "sdk-content-json.mjs",
+        "sdk-content-bson.mjs",
+        "sdk-content-bytes.mjs",
+        "sdk-errors.mjs",
+        "sdk-webhook.mjs",
+        "sdk-encode.mjs",
+        "sdk-resource.mjs",
+        "sdk-logger.mjs",
+        "sdk-config.mjs",
+        "sdk-http.mjs",
+        "sdk-mongo.mjs",
+        "sdk-providers.mjs",
+        "sdk-unavailable.mjs"
+    ],
+    "rh:interceptors": [
+        "hello-interceptor.mjs",
+        "sdk-interceptor-string.mjs",
+        "sdk-interceptor-json.mjs",
+        "sdk-interceptor-mongo.mjs",
+        "sdk-interceptor-csv.mjs"
+    ]
 }

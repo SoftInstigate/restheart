@@ -1,0 +1,34 @@
+{
+  "name": "@restheart/sdk",
+  "version": "0.0.0-development",
+  "description": "Type declarations of the restheart:sdk module, the SDK of RESTHeart JavaScript and TypeScript plugins. Types only, no runtime code: the runtime is RESTHeart.",
+  "types": "./index.d.ts",
+  "files": [
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "restheart",
+    "plugin",
+    "graalvm",
+    "graaljs",
+    "mongodb",
+    "typescript"
+  ],
+  "homepage": "https://restheart.org/docs/framework/javascript-plugins",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SoftInstigate/restheart.git",
+    "directory": "polyglot/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/SoftInstigate/restheart/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "SoftInstigate <info@softinstigate.com>",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

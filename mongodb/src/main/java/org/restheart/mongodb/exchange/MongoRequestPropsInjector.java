@@ -23,6 +23,7 @@ package org.restheart.mongodb.exchange;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Optional;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -50,6 +51,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.utils.StagesInterpolator;
+import org.restheart.mongodb.utils.VarsInterpolator;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
@@ -325,6 +327,8 @@ public class MongoRequestPropsInjector {
         // instead of a single ?avars={"status":"A"} blob; a pipeline only reads the $var names it
         // actually declares, so extra keys here are harmless, and an explicit avars entry always
         // wins over a same-named flat qparam
+        var operatorParams = new HashSet<String>();
+
         for (var entry : exchange.getQueryParameters().entrySet()) {
             var key = entry.getKey();
             if (!RESERVED_QPARAM_KEYS.contains(key) && !qvars.containsKey(key) && !entry.getValue().isEmpty()) {
@@ -336,12 +340,37 @@ public class MongoRequestPropsInjector {
                     value = null;
                 }
                 // not JSON (e.g. a bare word like "A"), or blank — bind it as a plain string
-                qvars.put(key, value != null ? value : new BsonString(raw));
+                value = value != null ? value : new BsonString(raw);
+
+                // the same check as the avars parameter, but only on the parameters the pipeline
+                // reads: unlike avars, a flat query parameter is not declared as a variable, and
+                // one the pipeline does not read never reaches it. Which ones it reads is known
+                // when the variables are bound, after the interceptors that may declare the
+                // stages: here the parameter is only marked, and VarsInterpolator refuses it there
+                if (MongoServiceConfiguration.get().getAggregationCheckOperators()) {
+                    try {
+                        StagesInterpolator.shouldNotContainOperators(value);
+                    } catch (SecurityException se) {
+                        if (request.getType() != TYPE.AGGREGATION && request.getType() != TYPE.CHANGE_STREAM) {
+                            // only aggregations and change streams read the variables: elsewhere
+                            // the value is not bound, and the request goes on as before
+                            continue;
+                        }
+
+                        operatorParams.add(key);
+                    }
+                }
+
+                qvars.put(key, value);
             }
         }
 
         if (!qvars.isEmpty()) {
             request.setAggregationVars(qvars);
+        }
+
+        if (!operatorParams.isEmpty()) {
+            exchange.putAttachment(VarsInterpolator.OPERATOR_QUERY_PARAMETERS, operatorParams);
         }
 
         // get and check the doc id type parameter

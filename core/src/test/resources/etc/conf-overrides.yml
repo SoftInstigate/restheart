@@ -139,6 +139,14 @@
     - userid: unboundreader
       password: secret
       roles: [ unboundreader ]
+    # aggregations/predefined-vars.feature: its permission, in restheart-test/acl, is for this role
+    - userid: aggrvars-user
+      password: secret
+      roles: [ aggrvars-role ]
+    # allow-filter.feature: its permissions, in restheart-test/acl, are for this role
+    - userid: allow-filter-user
+      password: secret
+      roles: [ allow-filter-role ]
 
 /mongoRealmAuthenticator/users-db: restheart-test
 
@@ -299,8 +307,8 @@
     - role: keynarrow
       predicate: path-prefix[path="/token"]
       priority: 0
-    # ChangeStreamPermissionsIT — readFilter and projectResponse apply to change streams as they
-    # do to a GET.
+    # ChangeStreamPermissionsIT: since 9.16 change streams do not apply this readFilter and
+    # projectResponse; a stream under this permission must segregate its events, or is refused.
     - role: aclreader
       predicate: method(GET) and path-prefix[path="/test-cs-acl"]
       priority: 0
@@ -518,6 +526,11 @@
         allowWriteMode: true
 
 /mongoAclAuthorizer/acl-db: restheart-test
+
+# Since 9.16 a permission that does not set mongo.allowFilter refuses filter, sort and sort_by. The
+# suite keeps the behaviour of 9.15, as an upgrade would; allow-filter.feature sets allowFilter on
+# its permissions, and the unit tests cover the false default.
+/mongo/default-allow-filter: true
 /mongoAclAuthorizer/cache-enabled: false
 
 /mongo/mongo-mounts:
@@ -865,3 +878,15 @@
 # 1 MiB is well above any body the other tests send
 /connection-options/MAX_ENTITY_SIZE: 1048576
 /connection-options/MULTIPART_MAX_ENTITY_SIZE: 1048576
+
+# below MAX_ENTITY_SIZE, so that NonBlockingBodyIT can send a body larger than this limit that
+# Undertow still accepts
+/core/non-blocking-content-limit: 262144
+
+# karate/js-sdk-conformance.feature: the configuration the sdkConfig reference plugin reads
+# with `import { config } from "restheart:sdk"`
+/sdkConfig:
+  greeting: ciao
+  nested:
+    value: 42
+  list: [ one, two ]

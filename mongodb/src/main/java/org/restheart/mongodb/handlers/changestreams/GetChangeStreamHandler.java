@@ -21,14 +21,16 @@
 package org.restheart.mongodb.handlers.changestreams;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.json.JsonMode;
+import org.restheart.exchange.IllegalQueryVariableException;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -36,9 +38,12 @@ import org.restheart.exchange.QueryNotFoundException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.AggregationPipelineSecurityChecker;
+import org.restheart.security.MongoPermissions;
 import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.mongodb.utils.StagesInterpolator.STAGE_OPERATOR;
+import org.restheart.mongodb.utils.VarsInterpolator;
 import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ThreadsUtils;
@@ -81,8 +86,19 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
     public static final AttachmentKey<BsonDocument> AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
     public static final AttachmentKey<JsonMode> JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
-    /** Bound query-parameter variables for {@code notify_when} filtering, keyed by variable name. */
-    public static final AttachmentKey<Map<String, String>> BOUND_VARS_EXCHANGE_KEY = AttachmentKey.create(Map.class);
+    /** Bound variables for {@code notify_when} filtering, keyed by variable name. */
+    public static final AttachmentKey<Map<String, BsonValue>> BOUND_VARS_EXCHANGE_KEY = AttachmentKey.create(Map.class);
+
+    /** The resolved stages of the stream, part of the {@link ChangeStreamWorkerKey}. */
+    public static final AttachmentKey<BsonArray> STAGES_ATTACHMENT_KEY = AttachmentKey.create(BsonArray.class);
+
+    /** What the client is told when a stream is refused for not segregating its events. */
+    static final String NOT_ALLOWED = "not allowed";
+
+    /** The reason a stream under a permission with a readFilter is refused when it does not segregate, for the log. */
+    static final String NOT_SEGREGATED = "this change stream is allowed by a permission with a readFilter, which change "
+            + "streams do not apply since 9.16: segregate the events with notify_when on @user._id, or in the stages, "
+            + "or declare \"segregation\": \"none\" for a stream meant for every event";
 
     private static final HttpHandler WEBSOCKET_HANDLER = Handlers.websocket((exchange, channel) -> {
         var csKey = new ChangeStreamWorkerKey(exchange);
@@ -124,6 +140,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             // Resolve the stream operation early — needed for notify_when and bound vars
             var operation = findOperation(request);
             var evaluator = NotifyWhenEvaluator.from(operation.getNotifyWhen());
+            checkSegregation(request, operation, evaluator);
             var boundVars = extractBoundVars(request, evaluator);
             exchange.putAttachment(BOUND_VARS_EXCHANGE_KEY, boundVars);
 
@@ -136,6 +153,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 }
                 StagesInterpolator.injectAvars(request, _avars);
                 exchange.putAttachment(AVARS_ATTACHMENT_KEY, _avars);
+                exchange.putAttachment(STAGES_ATTACHMENT_KEY, asArray(getResolvedStagesAsList(request)));
 
                 initChangeStreamWorker(exchange, null, evaluator);
                 WEBSOCKET_HANDLER.handleRequest(exchange);
@@ -149,6 +167,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 }
                 StagesInterpolator.injectAvars(request, _avars);
                 exchange.putAttachment(AVARS_ATTACHMENT_KEY, _avars);
+                exchange.putAttachment(STAGES_ATTACHMENT_KEY, asArray(getResolvedStagesAsList(request)));
 
                 // Last-Event-ID is not supported when notify_when is defined
                 BsonDocument resumeToken = null;
@@ -183,6 +202,11 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 LOGGER.warn(error);
                 response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, error);
             }
+        } catch (IllegalQueryVariableException iqve) {
+            // a query parameter the stream reads contains operators
+            response.setInError(HttpStatus.SC_BAD_REQUEST, iqve.getMessage());
+            LOGGER.debug("Cannot open change stream: {}", iqve.getMessage());
+            next(exchange);
         } catch (SecurityException se) {
             var error = "Cannot open change stream: " + se.getMessage();
             LOGGER.warn(error, se);
@@ -274,40 +298,68 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
     private List<BsonDocument> getResolvedStagesAsList(MongoRequest request)
             throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException, SecurityException {
-        var pipeline = findOperation(request);
         var avars = request.getExchange().getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
-        var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request);
+        var resolvedStages = resolveStages(request, avars);
 
         var stagesArray = new BsonArray();
         resolvedStages.forEach(stagesArray::add);
         securityChecker.validatePipelineOrThrow(stagesArray, request.getDBName());
 
-        // apply the caller's readFilter and projectResponse, as a REST GET does: first, so that
-        // they see the events before any stage of the stream reshapes them. They come from the
-        // avars, where injectAvars put them (the filter already interpolated), so the worker key
-        // accounts for them
-        var permissionStages = new ArrayList<BsonDocument>();
+        // the readFilter and projectResponse of the permission are not applied (since 9.16): the
+        // stream's stages and notify_when segregate the events, and the cursor is one per stream
+        return resolvedStages;
+    }
 
-        var readFilter = avars.get("@mongoPermissions.readFilter");
-        if (readFilter != null && readFilter.isDocument() && !readFilter.asDocument().isEmpty()) {
-            permissionStages.add(ChangeStreamPermissions.readFilterStage(readFilter.asDocument()));
+    private static BsonArray asArray(List<BsonDocument> stages) {
+        var array = new BsonArray();
+        stages.forEach(array::add);
+        return array;
+    }
+
+    /**
+     * Refuses a stream allowed by a permission with a {@code readFilter} when it does not segregate
+     * visibly: change streams do not apply the {@code readFilter} since 9.16, and a stream that
+     * relied on it would send every event to everyone, with no error. Segregating visibly means a
+     * {@code notify_when} on a {@code @user} variable, stages that use {@code @user} or
+     * {@code @mongoPermissions}, or {@code "segregation": "none"} for a stream meant for every event.
+     *
+     * <p>It looks at the definition, not at what the stages do: a guard for the upgrade, not a proof.
+     *
+     * @throws SecurityException when the stream is refused
+     */
+    static void checkSegregation(MongoRequest request, ChangeStreamOperation operation, NotifyWhenEvaluator evaluator) {
+        var permissions = MongoPermissions.of(request);
+        var readFilter = permissions == null ? null : permissions.getReadFilter();
+
+        if (readFilter == null || readFilter.isEmpty() || operation.declaresNoSegregation()) {
+            return;
         }
 
-        var projectResponse = avars.get("@mongoPermissions.projectResponse");
-        if (projectResponse != null && projectResponse.isDocument() && !projectResponse.asDocument().isEmpty()) {
-            permissionStages.addAll(ChangeStreamPermissions.projectResponseStages(projectResponse.asDocument()));
+        if (evaluator != null && evaluator.getVarName().startsWith("@user")) {
+            return;
         }
 
-        if (permissionStages.isEmpty()) {
-            return resolvedStages;
+        var stages = org.restheart.utils.BsonUtils.toJson(operation.getStages());
+        if (stages.contains("\"@user") || stages.contains("\"@mongoPermissions")) {
+            return;
         }
 
-        permissionStages.addAll(resolvedStages);
-        return permissionStages;
+        LOGGER.warn("Change stream {} refused: {}", request.getPath(), NOT_SEGREGATED);
+        throw new SecurityException(NOT_ALLOWED);
     }
 
     /** Finds the matching {@link ChangeStreamOperation} for the current request. */
-    private ChangeStreamOperation findOperation(MongoRequest request)
+    /**
+     * The stages of the requested stream, with its variables resolved from {@code avars}.
+     */
+    static List<BsonDocument> resolveStages(MongoRequest request, BsonDocument avars)
+            throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException {
+        var pipeline = findOperation(request);
+        return StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request,
+                        MongoServiceConfiguration.get().getAggregationCheckOperators());
+    }
+
+    private static ChangeStreamOperation findOperation(MongoRequest request)
             throws InvalidMetadataException, QueryNotFoundException {
         var changesStreamOperation = request.getChangeStreamOperation();
         var streams = ChangeStreamOperation.getFromJson(request.getCollectionProps());
@@ -328,23 +380,36 @@ public class GetChangeStreamHandler extends PipelinedHandler {
      *         the request does not bind its variable to a string: the stream fails closed,
      *         never broadcasting to a client that did not say which events are its own
      */
-    private static Map<String, String> extractBoundVars(MongoRequest request, NotifyWhenEvaluator evaluator)
+    private static Map<String, BsonValue> extractBoundVars(MongoRequest request, NotifyWhenEvaluator evaluator)
             throws QueryVariableNotBoundException {
         if (evaluator == null) return Map.of();
         var varName = evaluator.getVarName();
+
+        // a variable the server resolves (@user._id, @user.<property>) is never taken from the
+        // request: resolved for the session when it opens, and unbound refuses the connection
+        if (evaluator.usesServerVariable()) {
+            var value = AclVarsInterpolator.resolveRegisteredVar(request, varName).filter(v -> !v.isNull());
+            if (value.isEmpty()) {
+                throw new QueryVariableNotBoundException("variable " + varName + " not bound for this session");
+            }
+            return Map.of(varName, value.get());
+        }
+
+        // notify_when reads its variable here, not through the stages
+        VarsInterpolator.checkOperatorQueryParameters(varName, request);
         var vars = request.getAggregationVars();
         var value = vars != null ? vars.get(varName) : null;
         if (value == null) {
             throw new QueryVariableNotBoundException("variable " + varName + " not bound");
         }
         if (value.isString()) {
-            return Map.of(varName, value.asString().getValue());
+            return Map.of(varName, value);
         }
         // a plain parameter that parses as JSON (?tid=123) is bound as that JSON value:
         // notify_when compares strings, so it gets the parameter as written
         var params = request.getExchange().getQueryParameters().get(varName);
         if (params != null && !params.isEmpty()) {
-            return Map.of(varName, params.getFirst());
+            return Map.of(varName, new BsonString(params.getFirst()));
         }
         throw new QueryVariableNotBoundException("variable " + varName + " must be a string to be used in notify_when");
     }
@@ -362,7 +427,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
         var csKey = new ChangeStreamWorkerKey(exchange);
         var request = MongoRequest.of(exchange);
-        var resolvedStages = getResolvedStagesAsList(request);
+        var resolvedStages = exchange.getAttachment(STAGES_ATTACHMENT_KEY).stream().map(BsonValue::asDocument).toList();
 
         var existingWorker$ = ChangeStreamWorkers.getInstance().get(csKey);
 

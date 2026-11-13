@@ -89,7 +89,7 @@
         <maven-antrun-plugin.version>3.2.0</maven-antrun-plugin.version>
         <central-publishing-maven-plugin.version>0.12.0</central-publishing-maven-plugin.version>
         <docker-maven-plugin.version>0.49.0</docker-maven-plugin.version>
-        <native-maven-plugin.version>1.1.17</native-maven-plugin.version>
+        <native-maven-plugin.version>1.1.18</native-maven-plugin.version>
         <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
         <versions-maven-plugin.version>2.23.0</versions-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
@@ -186,6 +186,16 @@
     </issueManagement>
 
     <repositories>
+        <!-- Central first, by name: Maven asks the repositories in this order and stops at the first
+             that has the artifact, so jitpack below is asked only for what Central does not have.
+             Without this entry jitpack came first and was asked for every artifact. -->
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
         <repository>
             <name>Central Portal Snapshots</name>
             <id>central-portal-snapshots</id>
@@ -197,6 +207,7 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <!-- com.softinstigate:ermes-mail, built by jitpack from GitHub; nothing else comes from here -->
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
@@ -417,8 +428,8 @@
                 <version>2.4.3</version>
             </dependency>
             <dependency>
-                <groupId>com.github.everit-org.json-schema</groupId>
-                <artifactId>org.everit.json.schema</artifactId>
+                <groupId>com.github.erosb</groupId>
+                <artifactId>everit-json-schema</artifactId>
                 <version>1.14.6</version>
             </dependency>
             <dependency>

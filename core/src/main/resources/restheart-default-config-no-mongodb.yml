@@ -407,6 +407,13 @@ mongo:
   get-collection-cache-ttl: 10_000 # Time To Live, in milliseconds, default 10 seconds
   get-collection-cache-docs: 1_000 # number of documents to cache for each request
 
+  # Whether a read may send its own query with the filter, sort and sort_by query parameters.
+  # Each permission can decide it with mongo.allowFilter; this value applies when it does not.
+  # Since v9.16 it is false, and the application queries through aggregations.
+  # Set it to true to keep the behaviour of earlier versions.
+  # https://restheart.org/docs/security/permissions#allowfilter
+  default-allow-filter: false
+
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
 
@@ -626,13 +633,22 @@ aggregationSecurity:
 
 # bruteForceAttackGuard defends from brute force password cracking attacks
 # by returning `429 Too Many Requests` when more than
-# `max-failed-attempts` requests with wrong credentials
-# are received in last 10 seconds from the same ip
+# `max-failed-attempts` requests with wrong credentials for the same user
+# are received in last 10 seconds from the same ip. The ip alone is not the
+# client: behind a carrier-grade NAT or a corporate proxy it is shared by many
+# users, and a brute force targets one account.
 bruteForceAttackGuard:
   enabled: false
-  # Max number of failed attempts in 10 seconds sliding window
-  # before returning 429 Too Many Requests
+  # Max number of failed attempts per ip and user in 10 seconds sliding window
+  # before returning 429 Too Many Requests to that ip for that user.
+  # 0 disables the per-user count.
   max-failed-attempts: 5
+  # Max number of failed attempts per ip whatever the user (a password spray
+  # cycling through many usernames) before returning 429 Too Many Requests
+  # to that ip. A request with no credentials counts on the ip only.
+  # 0 disables the per-ip ceiling. The behaviour before 9.14.0, 5 per ip
+  # whatever the user, is max-failed-attempts: 0 and max-failed-attempts-per-ip: 5
+  max-failed-attempts-per-ip: 50
   # If true, the source ip is obtained from X-Forwarded-For header
   # this requires that header being set by the proxy, dangerous otherwise
   trust-x-forwarded-for: false
@@ -738,6 +754,19 @@ workersWatchdog:
   threshold-seconds: 30
   halt-after-seconds: 0
   notify-email: null
+
+# The shared java.net.http.HttpClient, built once from these options and injected into the
+# plugins that call other services with @Inject("http-client"). The http capability of the
+# JavaScript SDK (import { http } from "restheart:sdk") uses it too.
+# request-timeout is the default of a call that sets none; the SDK overrides it per call.
+http-client:
+  connect-timeout: 10        # seconds
+  request-timeout: 30        # seconds
+  version: http-2            # http-1.1 or http-2 (falls back to 1.1 when the server has no h2)
+  follow-redirects: normal   # never, normal (never from https to http), always
+  # proxy:
+  #   host: proxy.example.com
+  #   port: 3128
 
 # Runs a request through this server's handler chain in-process, without a socket, for plugins
 # such as the MCP service. An in-process request gets the same connection-options as a request

@@ -55,7 +55,8 @@ public class AggregationMapping extends FieldMapping implements Batchable {
 
     public AggregationMapping(String fieldName, BsonString db, BsonString collection, BsonArray stages, BsonBoolean allowDiskUse, DataLoaderSettings settings) {
         super(fieldName);
-        this.stages = stages;
+        // {"$arg": "name", "operators": true}: the argument may carry operators, see check-operators
+        this.stages = stages == null ? null : declareOperatorArgs(stages)[0].asArray();
         this.db = db; // DB!!!
         this.collection = collection;
         this.allowDiskUse = allowDiskUse;
@@ -90,10 +91,13 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     }
 
     public List<BsonDocument> interpolateArgs(DataFetchingEnvironment env) throws QueryVariableNotBoundException, GraphQLIllegalAppDefinitionException {
+        checkArguments(env);
         var values = contextValues(env);
 
         try {
-            var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values, request(env));
+            // a string argument starting with $ is a value: bound in $literal where MongoDB would read it
+            // as a field path or a variable
+            var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values, request(env), checkOperators());
             var argAndFkInterpolated = new ArrayList<BsonDocument>();
 
             for (var s : argInterpolated) {
@@ -125,7 +129,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     }
 
     public void setStages(BsonArray stages) {
-        this.stages = stages;
+        this.stages = stages == null ? null : declareOperatorArgs(stages)[0].asArray();
     }
 
     public BsonString getDb() {

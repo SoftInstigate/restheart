@@ -115,6 +115,8 @@ public class BootstrapperUtils {
      */
     public static void initLogging(Configuration configuration, final RESTHeartDaemon d, boolean isForked) {
         LoggingInitializer.setLogLevel(configuration.logging().packages(), configuration.logging().logLevel());
+        // the request phases are read only to format log lines: with the log off, do not track them
+        org.restheart.logging.RequestPhaseContext.setEnabled(!ch.qos.logback.classic.Level.OFF.equals(configuration.logging().logLevel()));
         LoggingInitializer.applyFullStackTraceAndNoColors(configuration.logging().fullStacktrace(), configuration.logging().noColors());
         if (d != null && d.isDaemonized()) {
             LoggingInitializer.stopConsoleLogging();

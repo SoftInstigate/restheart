@@ -69,12 +69,12 @@ class NotifyWhenEvaluatorTest {
 
         @Test
         void matchesWhenEqual() {
-            assertTrue(ev.matches(event("t1"), Map.of("tid", "t1")));
+            assertTrue(ev.matches(event("t1"), Map.of("tid", new BsonString("t1"))));
         }
 
         @Test
         void noMatchWhenDifferent() {
-            assertFalse(ev.matches(event("t2"), Map.of("tid", "t1")));
+            assertFalse(ev.matches(event("t2"), Map.of("tid", new BsonString("t1"))));
         }
 
         @Test
@@ -91,13 +91,13 @@ class NotifyWhenEvaluatorTest {
         @Test
         void noMatchWhenFieldAbsent() {
             var e = new BsonDocument("fullDocument", new BsonDocument("otherId", new BsonString("t1")));
-            assertFalse(ev.matches(e, Map.of("tid", "t1")));
+            assertFalse(ev.matches(e, Map.of("tid", new BsonString("t1"))));
         }
 
         @Test
         void noMatchWhenTopLevelFieldAbsent() {
             var e = new BsonDocument("documentKey", new BsonDocument("tenantId", new BsonString("t1")));
-            assertFalse(ev.matches(e, Map.of("tid", "t1")));
+            assertFalse(ev.matches(e, Map.of("tid", new BsonString("t1"))));
         }
     }
 
@@ -120,17 +120,17 @@ class NotifyWhenEvaluatorTest {
 
         @Test
         void matchesWhenValueInArray() {
-            assertTrue(ev.matches(event("A", "B", "C"), Map.of("userId", "B")));
+            assertTrue(ev.matches(event("A", "B", "C"), Map.of("userId", new BsonString("B"))));
         }
 
         @Test
         void noMatchWhenValueNotInArray() {
-            assertFalse(ev.matches(event("A", "B"), Map.of("userId", "C")));
+            assertFalse(ev.matches(event("A", "B"), Map.of("userId", new BsonString("C"))));
         }
 
         @Test
         void noMatchOnEmptyArray() {
-            assertFalse(ev.matches(event(), Map.of("userId", "A")));
+            assertFalse(ev.matches(event(), Map.of("userId", new BsonString("A"))));
         }
 
         @Test
@@ -149,8 +149,8 @@ class NotifyWhenEvaluatorTest {
                 BsonDocument.parse("{ \"fullDocument::org.id\": { \"$var\": \"oid\" } }"));
         var e = new BsonDocument("fullDocument",
                 new BsonDocument("org", new BsonDocument("id", new BsonString("org-42"))));
-        assertTrue(ev.matches(e, Map.of("oid", "org-42")));
-        assertFalse(ev.matches(e, Map.of("oid", "org-99")));
+        assertTrue(ev.matches(e, Map.of("oid", new BsonString("org-42"))));
+        assertFalse(ev.matches(e, Map.of("oid", new BsonString("org-99"))));
     }
 
     // -----------------------------------------------------------------------
@@ -164,6 +164,19 @@ class NotifyWhenEvaluatorTest {
         var e = new BsonDocument("fullDocument",
                 new BsonDocument("count", new BsonInt32(5)));
         // non-string, non-array field → no match regardless of bound var
-        assertFalse(ev.matches(e, Map.of("n", "5")));
+        assertFalse(ev.matches(e, Map.of("n", new BsonString("5"))));
+    }
+
+    @Test
+    void anObjectIdOwnerMatchesTheObjectIdOfTheSession() {
+        var ev = NotifyWhenEvaluator.from(org.bson.BsonDocument.parse("{\"fullDocument::owner\": {\"$var\": \"@user._id\"}}"));
+        var id = new org.bson.BsonObjectId(new org.bson.types.ObjectId());
+        var event = new org.bson.BsonDocument("fullDocument", new org.bson.BsonDocument("owner", id));
+
+        assertTrue(ev.usesServerVariable());
+        assertTrue(ev.matches(event, Map.of("@user._id", id)));
+        assertFalse(ev.matches(event, Map.of("@user._id", new org.bson.BsonObjectId(new org.bson.types.ObjectId()))));
+        // the hex string of the id is a different value
+        assertFalse(ev.matches(event, Map.of("@user._id", new BsonString(id.getValue().toHexString()))));
     }
 }

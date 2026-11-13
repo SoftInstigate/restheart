@@ -131,10 +131,11 @@ public class JsonRequest extends ServiceRequest<JsonElement> implements RawBodyA
      */
     @Override
     public JsonElement parseContent() throws IOException, BadRequestException {
-        if (wrapped.getRequestContentLength() > 0) {
+        // no Content-Length does not mean no body: chunked requests have none (#793)
+        if (BufferedContent.get(wrapped) != null || BufferedContent.hasBody(wrapped)) {
             try {
                 rawBody = ChannelReader.readString(wrapped);
-                return JsonParser.parseString(rawBody);
+                return rawBody == null ? null : JsonParser.parseString(rawBody);
             } catch (JsonSyntaxException jse) {
                 throw new BadRequestException(jse.getMessage(), jse);
             }

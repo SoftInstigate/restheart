@@ -50,6 +50,7 @@ import org.restheart.security.BaseAclPermission;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import static org.restheart.security.MongoPermissions.ALLOW_ALL_MONGO_PERMISSIONS;
 import org.restheart.security.utils.MongoUtils;
+import org.restheart.security.MongoPermissions;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -237,10 +238,21 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
             // across roles the same precedence the query applies within one, {priority: -1, _id: -1}:
             // the order of the account's roles plays no part, not even at a tie (#767)
             permissions.sort(PRECEDENCE);
+            var effective = permissions.get(0);
             LOGGER.debug("effective permission id {}, priority {}",
-                    BsonUtils.toJson(permissions.get(0).getId()),
-                    permissions.get(0).getPriority());
-            exchange.putAttachment(MATCHING_ACL_PERMISSION, permissions.get(0));
+                    BsonUtils.toJson(effective.getId()),
+                    effective.getPriority());
+
+            // a permission whose mongo block is not valid allows nothing: the request is denied,
+            // rather than served by a weaker permission or failing later in an interceptor
+            try {
+                MongoPermissions.from(effective.getRaw());
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("Permission {} is not valid and allows nothing: {}", BsonUtils.toJson(effective.getId()), e.getMessage());
+                return false;
+            }
+
+            exchange.putAttachment(MATCHING_ACL_PERMISSION, effective);
             return true;
         }
     }
@@ -299,9 +311,22 @@ public class MongoAclAuthorizer implements Authorizer, PermissionEnumerator {
         return applicable;
     }
 
-    private String aclDb(Request<?> req) {
+    /**
+     * @param req the request
+     * @return the database of the ACL for the request: its {@code override-acl-db}, or the
+     *         configured {@code acl-db}
+     */
+    public String aclDb(Request<?> req) {
         String overrideAclDb = req.attachedParam("override-acl-db");
         return overrideAclDb != null ? overrideAclDb : this.aclDb;
+    }
+
+    /**
+     * @return the collection of the ACL, the configured {@code acl-collection}
+     * @since 9.16.0
+     */
+    public String aclCollection() {
+        return this.aclCollection;
     }
 
     private Stream<String> roles(HttpServerExchange exchange) {

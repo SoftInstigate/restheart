@@ -99,15 +99,14 @@ public class ByteArrayRequest extends ServiceRequest<byte[]> {
      * Parses the binary content from the request body into a byte array.
      * <p>
      * This method reads the raw binary content from the request body and returns
-     * it as a byte array. The method checks the Content-Length header to determine
-     * if there is content to read, and returns an empty byte array if no content
-     * is present.
+     * it as a byte array, or an empty byte array if the request has no body.
      * </p>
      * <p>
      * The parsing process:
      * <ol>
-     *   <li>Checks the Content-Length header to determine if content exists</li>
-     *   <li>Reads all available bytes from the request channel if content is present</li>
+     *   <li>Returns the body read in advance by the core, if any (see {@link BufferedContent})</li>
+     *   <li>Otherwise, if the request declares a body (a positive Content-Length or a
+     *       Transfer-Encoding, e.g. chunked), reads the request channel until its end</li>
      *   <li>Returns an empty byte array if no content is available</li>
      * </ol>
      * </p>
@@ -123,8 +122,10 @@ public class ByteArrayRequest extends ServiceRequest<byte[]> {
      */
     @Override
     public byte[] parseContent() throws IOException, BadRequestException {
-        if (wrapped.getRequestContentLength() > 0) {
-            return ChannelReader.readBytes(wrapped);
+        // no Content-Length does not mean no body: chunked requests have none (#793)
+        if (BufferedContent.get(wrapped) != null || BufferedContent.hasBody(wrapped)) {
+            final var content = ChannelReader.readBytes(wrapped);
+            return content == null ? new byte[0] : content;
         } else {
             return new byte[0];
         }

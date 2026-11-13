@@ -252,42 +252,48 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
      */
     ServiceWrapper(Service<R, S> service) {
         this.service = service;
+        this.serviceName = PluginUtils.name(service);
+        this.serviceClass = service.getClass().getSimpleName();
     }
+
+    // read once: used only in log messages
+    private final String serviceName;
+    private final String serviceClass;
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var path = exchange.getRequestPath();
-        var method = exchange.getRequestMethod().toString();
-        var serviceName = PluginUtils.name(service);
-        var serviceClass = service.getClass().getSimpleName();
+        final var debug = LOGGER.isDebugEnabled();
         var startTime = System.currentTimeMillis();
 
-        RequestPhaseContext.setPhase(Phase.PHASE_START);
-        LOGGER.debug("SERVICE: {} ({})", serviceName, serviceClass);
+        if (debug) {
+            RequestPhaseContext.setPhase(Phase.PHASE_START);
+            LOGGER.debug("SERVICE: {} ({})", serviceName, serviceClass);
+        }
 
         try {
             // Apply service transformers and execute
             var serviceRequest = service.request().apply(exchange);
             var serviceResponse = service.response().apply(exchange);
 
-            RequestPhaseContext.setPhase(Phase.INFO);
-            LOGGER.debug("Request/Response: {} → {}",
-                    serviceRequest.getClass().getSimpleName(), serviceResponse.getClass().getSimpleName());
+            if (debug) {
+                RequestPhaseContext.setPhase(Phase.INFO);
+                LOGGER.debug("Request/Response: {} → {}",
+                        serviceRequest.getClass().getSimpleName(), serviceResponse.getClass().getSimpleName());
+            }
 
             service.handle(serviceRequest, serviceResponse);
 
-            var duration = System.currentTimeMillis() - startTime;
-            var statusCode = serviceResponse.getStatusCode();
-
-            RequestPhaseContext.setPhase(Phase.PHASE_END);
-            LOGGER.debug("✓ SERVICE COMPLETED - Status: {} ({}ms)", statusCode, duration);
+            if (debug) {
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
+                LOGGER.debug("✓ SERVICE COMPLETED - Status: {} ({}ms)", serviceResponse.getStatusCode(), System.currentTimeMillis() - startTime);
+            }
             RequestPhaseContext.reset();
 
         } catch (Exception ex) {
             var duration = System.currentTimeMillis() - startTime;
             RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.error("Service execution failed: {} for {} {} after {}ms, error: {}",
-                    serviceName, method, path, duration, ex.getMessage());
+                    serviceName, exchange.getRequestMethod(), exchange.getRequestPath(), duration, ex.getMessage());
             RequestPhaseContext.reset();
             throw ex;
         }

@@ -49,6 +49,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -61,11 +62,17 @@ import org.slf4j.LoggerFactory;
  * Defends against brute force attacks by blocking requests that exceed failed authentication threshold.
  * <p>
  * This interceptor runs at the REQUEST_BEFORE_AUTH intercept point and checks the metrics
- * collected by FailedAuthMetricsCollector. When the number of failed authentication attempts
- * from the same source (IP address or X-Forwarded-For header) exceeds the configured threshold
- * within the sliding time window (10 seconds), it immediately errors the request with a
- * 429 Too Many Requests status, sent before authentication is attempted: a blocked source gets
- * the same answer whatever credentials it sends.
+ * collected by FailedAuthMetricsCollector. The failures are counted per source (IP address or
+ * X-Forwarded-For header) and user: when a source fails {@code max-failed-attempts} times for
+ * the same user within the sliding time window (10 seconds), its requests for that user are
+ * answered 429 Too Many Requests, before authentication is attempted, until they stop. The
+ * other users behind the same source go on as before: behind a carrier-grade NAT or a corporate
+ * proxy the address is shared by hundreds of people, and a brute force targets an account.
+ * </p>
+ * <p>
+ * A second, much higher threshold, {@code max-failed-attempts-per-ip}, counts the failures of a
+ * source whatever the user, for a password spray cycling through many usernames. A request
+ * that names no user (no credentials at all) counts on the source only.
  * </p>
  * <p>
  * This preemptive approach prevents attackers from consuming server resources with repeated
@@ -74,7 +81,11 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Configuration options:
  * <ul>
- *   <li><code>max-failed-attempts</code> - Maximum allowed failed attempts in the time window (default: 5)</li>
+ *   <li><code>max-failed-attempts</code> - Failed attempts per source and user in the time window before
+ *   the block (default: 5; 0 disables the per-user count)</li>
+ *   <li><code>max-failed-attempts-per-ip</code> - Failed attempts per source whatever the user before the
+ *   block (default: 50; 0 disables the per-source ceiling). The behaviour before 9.14.0, five per source,
+ *   is <code>max-failed-attempts: 0</code> and <code>max-failed-attempts-per-ip: 5</code></li>
  *   <li><code>trust-x-forwarded-for</code> - Whether to track by X-Forwarded-For header (default: false)</li>
  *   <li><code>x-forwarded-for-value-from-last-element</code> - Which value to use from X-Forwarded-For (default: 0, meaning last value);
  *   the name before 9.9.2, <code>x-forwarded-for-value-from-last</code>, is still read</li>
@@ -109,6 +120,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     private static int xForwardedForValueFromLast = 0;
 
     private int maxFailedAttempts = 5;
+    private int maxFailedAttemptsPerIp = 50;
 
     /** How long a source stays quiet before its block is over and logged as released. */
     static final Duration RELEASE_AFTER = Duration.ofSeconds(30);
@@ -126,7 +138,10 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     private final Map<String, Instant> mailed = new ConcurrentHashMap<>();
     private volatile Instant lastSweep = Instant.EPOCH;
 
-    private static final class Block {
+    static final class Block {
+        /** On which count a request is blocked. */
+        enum Kind { NONE, USER, SOURCE }
+
         final Instant since = Instant.now();
         final AtomicLong blocked = new AtomicLong(1);
         volatile Instant last = since;
@@ -172,7 +187,19 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
             this.maxFailedAttempts = 5;
         }
 
-        LOGGER.info("Requests will be blocked when got more than {} failed attempts in last 10 seconds", maxFailedAttempts);
+        try {
+            this.maxFailedAttemptsPerIp = arg(config, "max-failed-attempts-per-ip");
+        } catch (ConfigurationException ce) {
+            this.maxFailedAttemptsPerIp = 50;
+        }
+
+        if (this.maxFailedAttempts <= 0 && this.maxFailedAttemptsPerIp <= 0) {
+            LOGGER.warn("Brute force guard: both max-failed-attempts and max-failed-attempts-per-ip are 0, nothing is ever blocked");
+        } else {
+            LOGGER.info("Brute force guard: a source is blocked after {} failed attempts for the same user and after {} whatever the user, in 10 seconds",
+                    this.maxFailedAttempts <= 0 ? "no number of" : this.maxFailedAttempts,
+                    this.maxFailedAttemptsPerIp <= 0 ? "no number of" : this.maxFailedAttemptsPerIp);
+        }
 
         var email = config == null ? null : config.get("notify-email");
         if (email instanceof String e && !e.isBlank()) {
@@ -191,18 +218,23 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
         // This interceptor runs BEFORE authentication
-        // Check if failed attempts from this source exceed the threshold
-        var failedAttempts = Metrics.failedAuthCount(request.getExchange());
+        // Check if failed attempts from this source, for this user or whatever the user, exceed the thresholds
+        var exchange = request.getExchange();
+        var user = Metrics.attemptedUser(exchange);
+        var perSource = Metrics.failedAuthCount(exchange);
+        var perUser = user.isPresent() ? Metrics.failedAuthCountForUser(exchange) : 0;
 
         sweep();
 
-        if (failedAttempts >= this.maxFailedAttempts) {
+        var block = decision(perSource, perUser, user.isPresent(), maxFailedAttempts, maxFailedAttemptsPerIp);
+
+        if (block != Block.Kind.NONE) {
             // a blocked request counts as a failure too: no authentication runs for it, so the
             // collector never sees it, and without this the window would drain while the attack
             // goes on, letting the threshold of attempts through every 10 seconds. Counted, the
             // block holds until the source stops for a whole window.
-            Metrics.failedAuth(request.getExchange());
-            blocked(request.getExchange(), failedAttempts);
+            Metrics.failedAuth(exchange);
+            blocked(exchange, block == Block.Kind.USER ? user : Optional.empty(), block == Block.Kind.USER ? perUser : perSource);
 
             // Sent at once, before authentication (RequestInterceptorsExecutor): a blocked source gets
             // the same 429 whatever credentials it sends
@@ -213,18 +245,42 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         }
     }
 
+    /**
+     * Whether a request is blocked, and on which count.
+     *
+     * @param perSource the failures of the source in the window, whatever the user
+     * @param perUser the failures of the source for the user the request names
+     * @param hasUser whether the request names a user
+     * @param maxPerUser {@code max-failed-attempts}, 0 for no per-user block
+     * @param maxPerSource {@code max-failed-attempts-per-ip}, 0 for no per-source ceiling
+     * @return the block, {@link Block.Kind#NONE} when the request goes on to authentication
+     */
+    static Block.Kind decision(int perSource, int perUser, boolean hasUser, int maxPerUser, int maxPerSource) {
+        if (hasUser && maxPerUser > 0 && perUser >= maxPerUser) {
+            return Block.Kind.USER;
+        }
+
+        if (maxPerSource > 0 && perSource >= maxPerSource) {
+            return Block.Kind.SOURCE;
+        }
+
+        return Block.Kind.NONE;
+    }
+
     @Override
     public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
         return !request.isOptions();
     }
 
     /**
-     * A blocked request: the first of a source logs it and may mail the alarm, the others only count.
+     * A blocked request: the first of a source (and user, for a per-user block) logs it and may
+     * mail the alarm, the others only count.
      */
-    private void blocked(HttpServerExchange exchange, double failures) {
+    private void blocked(HttpServerExchange exchange, Optional<String> user, double failures) {
         var source = source(exchange);
+        var key = user.map(u -> source + " user=" + u).orElse(source);
         var created = new boolean[1];
-        var block = blocks.compute(source, (k, b) -> {
+        var block = blocks.compute(key, (k, b) -> {
             if (b == null) {
                 created[0] = true;
                 return new Block();
@@ -235,13 +291,13 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         });
 
         if (!created[0]) {
-            LOGGER.debug("Brute force guard: still blocking source={} blocked={}", source, block.blocked.get());
+            LOGGER.debug("Brute force guard: still blocking {} blocked={}", key, block.blocked.get());
             return;
         }
 
-        var line = line(exchange, source, failures);
+        var line = line(exchange, source, user, failures);
         LOGGER.warn("Brute force guard: blocking {}", line);
-        mail(source, line);
+        mail(key, source, user, line);
     }
 
     /** The value the failures are counted on: the tracked X-Forwarded-For value, or the remote ip. */
@@ -254,10 +310,12 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     }
 
     /** The facts of a block on one line, key=value, for a grep or a log metric filter. */
-    private String line(HttpServerExchange exchange, String source, double failures) {
+    private String line(HttpServerExchange exchange, String source, Optional<String> user, double failures) {
         var xff = ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.X_FORWARDED_FOR)).readAttribute(exchange);
         return "source=" + source
+                + user.map(u -> " user=\"" + u + "\"").orElse("")
                 + " failures=" + (long) failures
+                + " counted=" + user.map(u -> "per-user").orElse("per-source")
                 + " window=10s"
                 + " tracked-by=" + (trackedByXff ? "x-forwarded-for" : "remote-ip")
                 + " remote-ip=" + ExchangeAttributes.remoteIp().readAttribute(exchange)
@@ -283,7 +341,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
             if (now.isBefore(b.last.plus(RELEASE_AFTER))) {
                 return false;
             }
-            LOGGER.info("Brute force guard: released source={} blocked={} for={}s",
+            LOGGER.info("Brute force guard: released {} blocked={} for={}s",
                     e.getKey(), b.blocked.get(), Duration.between(b.since, b.last).toSeconds());
             return true;
         });
@@ -291,31 +349,35 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         mailed.entrySet().removeIf(e -> now.isAfter(e.getValue().plus(notifyCooldown)));
     }
 
-    /** The alarm by mail, when configured: at most one per source in the cooldown, off the request thread. */
-    private void mail(String source, String line) {
+    /** The alarm by mail, when configured: at most one per source (and user) in the cooldown, off the request thread. */
+    private void mail(String key, String source, Optional<String> user, String line) {
         if (notifyEmail == null) {
             return;
         }
 
         var now = Instant.now();
-        var previous = mailed.putIfAbsent(source, now);
+        var previous = mailed.putIfAbsent(key, now);
         if (previous != null) {
             return;
         }
 
         var instance = rhConfig.coreModule().name();
         var host = hostName();
-        var subject = "RESTHeart " + instance + ": blocking a possible brute force attack from " + source;
-        var body = "<p>RESTHeart <b>" + escape(instance) + "</b> on " + escape(host) + " got " + maxFailedAttempts + " or more failed "
-                + "authentications in 10 seconds from <b>" + escape(source) + "</b>, and answers its requests with "
-                + "429 Too Many Requests until they stop.</p>"
+        var subject = "RESTHeart " + instance + ": blocking a possible brute force attack from " + source
+                + user.map(u -> " for user " + u).orElse("");
+        var body = "<p>RESTHeart <b>" + escape(instance) + "</b> on " + escape(host) + " got "
+                + (user.isPresent() ? maxFailedAttempts : maxFailedAttemptsPerIp) + " or more failed "
+                + "authentications in 10 seconds from <b>" + escape(source) + "</b>"
+                + user.map(u -> " for the user <b>" + escape(u) + "</b>").orElse(" whatever the user")
+                + ", and answers " + (user.isPresent() ? "its requests for that user" : "its requests")
+                + " with 429 Too Many Requests until they stop.</p>"
                 + "<pre style=\"font-size:12px;white-space:pre-wrap\">" + escape(line) + "</pre>"
                 + "<p>The log has the same line, after <code>Brute force guard: blocking</code>, and a "
                 + "<code>Brute force guard: released</code> one when the block is over. No other mail about this "
                 + "source for " + notifyCooldown.toMinutes() + " minutes.</p>";
 
         emailSender.sendEmailAsync(notifyEmail, notifyEmail, subject, body);
-        LOGGER.info("Brute force guard: alarm for source={} mailed to {}", source, notifyEmail);
+        LOGGER.info("Brute force guard: alarm for {} mailed to {}", key, notifyEmail);
     }
 
     private static String hostName() {

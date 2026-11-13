@@ -21,6 +21,7 @@
 package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.exchange.PipelineInfo;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginsRegistry;
@@ -42,8 +43,21 @@ public class PipelineInfoInjector extends PipelinedHandler {
      *
      * @param next
      */
+    // the pipeline info of a service pipeline, known when it is built; null to match the path per request
+    private final PipelineInfo pipelineInfo;
+
     public PipelineInfoInjector(PipelinedHandler next) {
         super(next);
+        this.pipelineInfo = null;
+    }
+
+    /**
+     * @param pipelineInfo the pipeline info of the pipeline this handler belongs to
+     * @since 9.15.0
+     */
+    public PipelineInfoInjector(PipelineInfo pipelineInfo) {
+        super(null);
+        this.pipelineInfo = pipelineInfo;
     }
 
     /**
@@ -51,7 +65,7 @@ public class PipelineInfoInjector extends PipelinedHandler {
      *
      */
     public PipelineInfoInjector() {
-        this(null);
+        this((PipelinedHandler) null);
     }
 
     /**
@@ -61,7 +75,7 @@ public class PipelineInfoInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        Request.setPipelineInfo(exchange, pluginsRegistry.getPipelineInfo(exchange.getRequestPath()));
+        Request.setPipelineInfo(exchange, pipelineInfo != null ? pipelineInfo : pluginsRegistry.getPipelineInfo(exchange.getRequestPath()));
 
         next(exchange);
     }

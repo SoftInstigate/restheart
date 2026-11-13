@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonArray;
+import org.bson.BsonValue;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;
@@ -67,7 +68,7 @@ public class ChangeStreamWorker implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChangeStreamWorker.class);
 
-    public static final AttachmentKey<Map<String, String>> BOUND_VARS_KEY = AttachmentKey.create(Map.class);
+    public static final AttachmentKey<Map<String, BsonValue>> BOUND_VARS_KEY = AttachmentKey.create(Map.class);
 
     private final ChangeStreamWorkerKey key;
     private final List<BsonDocument> resolvedStages;

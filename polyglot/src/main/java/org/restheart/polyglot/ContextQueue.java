@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-polyglot
+ * restheart-security
  * %%
- * Copyright (C) 2020 - 2026 SoftInstigate
+ * Copyright (C) 2018 - 2026 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,6 +32,9 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.IOAccess;
 import org.restheart.configuration.Configuration;
+import org.restheart.polyglot.spi.PluginModule;
+import org.restheart.polyglot.spi.RhRuntime;
+import org.restheart.polyglot.spi.SdkFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,11 +45,10 @@ import com.mongodb.client.MongoClient;
  *
  * <p>Performance Optimizations:</p>
  * <ul>
- *   <li><b>Context Pooling:</b> Maintains a pool of pre-initialized contexts (4 × CPU cores)
+ *   <li><b>Context Pooling:</b> Maintains a pool of pre-initialized contexts (one per CPU core)
  *       for reuse. When pool is empty, creates context on-demand to avoid blocking virtual threads</li>
- *   <li><b>Function Caching:</b> Evaluated JavaScript functions are cached in context bindings
- *       to eliminate repeated source evaluation overhead (see {@link #cacheHandleFunction} and
- *       {@link #cacheResolveFunction})</li>
+ *   <li><b>Module Caching:</b> The plugin module is imported once per context and its namespace
+ *       kept in the context bindings, see {@link PluginModule#namespace}</li>
  *   <li><b>Value Sharing:</b> Contexts are created with {@code allowValueSharing(true)} to enable
  *       efficient value passing between Java and JavaScript without expensive marshalling. This is
  *       safe because plugin code is immutable and contexts don't share mutable state.</li>
@@ -54,39 +56,60 @@ import com.mongodb.client.MongoClient;
  *       virtual threads never block waiting for contexts</li>
  * </ul>
  *
+ * <p>Every context gets the SDK: the {@link RhRuntime} of the plugin as the global
+ * {@code __restheart}, and the {@link SdkFileSystem} that serves {@code restheart:sdk}. The
+ * globals of the plugins written before the SDK, {@code LOGGER}, {@code mclient} and
+ * {@code pluginArgs}, stay as deprecated aliases.</p>
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ContextQueue {
     private static final Logger LOGGER = LoggerFactory.getLogger(ContextQueue.class);
-    private static final String CACHED_HANDLE_KEY = "__cachedHandle";
-    private static final String CACHED_RESOLVE_KEY = "__cachedResolve";
 
     private final int POOL_SIZE = 1 * Runtime.getRuntime().availableProcessors();
     private final ConcurrentLinkedQueue<Context> pool = new ConcurrentLinkedQueue<>();
 
     // Context creation parameters - stored for on-demand creation
     private final Engine engine;
+    private final RhRuntime runtime;
     private final String name;
     private final Configuration conf;
     private final Logger logger;
     private final Optional<MongoClient> mclient;
-    private final String modulesReplacements;
     private final Map<String, String> OPTS;
 
+    /**
+     * A queue for a plugin that has no SDK runtime: the legacy globals only.
+     *
+     * @param modulesReplacements ignored, the option was removed in GraalVM 25.1
+     */
     public ContextQueue(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
+        this(engine, null, name, conf, logger, mclient, OPTS);
+    }
+
+    /**
+     * @param engine the shared engine
+     * @param runtime the SDK runtime of the plugin, null for the legacy globals only
+     * @param name the plugin name
+     * @param conf the configuration, for {@code pluginArgs}
+     * @param logger the {@code LOGGER} global
+     * @param mclient the {@code mclient} global
+     * @param OPTS the context options
+     */
+    public ContextQueue(Engine engine, RhRuntime runtime, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, Map<String, String> OPTS) {
         this.engine = engine;
+        this.runtime = runtime;
         this.name = name;
         this.conf = conf;
         this.logger = logger;
         this.mclient = mclient;
-        this.modulesReplacements = modulesReplacements;
         this.OPTS = OPTS;
 
         // Pre-populate the pool: each Context is created, entered, bound, left and offered.
         // Truffle operations need the plugins classloader, see PolyglotThreadUtils.
         try {
             PolyglotThreadUtils.run(() -> {
-                populatePool(engine, name, conf, logger, mclient, modulesReplacements);
+                populatePool();
                 return null;
             });
         } catch (Exception e) {
@@ -94,9 +117,9 @@ public class ContextQueue {
         }
     }
 
-    private void populatePool(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements) {
-        for (var c = 0;c < POOL_SIZE;c++) {
-            pool.offer(newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS));
+    private void populatePool() {
+        for (var c = 0; c < POOL_SIZE; c++) {
+            pool.offer(newContext());
         }
     }
 
@@ -133,6 +156,24 @@ public class ContextQueue {
                 LOGGER.debug("Pool full, closed excess context");
             } catch (Exception e) {
                 LOGGER.warn("Error closing excess context", e);
+            }
+        }
+    }
+
+    /**
+     * Closes every pooled context, when the plugin is undeployed.
+     */
+    public void close() {
+        Context ctx;
+        while ((ctx = pool.poll()) != null) {
+            var c = ctx;
+            try {
+                PolyglotThreadUtils.run(() -> {
+                    c.close(true);
+                    return null;
+                });
+            } catch (Exception e) {
+                LOGGER.warn("Error closing context of {}", name, e);
             }
         }
     }
@@ -205,76 +246,72 @@ public class ContextQueue {
     }
 
     /**
-     * Caches an evaluated handle function in the context bindings for reuse.
-     * This avoids re-evaluating the source on every request.
+     * The namespace of the plugin module in a context, imported once per context.
      *
-     * @param ctx the context to cache the function in
-     * @param handleSource the source to evaluate and cache
-     * @return the cached Value that can be executed
+     * @param ctx an entered context
+     * @param moduleSource the source of {@link PluginModule#source}
+     * @return the namespace
      */
-    public static Value cacheHandleFunction(Context ctx, Source handleSource) {
-        var bindings = ctx.getBindings("js");
-        if (!bindings.hasMember(CACHED_HANDLE_KEY)) {
-            var handleValue = ctx.eval(handleSource);
-            bindings.putMember(CACHED_HANDLE_KEY, handleValue);
-            LOGGER.trace("Cached handle function in context");
-            return handleValue;
-        }
-        return bindings.getMember(CACHED_HANDLE_KEY);
-    }
-
-    /**
-     * Caches an evaluated resolve function in the context bindings for reuse.
-     * This avoids re-evaluating the source on every request.
-     *
-     * @param ctx the context to cache the function in
-     * @param resolveSource the source to evaluate and cache
-     * @return the cached Value that can be executed
-     */
-    public static Value cacheResolveFunction(Context ctx, Source resolveSource) {
-        var bindings = ctx.getBindings("js");
-        if (!bindings.hasMember(CACHED_RESOLVE_KEY)) {
-            var resolveValue = ctx.eval(resolveSource);
-            bindings.putMember(CACHED_RESOLVE_KEY, resolveValue);
-            LOGGER.trace("Cached resolve function in context");
-            return resolveValue;
-        }
-        return bindings.getMember(CACHED_RESOLVE_KEY);
+    public static Value cacheModule(Context ctx, Source moduleSource) {
+        return PluginModule.namespace(ctx, moduleSource);
     }
 
     private Context newContext() {
-        return newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS);
+        return newContext(engine, runtime, name, conf, logger, mclient, OPTS);
+    }
+
+    /**
+     * A context with the legacy globals only, no SDK.
+     *
+     * @param modulesReplacements ignored, the option was removed in GraalVM 25.1
+     */
+    public static Context newContext(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
+        return newContext(engine, null, name, conf, logger, mclient, OPTS);
     }
 
     /**
      * A new context with the default bindings ({@code LOGGER}, {@code mclient},
-     * {@code pluginArgs}) in place, left, ready to be entered by its user.
+     * {@code pluginArgs}, {@code __restheart}) in place, left, ready to be entered by its user.
      *
      * <p>The bindings are added here, whoever asks for the context: the pool at start-up and
      * {@link #acquire()} when the pool is empty under load. A context created on demand without
      * them answered {@code ReferenceError: LOGGER is not defined} to the requests beyond the
      * pool size, and, once released, kept doing so from the pool.</p>
+     *
+     * @param engine the shared engine
+     * @param runtime the SDK runtime of the plugin, null for the legacy globals only
+     * @param name the plugin name
+     * @param conf the configuration, for {@code pluginArgs}
+     * @param logger the {@code LOGGER} global
+     * @param mclient the {@code mclient} global
+     * @param OPTS the context options
+     * @return the context
      */
-    public static Context newContext(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
-        // js.commonjs-core-modules-replacements was removed in GraalVM 25.1.x
-        if (modulesReplacements != null) {
-            LOGGER.trace("modules-replacements ignored (removed in GraalVM 25.1): {}", modulesReplacements);
-        }
+    public static Context newContext(Engine engine, RhRuntime runtime, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, Map<String, String> OPTS) {
+        var io = runtime == null
+                ? IOAccess.ALL
+                : IOAccess.newBuilder()
+                        .fileSystem(new SdkFileSystem(runtime.pluginRoot(), runtime.sdkModuleSource()))
+                        .allowHostSocketAccess(true)
+                        .build();
 
         var ctx = Context.newBuilder().engine(engine)
                 .allowAllAccess(true)
                 .allowHostAccess(HostAccess.ALL)
                 .allowHostClassLookup(className -> true)
-                .allowIO(IOAccess.ALL)
+                .allowIO(io)
                 .allowExperimentalOptions(true)
                 .allowValueSharing(true)  // Enable value sharing to reduce marshalling overhead
-                .options(OPTS)
+                .options(OPTS == null ? Map.of() : OPTS)
                 .build();
 
         // the bindings need an entered context
         ctx.enter();
         try {
             addBindings(ctx, name, conf, logger, mclient);
+            if (runtime != null) {
+                ctx.getBindings("js").putMember(RhRuntime.GLOBAL, runtime);
+            }
         } finally {
             ctx.leave();
         }
@@ -283,9 +320,13 @@ public class ContextQueue {
     }
 
     /**
-     * Adds default bindings (LOGGER, mclient, pluginArgs) to an already-entered
-     * context.  Must only be called between ctx.enter() and ctx.leave().
+     * Adds the legacy bindings (LOGGER, mclient, pluginArgs) to an already-entered
+     * context. Must only be called between ctx.enter() and ctx.leave().
+     *
+     * @deprecated the SDK replaces them: {@code logger}, {@code mongo} and {@code config}
+     *             imported from {@code restheart:sdk}
      */
+    @Deprecated
     public static void addBindings(Context ctx,
                                    String pluginName,
                                    Configuration conf,
@@ -293,7 +334,7 @@ public class ContextQueue {
                                    Optional<MongoClient> mclient) {
         ctx.getBindings("js").putMember("LOGGER", logger);
 
-        if (mclient.isPresent()) {
+        if (mclient != null && mclient.isPresent()) {
             ctx.getBindings("js").putMember("mclient", mclient.get());
         }
 

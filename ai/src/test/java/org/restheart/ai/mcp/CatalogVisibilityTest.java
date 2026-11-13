@@ -166,6 +166,66 @@ class CatalogVisibilityTest {
                 listing(path, action.method() == null ? "GET" : action.method(), Map.of()), action, path);
     }
 
+    // ------------------------------------------------------------ the params allowFilter decides
+
+    private static McpResource.Action query() {
+        return action(a -> {
+            a.method("GET").pathTemplate("");
+            a.param("filter", "object", false);
+            a.param("sort", "object", false);
+            a.param("page", "integer", false);
+        });
+    }
+
+    private static Map<String, Object> verdict(List<BaseAclPermission> rules, McpResource.Action action,
+                                               boolean defaultAllowFilter) {
+        return CatalogVisibility.verdict(rules, listing("/todos", "GET", Map.of()), action, "/todos", defaultAllowFilter);
+    }
+
+    @Test
+    void aReadWithoutAllowFilterWithholdsFilterAndSort() {
+        var v = verdict(List.of(permission("path('/todos') and method(GET)")), query(), false);
+
+        assertEquals("yes", v.get("permitted"));
+        assertEquals(List.of("filter", "sort"), v.get("withheld_params"), v.toString());
+    }
+
+    @Test
+    void theDefaultAllowFilterTrueWithholdsNothing() {
+        var v = verdict(List.of(permission("path('/todos') and method(GET)")), query(), true);
+
+        assertTrue(!v.containsKey("withheld_params"), v.toString());
+    }
+
+    @Test
+    void aRuleWithAllowFilterWithholdsNothing() {
+        var allowing = permission("path('/todos') and method(GET)", "{\"mongo\": {\"allowFilter\": true}}");
+        var v = verdict(List.of(allowing), query(), false);
+
+        assertTrue(!v.containsKey("withheld_params"), v.toString());
+    }
+
+    @Test
+    void oneRuleThatAllowsIsEnough() {
+        var plain = permission("path('/todos') and method(GET)");
+        var allowing = permission("path('/todos') and method(GET)", "{\"mongo\": {\"allowFilter\": true}}");
+        var v = verdict(List.of(plain, allowing), query(), false);
+
+        assertTrue(!v.containsKey("withheld_params"), v.toString());
+    }
+
+    @Test
+    void aWriteKeepsItsFilter() {
+        var bulk = action(a -> {
+            a.method("PATCH").pathTemplate("/*");
+            a.param("filter", "object", true);
+        });
+        var v = CatalogVisibility.verdict(List.of(permission("path-prefix('/todos') and method(PATCH)")),
+                listing("/todos/*", "PATCH", Map.of()), bulk, "/todos/*", false);
+
+        assertTrue(!v.containsKey("withheld_params"), v.toString());
+    }
+
     @Test
     void anActionARuleCoversIsPermitted() {
         var read = action(a -> a.method("GET").pathTemplate(""));

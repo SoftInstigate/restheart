@@ -29,9 +29,17 @@ import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 import com.codahale.metrics.Timer;
 import com.google.common.net.HttpHeaders;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.regex.Pattern;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.restheart.exchange.Request;
@@ -40,6 +48,7 @@ import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 
 /**
@@ -297,6 +306,7 @@ public class Metrics {
      */
     public static void failedAuth(HttpServerExchange exchange) {
         failedAuthHistogram(exchange).update(1);
+        attemptedUser(exchange).ifPresent(user -> failedAuthUserHistogram(exchange, user).update(1));
     }
 
     /**
@@ -310,9 +320,150 @@ public class Metrics {
         return failedAuthHistogram(exchange).getSnapshot().size();
     }
 
+    /**
+     * The failed authentications of the source of a request for the user it names, in the last
+     * {@link #FAILED_AUTH_WINDOW_SECONDS} seconds.
+     *
+     * <p>The source alone is not the client: behind a carrier-grade NAT or a corporate proxy
+     * hundreds of unrelated users share one address, and five wrong passwords typed by five of
+     * them would block them all. A brute force targets an account, many passwords for one user
+     * from one source, so this is the count a guard should act on first.</p>
+     *
+     * @param exchange the request
+     * @return how many times its source failed to authenticate as that user in the window; 0 when the request names no user
+     */
+    public static int failedAuthCountForUser(HttpServerExchange exchange) {
+        return attemptedUser(exchange)
+                .map(user -> failedAuthUserHistogram(exchange, user).getSnapshot().size())
+                .orElse(0);
+    }
+
     private static Histogram failedAuthHistogram(HttpServerExchange exchange) {
         return AUTH_REGISTRY.histogram(failedAuthHistogramName(exchange),
                 () -> new Histogram(new SlidingTimeWindowArrayReservoir(FAILED_AUTH_WINDOW_SECONDS, TimeUnit.SECONDS)));
+    }
+
+    private static Histogram failedAuthUserHistogram(HttpServerExchange exchange, String user) {
+        return AUTH_REGISTRY.histogram(MetricRegistry.name(failedAuthHistogramName(exchange), "user", user),
+                () -> new Histogram(new SlidingTimeWindowArrayReservoir(FAILED_AUTH_WINDOW_SECONDS, TimeUnit.SECONDS)));
+    }
+
+    /**
+     * Attachment for the user an authentication mechanism saw, when it is not the one the
+     * {@code Authorization} header shows, see {@link #attemptedUser(HttpServerExchange, String)}.
+     */
+    private static final AttachmentKey<String> ATTEMPTED_USER = AttachmentKey.create(String.class);
+
+    /**
+     * Records the user a request tried to authenticate as, for a mechanism whose credentials do
+     * not travel in the {@code Authorization} header (a cookie, a custom header, a form).
+     *
+     * @param exchange the request
+     * @param user the user, as the mechanism saw it
+     */
+    public static void attemptedUser(HttpServerExchange exchange, String user) {
+        if (user != null && !user.isBlank()) {
+            exchange.putAttachment(ATTEMPTED_USER, user);
+        }
+    }
+
+    /**
+     * The user a request tries to authenticate as, as the mechanism sees it, before and
+     * regardless of the outcome: the {@code userid} of a Basic challenge, the {@code username}
+     * of a Digest one, the {@code sub} of a bearer JWT (read, not verified: a forged subject
+     * only changes which counter a failure lands on), a fingerprint of any other bearer token
+     * such as an API key, or what a mechanism recorded with
+     * {@link #attemptedUser(HttpServerExchange, String)}.
+     *
+     * @param exchange the request
+     * @return the user, empty when the request carries no credentials
+     */
+    public static Optional<String> attemptedUser(HttpServerExchange exchange) {
+        var attached = exchange.getAttachment(ATTEMPTED_USER);
+
+        if (attached != null) {
+            return Optional.of(attached);
+        }
+
+        var authorization = exchange.getRequestHeaders().getFirst(Headers.AUTHORIZATION);
+
+        if (authorization == null || authorization.isBlank()) {
+            return Optional.empty();
+        }
+
+        return attemptedUser(authorization);
+    }
+
+    /**
+     * The user named by an {@code Authorization} header value, see {@link #attemptedUser(HttpServerExchange)}.
+     *
+     * @param authorization the header value
+     * @return the user, empty when the header names none
+     */
+    static Optional<String> attemptedUser(String authorization) {
+        var sp = authorization.indexOf(' ');
+
+        if (sp <= 0 || sp == authorization.length() - 1) {
+            return Optional.empty();
+        }
+
+        var scheme = authorization.substring(0, sp).toLowerCase(Locale.ROOT);
+        var credentials = authorization.substring(sp + 1).strip();
+
+        return switch (scheme) {
+            case "basic" -> basicUser(credentials);
+            case "digest" -> digestUser(credentials);
+            case "bearer" -> bearerUser(credentials);
+            default -> Optional.empty();
+        };
+    }
+
+    private static Optional<String> basicUser(String credentials) {
+        try {
+            var decoded = new String(Base64.getDecoder().decode(credentials), StandardCharsets.UTF_8);
+            var colon = decoded.indexOf(':');
+            var user = colon < 0 ? decoded : decoded.substring(0, colon);
+            return user.isBlank() ? Optional.empty() : Optional.of(user);
+        } catch (IllegalArgumentException notBase64) {
+            return Optional.empty();
+        }
+    }
+
+    private static final Pattern DIGEST_USERNAME = Pattern.compile("username\\s*=\\s*\"([^\"]*)\"");
+
+    private static Optional<String> digestUser(String credentials) {
+        var m = DIGEST_USERNAME.matcher(credentials);
+        return m.find() && !m.group(1).isBlank() ? Optional.of(m.group(1)) : Optional.empty();
+    }
+
+    private static Optional<String> bearerUser(String token) {
+        var parts = token.split("\\.");
+
+        if (parts.length == 3) {
+            try {
+                var payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+                var m = JWT_SUB.matcher(payload);
+                if (m.find()) {
+                    return Optional.of(m.group(1));
+                }
+            } catch (IllegalArgumentException notAJwt) {
+                // an opaque token with two dots in it: fingerprinted below
+            }
+        }
+
+        return Optional.of("token:" + fingerprint(token));
+    }
+
+    private static final Pattern JWT_SUB = Pattern.compile("\"sub\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+
+    /** The first 16 hex characters of the SHA-256 of a token: enough to tell keys apart, never the key. */
+    private static String fingerprint(String token) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest, 0, 8);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**

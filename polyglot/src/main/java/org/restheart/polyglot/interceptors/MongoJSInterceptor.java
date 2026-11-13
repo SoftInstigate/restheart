@@ -20,28 +20,21 @@
  */
 package org.restheart.polyglot.interceptors;
 
-import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InterceptPoint;
+import org.restheart.polyglot.spi.PluginDefinition;
+import org.restheart.polyglot.spi.RhRuntime;
 
 import com.mongodb.client.MongoClient;
 
+/**
+ * The JavaScript interceptor of content kind mongo.
+ */
 public class MongoJSInterceptor extends JSInterceptor<MongoRequest, MongoResponse> {
-    public MongoJSInterceptor(String name,
-                              String pluginClass,
-                              String description,
-                              InterceptPoint interceptPoint,
-                              String modulesReplacements,
-                              Source handleSource,
-                              Source resolveSource,
-                              Optional<MongoClient> mclient,
-                              Configuration config,
-                              Map<String, String> contextOptions) {
-        super(name, pluginClass, description, interceptPoint, modulesReplacements, handleSource, resolveSource, mclient, config, contextOptions);
+    public MongoJSInterceptor(PluginDefinition definition, RhRuntime runtime, Configuration config, Optional<MongoClient> mclient) {
+        super(definition, runtime, config, mclient);
     }
 }

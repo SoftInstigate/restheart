@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-security
+ * restheart-polyglot
  * %%
- * Copyright (C) 2018 - 2026 SoftInstigate
+ * Copyright (C) 2020 - 2026 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,92 +20,55 @@
  */
 package org.restheart.polyglot.interceptors;
 
-import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.polyglot.JSPlugin;
+import org.restheart.polyglot.spi.PluginDefinition;
+import org.restheart.polyglot.spi.RhRuntime;
 
 import com.mongodb.client.MongoClient;
 
+/**
+ * A JavaScript interceptor: {@code handle} and {@code resolve} delegate to the plugin module.
+ * The subclasses fix the request and response types, which is what the registry matches an
+ * interceptor to a service with.
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
 public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends JSPlugin implements Interceptor<R, S> {
-    private final String pluginClass;
+    // read by reflection in PluginUtils.interceptPoint(): a JS interceptor has no @RegisterPlugin
+    // annotation, and the registry runs an interceptor at the point this field names
     private final InterceptPoint interceptPoint;
-    private final Source resolveSource;
+    private final String pluginClass;
 
-    /**
-     * @param name
-     * @param pluginClass
-     * @param description
-     * @param interceptPoint
-     * @param modulesReplacements
-     * @param handleSource
-     * @param mclient
-     * @param resolveSource
-     * @param contextOptions
-     * @param config
-     */
-    public JSInterceptor(String name,
-                         String pluginClass,
-                         String description,
-                         InterceptPoint interceptPoint,
-                         String modulesReplacements,
-                         Source handleSource,
-                         Source resolveSource,
-                         Optional<MongoClient> mclient,
-                         Configuration config,
-                         Map<String, String> contextOptions) {
-        super(name, description, handleSource, modulesReplacements, config, mclient, contextOptions);
-        this.pluginClass = pluginClass;
-        this.interceptPoint = interceptPoint;
-        this.resolveSource = resolveSource;
+    public JSInterceptor(PluginDefinition definition, RhRuntime runtime, Configuration config, Optional<MongoClient> mclient) {
+        super(definition, runtime, config, mclient);
+        this.interceptPoint = definition.interceptPoint();
+        this.pluginClass = definition.pluginClass() != null ? definition.pluginClass() : definition.contentKind().key();
     }
 
     public InterceptPoint getInterceptPoint() {
         return interceptPoint;
     }
 
-    /**
-     *
-     * @param request
-     * @param response
-     * @throws java.lang.Exception */
     @Override
     public void handle(R request, S response) throws Exception {
-        contextQueue.executeWithContext(ctx -> {
-            var handleFunction = org.restheart.polyglot.ContextQueue.cacheHandleFunction(ctx, handleSource());
-            handleFunction.executeVoid(request, response);
-        });
+        invokeHandle(request, response);
     }
 
     @Override
     public boolean resolve(R request, S response) {
-        try {
-            return contextQueue.executeWithContext(ctx -> {
-                var resolveFunction = org.restheart.polyglot.ContextQueue.cacheResolveFunction(ctx, this.resolveSource);
-                Value ret = resolveFunction.execute(request);
-
-                if (ret != null && ret.isBoolean()) {
-                    return ret.asBoolean();
-                } else {
-                    LOGGER.error("resolve() of interceptor {} did not returned a boolean", name());
-                    request.setInError(true);
-                    return false;
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.error("error on interceptor {} resolve()", name(), e);
-            request.setInError(true);
-            return false;
-        }
+        return invokeResolve(request, response);
     }
 
+    /**
+     * @return the legacy {@code pluginClass}, or the content kind when the plugin declares none
+     */
     public String getPluginClass() {
         return pluginClass;
     }

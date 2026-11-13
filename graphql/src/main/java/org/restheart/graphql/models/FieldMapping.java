@@ -21,6 +21,8 @@
 package org.restheart.graphql.models;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -28,8 +30,11 @@ import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.exchange.Request;
+import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.LambdaUtils;
 import graphql.schema.DataFetchingEnvironment;
 
 public abstract class FieldMapping {
@@ -41,6 +46,166 @@ public abstract class FieldMapping {
     public static final String REQUEST_CONTEXT_KEY = "restheart-request";
 
     protected final String fieldName;
+
+    /** The check-operators option of the graphql configuration. */
+    private static boolean checkOperators = true;
+
+    /**
+     * @param _checkOperators true to refuse arguments with operators and to bind string arguments
+     *        starting with $ in $literal where MongoDB would read them as field paths or variables
+     */
+    public static void setCheckOperators(boolean _checkOperators) {
+        checkOperators = _checkOperators;
+    }
+
+    protected static boolean checkOperators() {
+        return checkOperators;
+    }
+
+    /** The key that, next to $arg, declares an argument that may carry operators. */
+    private static final String OPERATORS_KEY = "operators";
+
+    /**
+     * The arguments the mapping declares with {@code {"$arg": "name", "operators": true}}: they may
+     * carry operators even with check-operators, e.g. a filter the client writes on purpose.
+     */
+    private Set<String> operatorArgs = Set.of();
+
+    /**
+     * With check-operators, refuses arguments that contain MongoDB operators, i.e. keys starting
+     * with $. GraphQL names cannot start with $, so they can only come with a BsonDocument argument
+     * passed as a GraphQL variable. The arguments the mapping declares with
+     * {@code "operators": true} are not checked.
+     *
+     * @throws QueryVariableNotBoundException if an argument contains an operator
+     */
+    protected void checkArguments(DataFetchingEnvironment env) throws QueryVariableNotBoundException {
+        if (!checkOperators || env.getArguments() == null) {
+            return;
+        }
+
+        var args = BsonUtils.toBsonDocument(env.getArguments());
+        operatorArgs.forEach(args::remove);
+
+        try {
+            StagesInterpolator.shouldNotContainOperators(args);
+        } catch (SecurityException se) {
+            throw new QueryVariableNotBoundException("arguments cannot include operators, see check-operators in the graphql configuration");
+        }
+    }
+
+    /**
+     * Reads the arguments a mapping declares with {@code {"$arg": "name", "operators": true}} (or
+     * {@code {"$arg": ["name", default], "operators": true}}) in its definition, and returns the
+     * definition with {@code "operators"} removed, so that the interpolator finds plain
+     * {@code $arg} documents.
+     *
+     * <p>An argument declared with operators in one place must be declared so wherever the mapping
+     * uses it: otherwise a value meant elsewhere as a plain value would skip the check. Such a
+     * mapping, or one whose {@code "operators"} is not a boolean, is an invalid app definition.</p>
+     *
+     * @param definitions the parts of the mapping that hold $arg references, e.g. its stages, or its find and sort
+     * @return the definitions without the {@code "operators"} key, in the same order
+     */
+    protected BsonValue[] declareOperatorArgs(BsonValue... definitions) {
+        var marked = new HashSet<String>();
+        var unmarked = new HashSet<String>();
+
+        for (var definition : definitions) {
+            collectArgs(definition, marked, unmarked);
+        }
+
+        var both = new HashSet<>(marked);
+        both.retainAll(unmarked);
+        if (!both.isEmpty()) {
+            LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + fieldName
+                    + " declares the arguments " + both + " with \"operators\": true in one place and without it in another: declare them so everywhere"));
+        }
+
+        this.operatorArgs = Set.copyOf(marked);
+
+        var ret = new BsonValue[definitions.length];
+        for (var i = 0; i < definitions.length; i++) {
+            ret[i] = withoutOperatorsKey(definitions[i]);
+        }
+
+        return ret;
+    }
+
+    /** @return the arguments the mapping declares with {@code "operators": true} */
+    public Set<String> getOperatorArgs() {
+        return operatorArgs;
+    }
+
+    private void collectArgs(BsonValue value, Set<String> marked, Set<String> unmarked) {
+        if (value == null) {
+            return;
+        }
+
+        if (value.isDocument()) {
+            var doc = value.asDocument();
+
+            if (doc.containsKey("$arg")) {
+                var name = argName(doc.get("$arg"));
+
+                if (doc.size() == 1) {
+                    if (name != null) {
+                        unmarked.add(name);
+                    }
+                    return;
+                } else if (doc.size() == 2 && doc.containsKey(OPERATORS_KEY)) {
+                    var operators = doc.get(OPERATORS_KEY);
+                    if (!operators.isBoolean()) {
+                        LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + fieldName
+                                + " has \"operators\" that is not true or false: " + BsonUtils.toJson(doc)));
+                    }
+                    if (name != null) {
+                        (operators.asBoolean().getValue() ? marked : unmarked).add(name);
+                    }
+                    return;
+                }
+            }
+
+            doc.values().forEach(v -> collectArgs(v, marked, unmarked));
+        } else if (value.isArray()) {
+            value.asArray().forEach(v -> collectArgs(v, marked, unmarked));
+        }
+    }
+
+    /** @return the name of an $arg reference, "name" or ["name", default]; null if it is neither */
+    private static String argName(BsonValue arg) {
+        if (arg.isString()) {
+            return arg.asString().getValue();
+        } else if (arg.isArray() && arg.asArray().size() == 2 && arg.asArray().get(0).isString()) {
+            return arg.asArray().get(0).asString().getValue();
+        }
+
+        return null;
+    }
+
+    private static BsonValue withoutOperatorsKey(BsonValue value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value.isDocument()) {
+            var doc = value.asDocument();
+
+            if (doc.size() == 2 && doc.containsKey("$arg") && doc.containsKey(OPERATORS_KEY)) {
+                return new BsonDocument("$arg", doc.get("$arg"));
+            }
+
+            var ret = new BsonDocument();
+            doc.forEach((k, v) -> ret.put(k, withoutOperatorsKey(v)));
+            return ret;
+        } else if (value.isArray()) {
+            var ret = new BsonArray();
+            value.asArray().forEach(v -> ret.add(withoutOperatorsKey(v)));
+            return ret;
+        }
+
+        return value;
+    }
 
     public FieldMapping(String fieldName) {
         this.fieldName = fieldName;

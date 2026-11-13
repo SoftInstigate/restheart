@@ -102,3 +102,137 @@ Scenario: a reserved query parameter is not bound as a variable
     When method GET
     Then status 400
     And match response.message contains 'aggregation'
+
+
+Scenario: an avars value with an operator is refused
+
+    # aggregation-check-operators is true by default: a variable value is data, never an operator
+    * header Authorization = admin
+    Given path aggr
+    And param avars = '{"status": {"$gt": ""}}'
+    And param rep = 's'
+    When method GET
+    Then status 400
+
+
+Scenario: a flat query parameter with an operator is refused, like avars
+
+    # before 9.15.3 the flat form skipped the check that avars has: now a parameter the
+    # pipeline reads with $var or $ifvar is checked
+    * header Authorization = admin
+    Given path aggr
+    And param status = '{"$gt": ""}'
+    And param rep = 's'
+    When method GET
+    Then status 400
+    And match response.message contains 'illegal query parameter status'
+
+
+Scenario: a query parameter with an operator that the pipeline does not read is not a variable
+
+    # byStatus reads only status: extra never reaches the pipeline, so it is not checked
+    * header Authorization = admin
+    Given path aggr
+    And param status = 'A'
+    And param extra = '{"$match": {}}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == '#[2]'
+
+
+Scenario: an avars value with an operator is refused even if the pipeline does not read it
+
+    # avars declares variables: all of them are checked
+    * header Authorization = admin
+    Given path aggr
+    And param status = 'A'
+    And param avars = '{"x": {"$ne": 1}}'
+    And param rep = 's'
+    When method GET
+    Then status 400
+
+
+Scenario: a query parameter with an operator that an $ifvar reads is refused
+
+    * header Authorization = admin
+    Given path coll + '/_aggrs/optionalStatus'
+    And param onlyA = '{"$ne": null}'
+    And param rep = 's'
+    When method GET
+    Then status 400
+    And match response.message contains 'illegal query parameter onlyA'
+
+    * header Authorization = admin
+    Given path coll + '/_aggrs/optionalStatus'
+    And param onlyA = true
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == '#[2]'
+
+
+Scenario: in $match a string starting with "$" is a value
+
+    # a $match outside $expr is a query: "$status" is compared as a string, and matches nothing
+    * header Authorization = admin
+    Given path aggr
+    And param status = '$status'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == []
+
+
+Scenario: in $expr a string starting with "$" is bound in $literal, not read as a field path
+
+    # read as the status field, the comparison would be true for every document
+    * header Authorization = admin
+    Given path coll + '/_aggrs/byStatusExpr'
+    And param status = '$status'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == []
+
+    * header Authorization = admin
+    Given path coll + '/_aggrs/byStatusExpr'
+    And param status = 'D'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == [{ item: 'gadget' }]
+
+
+Scenario: in a projection a string starting with "$" is returned as it is
+
+    * header Authorization = admin
+    Given path coll + '/_aggrs/labelled'
+    And param label = '$5'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == [{ label: '$5' }]
+
+
+Scenario: a string that starts with "$" and a space is a value
+
+    # "$ 5" is allowed: it matches no document here, and the request is not refused
+    * header Authorization = admin
+    Given path aggr
+    And param status = '$ 5'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == []
+
+
+Scenario: a flat query parameter with an operator does not fail a request that reads no variables
+
+    # only aggregations and change streams read the variables: elsewhere the value is not bound
+    * header Authorization = admin
+    Given path coll
+    And param status = '{"$gt": ""}'
+    And param rep = 's'
+    When method GET
+    Then status 200

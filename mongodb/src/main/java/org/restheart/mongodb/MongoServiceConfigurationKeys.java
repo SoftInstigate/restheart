@@ -110,6 +110,13 @@ public interface MongoServiceConfigurationKeys {
     public static final String AGGREGATION_CHECK_OPERATORS = "aggregation-check-operators";
 
     /**
+     * the value of mongo.allowFilter when a permission does not set it
+     *
+     * @since 9.16.0
+     */
+    public static final String DEFAULT_ALLOW_FILTER = "default-allow-filter";
+
+    /**
      * The key for the interval between the comments sent to keep an idle change stream alive.
      */
     public static final String CHANGE_STREAMS_KEEP_ALIVE_MS = "change-streams-keep-alive-ms";

@@ -43,8 +43,8 @@
              library restheart-mongodb already depends on, so it is on the runtime
              classpath of any standard RESTHeart+MongoDB deployment already. -->
         <dependency>
-            <groupId>com.github.everit-org.json-schema</groupId>
-            <artifactId>org.everit.json.schema</artifactId>
+            <groupId>com.github.erosb</groupId>
+            <artifactId>everit-json-schema</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- Official MCP Java SDK (restheart#615) – not otherwise present on RESTHeart's

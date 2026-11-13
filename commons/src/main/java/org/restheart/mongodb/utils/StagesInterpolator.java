@@ -129,6 +129,20 @@ public class StagesInterpolator {
      * @since 9.10.0
      */
     public static List<BsonDocument> interpolate(VAR_OPERATOR varOperator, STAGE_OPERATOR stageOperator, BsonArray stages, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {
+        return interpolate(varOperator, stageOperator, stages, values, request, false);
+    }
+
+    /**
+     * Same as {@link #interpolate(VAR_OPERATOR, STAGE_OPERATOR, BsonArray, BsonDocument, Request)};
+     * with {@code literalStrings}, a bound value that MongoDB would read as a field path or a
+     * variable in an expression is wrapped in {@code $literal}, see
+     * {@link VarsInterpolator#interpolate(VAR_OPERATOR, BsonValue, BsonDocument, Request, boolean)}.
+     *
+     * @param literalStrings true for the variables of aggregations and change streams, bound
+     *        from the request, when aggregation-check-operators is enabled
+     * @since 9.15.3
+     */
+    public static List<BsonDocument> interpolate(VAR_OPERATOR varOperator, STAGE_OPERATOR stageOperator, BsonArray stages, BsonDocument values, Request<?> request, boolean literalStrings) throws InvalidMetadataException, QueryVariableNotBoundException {
         var stagesWithUnescapedOperators = BsonUtils.unescapeKeys(stages).asArray();
 
         // check optional stages
@@ -148,7 +162,7 @@ public class StagesInterpolator {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(BsonArray::new));
 
-        var resolvedStages = VarsInterpolator.interpolate(varOperator, stagesWithoutUnboundOptionalStages, values, request).asArray();
+        var resolvedStages = VarsInterpolator.interpolate(varOperator, stagesWithoutUnboundOptionalStages, values, request, literalStrings).asArray();
 
         var ret = new ArrayList<BsonDocument>();
 
@@ -165,10 +179,15 @@ public class StagesInterpolator {
      * execute unintended operations. Any field starting with '$' in the values
      * will cause a SecurityException to be thrown.
      * </p>
-     * 
+     *
      * <p>The check is performed recursively on all nested documents and arrays
-     * within the values structure.</p>
-     * 
+     * within the values structure. Extended JSON types such as {@code {"$oid": ...}}
+     * are parsed into BSON values before, so they are not documents here.</p>
+     *
+     * <p>A string starting with '$' is not refused: where the pipeline uses the
+     * variable in an expression, it is bound as {@code {"$literal": value}}, see
+     * {@link #interpolate(VAR_OPERATOR, STAGE_OPERATOR, BsonArray, BsonDocument, Request, boolean)}.</p>
+     *
      * @param values the aggregation variables to check, typically from RequestContext.getAggregationVars()
      * @throws SecurityException if any field name starts with '$', indicating an operator
      */
@@ -176,22 +195,17 @@ public class StagesInterpolator {
         if (values == null) {
             return;
         }
-        if (values.isDocument()) {
-            var _obj = values.asDocument();
 
-            _obj.forEach((key, value) -> {
+        if (values.isDocument()) {
+            values.asDocument().forEach((key, value) -> {
                 if (key.startsWith("$")) {
                     throw new SecurityException("aggregation variables cannot include operators");
                 }
 
-                if (value.isDocument() || value.isArray()) {
-                    shouldNotContainOperators(value);
-                }
+                shouldNotContainOperators(value);
             });
         } else if (values.isArray()) {
-            values.asArray().getValues().stream()
-                    .filter(el -> (el.isDocument() || el.isArray()))
-                    .forEachOrdered(StagesInterpolator::shouldNotContainOperators);
+            values.asArray().getValues().forEach(StagesInterpolator::shouldNotContainOperators);
         }
     }
 

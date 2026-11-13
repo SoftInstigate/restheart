@@ -39,6 +39,31 @@ public class RequestPhaseContext {
     private static final ThreadLocal<PhaseInfo> BOOTSTRAP_PHASE = ThreadLocal.withInitial(PhaseInfo::new);
 
     /**
+     * False when the RESTHeart log is off: the phase is read only to format log lines,
+     * so tracking it on every request is wasted work.
+     */
+    private static volatile boolean enabled = true;
+
+    /**
+     * Enables or disables the tracking of request phases. The phase is read only by
+     * {@link LogPrefixConverter} to format log lines: disable it when the log level is OFF.
+     *
+     * @param value false to make every method of this class a no-op for requests
+     * @since 9.15.0
+     */
+    public static void setEnabled(boolean value) {
+        enabled = value;
+    }
+
+    /**
+     * @return true if request phases are tracked
+     * @since 9.15.0
+     */
+    public static boolean isEnabled() {
+        return enabled;
+    }
+
+    /**
      * Phase types for request processing
      */
     public enum Phase {
@@ -69,6 +94,11 @@ public class RequestPhaseContext {
      * @throws Exception if the task throws an exception
      */
     public static void runWithExchange(HttpServerExchange exchange, ThrowingRunnable task) throws Exception {
+        if (!enabled) {
+            task.run();
+            return;
+        }
+
         ScopedValue.where(CURRENT_EXCHANGE, exchange).call(() -> {
             task.run();
             return null;
@@ -82,7 +112,7 @@ public class RequestPhaseContext {
      * @param task the task to run with the exchange in scope
      */
     public static void callWithCurrentExchange(Runnable task) {
-        if (CURRENT_EXCHANGE.isBound()) {
+        if (enabled && CURRENT_EXCHANGE.isBound()) {
             var exchange = CURRENT_EXCHANGE.get();
             ScopedValue.where(CURRENT_EXCHANGE, exchange).run(task);
         } else {
@@ -96,15 +126,15 @@ public class RequestPhaseContext {
      * @param phase the phase to set
      */
     public static void setPhase(Phase phase) {
+        if (!enabled) {
+            return;
+        }
+
         if (CURRENT_EXCHANGE.isBound()) {
             // Request-scoped: store in exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
             if (exchange != null) {
-                var current = exchange.getAttachment(PHASE_INFO_KEY);
-                if (current == null) {
-                    current = new PhaseInfo();
-                }
-                exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(phase, current.isLast));
+                requestPhaseInfo(exchange).phase = phase;
             } else {
                 // Fallback to bootstrap if exchange is null
                 var current = BOOTSTRAP_PHASE.get();
@@ -123,15 +153,15 @@ public class RequestPhaseContext {
      * @param isLast true if this is the last item
      */
     public static void setLast(boolean isLast) {
+        if (!enabled) {
+            return;
+        }
+
         if (CURRENT_EXCHANGE.isBound()) {
             // Request-scoped: store in exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
             if (exchange != null) {
-                var current = exchange.getAttachment(PHASE_INFO_KEY);
-                if (current == null) {
-                    current = new PhaseInfo();
-                }
-                exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(current.phase, isLast));
+                requestPhaseInfo(exchange).isLast = isLast;
             } else {
                 // Fallback to bootstrap if exchange is null
                 var current = BOOTSTRAP_PHASE.get();
@@ -198,6 +228,10 @@ public class RequestPhaseContext {
      * Clear the phase context
      */
     public static void clear() {
+        if (!enabled) {
+            return;
+        }
+
         if (CURRENT_EXCHANGE.isBound()) {
             var exchange = CURRENT_EXCHANGE.get();
             if (exchange != null) {
@@ -215,10 +249,16 @@ public class RequestPhaseContext {
      * Reset to default values
      */
     public static void reset() {
+        if (!enabled) {
+            return;
+        }
+
         if (CURRENT_EXCHANGE.isBound()) {
             var exchange = CURRENT_EXCHANGE.get();
             if (exchange != null) {
-                exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo());
+                var info = requestPhaseInfo(exchange);
+                info.phase = Phase.NONE;
+                info.isLast = false;
             } else {
                 // Fallback to bootstrap if exchange is null
                 BOOTSTRAP_PHASE.set(new PhaseInfo());
@@ -239,9 +279,26 @@ public class RequestPhaseContext {
     /**
      * Internal class to hold phase information (immutable)
      */
+    /**
+     * @return the PhaseInfo attached to the exchange, attached on first use; mutated in place,
+     *         so a phase change costs one attachment lookup instead of a lookup, an allocation and a put
+     */
+    private static PhaseInfo requestPhaseInfo(HttpServerExchange exchange) {
+        var info = exchange.getAttachment(PHASE_INFO_KEY);
+        if (info == null) {
+            info = new PhaseInfo();
+            exchange.putAttachment(PHASE_INFO_KEY, info);
+        }
+        return info;
+    }
+
+    /**
+     * Mutable: the request-scoped instance is attached once and updated in place.
+     * An exchange is handled by one thread at a time, and the bootstrap instances are thread-local.
+     */
     private static class PhaseInfo {
-        final Phase phase;
-        final boolean isLast;
+        Phase phase;
+        boolean isLast;
 
         PhaseInfo() {
             this(Phase.NONE, false);

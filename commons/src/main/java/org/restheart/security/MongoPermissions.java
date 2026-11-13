@@ -96,10 +96,13 @@ public class MongoPermissions {
     private final boolean allowBulkPatch;
     private final boolean allowBulkDelete;
     private final boolean allowWriteMode;
+    /** null when the permission does not set it: the default is the configuration's */
+    private final Boolean allowFilter;
     private final BsonDocument mergeRequest;
     private final BsonDocument projectResponse;
     private final BsonDocument readFilter;
     private final BsonDocument writeFilter;
+    private final BsonDocument sort;
 
     /**
      * A predefined instance that allows all MongoDB operations without restrictions.
@@ -120,7 +123,7 @@ public class MongoPermissions {
      */
     public static final MongoPermissions ALLOW_ALL_MONGO_PERMISSIONS = new MongoPermissions(
             null, null,
-            true, true, true, true,
+            true, true, true, true, true,
             null, null);
 
     /**
@@ -144,10 +147,12 @@ public class MongoPermissions {
         this.allowBulkPatch = false;
         this.allowBulkDelete = false;
         this.allowWriteMode = false;
+        this.allowFilter = null;
         this.readFilter = null;
         this.writeFilter = null;
         this.mergeRequest = null;
         this.projectResponse = null;
+        this.sort = null;
     }
 
     /**
@@ -184,6 +189,20 @@ public class MongoPermissions {
     MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
                      boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode,
                      BsonDocument mergeRequest, BsonDocument projectResponse) {
+        this(readFilter, writeFilter, allowManagementRequests, allowBulkPatch, allowBulkDelete, allowWriteMode, null,
+                mergeRequest, projectResponse);
+    }
+
+    MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
+                     boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode, Boolean allowFilter,
+                     BsonDocument mergeRequest, BsonDocument projectResponse) {
+        this(readFilter, writeFilter, allowManagementRequests, allowBulkPatch, allowBulkDelete, allowWriteMode,
+                allowFilter, mergeRequest, projectResponse, null);
+    }
+
+    MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
+                     boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode, Boolean allowFilter,
+                     BsonDocument mergeRequest, BsonDocument projectResponse, BsonDocument sort) {
         this.readFilter = readFilter == null
                 ? null
                 : readFilter.isNull()
@@ -200,9 +219,11 @@ public class MongoPermissions {
         this.allowBulkPatch = allowBulkPatch;
         this.allowBulkDelete = allowBulkDelete;
         this.allowWriteMode = allowWriteMode;
+        this.allowFilter = allowFilter;
 
         this.mergeRequest = mergeRequest;
         this.projectResponse = projectResponse;
+        this.sort = sort == null || sort.isEmpty() ? null : sort;
     }
 
     /**
@@ -389,10 +410,22 @@ public class MongoPermissions {
                 projectResponse = null;
             }
 
+            var _sort = mongoDoc.get("sort");
+
+            if (!(_sort == null || _sort.isNull()) && !_sort.isDocument()) {
+                throw new ConfigurationException("Wrong permission: sort must be a JSON object or null");
+            }
+
+            var sort = _sort == null || _sort.isNull() ? null : _sort.asDocument();
+
+            checkConditionals("readFilter", readFilter);
+            checkConditionals("writeFilter", writeFilter);
+            checkConditionals("sort", sort);
+
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(mongoDoc, "allowManagementRequests"),
                     parseBooleanArg(mongoDoc, "allowBulkPatch"), parseBooleanArg(mongoDoc, "allowBulkDelete"),
-                    parseBooleanArg(mongoDoc, "allowWriteMode"),
-                    mergeRequest, projectResponse);
+                    parseBooleanArg(mongoDoc, "allowWriteMode"), parseOptionalBooleanArg(mongoDoc, "allowFilter"),
+                    mergeRequest, projectResponse, sort);
         }
     }
 
@@ -414,8 +447,14 @@ public class MongoPermissions {
         map.put("allowBulkPatch", this.allowBulkPatch);
         map.put("allowBulkDelete", this.allowBulkDelete);
         map.put("allowWriteMode", this.allowWriteMode);
+        if (this.allowFilter != null) {
+            map.put("allowFilter", this.allowFilter);
+        }
         map.put("readFilter", this.readFilter);
         map.put("writeFilter", this.writeFilter);
+        if (this.sort != null) {
+            map.put("sort", this.sort);
+        }
 
         return BsonUtils.toBsonDocument(map);
     }
@@ -482,6 +521,12 @@ public class MongoPermissions {
      * <td>Boolean</td>
      * <td>Allow ?wm query parameter</td>
      * <td>false</td>
+     * </tr>
+     * <tr>
+     * <td>allowFilter</td>
+     * <td>Boolean</td>
+     * <td>Allow the filter, sort and sort_by query parameters on reads</td>
+     * <td>the mongo configuration's default-allow-filter, false by default</td>
      * </tr>
      * </table>
      *
@@ -662,10 +707,29 @@ public class MongoPermissions {
                 projectResponse = null;
             }
 
+            BsonDocument sort = null;
+
+            if (args.containsKey("sort")) {
+                try {
+                    String __sort = argValue(args, "sort");
+
+                    if (__sort != null && !__sort.isBlank()) {
+                        sort = BsonDocument.parse(__sort);
+                    }
+                } catch (ClassCastException | JsonParseException jpe) {
+                    throw new ConfigurationException(
+                            "Wrong permission: the sort is not a string defining a JSON Object", jpe);
+                }
+            }
+
+            checkConditionals("readFilter", readFilter);
+            checkConditionals("writeFilter", writeFilter);
+            checkConditionals("sort", sort);
+
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
                     parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
-                    parseBooleanArg(args, "allowWriteMode"),
-                    mergeRequest, projectResponse);
+                    parseBooleanArg(args, "allowWriteMode"), parseOptionalBooleanArg(args, "allowFilter"),
+                    mergeRequest, projectResponse, sort);
         }
     }
 
@@ -732,6 +796,22 @@ public class MongoPermissions {
     }
 
     /**
+     * @return the boolean value of {@code key}, or null if the permission does not set it
+     * @throws ConfigurationException if the value exists but is not a boolean
+     */
+    private static Boolean parseOptionalBooleanArg(BsonDocument args, String key) throws ConfigurationException {
+        return args.containsKey(key) ? parseBooleanArg(args, key) : null;
+    }
+
+    /**
+     * @return the boolean value of {@code key}, or null if the permission does not set it
+     * @throws ConfigurationException if the value exists but is not a boolean
+     */
+    private static Boolean parseOptionalBooleanArg(Map<String, Object> args, String key) throws ConfigurationException {
+        return args.containsKey(key) ? parseBooleanArg(args, key) : null;
+    }
+
+    /**
      * Returns the MongoDB filter applied to read operations.
      *
      * <p>
@@ -742,6 +822,35 @@ public class MongoPermissions {
      *
      * @return The read filter as a BsonDocument, or null if no read filter is defined
      */
+    /**
+     * The order of the reads this permission authorizes, applied by the server to a {@code GET}
+     * on a collection when the client sends no {@code sort} of its own. It may hold
+     * {@code {"$ifvar": [var, alternatives, else]}}, picking one of the named alternatives by the
+     * value of an ACL variable, and directions from ACL variables, with defaults:
+     * {@code {"createdAt": {"$var": ["@qparams['dir']", -1]}}}.
+     *
+     * @return the sort clause, or null if the permission does not set one
+     * @since 9.16.0
+     */
+    public BsonDocument getSort() {
+        return this.sort;
+    }
+
+    /**
+     * Checks the {@code $ifvar} and {@code $var} of a clause when the permission is loaded.
+     */
+    private static void checkConditionals(String what, BsonDocument clause) {
+        if (clause == null) {
+            return;
+        }
+
+        try {
+            AclVarsInterpolator.checkConditionals(BsonUtils.unescapeKeys(clause));
+        } catch (IllegalArgumentException e) {
+            throw new ConfigurationException("Wrong permission: " + what + ": " + e.getMessage());
+        }
+    }
+
     public BsonDocument getReadFilter() {
         return readFilter == null || readFilter.isNull()
                 ? null
@@ -892,5 +1001,31 @@ public class MongoPermissions {
      */
     public boolean isAllowWriteMode() {
         return this.allowWriteMode;
+    }
+
+    /**
+     * Whether a read may carry the {@code filter}, {@code sort} and {@code sort_by} query
+     * parameters, i.e. a query the client writes.
+     *
+     * <p>A free query can test the fields that {@code projectResponse} hides from the response, and
+     * order the documents by them: an application that does not need it reads through
+     * aggregations, which bind only the variables they declare.</p>
+     *
+     * @return the value the permission sets, or null if it does not set it: then the
+     *         {@code default-allow-filter} of the mongo configuration applies
+     * @since 9.16.0
+     */
+    public Boolean getAllowFilter() {
+        return this.allowFilter;
+    }
+
+    /**
+     * @param whenNotSet the value when the permission does not set {@code allowFilter}
+     * @return whether a read may carry the {@code filter}, {@code sort} and {@code sort_by} query
+     *         parameters, see {@link #getAllowFilter()}
+     * @since 9.16.0
+     */
+    public boolean isAllowFilter(boolean whenNotSet) {
+        return this.allowFilter == null ? whenNotSet : this.allowFilter;
     }
 }

@@ -21,15 +21,19 @@
 package org.restheart.mongodb.utils;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.exchange.IllegalQueryVariableException;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
+
+import io.undertow.util.AttachmentKey;
 
 /**
  * Utility class for interpolating variables within a BsonDocument or BsonArray by using a specific format,
@@ -166,14 +170,93 @@ public class VarsInterpolator {
                     // request instead, and an author who wants a fallback writes one:
                     // {"$var": ["@user._id", <default>]}
                     ? AclVarsInterpolator.resolveRegisteredVar(request, name).filter(v -> !v.isNull())
+                            .map(v -> {
+                                // a value that may come from outside the configuration is data:
+                                // with operators it would change the pipeline it is put in
+                                if (!AclVarsInterpolator.operatorsAllowed(name) && AclVarsInterpolator.containsOperators(v)) {
+                                    throw new IllegalQueryVariableException(name);
+                                }
+                                return v;
+                            })
                     : Optional.empty();
         }
+
+        // a @ name is never read from the query parameters, so only the others are checked
+        checkOperatorQueryParameters(name, request);
 
         return values == null ? Optional.empty() : BsonUtils.get(values, name);
     }
 
+    /**
+     * The names of the flat query parameters whose value contains operators, attached to the
+     * exchange of an aggregation or a change stream when aggregation-check-operators is enabled.
+     *
+     * <p>They are bound as variables, but a pipeline that reads one of them fails with
+     * {@link IllegalQueryVariableException}. The check runs when the variables are bound, not
+     * when the parameters are parsed: only then are the stages known, also those an interceptor
+     * declares for the request. A parameter the pipeline does not read never reaches it.</p>
+     *
+     * @since 9.15.3
+     */
+    public static final AttachmentKey<Set<String>> OPERATOR_QUERY_PARAMETERS = AttachmentKey.create(Set.class);
+
+    /**
+     * @throws IllegalQueryVariableException if {@code name}, or the parameter it reads a field
+     *         of (dot notation), is one of {@link #OPERATOR_QUERY_PARAMETERS}
+     */
+    public static void checkOperatorQueryParameters(String name, Request<?> request) throws IllegalQueryVariableException {
+        if (name == null || request == null || request.getExchange() == null) {
+            return;
+        }
+
+        var params = request.getExchange().getAttachment(OPERATOR_QUERY_PARAMETERS);
+
+        if (params == null || params.isEmpty()) {
+            return;
+        }
+
+        for (var param : params) {
+            if (name.equals(param) || name.startsWith(param + ".") || param.startsWith(name + ".")) {
+                throw new IllegalQueryVariableException(param);
+            }
+        }
+    }
+
     public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {
-        return interpolate(operator, bson, values, request, null);
+        return interpolate(operator, bson, values, request, null, Literal.OFF);
+    }
+
+    /**
+     * Same as {@link #interpolate(VAR_OPERATOR, BsonValue, BsonDocument, Request)}; with
+     * {@code literalStrings}, a bound value that contains a string starting with {@code $} is
+     * wrapped in {@code {"$literal": value}} wherever MongoDB would read that string as a field
+     * path ({@code "$name"}) or a variable ({@code "$$name"}), i.e. in an expression.
+     *
+     * <p>A {@code $match} stage, outside {@code $expr}, is a query: there a string is already a
+     * value, and {@code $literal} is not an operator, so the value is left as it is. Everywhere
+     * else the value is treated as part of an expression; where MongoDB expects something else,
+     * e.g. in {@code $geoNear.query}, a wrapped value is refused by MongoDB rather than read as a
+     * field path. A value without such strings is never wrapped, and default values, which come
+     * from the definition, never are.</p>
+     *
+     * @param literalStrings true for the variables of aggregations and change streams, bound
+     *        from the request
+     * @since 9.15.3
+     */
+    public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request, boolean literalStrings) throws InvalidMetadataException, QueryVariableNotBoundException {
+        return interpolate(operator, bson, values, request, null, literalStrings ? Literal.EXPRESSION : Literal.OFF);
+    }
+
+    /**
+     * Same as {@link #interpolate(VAR_OPERATOR, BsonValue, BsonDocument, Request, boolean)} with
+     * {@code literalStrings}, for a query, e.g. the {@code find} of a GraphQL query mapping: a
+     * string starting with {@code $} is left as it is, a query value, and is bound in
+     * {@code $literal} only inside {@code $expr}.
+     *
+     * @since 9.15.3
+     */
+    public static BsonValue interpolateQuery(VAR_OPERATOR operator, BsonValue query, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {
+        return interpolate(operator, query, values, request, null, Literal.QUERY);
     }
 
     /**
@@ -181,7 +264,7 @@ public class VarsInterpolator {
      * {@code $operator} document and the key under it, handed to a {@link CustomOperator} as its
      * {@link CustomOperator.Placement} so it can read its surroundings (restheart#753).
      */
-    private static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request, CustomOperator.Placement placement) throws InvalidMetadataException, QueryVariableNotBoundException {
+    private static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request, CustomOperator.Placement placement, Literal literal) throws InvalidMetadataException, QueryVariableNotBoundException {
         if (bson == null) {
             return null;
         }
@@ -202,11 +285,12 @@ public class VarsInterpolator {
 
                     var name = _name.asString().getValue();
 
-                    return lookup(values, name, request).orElse(defaultValue);
+                    return lookup(values, name, request).map(bound -> literal(bound, literal)).orElse(defaultValue);
                 } else if (v.isString()) { // case { "$var": "name" }, i.e. var without defaul value
                     var name = v.asString().getValue();
 
                     return lookup(values, name, request)
+                            .map(bound -> literal(bound, literal))
                             .orElseThrow(() -> new QueryVariableNotBoundException("variable " + name + " not bound"));
                 } else {
                     throw new InvalidMetadataException("wrong variable name " + v.toString());
@@ -218,7 +302,7 @@ public class VarsInterpolator {
                 if (custom.isPresent()) {
                     var op = custom.get();
                     var rawArg = _obj.get("$" + op.name());
-                    var resolvedArg = interpolate(operator, rawArg, values, request, placement);
+                    var resolvedArg = interpolate(operator, rawArg, values, request, placement, literal);
                     return op.resolve(request, resolvedArg, placement);
                 }
             }
@@ -229,7 +313,7 @@ public class VarsInterpolator {
             var ret = new BsonDocument();
 
             for (var key : _obj.keySet()) {
-                ret.put(key, interpolate(operator, _obj.get(key), values, request, placementOf(_obj, key, placement)));
+                ret.put(key, interpolate(operator, _obj.get(key), values, request, placementOf(_obj, key, placement), literalUnder(key, literal)));
             }
 
             return ret;
@@ -238,9 +322,9 @@ public class VarsInterpolator {
 
             for (var el : bson.asArray().getValues()) {
                 if (el.isDocument()) {
-                    ret.add(interpolate(operator, el, values, request, placement));
+                    ret.add(interpolate(operator, el, values, request, placement, literal));
                 } else if (el.isArray()) {
-                    ret.add(interpolate(operator, el, values, request, placement));
+                    ret.add(interpolate(operator, el, values, request, placement, literal));
                 } else {
                     ret.add(el);
                 }
@@ -250,6 +334,50 @@ public class VarsInterpolator {
         } else {
             return bson;
         }
+    }
+
+    /**
+     * Where a bound value sits, for {@code $literal} wrapping: {@code OFF} when wrapping is not
+     * requested, {@code QUERY} in a {@code $match} stage, {@code EXPRESSION} elsewhere.
+     */
+    private enum Literal { OFF, QUERY, EXPRESSION }
+
+    /**
+     * The placement under {@code key}: a {@code $match} stage is a query, its {@code $expr} an
+     * expression again; under {@code $literal} a value is already literal. Nested pipelines ({@code $lookup}, {@code $facet}, {@code $unionWith})
+     * get the same rule from their own stages.
+     */
+    private static Literal literalUnder(String key, Literal current) {
+        if (current == Literal.OFF) {
+            return Literal.OFF;
+        }
+
+        return switch (key) {
+            // a query, and what $literal holds is already a value: in both, a value is left as it is
+            case "$match", "$literal" -> Literal.QUERY;
+            case "$expr" -> Literal.EXPRESSION;
+            default -> current;
+        };
+    }
+
+    /**
+     * @return {@code {"$literal": value}} in an expression, if the value contains a string that
+     *         MongoDB reads as a field path or a variable; the value otherwise
+     */
+    private static BsonValue literal(BsonValue value, Literal literal) {
+        return literal == Literal.EXPRESSION && containsDollarString(value) ? new BsonDocument("$literal", value) : value;
+    }
+
+    private static boolean containsDollarString(BsonValue value) {
+        if (value.isString()) {
+            return value.asString().getValue().startsWith("$");
+        } else if (value.isDocument()) {
+            return value.asDocument().values().stream().anyMatch(VarsInterpolator::containsDollarString);
+        } else if (value.isArray()) {
+            return value.asArray().getValues().stream().anyMatch(VarsInterpolator::containsDollarString);
+        }
+
+        return false;
     }
 
     /**
