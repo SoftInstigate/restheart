@@ -43,14 +43,14 @@ public class MultipartRequestTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "multipart/form-data",
-        // Headers.extractQuotedValueFromHeader throws StringIndexOutOfBoundsException on this one
-        "multipart/form-data; boundary=",
-        "multipart/form-data; boundary=\"\"",
-        "multipart/form-data; boundary=\"unbalanced",
-        "multipart/form-data; boundary=a; boundary=b",
-        "multipart/form-data; boundary=\"ends with space \"",
-        "multipart/form-data; boundary=invalid<char>"
+            "multipart/form-data",
+            // Headers.extractQuotedValueFromHeader throws StringIndexOutOfBoundsException on this one
+            "multipart/form-data; boundary=",
+            "multipart/form-data; boundary=\"\"",
+            "multipart/form-data; boundary=\"unbalanced",
+            "multipart/form-data; boundary=a; boundary=b",
+            "multipart/form-data; boundary=\"ends with space \"",
+            "multipart/form-data; boundary=invalid<char>"
     })
     public void invalidBoundaries(String contentType) {
         assertNull(MultipartRequest.boundary(contentType), contentType);

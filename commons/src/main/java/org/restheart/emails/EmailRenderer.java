@@ -205,7 +205,7 @@ public final class EmailRenderer {
 
     static String escapeHtml(String s) {
         var out = new StringBuilder(s.length() + 16);
-        for (int i = 0; i < s.length(); i++) {
+        for (int i = 0;i < s.length();i++) {
             char c = s.charAt(i);
             switch (c) {
                 case '&' -> out.append("&amp;");

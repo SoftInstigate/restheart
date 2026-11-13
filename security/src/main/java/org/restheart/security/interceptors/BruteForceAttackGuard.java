@@ -140,7 +140,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     static final class Block {
         /** On which count a request is blocked. */
-        enum Kind { NONE, USER, SOURCE }
+        enum Kind {NONE, USER, SOURCE}
 
         final Instant since = Instant.now();
         final AtomicLong blocked = new AtomicLong(1);

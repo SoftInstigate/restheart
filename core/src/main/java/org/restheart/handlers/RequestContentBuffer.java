@@ -139,7 +139,7 @@ public class RequestContentBuffer extends PipelinedHandler {
         }
     }
 
-    private enum State { COMPLETE, OVERFLOW, PENDING, FAILED }
+    private enum State {COMPLETE, OVERFLOW, PENDING, FAILED}
 
     private final class Reader {
         private final HttpServerExchange exchange;

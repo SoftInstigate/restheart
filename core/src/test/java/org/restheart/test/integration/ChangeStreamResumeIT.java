@@ -235,7 +235,7 @@ public class ChangeStreamResumeIT extends AbstactIT {
      * after the SSE connection, so an event written too early is legitimately not delivered.
      */
     private void awaitStreamOpen(List<String> data) throws Exception {
-        for (var i = 0; i < 10; i++) {
+        for (var i = 0;i < 10;i++) {
             insert("warmup-" + i);
             if (waitFor(data, l -> l.contains("warmup-"), Duration.ofSeconds(2))) {
                 return;

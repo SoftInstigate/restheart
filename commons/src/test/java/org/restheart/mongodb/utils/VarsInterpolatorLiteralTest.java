@@ -86,12 +86,12 @@ public class VarsInterpolatorLiteralTest {
                 {"$facet": {"f": [{"$match": {"k": "$a"}}, {"$project": {"p": {"$literal": "$a"}}}]}}]
                 """,
                 interpolate("""
-                [{"$lookup": {"from": "c", "let": {"x": {"$var": "v"}}, "pipeline": [
-                    {"$match": {"k": {"$var": "v"}}},
-                    {"$match": {"$expr": {"$eq": ["$k", {"$var": "v"}]}}}
-                ], "as": "r"}},
-                {"$facet": {"f": [{"$match": {"k": {"$var": "v"}}}, {"$project": {"p": {"$var": "v"}}}]}}]
-                """, "{\"v\": \"$a\"}", true));
+                        [{"$lookup": {"from": "c", "let": {"x": {"$var": "v"}}, "pipeline": [
+                            {"$match": {"k": {"$var": "v"}}},
+                            {"$match": {"$expr": {"$eq": ["$k", {"$var": "v"}]}}}
+                        ], "as": "r"}},
+                        {"$facet": {"f": [{"$match": {"k": {"$var": "v"}}}, {"$project": {"p": {"$var": "v"}}}]}}]
+                        """, "{\"v\": \"$a\"}", true));
     }
 
     @Test

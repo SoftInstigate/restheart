@@ -131,7 +131,7 @@ class GuestValuesTest {
     @Test
     void bytesBecomeBinary() {
         var doc = GuestValues.toBson(js("({ b: new Uint8Array([1, 2, 3]) })")).asDocument();
-        assertArrayEquals(new byte[] {1, 2, 3}, doc.getBinary("b").getData());
+        assertArrayEquals(new byte[]{1, 2, 3}, doc.getBinary("b").getData());
     }
 
     @Test
@@ -209,9 +209,9 @@ class GuestValuesTest {
     @Test
     void bytesFromStringTypedArrayAndNumbers() {
         assertArrayEquals("ciao".getBytes(StandardCharsets.UTF_8), GuestValues.toBytes(js("'ciao'")));
-        assertArrayEquals(new byte[] {1, 2, 3}, GuestValues.toBytes(js("new Uint8Array([1, 2, 3])")));
-        assertArrayEquals(new byte[] {1, 2, 3}, GuestValues.toBytes(js("new Uint8Array([1, 2, 3]).buffer")));
-        assertArrayEquals(new byte[] {7, 8}, GuestValues.toBytes(js("[7, 8]")));
+        assertArrayEquals(new byte[]{1, 2, 3}, GuestValues.toBytes(js("new Uint8Array([1, 2, 3])")));
+        assertArrayEquals(new byte[]{1, 2, 3}, GuestValues.toBytes(js("new Uint8Array([1, 2, 3]).buffer")));
+        assertArrayEquals(new byte[]{7, 8}, GuestValues.toBytes(js("[7, 8]")));
         assertArrayEquals(new byte[0], GuestValues.toBytes(js("undefined")));
     }
 

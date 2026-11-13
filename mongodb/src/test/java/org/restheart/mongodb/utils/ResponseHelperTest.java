@@ -53,13 +53,13 @@ public class ResponseHelperTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { 510, 511, 16755, 16756, 12116300, 146, 292 })
+    @ValueSource(ints = {510, 511, 16755, 16756, 12116300, 146, 292})
     public void testClientErrorsAreBadRequest(int code) {
         assertEquals(HttpStatus.SC_BAD_REQUEST, ResponseHelper.getHttpStatusFromErrorCode(code));
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { 509, 433, 449, 450, 462, 473, 489, 512, 521 })
+    @ValueSource(ints = {509, 433, 449, 450, 462, 473, 489, 512, 521})
     public void testOverloadErrorsAreServiceUnavailable(int code) {
         assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, ResponseHelper.getHttpStatusFromErrorCode(code));
     }

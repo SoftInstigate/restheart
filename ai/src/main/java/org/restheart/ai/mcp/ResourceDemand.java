@@ -120,7 +120,7 @@ public class ResourceDemand {
     /** The subscriptions, (uri, session) pairs, held by these sessions (restheart#781). */
     public int subscriptionsOf(java.util.Collection<String> sessionIds) {
         return subscribersByUri.values().stream()
-            .mapToInt(sessions -> (int) sessions.stream().filter(sessionIds::contains).count())
-            .sum();
+                .mapToInt(sessions -> (int) sessions.stream().filter(sessionIds::contains).count())
+                .sum();
     }
 }

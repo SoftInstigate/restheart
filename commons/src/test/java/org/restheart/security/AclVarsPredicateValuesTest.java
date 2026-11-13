@@ -40,8 +40,8 @@ public class AclVarsPredicateValuesTest {
     private static final String PREDICATE = "equals(@qparams['a'], 'admin') and path-prefix('/never')";
 
     @ParameterizedTest
-    @ValueSource(strings = { "admin", "x\\", "\\", "x') or true or equals('a','a", "x\\') or true or ('",
-            "x\"), true, (\"", "$1", "\\$0" })
+    @ValueSource(strings = {"admin", "x\\", "\\", "x') or true or equals('a','a", "x\\') or true or ('",
+            "x\"), true, (\"", "$1", "\\$0"})
     public void aQueryParameterNeverChangesThePredicate(String value) {
         var request = mock(MongoRequest.class);
         var exchange = mock(io.undertow.server.HttpServerExchange.class);

@@ -59,13 +59,14 @@ public class HostHeaderHandler implements HttpHandler {
     private static final boolean[] ALLOWED_REGNAME_CHARACTERS = new boolean[256];
     private static final boolean[] HEX_CHARACTERS = new boolean[256];
     private static final boolean[] ALLOWED_IPv_FUTURE_CHARACTERS = new boolean[256]; // this is almost the same as
-                                                                                     // ALLOWED_REGNAME_CHARACTERS with bonus
-                                                                                     // ":" but having it as array rather than
-                                                                                     // extra check is just faster
+
+    // ALLOWED_REGNAME_CHARACTERS with bonus
+    // ":" but having it as array rather than
+    // extra check is just faster
     static {
         // reg-name = *( unreserved / pct-encoded / sub-delims )
         // ALPHA / DIGIT / "-" / "." / "_" / "~" , %%, and "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
-        for (int i = 0; i < ALLOWED_REGNAME_CHARACTERS.length; ++i) {
+        for (int i = 0;i < ALLOWED_REGNAME_CHARACTERS.length;++i) {
             if ((i >= '0' && i <= '9') || (i >= 'a' && i <= 'z') || (i >= 'A' && i <= 'Z')) {
                 ALLOWED_REGNAME_CHARACTERS[i] = true;
                 ALLOWED_IPv_FUTURE_CHARACTERS[i] = true;
@@ -100,7 +101,7 @@ public class HostHeaderHandler implements HttpHandler {
 
         ALLOWED_IPv_FUTURE_CHARACTERS[':'] = true;
 
-        for (int i = 0; i < HEX_CHARACTERS.length; ++i) {
+        for (int i = 0;i < HEX_CHARACTERS.length;++i) {
             if ((i >= '0' && i <= '9') || (i >= 'a' && i <= 'f') || (i >= 'A' && i <= 'F')) {
                 HEX_CHARACTERS[i] = true;
             } else
@@ -108,6 +109,7 @@ public class HostHeaderHandler implements HttpHandler {
         }
 
     }
+
     private final HttpHandler next;
 
     public HostHeaderHandler(HttpHandler next) {
@@ -127,15 +129,15 @@ public class HostHeaderHandler implements HttpHandler {
         final HeaderValues headerValues = headerMap.get(Headers.HOST);
         final HttpString protocol = exchange.getProtocol();
 
-        if((protocol.equals(Protocols.HTTP_0_9) || protocol.equals(Protocols.HTTP_1_0))){
+        if ((protocol.equals(Protocols.HTTP_0_9) || protocol.equals(Protocols.HTTP_1_0))) {
             if (headerValues == null) {
                 //TODO: should we fake Host till we make it?
                 next.handleRequest(exchange);
                 return;
             }
             //else {
-                //clients want to be good citizens and send it anyway.
-                //fall through to below, first check will be false, but rest is the same as for HTTP1.1+
+            //clients want to be good citizens and send it anyway.
+            //fall through to below, first check will be false, but rest is the same as for HTTP1.1+
             //}
         }
 
@@ -209,7 +211,7 @@ public class HostHeaderHandler implements HttpHandler {
                 }
 
                 final String hex = debracked.substring(1, dotIndex);
-                for (int i = 0; i < hex.length(); i++) {
+                for (int i = 0;i < hex.length();i++) {
                     final char c1 = hex.charAt(i);
                     if (!HEX_CHARACTERS[c1]) {
                         terminate(exchange, STATUS_MALFORMED_IP_LITERAL_BAD_CHARS);
@@ -222,7 +224,7 @@ public class HostHeaderHandler implements HttpHandler {
                     return;
                 }
 
-                for (int i = dotIndex + 1; i < debracked.length(); i++) {
+                for (int i = dotIndex + 1;i < debracked.length();i++) {
                     final char c = debracked.charAt(i);
                     if (!ALLOWED_IPv_FUTURE_CHARACTERS[c]) {
                         terminate(exchange, STATUS_MALFORMED_IP_LITERAL_BAD_CHARS);
@@ -246,7 +248,7 @@ public class HostHeaderHandler implements HttpHandler {
             // registered name can contain . and digits, so it technically overlap IPv4.
             // above wont cover -192.168.1.1/355.0.0.0, which technically is correct 'reg-name'
             // at this point we can really only check if its valid char or percent encoding.
-            for (int index = 0; index < hostHeaderURI.length(); index++) {
+            for (int index = 0;index < hostHeaderURI.length();index++) {
                 final char c = hostHeaderURI.charAt(index);
                 if (c == '%') {
                     // we need at least two more that are HEX

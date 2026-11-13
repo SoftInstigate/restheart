@@ -125,7 +125,7 @@ public abstract class FieldMapping {
         this.operatorArgs = Set.copyOf(marked);
 
         var ret = new BsonValue[definitions.length];
-        for (var i = 0; i < definitions.length; i++) {
+        for (var i = 0;i < definitions.length;i++) {
             ret[i] = withoutOperatorsKey(definitions[i]);
         }
 

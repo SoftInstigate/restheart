@@ -118,7 +118,7 @@ public class ContextQueue {
     }
 
     private void populatePool() {
-        for (var c = 0; c < POOL_SIZE; c++) {
+        for (var c = 0;c < POOL_SIZE;c++) {
             pool.offer(newContext());
         }
     }
@@ -291,9 +291,9 @@ public class ContextQueue {
         var io = runtime == null
                 ? IOAccess.ALL
                 : IOAccess.newBuilder()
-                        .fileSystem(new SdkFileSystem(runtime.pluginRoot(), runtime.sdkModuleSource()))
-                        .allowHostSocketAccess(true)
-                        .build();
+                .fileSystem(new SdkFileSystem(runtime.pluginRoot(), runtime.sdkModuleSource()))
+                .allowHostSocketAccess(true)
+                .build();
 
         var ctx = Context.newBuilder().engine(engine)
                 .allowAllAccess(true)

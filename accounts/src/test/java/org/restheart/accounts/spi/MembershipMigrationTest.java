@@ -41,7 +41,7 @@ class MembershipMigrationTest {
 
     private static BsonDocument team(BsonObjectId id, String... membersAndRoles) {
         var doc = BsonDocument.parse("{\"name\": \"t\", \"members\": []}").append("_id", id);
-        for (var i = 0; i < membersAndRoles.length; i += 2) {
+        for (var i = 0;i < membersAndRoles.length;i += 2) {
             doc.getArray("members").add(BsonDocument.parse("{\"userId\": \"" + membersAndRoles[i] + "\", \"role\": \"" + membersAndRoles[i + 1] + "\"}"));
         }
         return doc;

@@ -314,7 +314,7 @@ class SdkPluginTest {
                 throw new TypeError("a secret");
                 """);
 
-        for (var kind : new String[][] {{"bad", "400", "wrong limit"}, {"nf", "404", "Not Found"}, {"teapot", "418", "short and stout"}}) {
+        for (var kind : new String[][]{{"bad", "400", "wrong limit"}, {"nf", "404", "Not Found"}, {"teapot", "418", "short and stout"}}) {
             var exchange = exchange("GET", "/svc");
             exchange.addQueryParam("kind", kind[0]);
             var response = StringResponse.init(exchange);

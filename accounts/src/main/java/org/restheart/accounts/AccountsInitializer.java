@@ -247,6 +247,7 @@ public class AccountsInitializer implements Initializer {
             migrateMemberships(database);
         }
     }
+
     /**
      * The one-off migration to the 9.12.0 membership model (#766), run when
      * {@code accountsConfig/migrate-memberships} is on: see {@link MembershipMigration}. Every
