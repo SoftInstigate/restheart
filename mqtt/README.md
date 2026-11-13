@@ -2,7 +2,7 @@
 
 Bridges an external MQTT broker into RESTHeart: incoming topic messages become Server-Sent Events, REST responses, MongoDB documents, or input to your own plugins.
 
-The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.0, and exposes what it receives through ordinary RESTHeart plugins. Brokers that require mutual TLS with a client certificate — AWS IoT Core among them — are not supported: the module exposes only trust-store settings (`tls`, `tls-trust-store`, `tls-trust-store-password`), never a key store or client certificate.
+The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.1, and exposes what it receives through ordinary RESTHeart plugins. Brokers that require mutual TLS with a client certificate — AWS IoT Core among them — are not supported: the module exposes only trust-store settings (`tls`, `tls-trust-store`, `tls-trust-store-password`), never a key store or client certificate.
 
 > **New here? Start with [TUTORIALS.md](./TUTORIALS.md).** It is one progressive walkthrough in four
 > parts — stream a message to a browser, poll the last value, persist to MongoDB, and consume
@@ -228,14 +228,16 @@ This last one also needs the `mongoclient` module configured and connected: `mqt
 
 ## Installing
 
-The module is distributed as an archive containing the plugin, its runtime dependencies, a sample configuration and both licences. Download the latest build from `master` and unpack it into your instance's plugins directory:
+The module is distributed as an archive containing the plugin, its runtime dependencies, a sample configuration and both licences. Each RESTHeart release that includes the module attaches the archive to its [GitHub release](https://github.com/SoftInstigate/restheart/releases), next to `restheart.zip`. Download the one with the same version as your RESTHeart and unpack it into your instance's plugins directory:
 
 ```
-curl -LO https://github.com/SoftInstigate/restheart/releases/download/mqtt-snapshot/restheart-mqtt-10.0.0-SNAPSHOT.zip
-unzip restheart-mqtt-10.0.0-SNAPSHOT.zip -d /opt/restheart/plugins/
+curl -LO https://github.com/SoftInstigate/restheart/releases/download/<version>/restheart-mqtt-<version>.zip
+unzip restheart-mqtt-<version>.zip -d /opt/restheart/plugins/
 ```
 
-That archive is published by [`.github/workflows/mqtt.yml`](../.github/workflows/mqtt.yml) on every push to `master`, and **only after this module's integration tests have passed** against the core built alongside it. The release notes record which commit each build came from.
+The release workflow attaches it **only after this module's integration tests have passed** against the core of that release.
+
+To try what is on `master` before it is released, there is a snapshot build under the [`mqtt-snapshot`](https://github.com/SoftInstigate/restheart/releases/tag/mqtt-snapshot) pre-release. [`.github/workflows/mqtt.yml`](../.github/workflows/mqtt.yml) refreshes it on every push to `master`, under the same condition, and its notes record the commit it came from and the exact file name to download. It belongs in a RESTHeart built from `master`; `softinstigate/restheart-snapshot:latest` is that core as a Docker image.
 
 To build it yourself instead — necessarily, if you are working on the module:
 
@@ -259,7 +261,7 @@ The version directory is deliberate, not an accident of packaging. `PluginsScann
 
 Then copy the settings you need from `restheart-mqtt-default-config.yml` into your instance's configuration, and enable at least `mqtt-client` and `mqtt-router`. See "Enablement" above for what each plugin's switch does.
 
-**Install it into a RESTHeart built from `master`, not into a release.** The archive is a `10.0.0-SNAPSHOT` build and has only been tested against the core built alongside it; `softinstigate/restheart-snapshot:latest` is that core as a Docker image. There is also a specific security reason. Per-topic authorization on `/mqtt-sse` needs RESTHeart to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`), and **no release includes that yet: 9.8.1 and every earlier version lack it.** It is on the unreleased `master` and `9.x` branches. On a RESTHeart without it, `mqtt-topic-authorizer` resolves but is never invoked on `/mqtt-sse`, so the endpoint is authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
+**Install it into the RESTHeart of the same version.** Each archive has only been tested against the core built alongside it. There is also a specific security reason never to put it into an older one. Per-topic authorization on `/mqtt-sse` needs RESTHeart to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`), and **RESTHeart has that from 9.9.0: 9.8.x and every earlier version lack it.** On a RESTHeart without it, `mqtt-topic-authorizer` resolves but is never invoked on `/mqtt-sse`, so the endpoint is authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
 
 ## Durability
 
@@ -366,7 +368,7 @@ And in a third shell, publish a message:
 docker compose exec mosquitto mosquitto_pub -t sensors/temp -m '{"value": 21.5}'
 ```
 
-It runs `softinstigate/restheart-snapshot:latest` rather than a released image, because per-topic ACL enforcement on `/mqtt-sse` needs a fix that no release includes yet (see "Installing"); against a released image the same demo would silently accept a topic outside the ACL instead of rejecting it with `403`.
+It runs `softinstigate/restheart:latest` with the module you built mounted into it. When your checkout is ahead of the latest release — on `master`, typically — run it on the core built from `master` instead, with `RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest docker compose up`. Do not point it at an image older than 9.9.0: per-topic ACL enforcement on `/mqtt-sse` is missing there (see "Installing"), and the same demo would silently accept a topic outside the ACL instead of rejecting it with `403`.
 
 This demo is for trying the module out, not for testing it. To exercise a locally modified module properly, run its integration tests, which launch the core you just built rather than a published image — "Building" gives the two commands. For a guided tour of this demo, and of the MongoDB-backed one in [`docker-compose-mongodb.yml`](./docker-compose-mongodb.yml), follow [TUTORIALS.md](./TUTORIALS.md).
 
@@ -702,7 +704,7 @@ Open an issue at [SoftInstigate/restheart/issues](https://github.com/SoftInstiga
 
 - **the configuration** of the `mqtt-*` blocks, or the `RHO` you ran with, with passwords removed;
 - **the `mqtt-status` output** from the startup log: the `mqtt module active: … inactive: …` line, or the warnings printed in its place;
-- **the RESTHeart build** you installed into — a snapshot image tag, a commit, or a release version — and the module's build, which the `mqtt-snapshot` release notes record;
+- **the RESTHeart build** you installed into — a release version, a snapshot image tag, or a commit — and the module's: its release version, or for a snapshot the commit that the `mqtt-snapshot` release notes record;
 - **the protocol details**: `protocol-version`, the QoS the publisher used (`mosquitto_pub` defaults to `0`), and the broker and its version;
 - **the server log** from startup to the failure, not only the error.
 
@@ -713,10 +715,10 @@ If you were following [TUTORIALS.md](./TUTORIALS.md), say which part. And if the
 Dual-licensed, like every other RESTHeart module: AGPL-3.0 (see [LICENSE.txt](../LICENSE.txt)), or the RESTHeart COMMERCIAL LICENSE (see [COMM-LICENSE.txt](../COMM-LICENSE.txt)) for those who need it.
 
 > [!WARNING]
-> **Experimental — not generally available yet.** `restheart-mqtt` is not part of any RESTHeart
-> release: every build is a snapshot of `master`. Configuration keys, the SSE envelope, the REST
-> response and the shape of stored documents may still change before it is released, and it is
-> not recommended for production use yet.
+> **Experimental.** `restheart-mqtt` is released together with RESTHeart, but it is new and has
+> seen little use outside its own tests. Configuration keys, the SSE envelope, the REST response
+> and the shape of stored documents may still change from one release to the next, and it is not
+> recommended for production use yet.
 >
 > That is also why feedback matters now: it can still change the design. Please report bugs and
 > request features in [GitHub issues](https://github.com/SoftInstigate/restheart/issues); "Reporting > bugs" at the end of this page lists what makes a report actionable.

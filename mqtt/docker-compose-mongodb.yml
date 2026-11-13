@@ -14,10 +14,10 @@ name: restheart-mqtt-mongodb
 services:
   # RESTHeart with the mqtt plugin mounted, and MongoDB behind it
   restheart:
-    # softinstigate/restheart-snapshot:latest, not softinstigate/restheart:latest, for the same
-    # reason docker-compose.yml gives: per-topic ACL enforcement on /mqtt-sse needs the
-    # mqtt-topic-authorizer / SseWildcardInterceptorsExecutor fix, which is on unreleased master.
-    image: softinstigate/restheart-snapshot:latest
+    # The released image by default, and RESTHEART_IMAGE to run another one, as in
+    # docker-compose.yml: softinstigate/restheart-snapshot:latest when this checkout is ahead of
+    # the latest release, and never an image older than 9.9.0, for the reason given there.
+    image: ${RESTHEART_IMAGE:-softinstigate/restheart:latest}
     # No --standalone here, unlike the other compose file. --standalone loads
     # restheart-default-config-no-mongodb.yml, which disables the MongoDB client outright - and
     # mqtt-mongo-writer injects it. So this one runs the full default configuration.

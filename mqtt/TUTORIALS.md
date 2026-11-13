@@ -1,9 +1,9 @@
 # restheart-mqtt, four steps at a time
 
 > [!WARNING]
-> **Experimental — not generally available yet.** The module is not part of any RESTHeart release,
-> and everything below runs on snapshot builds of `master`. Details may still change before it is
-> released. See [README.md](./README.md) for its status and how to report what you find.
+> **Experimental.** The module is released together with RESTHeart, but it is new, and details may
+> still change from one release to the next. See [README.md](./README.md) for its status and how
+> to report what you find.
 
 This is one walkthrough in four parts, not four independent recipes. Each part starts from the
 environment the previous one left running and adds exactly one capability, so nothing is set up
@@ -38,9 +38,12 @@ against this module. With an older JDK the build stops straight away and says so
 Both compose files bind host ports **8080** and **1883**, so run one at a time and make sure
 nothing else is using them.
 
-The container runs `softinstigate/restheart-snapshot:latest`, not a released image. Per-topic ACL
-enforcement on `/mqtt-sse` depends on a fix that is only on unreleased `master`; against a released
-image part 1's `403` is silently a `200` instead, which would teach you the opposite of the truth.
+The container runs `softinstigate/restheart:latest`, with the module you just built mounted into
+it. If your checkout is ahead of the latest release — you are on `master`, typically — run the
+core built from `master` instead, by putting `RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest`
+in front of every `docker compose` command below. Never use an image older than 9.9.0: per-topic ACL
+enforcement on `/mqtt-sse` is missing there, so part 1's `403` is silently a `200` instead, which
+would teach you the opposite of the truth.
 
 You will want three terminals: one for the server's logs, one holding a stream open, one to publish
 on. Commands below say which.

@@ -12,7 +12,6 @@ Thank you for your interest in contributing to RESTHeart! This guide covers ever
 4. [Documenting a New Module or Feature](#documenting-a-new-module-or-feature)
 5. [Code Style](#code-style)
 6. [Pull Request Process](#pull-request-process)
-7. [Release Process](#release-process)
 
 ---
 
