@@ -21,7 +21,8 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-mqtt</artifactId>
-      <version>10.0.0-SNAPSHOT</version>
+      <!-- the version of RESTHeart, set in ../pom.xml: the module is released with it -->
+      <version>${restheart.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
