@@ -127,7 +127,7 @@ public class MqttClientProvider implements Provider<MqttClient> {
     public void init() {
         final String brokerUrl = argOrDefault(config, "broker-url", "tcp://localhost:1883");
         final int protocolVersion = argOrDefault(config, "protocol-version", 3);
-        final String configuredClientId = argOrDefault(config, "client-id", (String) null);
+        final String configuredClientId = argOrDefault(config, "client-id", null);
         final String username = argOrDefault(config, "username", null);
         final String password = argOrDefault(config, "password", null);
         final boolean cleanSession = argOrDefault(config, "clean-session", false);

@@ -46,7 +46,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttTopicAclIT extends MqttITBase {
+class MqttTopicAclIT extends MqttITBase {
 
     @Test
     void noCredentialsIsUnauthorized() throws Exception {

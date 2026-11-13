@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttPluginLoadingIT extends MqttITBase {
+class MqttPluginLoadingIT extends MqttITBase {
 
     @Test
     void mqttModuleIsActiveWithExpectedPlugins() throws Exception {

@@ -50,7 +50,7 @@ import org.restheart.mqtt.model.MqttMessage;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MessageBufferTest {
+class MessageBufferTest {
 
     private MqttMessage msg(String topic, String payload) {
         return new MqttMessage(topic, payload, 1, Instant.now());

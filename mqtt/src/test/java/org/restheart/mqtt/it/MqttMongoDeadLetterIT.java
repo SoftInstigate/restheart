@@ -47,7 +47,7 @@ import com.mongodb.client.model.ValidationOptions;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttMongoDeadLetterIT extends MqttITBase {
+class MqttMongoDeadLetterIT extends MqttITBase {
 
     private static final String TOPIC = "sensors/deadletter";
     private static final String DB = "test-mqtt-deadletter";

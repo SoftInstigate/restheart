@@ -52,7 +52,7 @@ import com.mongodb.client.model.Filters;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttMongoOutageIT extends MqttITBase {
+class MqttMongoOutageIT extends MqttITBase {
 
     private static final String DB = "test-mqtt-outage";
     private static final String COLLECTION = "sensor-events";

@@ -583,20 +583,6 @@ public abstract class MqttITBase {
     }
 
     /**
-     * @return a port nothing was listening on at the moment this method returned - see the race
-     *         documented on {@link #startRestheart(Path, List, String)}
-     * @throws IOException if no ephemeral port could be probed at all
-     */
-    /**
-     * Protected, not private: a subclass that stops and restarts a container of its own needs the
-     * same trick the broker uses. A dynamically published host port is reassigned by Docker on
-     * every start, so a container that has to keep its address across a restart must be bound to a
-     * port probed here instead.
-     *
-     * @return a port that was free a moment ago
-     * @throws IOException if no port could be probed
-     */
-    /**
      * Blocks until the module's log shows {@code occurrences} broker connections, or fails.
      * <p>
      * {@code /ping} is not a readiness check for this module. RESTHeart answers it as soon as the
@@ -637,6 +623,17 @@ public abstract class MqttITBase {
                 + " time(s) within " + timeoutSec + "s; see " + logFile.toAbsolutePath());
     }
 
+    /**
+     * Protected, not private: a subclass that stops and restarts a container of its own needs the
+     * same trick the broker uses. A dynamically published host port is reassigned by Docker on
+     * every start, so a container that has to keep its address across a restart must be bound to a
+     * port probed here instead.
+     *
+     * @return a port that was free a moment ago: nothing was listening on it at the moment this
+     *         method returned - see the race documented on
+     *         {@link #startRestheart(Path, List, String)}
+     * @throws IOException if no ephemeral port could be probed at all
+     */
     protected static int freePort() throws IOException {
         try (var s = new ServerSocket(0)) {
             return s.getLocalPort();

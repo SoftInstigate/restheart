@@ -50,7 +50,7 @@ import com.google.gson.JsonParser;
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttEventPipelineTest {
+class MqttEventPipelineTest {
 
     // Helper to create basic messages
     private MqttMessage createMessage(String topic, String payload, int qos) {
@@ -60,7 +60,7 @@ public class MqttEventPipelineTest {
     // --- FilterStage Tests ---
 
     @Test
-    public void testFilterStageQos() {
+    void testFilterStageQos() {
         FilterStage stage = FilterStage.byMinQos(1); // Min QoS 1
 
         MqttMessage qos0 = createMessage("sensors/temp", "{}", 0);
@@ -73,7 +73,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testFilterStageTopic() {
+    void testFilterStageTopic() {
         FilterStage stage = FilterStage.byTopicRegex("sensors/[^/]+/temp");
 
         MqttMessage match1 = createMessage("sensors/room1/temp", "{}", 1);
@@ -88,7 +88,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testFilterStageJsonPathNumeric() {
+    void testFilterStageJsonPathNumeric() {
         // Evaluate temperature field > 25.5
         FilterStage stage = FilterStage.byJsonPath("$.temperature", "> 25.5");
 
@@ -110,7 +110,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testFilterStageJsonPathString() {
+    void testFilterStageJsonPathString() {
         FilterStage stage = FilterStage.byJsonPath("$.status", "== 'active'");
 
         MqttMessage active = createMessage("sensors/status", "{\"status\": \"active\"}", 1);
@@ -123,7 +123,7 @@ public class MqttEventPipelineTest {
     // --- MapStage Tests ---
 
     @Test
-    public void testMapStageExtractField() {
+    void testMapStageExtractField() {
         MapStage stage = MapStage.extract("$.data.value");
 
         MqttMessage msg = createMessage("test", "{\"data\": {\"value\": 42}}", 1);
@@ -134,7 +134,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testMapStageRenameKey() {
+    void testMapStageRenameKey() {
         MapStage stage = MapStage.rename("temp", "temperature");
 
         MqttMessage msg = createMessage("test", "{\"temp\": 22.5, \"humidity\": 50}", 1);
@@ -150,7 +150,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testMapStageTemplate() {
+    void testMapStageTemplate() {
         MapStage stage = MapStage.template("{\"info\": \"topic: ${topic}, qos: ${qos}\", \"val\": ${payload}}");
 
         MqttMessage msg = createMessage("sensors/1", "100", 2);
@@ -166,7 +166,7 @@ public class MqttEventPipelineTest {
     // --- ThrottleStage Tests ---
 
     @Test
-    public void testThrottleStageRateLimiting() throws Exception {
+    void testThrottleStageRateLimiting() throws Exception {
         // Max 2 events per second
         ThrottleStage stage = new ThrottleStage(2);
 
@@ -210,7 +210,7 @@ public class MqttEventPipelineTest {
     // --- TumblingWindowAggregator Tests ---
 
     @Test
-    public void testTumblingWindowAggregatorFunctions() {
+    void testTumblingWindowAggregatorFunctions() {
         // Average
         TumblingWindowAggregator avgAgg = new TumblingWindowAggregator(1000, "avg", "$.val");
         avgAgg.process(createMessage("t", "{\"val\": 10}", 1));
@@ -267,7 +267,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testTumblingWindowAggregatorTimeFlush() throws Exception {
+    void testTumblingWindowAggregatorTimeFlush() throws Exception {
         // Window duration of 1000 ms
         TumblingWindowAggregator aggregator = new TumblingWindowAggregator(1000, "count", null);
 
@@ -298,7 +298,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testTumblingWindowAggregatorCloseFlush() {
+    void testTumblingWindowAggregatorCloseFlush() {
         TumblingWindowAggregator aggregator = new TumblingWindowAggregator(5000, "count", null);
 
         // No messages -> empty on close
@@ -320,7 +320,7 @@ public class MqttEventPipelineTest {
     // --- SlidingWindowAggregator Tests ---
 
     @Test
-    public void testSlidingWindowAggregator() {
+    void testSlidingWindowAggregator() {
         // Size-based sliding window of 3
         SlidingWindowAggregator aggregator = new SlidingWindowAggregator(3, "sum", "$.val");
 
@@ -354,7 +354,7 @@ public class MqttEventPipelineTest {
     // --- Combination Tests ---
 
     @Test
-    public void testPipelineCombinationsFilterMap() {
+    void testPipelineCombinationsFilterMap() {
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
                 .addStage(FilterStage.byJsonPath("$.temperature", "> 25"))
                 .addStage(MapStage.extract("$.temperature"))
@@ -373,7 +373,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testPipelineCombinationsThrottleMap() throws Exception {
+    void testPipelineCombinationsThrottleMap() throws Exception {
         ThrottleStage throttle = new ThrottleStage(1);
         MapStage map = MapStage.template("{\"v\": ${payload}}");
 
@@ -393,7 +393,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testPipelineCombinationsTumblingWindowFilterMapTime() throws Exception {
+    void testPipelineCombinationsTumblingWindowFilterMapTime() throws Exception {
         TumblingWindowAggregator window = new TumblingWindowAggregator(1000, "avg", "$.temperature");
         // A lambda-based custom stage, not a FilterStage subclass: FilterStage's
         // constructors are private, exposing only the named factory methods.
@@ -427,7 +427,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testPipelineCombinationsTumblingWindowFilterMapClose() {
+    void testPipelineCombinationsTumblingWindowFilterMapClose() {
         TumblingWindowAggregator window = new TumblingWindowAggregator(5000, "count", null);
         MqttEventStage filter = message -> message.getPayload().equals("3")
                 ? Optional.of(message)
@@ -454,7 +454,7 @@ public class MqttEventPipelineTest {
     // --- Aggregation arithmetic fixes (finding A10) ---
 
     @Test
-    public void testTumblingWindowAvgIgnoresMessagesMissingField() {
+    void testTumblingWindowAvgIgnoresMessagesMissingField() {
         // Only 2 of the 3 messages carry "val"; the average must be computed
         // over those 2 values (15.0), not diluted by dividing by 3 as the old
         // TumblingWindowAggregator.computeAverage() did.
@@ -469,7 +469,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testSlidingWindowMinMaxOverAllNegativeValues() {
+    void testSlidingWindowMinMaxOverAllNegativeValues() {
         // The old SlidingWindowAggregator.computeMax() seeded with
         // Double.MIN_VALUE (the smallest positive double), so an all-negative
         // window never updated it and the sentinel fallback reported 0.0.
@@ -487,7 +487,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testTumblingWindowNoNumericValuesEmitsNothingButCountAndArrayStillDo() {
+    void testTumblingWindowNoNumericValuesEmitsNothingButCountAndArrayStillDo() {
         for (String function : List.of("avg", "min", "max", "sum")) {
             TumblingWindowAggregator aggregator = new TumblingWindowAggregator(1000, function, "$.val");
             aggregator.process(createMessage("t", "{\"other\": 1}", 1));
@@ -507,7 +507,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testSlidingWindowNoNumericValuesEmitsNothingButCountAndArrayStillDo() {
+    void testSlidingWindowNoNumericValuesEmitsNothingButCountAndArrayStillDo() {
         for (String function : List.of("avg", "min", "max", "sum")) {
             SlidingWindowAggregator aggregator = new SlidingWindowAggregator(2, function, "$.val");
             aggregator.process(createMessage("t", "{\"other\": 1}", 1));
@@ -527,7 +527,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testTumblingAndSlidingAggregatorsAgreeOnSameInput() {
+    void testTumblingAndSlidingAggregatorsAgreeOnSameInput() {
         // Same messages (including one missing the field, and a negative
         // value) fed to both aggregators must produce identical results for
         // every numeric function - a regression test for the arithmetic
@@ -562,7 +562,7 @@ public class MqttEventPipelineTest {
     // --- Time-driven tumbling window flush (finding A11) ---
 
     @Test
-    public void testTumblingWindowPollExpiredReturnsEmptyWhileWindowOpen() {
+    void testTumblingWindowPollExpiredReturnsEmptyWhileWindowOpen() {
         TumblingWindowAggregator aggregator = new TumblingWindowAggregator(1000, "count", null);
         aggregator.process(createMessage("t", "{}", 1));
 
@@ -571,7 +571,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testTumblingWindowPollExpiredEmitsOnceElapsedWithNoFurtherMessages() throws Exception {
+    void testTumblingWindowPollExpiredEmitsOnceElapsedWithNoFurtherMessages() throws Exception {
         TumblingWindowAggregator aggregator = new TumblingWindowAggregator(200, "count", null);
         aggregator.process(createMessage("t", "{}", 1));
         aggregator.process(createMessage("t", "{}", 1));
@@ -587,7 +587,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testPipelinePollExpiredRoutesEmittedMessageThroughLaterStages() throws Exception {
+    void testPipelinePollExpiredRoutesEmittedMessageThroughLaterStages() throws Exception {
         TumblingWindowAggregator window = new TumblingWindowAggregator(150, "count", null);
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
                 .addStage(window)
@@ -603,7 +603,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testPipelinePollExpiredRoutesEmittedMessageThroughLaterMapStage() throws Exception {
+    void testPipelinePollExpiredRoutesEmittedMessageThroughLaterMapStage() throws Exception {
         TumblingWindowAggregator window = new TumblingWindowAggregator(150, "count", null);
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
                 .addStage(window)
@@ -623,7 +623,7 @@ public class MqttEventPipelineTest {
     // --- ThrottleStage internals (findings B3, B4) ---
 
     @Test
-    public void testThrottleStageConcurrentConsumptionNeverExceedsCapacity() throws Exception {
+    void testThrottleStageConcurrentConsumptionNeverExceedsCapacity() throws Exception {
         int capacity = 50;
         // Measured from construction, not from the start signal: ThrottleStage seeds its refill
         // clock in its constructor, so the window it refills over includes the executor setup
@@ -677,7 +677,7 @@ public class MqttEventPipelineTest {
     }
 
     @Test
-    public void testThrottleStageConcurrentRefillDoesNotResurrectConsumedTokens() throws Exception {
+    void testThrottleStageConcurrentRefillDoesNotResurrectConsumedTokens() throws Exception {
         int capacity = 20;
         ThrottleStage stage = new ThrottleStage(capacity);
 

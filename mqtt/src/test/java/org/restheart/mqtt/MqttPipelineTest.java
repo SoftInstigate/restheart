@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttPipelineTest {
+class MqttPipelineTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttPipelineTest.class);
 

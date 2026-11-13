@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,7 +63,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttClientSingletonPoisoningRegressionTest {
+class MqttClientSingletonPoisoningRegressionTest {
 
     /**
      * A classloader that loads every {@code org.restheart.mqtt.*} class fresh (bypassing
@@ -181,15 +181,12 @@ public class MqttClientSingletonPoisoningRegressionTest {
 
             // step 2: getClient() still requires configuration and must throw IllegalStateException
             // naming the 'mqtt-client' plugin
-            try {
-                getClient.invoke(instance);
-                fail("getClient() must throw IllegalStateException before init() has been called");
-            } catch (InvocationTargetException ite) {
-                Throwable cause = ite.getCause();
-                assertInstanceOf(IllegalStateException.class, cause);
-                assertTrue(cause.getMessage().contains("mqtt-client"),
-                        "exception message must name the 'mqtt-client' plugin, was: " + cause.getMessage());
-            }
+            var ite = assertThrows(InvocationTargetException.class, () -> getClient.invoke(instance),
+                    "getClient() must throw IllegalStateException before init() has been called");
+            Throwable cause = ite.getCause();
+            assertInstanceOf(IllegalStateException.class, cause);
+            assertTrue(cause.getMessage().contains("mqtt-client"),
+                    "exception message must name the 'mqtt-client' plugin, was: " + cause.getMessage());
 
             // step 3: a subsequent, valid init() must not be poisoned by step 1; getInstance() must
             // keep returning the same instance

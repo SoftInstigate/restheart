@@ -39,6 +39,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -66,7 +68,7 @@ import io.undertow.util.HttpString;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttRestServiceTest {
+class MqttRestServiceTest {
 
     /** A request/response pair backed by the same fake exchange. */
     private record Exchange(JsonRequest request, JsonResponse response) {
@@ -228,24 +230,12 @@ public class MqttRestServiceTest {
         assertTrue(obj.get("error").getAsString().contains("sensors/missing"));
     }
 
-    @Test
-    @DisplayName("handle(): GET without a topic parameter returns 400 with an error property")
-    void testHandleGetMissingTopicReturns400() {
+    @ParameterizedTest(name = "handle(): GET with topic parameter [{0}] returns 400 with an error property")
+    @NullAndEmptySource
+    @DisplayName("handle(): GET without a topic parameter, or with an empty one, returns 400 with an error property")
+    void testHandleGetMissingOrEmptyTopicReturns400(String topic) {
         var service = serviceWithRouter(router);
-        var ex = exchangeFor(METHOD.GET, null);
-
-        service.handle(ex.request(), ex.response());
-
-        assertEquals(HttpStatus.SC_BAD_REQUEST, ex.response().getStatusCode());
-        var obj = ex.response().getContent().getAsJsonObject();
-        assertNotNull(obj.get("error"));
-    }
-
-    @Test
-    @DisplayName("handle(): GET with an empty topic parameter returns 400 with an error property")
-    void testHandleGetEmptyTopicReturns400() {
-        var service = serviceWithRouter(router);
-        var ex = exchangeFor(METHOD.GET, "");
+        var ex = exchangeFor(METHOD.GET, topic);
 
         service.handle(ex.request(), ex.response());
 

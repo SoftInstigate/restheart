@@ -42,10 +42,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.InterceptPoint;
@@ -62,7 +66,7 @@ import io.undertow.security.idm.Account;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttTopicAuthorizerTest {
+class MqttTopicAuthorizerTest {
 
     private MqttTopicAuthorizer authorizer;
 
@@ -239,112 +243,72 @@ public class MqttTopicAuthorizerTest {
 
     // --- isTopicAllowed ---
 
-    @Test
-    @DisplayName("Empty allowed list denies all topics")
-    void testEmptyAllowedList() {
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("sensors/temp", List.of()));
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("sensors/temp", null));
+    static Stream<Arguments> isTopicAllowedCases() {
+        return Stream.of(
+                Arguments.of("Empty allowed list denies all topics", "sensors/temp", List.of(), false),
+                Arguments.of("Empty allowed list denies all topics", "sensors/temp", null, false),
+
+                Arguments.of("Exact match allows topic", "sensors/temp", List.of("sensors/temp"), true),
+
+                Arguments.of("Exact match denies non-matching topic", "sensors/humidity", List.of("sensors/temp"), false),
+
+                Arguments.of("Multi-level wildcard (#) allows all topics", "sensors/temp", List.of("#"), true),
+                Arguments.of("Multi-level wildcard (#) allows all topics", "anything/at/all", List.of("#"), true),
+
+                Arguments.of("Multi-level wildcard (prefix/#) allows matching topics", "sensors/temp", List.of("sensors/#"), true),
+                Arguments.of("Multi-level wildcard (prefix/#) allows matching topics", "sensors/room1/temp", List.of("sensors/#"), true),
+                Arguments.of("Multi-level wildcard (prefix/#) allows matching topics", "sensors/a/b/c", List.of("sensors/#"), true),
+                Arguments.of("Multi-level wildcard (prefix/#) allows matching topics", "traffic/flow", List.of("sensors/#"), false),
+
+                Arguments.of("Single-level wildcard (+) matches one level", "sensors/room1/temp", List.of("sensors/+/temp"), true),
+                Arguments.of("Single-level wildcard (+) matches one level", "sensors/room2/temp", List.of("sensors/+/temp"), true),
+                Arguments.of("Single-level wildcard (+) matches one level", "sensors/room1/humidity", List.of("sensors/+/temp"), false),
+                Arguments.of("Single-level wildcard (+) matches one level", "sensors/a/b/temp", List.of("sensors/+/temp"), false), // too many levels
+
+                Arguments.of("Multiple ACL entries: any match allows", "sensors/temp", List.of("sensors/#", "traffic/+"), true),
+                Arguments.of("Multiple ACL entries: any match allows", "traffic/flow", List.of("sensors/#", "traffic/+"), true),
+                Arguments.of("Multiple ACL entries: any match allows", "admin/config", List.of("sensors/#", "traffic/+"), false),
+
+                Arguments.of("Denied topic returns false", "admin/config", List.of("sensors/#"), false),
+                Arguments.of("Denied topic returns false", "internal/debug", List.of("sensors/#"), false));
     }
 
-    @Test
-    @DisplayName("Exact match allows topic")
-    void testExactMatch() {
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/temp", List.of("sensors/temp")));
-    }
-
-    @Test
-    @DisplayName("Exact match denies non-matching topic")
-    void testExactMatchDenied() {
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("sensors/humidity", List.of("sensors/temp")));
-    }
-
-    @Test
-    @DisplayName("Multi-level wildcard (#) allows all topics")
-    void testMultiLevelWildcardAll() {
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/temp", List.of("#")));
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("anything/at/all", List.of("#")));
-    }
-
-    @Test
-    @DisplayName("Multi-level wildcard (prefix/#) allows matching topics")
-    void testMultiLevelWildcardPrefix() {
-        List<String> allowed = List.of("sensors/#");
-
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/temp", allowed));
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/room1/temp", allowed));
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/a/b/c", allowed));
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("traffic/flow", allowed));
-    }
-
-    @Test
-    @DisplayName("Single-level wildcard (+) matches one level")
-    void testSingleLevelWildcard() {
-        List<String> allowed = List.of("sensors/+/temp");
-
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/room1/temp", allowed));
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/room2/temp", allowed));
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("sensors/room1/humidity", allowed));
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("sensors/a/b/temp", allowed)); // too many levels
-    }
-
-    @Test
-    @DisplayName("Multiple ACL entries: any match allows")
-    void testMultipleAclEntries() {
-        List<String> allowed = List.of("sensors/#", "traffic/+");
-
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/temp", allowed));
-        assertTrue(MqttTopicAuthorizer.isTopicAllowed("traffic/flow", allowed));
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("admin/config", allowed));
-    }
-
-    @Test
-    @DisplayName("Denied topic returns false")
-    void testDeniedTopic() {
-        List<String> allowed = List.of("sensors/#");
-
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("admin/config", allowed));
-        assertFalse(MqttTopicAuthorizer.isTopicAllowed("internal/debug", allowed));
+    @ParameterizedTest(name = "{0}: isTopicAllowed({1}, {2}) is {3}")
+    @MethodSource("isTopicAllowedCases")
+    @DisplayName("isTopicAllowed: exact matches, # and + wildcards, multiple ACL entries, empty and null lists")
+    void testIsTopicAllowed(String scenario, String topic, List<String> allowed, boolean expected) {
+        assertEquals(expected, MqttTopicAuthorizer.isTopicAllowed(topic, allowed), scenario);
     }
 
     // --- patternCovers ---
 
-    @Test
-    @DisplayName("Pattern # covers everything")
-    void testPatternHashMatchesAll() {
-        assertTrue(MqttTopicAuthorizer.patternCovers("#", "any/topic"));
-        assertTrue(MqttTopicAuthorizer.patternCovers("#", "a"));
+    static Stream<Arguments> patternCoversCases() {
+        return Stream.of(
+                Arguments.of("Pattern # covers everything", "#", "any/topic", true),
+                Arguments.of("Pattern # covers everything", "#", "a", true),
+
+                Arguments.of("Pattern sensors/# covers sensors prefix", "sensors/#", "sensors/temp", true),
+                Arguments.of("Pattern sensors/# covers sensors prefix", "sensors/#", "sensors/room1/temp", true),
+                Arguments.of("Pattern sensors/# covers sensors prefix", "sensors/#", "traffic/flow", false),
+
+                Arguments.of("Pattern sensors/+/temp covers single level", "sensors/+/temp", "sensors/room1/temp", true),
+                Arguments.of("Pattern sensors/+/temp covers single level", "sensors/+/temp", "sensors/room2/temp", true),
+                Arguments.of("Pattern sensors/+/temp covers single level", "sensors/+/temp", "sensors/room1/humidity", false),
+                Arguments.of("Pattern sensors/+/temp covers single level", "sensors/+/temp", "sensors/a/b/temp", false),
+
+                Arguments.of("Exact pattern match", "sensors/temp", "sensors/temp", true),
+                Arguments.of("Exact pattern match", "sensors/temp", "sensors/humidity", false),
+
+                Arguments.of("Pattern with multiple wildcards", "sensors/+/+", "sensors/room1/temp", true),
+                Arguments.of("Pattern with multiple wildcards", "+/+/+", "a/b/c", true),
+                Arguments.of("Pattern with multiple wildcards", "+/+/+", "a/b", false));
     }
 
-    @Test
-    @DisplayName("Pattern sensors/# covers sensors prefix")
-    void testPatternPrefixHash() {
-        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/temp"));
-        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/room1/temp"));
-        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/#", "traffic/flow"));
-    }
-
-    @Test
-    @DisplayName("Pattern sensors/+/temp covers single level")
-    void testPatternSingleLevel() {
-        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/room1/temp"));
-        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/room2/temp"));
-        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/room1/humidity"));
-        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/a/b/temp"));
-    }
-
-    @Test
-    @DisplayName("Exact pattern match")
-    void testPatternExactMatch() {
-        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors/temp"));
-        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors/humidity"));
-    }
-
-    @Test
-    @DisplayName("Pattern with multiple wildcards")
-    void testPatternMultipleWildcards() {
-        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+/+", "sensors/room1/temp"));
-        assertTrue(MqttTopicAuthorizer.patternCovers("+/+/+", "a/b/c"));
-        assertFalse(MqttTopicAuthorizer.patternCovers("+/+/+", "a/b"));
+    @ParameterizedTest(name = "{0}: patternCovers({1}, {2}) is {3}")
+    @MethodSource("patternCoversCases")
+    @DisplayName("patternCovers: # alone, a prefix/#, single-level +, exact patterns and multiple wildcards")
+    void testPatternCovers(String scenario, String pattern, String requested, boolean expected) {
+        assertEquals(expected, MqttTopicAuthorizer.patternCovers(pattern, requested), scenario);
     }
 
     // --- patternCovers: privilege-escalation regression (the defect this class fixes) ---
@@ -460,31 +424,21 @@ public class MqttTopicAuthorizerTest {
 
     // --- resolve(): the paths this interceptor actually protects ---
 
-    @Test
-    @DisplayName("resolve() is true for /mqtt-sse, the SSE endpoint this whole effort protects")
-    void testResolveTrueForMqttSse() {
-        ServiceRequest<?> request = requestWithPath("/mqtt-sse");
-        ServiceResponse<?> response = mock(ServiceResponse.class);
-
-        assertTrue(authorizer.resolve(request, response));
+    static Stream<Arguments> resolveTruePaths() {
+        return Stream.of(
+                Arguments.of("/mqtt-sse", "the SSE endpoint this whole effort protects"),
+                Arguments.of("/mqtt", "the plain MQTT endpoint"),
+                Arguments.of("/mqtt/", "the plain MQTT endpoint with a trailing slash"));
     }
 
-    @Test
-    @DisplayName("resolve() is true for /mqtt, the plain MQTT endpoint")
-    void testResolveTrueForMqtt() {
-        ServiceRequest<?> request = requestWithPath("/mqtt");
+    @ParameterizedTest(name = "resolve() is true for {0}, {1}")
+    @MethodSource("resolveTruePaths")
+    @DisplayName("resolve() is true for /mqtt-sse, /mqtt and /mqtt/")
+    void testResolveTrue(String path, String why) {
+        ServiceRequest<?> request = requestWithPath(path);
         ServiceResponse<?> response = mock(ServiceResponse.class);
 
-        assertTrue(authorizer.resolve(request, response));
-    }
-
-    @Test
-    @DisplayName("resolve() is true for /mqtt/, the plain MQTT endpoint with a trailing slash")
-    void testResolveTrueForMqttTrailingSlash() {
-        ServiceRequest<?> request = requestWithPath("/mqtt/");
-        ServiceResponse<?> response = mock(ServiceResponse.class);
-
-        assertTrue(authorizer.resolve(request, response));
+        assertTrue(authorizer.resolve(request, response), "resolve() must be true for " + path + ", " + why);
     }
 
     @Test
@@ -513,40 +467,23 @@ public class MqttTopicAuthorizerTest {
                         + "request bypass the ACL entirely");
     }
 
-    @Test
-    @DisplayName("resolve() is false for /mqttx, which merely shares a character prefix with /mqtt")
-    void testResolveFalseForMqttxLookalike() {
-        ServiceRequest<?> request = requestWithPath("/mqttx");
-        ServiceResponse<?> response = mock(ServiceResponse.class);
-
-        assertFalse(authorizer.resolve(request, response));
+    static Stream<Arguments> resolveFalsePaths() {
+        return Stream.of(
+                Arguments.of("/mqttx", "which merely shares a character prefix with /mqtt"),
+                Arguments.of("/mqtt-foo", "which merely shares a character prefix with /mqtt"),
+                Arguments.of("/mqttsse", "which merely shares a character prefix with /mqtt"),
+                Arguments.of("/some-other-service", "an unrelated path"));
     }
 
-    @Test
-    @DisplayName("resolve() is false for /mqtt-foo, which merely shares a character prefix with /mqtt")
-    void testResolveFalseForMqttFooLookalike() {
-        ServiceRequest<?> request = requestWithPath("/mqtt-foo");
+    @ParameterizedTest(name = "resolve() is false for {0}, {1}")
+    @MethodSource("resolveFalsePaths")
+    @DisplayName("resolve() is false for a path that merely shares a character prefix with /mqtt, "
+            + "and for an unrelated path")
+    void testResolveFalse(String path, String why) {
+        ServiceRequest<?> request = requestWithPath(path);
         ServiceResponse<?> response = mock(ServiceResponse.class);
 
-        assertFalse(authorizer.resolve(request, response));
-    }
-
-    @Test
-    @DisplayName("resolve() is false for /mqttsse, which merely shares a character prefix with /mqtt")
-    void testResolveFalseForMqttsseLookalike() {
-        ServiceRequest<?> request = requestWithPath("/mqttsse");
-        ServiceResponse<?> response = mock(ServiceResponse.class);
-
-        assertFalse(authorizer.resolve(request, response));
-    }
-
-    @Test
-    @DisplayName("resolve() is false for an unrelated path")
-    void testResolveFalseForUnrelatedPath() {
-        ServiceRequest<?> request = requestWithPath("/some-other-service");
-        ServiceResponse<?> response = mock(ServiceResponse.class);
-
-        assertFalse(authorizer.resolve(request, response));
+        assertFalse(authorizer.resolve(request, response), "resolve() must be false for " + path + ", " + why);
     }
 
     // --- A request that names no topic still subscribes to one ---

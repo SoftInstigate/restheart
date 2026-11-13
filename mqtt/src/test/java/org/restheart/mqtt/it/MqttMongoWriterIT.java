@@ -62,7 +62,7 @@ import com.mongodb.client.model.Filters;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttMongoWriterIT extends MqttITBase {
+class MqttMongoWriterIT extends MqttITBase {
 
     /** How long a positive assertion polls for a document to appear before giving up. */
     private static final Duration POLL_TIMEOUT = Duration.ofSeconds(20);

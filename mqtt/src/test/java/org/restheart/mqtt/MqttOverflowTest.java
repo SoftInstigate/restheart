@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttOverflowTest {
+class MqttOverflowTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttOverflowTest.class);
 

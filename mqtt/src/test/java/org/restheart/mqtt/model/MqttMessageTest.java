@@ -5,19 +5,23 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.time.Instant;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Unit tests for {@link MqttMessage#equals(Object)} and {@link MqttMessage#hashCode()}.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttMessageTest {
+class MqttMessageTest {
 
     private static final Instant T1 = Instant.parse("2026-01-01T00:00:00Z");
     private static final Instant T2 = Instant.parse("2026-01-02T00:00:00Z");
@@ -44,43 +48,27 @@ public class MqttMessageTest {
         assertEquals(a, a); // NOSONAR java:S5863 - deliberate: tests equals reflexivity
     }
 
-    @Test
-    @DisplayName("Differing topic makes messages unequal")
-    void testDifferentTopicNotEqual() {
-        MqttMessage a = new MqttMessage("sensors/temp", "{\"temp\":25}", 1, T1);
-        MqttMessage b = new MqttMessage("sensors/humidity", "{\"temp\":25}", 1, T1);
-        assertNotEquals(a, b);
+    static Stream<Arguments> messagesDifferingInOneField() {
+        return Stream.of(
+                Arguments.of("topic", new MqttMessage("sensors/humidity", "{\"temp\":25}", 1, T1)),
+                Arguments.of("payload", new MqttMessage("sensors/temp", "{\"temp\":26}", 1, T1)),
+                Arguments.of("qos", new MqttMessage("sensors/temp", "{\"temp\":25}", 2, T1)),
+                Arguments.of("receivedAt", new MqttMessage("sensors/temp", "{\"temp\":25}", 1, T2)));
     }
 
-    @Test
-    @DisplayName("Differing payload makes messages unequal")
-    void testDifferentPayloadNotEqual() {
+    @ParameterizedTest(name = "Differing {0} makes messages unequal")
+    @MethodSource("messagesDifferingInOneField")
+    @DisplayName("A single differing field makes messages unequal")
+    void testOneDifferingFieldNotEqual(String field, MqttMessage b) {
         MqttMessage a = new MqttMessage("sensors/temp", "{\"temp\":25}", 1, T1);
-        MqttMessage b = new MqttMessage("sensors/temp", "{\"temp\":26}", 1, T1);
-        assertNotEquals(a, b);
-    }
-
-    @Test
-    @DisplayName("Differing qos makes messages unequal")
-    void testDifferentQosNotEqual() {
-        MqttMessage a = new MqttMessage("sensors/temp", "{\"temp\":25}", 1, T1);
-        MqttMessage b = new MqttMessage("sensors/temp", "{\"temp\":25}", 2, T1);
-        assertNotEquals(a, b);
-    }
-
-    @Test
-    @DisplayName("Differing receivedAt makes messages unequal")
-    void testDifferentReceivedAtNotEqual() {
-        MqttMessage a = new MqttMessage("sensors/temp", "{\"temp\":25}", 1, T1);
-        MqttMessage b = new MqttMessage("sensors/temp", "{\"temp\":25}", 1, T2);
-        assertNotEquals(a, b);
+        assertNotEquals(a, b, "messages differing only in " + field + " must not be equal");
     }
 
     @Test
     @DisplayName("A message is never equal to null or an instance of a different type")
     void testNotEqualToNullOrOtherType() {
         MqttMessage a = new MqttMessage("sensors/temp", "{\"temp\":25}", 1, T1);
-        assertNotEquals(a, null);
+        assertNotEquals(null, a);
         assertFalse(a.equals("sensors/temp"));
     }
 

@@ -22,7 +22,10 @@
 package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -35,6 +38,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 /**
@@ -45,20 +51,20 @@ import org.mockito.Mockito;
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttClientProviderTest {
+class MqttClientProviderTest {
 
     private MqttClientProvider provider;
     private Map<String, Object> config;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         provider = new MqttClientProvider();
         config = new HashMap<>();
         resetMqttClientSingleton();
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         resetMqttClientSingleton();
     }
 
@@ -102,7 +108,7 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test default configuration values")
-    public void testDefaultConfiguration() throws Exception {
+    void testDefaultConfiguration() throws Exception {
         callInitWithoutConnection();
 
         assertTrue(MqttClientSingleton.isInitialized());
@@ -112,25 +118,25 @@ public class MqttClientProviderTest {
         assertTrue(cfg.getClientId().startsWith("restheart-"));
         assertNull(cfg.getUsername());
         assertNull(cfg.getPassword());
-        assertEquals(false, cfg.isCleanSession());
+        assertFalse(cfg.isCleanSession());
         assertEquals(60, cfg.getKeepAliveSeconds());
         assertEquals(0xFFFFFFFFL, cfg.getSessionExpirySeconds());
         assertEquals(10, cfg.getConnectTimeoutSeconds());
-        assertEquals(false, cfg.isTlsEnabled());
-        assertEquals(true, cfg.getReconnectConfig().isEnabled());
+        assertFalse(cfg.isTlsEnabled());
+        assertTrue(cfg.getReconnectConfig().isEnabled());
         assertEquals(1000L, cfg.getReconnectConfig().getInitialDelayMs());
         assertEquals(30000L, cfg.getReconnectConfig().getMaxDelayMs());
         assertNull(cfg.getWillConfig().getWillTopic());
         assertNull(cfg.getWillConfig().getWillPayload());
         assertEquals(0, cfg.getWillConfig().getWillQos());
-        assertEquals(false, cfg.getWillConfig().getWillRetain());
+        assertFalse(cfg.getWillConfig().getWillRetain());
         assertEquals(0L, cfg.getWillConfig().getWillDelaySeconds());
         assertNull(cfg.getWillConfig().getWillMessageExpirySeconds());
     }
 
     @Test
     @DisplayName("Test custom broker URL configuration")
-    public void testCustomBrokerUrl() throws Exception {
+    void testCustomBrokerUrl() throws Exception {
         config.put("broker-url", "ssl://mqtt.example.com:8883");
         callInitWithoutConnection();
 
@@ -139,7 +145,7 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test MQTT 5 protocol version is parsed correctly")
-    public void testMqtt5ProtocolVersion() throws Exception {
+    void testMqtt5ProtocolVersion() throws Exception {
         config.put("protocol-version", 5);
         callInitWithoutConnection();
 
@@ -148,7 +154,7 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test authentication credentials are parsed correctly")
-    public void testAuthenticationConfiguration() throws Exception {
+    void testAuthenticationConfiguration() throws Exception {
         config.put("username", "testuser");
         config.put("password", "testpass");
         callInitWithoutConnection();
@@ -159,29 +165,29 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test session configuration is parsed correctly")
-    public void testSessionConfiguration() throws Exception {
+    void testSessionConfiguration() throws Exception {
         config.put("clean-session", true);
         config.put("keep-alive-seconds", 120);
         config.put("session-expiry-seconds", 3600L);
         callInitWithoutConnection();
 
-        assertEquals(true, getSingletonConfig().isCleanSession());
+        assertTrue(getSingletonConfig().isCleanSession());
         assertEquals(120, getSingletonConfig().getKeepAliveSeconds());
         assertEquals(3600L, getSingletonConfig().getSessionExpirySeconds());
     }
 
     @Test
     @DisplayName("Test TLS configuration is parsed correctly")
-    public void testTlsConfiguration() throws Exception {
+    void testTlsConfiguration() throws Exception {
         config.put("tls", true);
         callInitWithoutConnection();
 
-        assertEquals(true, getSingletonConfig().isTlsEnabled());
+        assertTrue(getSingletonConfig().isTlsEnabled());
     }
 
     @Test
     @DisplayName("Test reconnect configuration with nested map is parsed correctly")
-    public void testReconnectConfiguration() throws Exception {
+    void testReconnectConfiguration() throws Exception {
         Map<String, Object> reconnect = new HashMap<>();
         reconnect.put("enabled", false);
         reconnect.put("initial-delay-ms", 2000L);
@@ -189,14 +195,14 @@ public class MqttClientProviderTest {
         config.put("reconnect", reconnect);
         callInitWithoutConnection();
 
-        assertEquals(false, getSingletonConfig().getReconnectConfig().isEnabled());
+        assertFalse(getSingletonConfig().getReconnectConfig().isEnabled());
         assertEquals(2000L, getSingletonConfig().getReconnectConfig().getInitialDelayMs());
         assertEquals(60000L, getSingletonConfig().getReconnectConfig().getMaxDelayMs());
     }
 
     @Test
     @DisplayName("Test will message configuration for MQTT 3 is parsed correctly")
-    public void testWillMessageConfigurationMqtt3() throws Exception {
+    void testWillMessageConfigurationMqtt3() throws Exception {
         Map<String, Object> will = new HashMap<>();
         will.put("topic", "device/status");
         will.put("payload", "offline");
@@ -209,14 +215,14 @@ public class MqttClientProviderTest {
         assertEquals("device/status", getSingletonConfig().getWillConfig().getWillTopic());
         assertEquals("offline", getSingletonConfig().getWillConfig().getWillPayload());
         assertEquals(1, getSingletonConfig().getWillConfig().getWillQos());
-        assertEquals(true, getSingletonConfig().getWillConfig().getWillRetain());
+        assertTrue(getSingletonConfig().getWillConfig().getWillRetain());
         assertEquals(0L, getSingletonConfig().getWillConfig().getWillDelaySeconds());
         assertNull(getSingletonConfig().getWillConfig().getWillMessageExpirySeconds());
     }
 
     @Test
     @DisplayName("Test will message configuration for MQTT 5 with delay and expiry is parsed correctly")
-    public void testWillMessageConfigurationMqtt5() throws Exception {
+    void testWillMessageConfigurationMqtt5() throws Exception {
         Map<String, Object> will = new HashMap<>();
         will.put("topic", "device/status");
         will.put("payload", "offline");
@@ -231,14 +237,14 @@ public class MqttClientProviderTest {
         assertEquals("device/status", getSingletonConfig().getWillConfig().getWillTopic());
         assertEquals("offline", getSingletonConfig().getWillConfig().getWillPayload());
         assertEquals(2, getSingletonConfig().getWillConfig().getWillQos());
-        assertEquals(false, getSingletonConfig().getWillConfig().getWillRetain());
+        assertFalse(getSingletonConfig().getWillConfig().getWillRetain());
         assertEquals(30L, getSingletonConfig().getWillConfig().getWillDelaySeconds());
         assertEquals(3600L, getSingletonConfig().getWillConfig().getWillMessageExpirySeconds());
     }
 
     @Test
     @DisplayName("Test will message with null topic and payload defaults correctly")
-    public void testWillMessageWithNullValues() throws Exception {
+    void testWillMessageWithNullValues() throws Exception {
         Map<String, Object> will = new HashMap<>();
         will.put("topic", null);
         will.put("payload", null);
@@ -248,12 +254,12 @@ public class MqttClientProviderTest {
         assertNull(getSingletonConfig().getWillConfig().getWillTopic());
         assertNull(getSingletonConfig().getWillConfig().getWillPayload());
         assertEquals(0, getSingletonConfig().getWillConfig().getWillQos());
-        assertEquals(false, getSingletonConfig().getWillConfig().getWillRetain());
+        assertFalse(getSingletonConfig().getWillConfig().getWillRetain());
     }
 
     @Test
     @DisplayName("Test will message expiry as null (no expiry) is handled correctly")
-    public void testWillMessageExpiryNull() throws Exception {
+    void testWillMessageExpiryNull() throws Exception {
         Map<String, Object> will = new HashMap<>();
         will.put("topic", "test/topic");
         will.put("payload", "test");
@@ -266,7 +272,7 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test configuration with only required fields uses defaults for optional fields")
-    public void testConfigurationWithMissingOptionalFields() throws Exception {
+    void testConfigurationWithMissingOptionalFields() throws Exception {
         config.put("broker-url", "tcp://localhost:1883");
         callInitWithoutConnection();
 
@@ -275,12 +281,12 @@ public class MqttClientProviderTest {
         assertNull(getSingletonConfig().getPassword());
         assertNull(getSingletonConfig().getWillConfig().getWillTopic());
         assertNull(getSingletonConfig().getWillConfig().getWillPayload());
-        assertEquals(true, getSingletonConfig().getReconnectConfig().isEnabled());
+        assertTrue(getSingletonConfig().getReconnectConfig().isEnabled());
     }
 
     @Test
     @DisplayName("Test custom client ID is parsed correctly")
-    public void testCustomClientId() throws Exception {
+    void testCustomClientId() throws Exception {
         config.put("client-id", "my-custom-client");
         callInitWithoutConnection();
 
@@ -289,26 +295,19 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test connect timeout is parsed correctly")
-    public void testConnectTimeout() throws Exception {
+    void testConnectTimeout() throws Exception {
         config.put("connect-timeout-seconds", 30);
         callInitWithoutConnection();
 
         assertEquals(30, getSingletonConfig().getConnectTimeoutSeconds());
     }
 
-    @Test
-    @DisplayName("Test client-id explicitly null generates a restheart- prefixed id")
-    public void testClientIdExplicitNullGeneratesDefault() throws Exception {
-        config.put("client-id", null);
-        callInitWithoutConnection();
-
-        assertTrue(getSingletonConfig().getClientId().startsWith("restheart-"));
-    }
-
-    @Test
-    @DisplayName("Test client-id blank generates a restheart- prefixed id")
-    public void testClientIdBlankGeneratesDefault() throws Exception {
-        config.put("client-id", "   ");
+    @ParameterizedTest(name = "client-id [{0}] generates a restheart- prefixed id")
+    @NullSource
+    @ValueSource(strings = {"   "})
+    @DisplayName("Test client-id explicitly null or blank generates a restheart- prefixed id")
+    void testClientIdNullOrBlankGeneratesDefault(String clientId) throws Exception {
+        config.put("client-id", clientId);
         callInitWithoutConnection();
 
         assertTrue(getSingletonConfig().getClientId().startsWith("restheart-"));
@@ -316,7 +315,7 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test client-id missing from config generates a restheart- prefixed id")
-    public void testClientIdMissingGeneratesDefault() throws Exception {
+    void testClientIdMissingGeneratesDefault() throws Exception {
         callInitWithoutConnection();
 
         assertTrue(getSingletonConfig().getClientId().startsWith("restheart-"));
@@ -324,7 +323,7 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test TLS trust store configuration is parsed correctly")
-    public void testTlsTrustStoreConfiguration() throws Exception {
+    void testTlsTrustStoreConfiguration() throws Exception {
         config.put("tls-trust-store", "/path/to/truststore.p12");
         config.put("tls-trust-store-password", "secret");
         callInitWithoutConnection();
@@ -335,10 +334,10 @@ public class MqttClientProviderTest {
 
     @Test
     @DisplayName("Test the JVM shutdown hook is registered exactly once across repeated init() calls")
-    public void testShutdownHookRegisteredOnce() throws Exception {
+    void testShutdownHookRegisteredOnce() throws Exception {
         callInitWithoutConnection();
         Thread firstHook = MqttClientProvider.mqttShutdownHookThread;
-        assertTrue(firstHook != null, "shutdown hook should be registered after init()");
+        assertNotNull(firstHook, "shutdown hook should be registered after init()");
 
         // re-initialize the singleton (as tearDown/setUp of a fresh provider run would) and
         // call init() again: the hook must not be registered a second time
@@ -347,6 +346,6 @@ public class MqttClientProviderTest {
         callInitWithoutConnection();
         Thread secondHook = MqttClientProvider.mqttShutdownHookThread;
 
-        assertTrue(firstHook == secondHook, "shutdown hook must be registered only once per classloader");
+        assertSame(firstHook, secondHook, "shutdown hook must be registered only once per classloader");
     }
 }

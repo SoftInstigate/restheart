@@ -32,7 +32,7 @@ import io.undertow.util.HttpString;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttStatsServiceTest {
+class MqttStatsServiceTest {
 
     /** A request/response pair backed by the same fake exchange. */
     private record Exchange(JsonRequest request, JsonResponse response) {

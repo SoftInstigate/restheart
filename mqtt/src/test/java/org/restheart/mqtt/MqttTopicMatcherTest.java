@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttTopicMatcherTest {
+class MqttTopicMatcherTest {
 
     @Test
     @DisplayName("exact topics match, different topics do not")
