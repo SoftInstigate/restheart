@@ -402,7 +402,7 @@ Three things to take from the real file rather than from this excerpt:
 
 - **`@Inject("config")` is an empty map when your plugin has no configuration block**, which is
   the ordinary case for a plugin that is enabled by default and has working defaults, so
-  `config.getOrDefault(...)` is enough. It was not always so: before RESTHeart 10 it was `null`,
+  `config.getOrDefault(...)` is enough. It was not always so: up to RESTHeart 9.17 it was `null`,
   and since a plugin that throws inside `@OnInit` aborts plugin instantiation, this very example
   stopped the whole server from starting when dropped in with no block. Writing this tutorial found
   that out; it is fixed in core
