@@ -79,10 +79,51 @@ jobs:
             core/target/plugins/*.jar
             core/target/plugins/lib/*.jar
 
+  # restheart-mqtt is not in the distribution and not in core's test sequence: its integration
+  # tests are behind the "mqtt-it" profile and run against the core built alongside it (see
+  # mqtt.yml, whose "integration-tests" job this one mirrors). They run here too, so that the
+  # archive attached to the release is the one they passed on.
+  mqtt-integration-tests:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up the GraalVM of the runtime image
+        uses: ./.github/actions/setup-graalvm-of-the-image
+
+      - name: Build core and run the mqtt integration tests
+        # the full reactor first, tests skipped: core/copy-plugins.xml stages modules that are
+        # not Maven dependencies of core, so "-pl core -am" would leave plugin jars out
+        run: |
+          mvn -B install -DskipTests
+          mvn -B clean verify -pl mqtt -Pmqtt-it
+
+      - name: Upload server logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: mqtt-it-logs
+          path: mqtt/target/it-logs/
+          if-no-files-found: warn
+
+      - name: Keep the installable archive for the release job
+        # uploaded from this job, not rebuilt in the next one: what is released is byte for byte
+        # what the integration tests ran against
+        uses: actions/upload-artifact@v6
+        with:
+          name: restheart-mqtt-archive
+          path: |
+            mqtt/target/restheart-mqtt-*.zip
+            mqtt/target/restheart-mqtt-*.tar.gz
+          if-no-files-found: error
+
   # Release the project on GitHub
   release:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
-    needs: build
+    # no release without the mqtt archive: it is attached only if its integration tests passed
+    needs: [build, mqtt-integration-tests]
     runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.set_version.outputs.version }}
@@ -95,6 +136,12 @@ jobs:
         with:
           name: restheart-artifacts
           path: core/target/
+
+      - name: Download the mqtt archive
+        uses: actions/download-artifact@v5
+        with:
+          name: restheart-mqtt-archive
+          path: mqtt/target/
 
       - name: Set VERSION
         id: set_version
@@ -110,9 +157,13 @@ jobs:
         with:
           body: |
             # Release ${{ env.VERSION }}
+          # fail, do not release without them, if the mqtt archives are not there
+          fail_on_unmatched_files: true
           files: |
             core/target/restheart.tar.gz
             core/target/restheart.zip
+            mqtt/target/restheart-mqtt-*.tar.gz
+            mqtt/target/restheart-mqtt-*.zip
           draft: true
           prerelease: false
 
