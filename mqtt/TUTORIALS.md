@@ -1,8 +1,8 @@
 # restheart-mqtt, four steps at a time
 
 > [!WARNING]
-> **Experimental.** The module is released together with RESTHeart, but it is new, and details may
-> still change from one release to the next. See [README.md](./README.md) for its status and how
+> **Experimental.** The module is a preview: no RESTHeart release includes it yet, and details may
+> still change from one build to the next. See [README.md](./README.md) for its status and how
 > to report what you find.
 
 This is one walkthrough in four parts, not four independent recipes. Each part starts from the
@@ -45,12 +45,17 @@ nothing here works without one of the two: the archive, or a build.
 Both compose files bind host ports **8080** and **1883**, so run one at a time and make sure
 nothing else is using them.
 
-The container runs `softinstigate/restheart:latest`, with the module mounted into it. If the
-module is ahead of the latest release — the snapshot archive, or a checkout of `master` — run the
-core built from `master` instead, by putting `RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest`
-in front of every `docker compose` command below. Never use an image older than 9.9.0: per-topic ACL
-enforcement on `/mqtt-sse` is missing there, so part 1's `403` is silently a `200` instead, which
-would teach you the opposite of the truth.
+The archive is a build of the `master` branch, so run it on the RESTHeart built from that branch.
+Set this once in each terminal you use, before any `docker compose` command:
+
+```
+export RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest
+```
+
+Without it the compose files run `softinstigate/restheart:latest`, a release the archive was not
+tested against. The same goes for a module you built from a checkout of `master`. Never use an
+image older than 9.9.0: per-topic ACL enforcement on `/mqtt-sse` is missing there, so part 1's
+`403` is silently a `200` instead, which would teach you the opposite of the truth.
 
 You will want three terminals: one for the server's logs, one holding a stream open, one to publish
 on. Commands below say which.

@@ -16,22 +16,13 @@ The module is not bundled with RESTHeart: you add it to an instance. "Quick star
 You need Docker and nothing else. The module's archive carries the plugin together with a two-container demo — RESTHeart and a Mosquitto broker, no MongoDB — where the module is already enabled and an ACL is in place. There is nothing to build and nothing to configure:
 
 ```
-curl -LO https://github.com/SoftInstigate/restheart/releases/download/<version>/restheart-mqtt-<version>.zip
-unzip restheart-mqtt-<version>.zip
-cd restheart-mqtt-<version>
-docker compose up
-```
-
-`<version>` is a RESTHeart release that includes the module: the archive is on its [release page](https://github.com/SoftInstigate/restheart/releases), next to `restheart.zip`. The first such release is the one after 9.17.0. Until it is out, or to try what is on `master`, use the snapshot build and run it on the RESTHeart built from `master`:
-
-```
 curl -LO https://github.com/SoftInstigate/restheart/releases/download/mqtt-snapshot/restheart-mqtt-10.0.0-SNAPSHOT.zip
 unzip restheart-mqtt-10.0.0-SNAPSHOT.zip
 cd restheart-mqtt-10.0.0-SNAPSHOT
 RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest docker compose up
 ```
 
-The notes of the [`mqtt-snapshot`](https://github.com/SoftInstigate/restheart/releases/tag/mqtt-snapshot) pre-release give the exact file name, should the version have changed.
+The module is a preview: **no RESTHeart release includes it yet**. What you download is the latest build of the `master` branch, and `RESTHEART_IMAGE` runs it on the RESTHeart built from that same branch. The notes of the [`mqtt-snapshot`](https://github.com/SoftInstigate/restheart/releases/tag/mqtt-snapshot) pre-release give the exact file name, should the version have changed.
 
 Wait for `RESTHeart started`, and find this line a little above it:
 
@@ -65,25 +56,27 @@ data:{"value": 21.5}
 
 ## Installing
 
-To add the module to your own RESTHeart, download the archive of **the same version as your RESTHeart** and unpack it into the instance's plugins directory:
+To add the module to your own RESTHeart, download the archive and unpack it into the instance's plugins directory:
 
 ```
-curl -LO https://github.com/SoftInstigate/restheart/releases/download/<version>/restheart-mqtt-<version>.zip
-unzip restheart-mqtt-<version>.zip -d /opt/restheart/plugins/
+curl -LO https://github.com/SoftInstigate/restheart/releases/download/mqtt-snapshot/restheart-mqtt-10.0.0-SNAPSHOT.zip
+unzip restheart-mqtt-10.0.0-SNAPSHOT.zip -d /opt/restheart/plugins/
 ```
 
 With the Docker image, unpack it anywhere and mount the directory as a subdirectory of the image's plugins directory:
 
 ```
 docker run -p 8080:8080 \
-  -v "$PWD/restheart-mqtt-<version>:/opt/restheart/plugins/restheart-mqtt:ro" \
-  softinstigate/restheart:<version>
+  -v "$PWD/restheart-mqtt-10.0.0-SNAPSHOT:/opt/restheart/plugins/restheart-mqtt:ro" \
+  softinstigate/restheart-snapshot:latest
 ```
+
+The archive is a build of `master`, so the RESTHeart to put it into is the one built from `master`: see "Which archive".
 
 Either way you get:
 
 ```
-plugins/restheart-mqtt-<version>/
+plugins/restheart-mqtt-10.0.0-SNAPSHOT/
 ├── restheart-mqtt.jar
 ├── lib/                              hivemq-mqtt-client and its 13 transitives
 ├── restheart-mqtt-default-config.yml the sample configuration, every key commented
@@ -145,13 +138,13 @@ See "Enablement" for what each plugin's switch does, and "Configuration" for eve
 
 ### Which archive
 
-Each RESTHeart release that includes the module attaches the archive to its [GitHub release](https://github.com/SoftInstigate/restheart/releases), next to `restheart.zip`. The release workflow attaches it **only after this module's integration tests have passed** against the core of that release.
+No RESTHeart release includes the module yet. The archive is a snapshot build, under the [`mqtt-snapshot`](https://github.com/SoftInstigate/restheart/releases/tag/mqtt-snapshot) pre-release. [`.github/workflows/mqtt.yml`](../.github/workflows/mqtt.yml) refreshes it on every push to `master`, and **only after this module's integration tests have passed** against the core built alongside it. The notes of the pre-release record the commit each build came from and the exact file name to download.
 
-To try what is on `master` before it is released, there is a snapshot build under the [`mqtt-snapshot`](https://github.com/SoftInstigate/restheart/releases/tag/mqtt-snapshot) pre-release. [`.github/workflows/mqtt.yml`](../.github/workflows/mqtt.yml) refreshes it on every push to `master`, under the same condition, and its notes record the commit it came from and the exact file name to download. It belongs in a RESTHeart built from `master`; `softinstigate/restheart-snapshot:latest` is that core as a Docker image.
+The release workflow of the `9.x` branch is set up to run the same tests and attach the archive to a RESTHeart release, next to `restheart.zip`. It has not run yet: until a release carries the archive, the snapshot is the only build there is.
 
 To build it yourself instead — necessarily, if you are working on the module — see "Building".
 
-**Install it into the RESTHeart of the same version.** Each archive has only been tested against the core built alongside it. There is also a specific security reason never to put it into an older one. Per-topic authorization on `/mqtt-sse` needs RESTHeart to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`), and **RESTHeart has that from 9.9.0: 9.8.x and every earlier version lack it.** On a RESTHeart without it, `mqtt-topic-authorizer` resolves but is never invoked on `/mqtt-sse`, so the endpoint is authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
+**Install it into a RESTHeart built from `master`.** The archive has only been tested against the core built alongside it; `softinstigate/restheart-snapshot:latest` is that core as a Docker image. There is also a specific security reason never to put it into an old release. Per-topic authorization on `/mqtt-sse` needs RESTHeart to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`), and **RESTHeart has that from 9.9.0: 9.8.x and every earlier version lack it.** On a RESTHeart without it, `mqtt-topic-authorizer` resolves but is never invoked on `/mqtt-sse`, so the endpoint is authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
 
 ## What you get
 
@@ -768,9 +761,9 @@ If you were following [TUTORIALS.md](./TUTORIALS.md), say which part. And if the
 Dual-licensed, like every other RESTHeart module: AGPL-3.0 (see [LICENSE.txt](../LICENSE.txt)), or the RESTHeart COMMERCIAL LICENSE (see [COMM-LICENSE.txt](../COMM-LICENSE.txt)) for those who need it.
 
 > [!WARNING]
-> **Experimental.** `restheart-mqtt` is released together with RESTHeart, but it is new and has
-> seen little use outside its own tests. Configuration keys, the SSE envelope, the REST response
-> and the shape of stored documents may still change from one release to the next, and it is not
+> **Experimental.** `restheart-mqtt` is a preview: no RESTHeart release includes it yet, and it
+> has seen little use outside its own tests. Configuration keys, the SSE envelope, the REST response
+> and the shape of stored documents may still change from one build to the next, and it is not
 > recommended for production use yet.
 >
 > That is also why feedback matters now: it can still change the design. Please report bugs and
