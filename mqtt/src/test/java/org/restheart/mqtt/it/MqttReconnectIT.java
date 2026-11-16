@@ -126,7 +126,18 @@ class MqttReconnectIT extends MqttITBase {
         // line, logged a few lines above, is already in the log by the time stopBroker()/
         // startBroker() below run - without this guard, the second log-wait could match that
         // stale line and pass without ever observing a real resubscription.
-        var beforeOutageIdx = restheartLogs().length();
+        var logsBeforeOutage = restheartLogs();
+        var beforeOutageIdx = logsBeforeOutage.length();
+
+        // Startup subscribes to the covering filter once. It used to do it twice: the SUBSCRIBE
+        // requested before connecting, which hivemq-mqtt-client queues and sends with the first
+        // connection, and a resubscription triggered by that same connection's new session. That
+        // was harmless on the wire - MQTT replaces the subscription - but it is the one place
+        // where "one subscription per covering filter" was not true. Counted before the outage,
+        // because the resubscription after it adds a second line, rightly.
+        var subscribedLine = "Subscribed to topic filter: " + COVERING_FILTER;
+        assertEquals(1, countOccurrences(logsBeforeOutage, subscribedLine),
+                "startup must subscribe to " + COVERING_FILTER + " exactly once; got:\n" + logsBeforeOutage);
 
         stopBroker();
         startBroker();
@@ -237,6 +248,21 @@ class MqttReconnectIT extends MqttITBase {
                 .getBindings()
                 .get(new ExposedPort(1883));
         return Integer.valueOf(bindings[0].getHostPortSpec());
+    }
+
+    /**
+     * Counts the non-overlapping occurrences of {@code needle} in {@code text}.
+     *
+     * @param text   the text to search
+     * @param needle the text to count
+     * @return how many times {@code needle} occurs
+     */
+    private static int countOccurrences(String text, String needle) {
+        var count = 0;
+        for (var idx = text.indexOf(needle); idx >= 0; idx = text.indexOf(needle, idx + needle.length())) {
+            count++;
+        }
+        return count;
     }
 
     /**

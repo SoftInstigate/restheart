@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +59,8 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
  * Unlike {@link MqttMessageRouter} itself, this provider is the composition root that wires the
  * router into {@link MqttClientSingleton#addOnNewSessionListener(Runnable)}. That method neither
  * requires nor reads {@code MqttClientSingleton}'s configuration, so these tests only need to
- * isolate the shared singleton's {@code newSessionListeners} list between tests via reflection.
+ * isolate the shared singleton's {@code newSessionListeners} list, and its record of whether the
+ * first connection attempt has ended, between tests via reflection.
  * </p>
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
@@ -100,9 +102,24 @@ class MqttRouterProviderTest {
         method.invoke(MqttClientSingleton.getInstance());
     }
 
+    /** Puts the shared singleton back to "no connection attempt has ended yet". */
+    private static void resetFirstAttempt() throws Exception {
+        Field field = MqttClientSingleton.class.getDeclaredField("firstAttemptPending");
+        field.setAccessible(true);
+        field.setBoolean(MqttClientSingleton.getInstance(), true);
+    }
+
+    /** Registers a new-session listener that counts how many times it is notified. */
+    private static AtomicInteger countNewSessionNotifications() {
+        AtomicInteger notifications = new AtomicInteger();
+        MqttClientSingleton.getInstance().addOnNewSessionListener(notifications::incrementAndGet);
+        return notifications;
+    }
+
     @BeforeEach
     void setUp() throws Exception {
         newSessionListeners().clear();
+        resetFirstAttempt();
 
         provider = new MqttRouterProvider();
         config = new HashMap<>();
@@ -115,6 +132,7 @@ class MqttRouterProviderTest {
     @AfterEach
     void tearDown() throws Exception {
         newSessionListeners().clear();
+        resetFirstAttempt();
     }
 
     @Test
@@ -195,6 +213,66 @@ class MqttRouterProviderTest {
         invokeNotifyNewSessionListeners();
 
         assertTrue(secondListenerRan.get(), "a listener throwing must not prevent later listeners from running");
+    }
+
+    // --- onConnAck(): when a CONNACK has the subscriptions issued again ---
+    //
+    // The subscriptions requested before the first connection are queued by hivemq-mqtt-client
+    // and sent by it as soon as that connection is up. Notifying the new-session listeners on
+    // that same CONNACK sent every one of them a second time at startup.
+
+    @Test
+    @DisplayName("the CONNACK of the first connection does not trigger a resubscription, even with a new session")
+    void testFirstConnAckWithNewSessionDoesNotNotify() {
+        AtomicInteger notifications = countNewSessionNotifications();
+
+        MqttClientSingleton.getInstance().onConnAck(false);
+
+        assertEquals(0, notifications.get(),
+                "the subscriptions requested before connecting are sent by the client with the first "
+                        + "connection: issuing them again would send each of them twice");
+    }
+
+    @Test
+    @DisplayName("a new session after the first connection triggers a resubscription")
+    void testLaterConnAckWithNewSessionNotifies() {
+        AtomicInteger notifications = countNewSessionNotifications();
+        MqttClientSingleton singleton = MqttClientSingleton.getInstance();
+
+        singleton.onConnAck(false);
+        singleton.onConnectionEnded();
+        singleton.onConnAck(false);
+
+        assertEquals(1, notifications.get(), "a session lost across a reconnect has no subscriptions left");
+    }
+
+    @Test
+    @DisplayName("a new session after a failed first attempt triggers a resubscription")
+    void testConnAckAfterFailedFirstAttemptNotifies() {
+        AtomicInteger notifications = countNewSessionNotifications();
+        MqttClientSingleton singleton = MqttClientSingleton.getInstance();
+
+        // the broker was not there at startup: the first attempt ends without a CONNACK
+        singleton.onConnectionEnded();
+        singleton.onConnAck(false);
+
+        assertEquals(1, notifications.get(),
+                "once an attempt has failed nothing is assumed about what the client still has queued: "
+                        + "a SUBSCRIBE sent twice is harmless, one never sent is not");
+    }
+
+    @Test
+    @DisplayName("a resumed session never triggers a resubscription, and counts as the first connection")
+    void testConnAckWithSessionPresentDoesNotNotify() {
+        AtomicInteger notifications = countNewSessionNotifications();
+        MqttClientSingleton singleton = MqttClientSingleton.getInstance();
+
+        singleton.onConnAck(true);
+        assertEquals(0, notifications.get(), "a resumed session still has its subscriptions on the broker");
+
+        // the first connection is over: a session lost from here on is resubscribed
+        singleton.onConnAck(false);
+        assertEquals(1, notifications.get());
     }
 
     // --- subscribeConfiguredTopics() (Fix 3): 'subscriptions' config parsing ---
