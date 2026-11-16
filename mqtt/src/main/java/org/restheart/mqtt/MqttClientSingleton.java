@@ -97,6 +97,12 @@ public class MqttClientSingleton {
     private volatile boolean closed = false;
 
     /**
+     * True until the first connection attempt has ended, with a CONNACK or with a failure. See
+     * {@link #onConnAck(boolean)} for what it decides.
+     */
+    private volatile boolean firstAttemptPending = true;
+
+    /**
      * Creates the client instance without connecting it.
      * <p>
      * Split from {@link #connect()} deliberately, and the split matters. The broker redelivers
@@ -348,6 +354,48 @@ public class MqttClientSingleton {
     }
 
     /**
+     * Decides, on every CONNACK, whether the subscriptions have to be issued again.
+     * <p>
+     * A resumed session ({@code sessionPresent=true}) still has them on the broker. A new session
+     * has none, so they are issued again - except when this CONNACK ends the very first
+     * connection attempt. The subscriptions requested until then were requested of a client that
+     * had never been connected: hivemq-mqtt-client queues them and sends them itself as soon as
+     * this connection is up, so issuing them again here sent every one of them twice at startup.
+     * </p>
+     * <p>
+     * The exception is deliberately that narrow. Once an attempt has failed, or a connection has
+     * been lost, this method no longer assumes anything about what the client still has queued,
+     * and a new session gets its subscriptions issued again: a SUBSCRIBE sent twice is harmless,
+     * MQTT replaces the subscription, while one never sent is a filter that silently receives
+     * nothing.
+     * </p>
+     *
+     * @param sessionPresent the flag of the broker's CONNACK
+     */
+    void onConnAck(boolean sessionPresent) {
+        final boolean firstAttempt = firstAttemptPending;
+        firstAttemptPending = false;
+
+        if (sessionPresent) {
+            LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
+        } else if (firstAttempt) {
+            LOGGER.info("New session on the first connection (sessionPresent=false), "
+                    + "the subscriptions requested before connecting are sent with it");
+        } else {
+            LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
+            notifyNewSessionListeners();
+        }
+    }
+
+    /**
+     * Records that a connection attempt failed or a connection was lost: from here on a new
+     * session always has its subscriptions issued again. See {@link #onConnAck(boolean)}.
+     */
+    void onConnectionEnded() {
+        firstAttemptPending = false;
+    }
+
+    /**
      * Resolves the connection endpoint (host, port, TLS, WebSocket) from the configured
      * broker URL scheme.
      * <p>
@@ -481,19 +529,13 @@ public class MqttClientSingleton {
                     .addConnectedListener(context -> {
                         connected = true;
                         TypeSwitch.when(context)
-                                .is(Mqtt5ClientConnectedContext.class, q -> {
-                                    if (!q.getConnAck().isSessionPresent()) {
-                                        LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
-                                        notifyNewSessionListeners();
-                                    } else {
-                                        LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
-                                    }
-                                });
+                                .is(Mqtt5ClientConnectedContext.class, q -> onConnAck(q.getConnAck().isSessionPresent()));
                     });
         }
 
         builder.addDisconnectedListener(context -> {
             connected = false;
+            onConnectionEnded();
             if (shuttingDown) {
                 context.getReconnector().reconnect(false);
             }
@@ -544,19 +586,13 @@ public class MqttClientSingleton {
                     .addConnectedListener(context -> {
                         connected = true;
                         TypeSwitch.when(context)
-                                .is(Mqtt3ClientConnectedContext.class, q -> {
-                                    if (!q.getConnAck().isSessionPresent()) {
-                                        LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
-                                        notifyNewSessionListeners();
-                                    } else {
-                                        LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
-                                    }
-                                });
+                                .is(Mqtt3ClientConnectedContext.class, q -> onConnAck(q.getConnAck().isSessionPresent()));
                     });
         }
 
         builder.addDisconnectedListener(context -> {
             connected = false;
+            onConnectionEnded();
             if (shuttingDown) {
                 context.getReconnector().reconnect(false);
             }
