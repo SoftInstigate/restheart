@@ -52,6 +52,8 @@ data:{"value": 21.5}
 
 `docker compose down` stops it. The demo binds host ports 8080 and 1883. Its whole configuration is the `RHO` block of [`docker-compose.yml`](./docker-compose.yml), which is a working example to start from. Do not run it on an image older than 9.9.0: see "Installing".
 
+The demo brings its own broker and has no database. To connect the module to the broker and the MongoDB you already have, see "Your own broker" and "Your own MongoDB" under "Installing".
+
 [TUTORIALS.md](./TUTORIALS.md) continues from here: REST polling, MongoDB persistence with [`docker-compose-mongodb.yml`](./docker-compose-mongodb.yml), which is in the archive too, and a plugin of your own.
 
 ## Installing
@@ -135,6 +137,59 @@ RHO='/mqtt-client/enabled->true;/mqtt-client/broker-url->"tcp://broker:1883";/mq
 **Then check the log.** At startup `mqtt-status` prints one line saying what is active, or a warning for each thing that is configured but not running — see "The traps". And the endpoints need an authenticated user: `/mqtt-sse` and `/mqtt` answer `401` without one. When RESTHeart runs with `--standalone`, its built-in `admin` user is disabled until it has a password, which is one more override: `/fileRealmAuthenticator/users[userid='admin']/password: secret`.
 
 See "Enablement" for what each plugin's switch does, and "Configuration" for every key.
+
+### Your own broker
+
+The demo of "Quick start" brings its own Mosquitto. To use the broker you already have, point `mqtt-client` at it. Nothing else in the module knows where the broker is:
+
+```yaml
+/mqtt-client:
+  enabled: true
+  broker-url: "tcp://broker.example.com:1883"
+  username: "iot"            # leave both out if the broker takes anonymous clients
+  password: "s3cret"
+  protocol-version: 5        # 3, the default, is MQTT 3.1.1
+```
+
+- **TLS**: use the `ssl://` scheme, for example `ssl://broker.example.com:8883`. For a certificate your JVM does not already trust, add `tls-trust-store` and `tls-trust-store-password`. A broker that requires a client certificate is not supported.
+- **From a container, `localhost` is the container itself**, not your machine. For a broker running on the Docker host use `tcp://host.docker.internal:1883`; on Linux also start the container with `--add-host=host.docker.internal:host-gateway`.
+- **Check the log**: `Connected to MQTT broker tcp://...` means it worked. `Cannot connect to MQTT broker` means the URL, the credentials or the network are wrong; RESTHeart keeps running and retries by itself.
+
+The topics come from what you enable next: `default-topic` and the `?topic=` parameter for `mqtt-sse`, `subscriptions` for `mqtt-router`, `mongo-sink` for the writer, and the `acl` that grants them. "`mqtt-client`", under "Configuration", lists every connection key.
+
+### Your own MongoDB
+
+Only `mqtt-mongo-writer` uses MongoDB, and it has no connection of its own: it writes through the one RESTHeart already has, the `mclient` connection.
+
+- **If your RESTHeart already serves your MongoDB**, there is nothing to connect. Enable the writer and say where each topic goes.
+- **Otherwise** give RESTHeart the connection string of your database, and do not start it with `--standalone`, which runs it without MongoDB.
+
+```yaml
+/mclient/connection-string: "mongodb://user:password@db.example.com:27017"
+
+/mqtt-mongo-writer:
+  enabled: true
+  mongo-sink:
+    - topic: "sensors/#"
+      database: "iot"
+      collection: "sensor-events"
+```
+
+Each message on `sensors/#` becomes a document of `iot.sensor-events`. The database and the collection are created on the first write, and the writer touches no other collection, apart from `mqtt-dead-letter` in the same database for the documents MongoDB refuses. "`mqtt-mongo-writer`", under "Configuration", describes the stored document and how to avoid duplicates with `id-strategy`.
+
+Two things to know on a database RESTHeart has never used:
+
+- RESTHeart keeps its users and permissions in a database of its own, `restheart`, and creates there a user `admin` with password `secret`. Change that password.
+- From a container the same rule applies as for the broker: a MongoDB on the Docker host is `mongodb://host.docker.internal:27017`.
+
+Both together, with the Docker image, the broker and the database being on the Docker host:
+
+```
+docker run -p 8080:8080 \
+  -v "$PWD/restheart-mqtt-10.0.0-SNAPSHOT:/opt/restheart/plugins/restheart-mqtt:ro" \
+  -e RHO='/http-listener/host->"0.0.0.0";/mclient/connection-string->"mongodb://host.docker.internal:27017";/mqtt-client/enabled->true;/mqtt-client/broker-url->"tcp://host.docker.internal:1883";/mqtt-client/username->"iot";/mqtt-client/password->"s3cret";/mqtt-router/enabled->true;/mqtt-sse/enabled->true;/mqtt-mongo-writer/enabled->true;/mqtt-mongo-writer/mongo-sink->[{"topic":"sensors/#","database":"iot","collection":"sensor-events"}];/mqtt-topic-authorizer/acl->{"admin":["sensors/#"]}' \
+  softinstigate/restheart-snapshot:latest
+```
 
 ### Which archive
 
