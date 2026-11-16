@@ -104,8 +104,8 @@
       </plugin>
       <!--
         This produces mqtt/target/restheart-mqtt-<version>.{zip,tar.gz}: a release asset bundling
-        restheart-mqtt.jar, lib/ (hivemq-mqtt-client and its transitives), the sample config and
-        both licence files. attach=false keeps it out of the artifacts published to Maven Central.
+        restheart-mqtt.jar, lib/ (hivemq-mqtt-client and its transitives), the sample config, both
+        licence files and the two docker compose demos, which run from the unpacked directory. attach=false keeps it out of the artifacts published to Maven Central.
 
         This archive is how the module is distributed. It is deliberately NOT part of the
         RESTHeart distribution - MQTT is far from RESTHeart's habitual use cases, so the module

@@ -1,6 +1,12 @@
 # RESTHeart MQTT plugin - try it in two minutes.
 #
-# Requires the plugin to have been built first, since it bind-mounts mqtt/target:
+# This file is also in the module's archive, next to the plugin. Unpack the archive, and from
+# the directory it creates:
+#
+#   docker compose up
+#
+# In a checkout of the repository the plugin is mounted from mqtt/target instead, so build it
+# first, from the mqtt directory:
 #
 #   ../mvnw -f ../pom.xml -pl mqtt -am install -DskipTests
 #   docker compose up
@@ -76,13 +82,17 @@ services:
         /mqtt-sse/enabled->true;
         /mqtt-topic-authorizer/acl->{"admin":["sensors/#"]};
     volumes:
+      # MQTT_MODULE_DIR is the directory holding restheart-mqtt.jar and its lib/. It defaults to
+      # ./target, where a build puts them; the .env file of the module's archive sets it to ".",
+      # because there they are next to this file.
+      #
       # Mounted file by file, not the whole ./target. That directory also holds build output the
       # plugin scanner must never see - notably it-plugins/, the full copy of core's plugins the
       # mqtt-it profile stages for the integration tests. The scanner recurses two levels, so a
       # bare "./target" mount loads those too, mixing their versions with the image's own and
       # failing startup with a ClassNotFoundException that names a class nobody here asked for.
-      - ./target/restheart-mqtt.jar:/opt/restheart/plugins/custom/restheart-mqtt.jar:ro
-      - ./target/lib:/opt/restheart/plugins/custom/lib:ro
+      - ${MQTT_MODULE_DIR:-./target}/restheart-mqtt.jar:/opt/restheart/plugins/custom/restheart-mqtt.jar:ro
+      - ${MQTT_MODULE_DIR:-./target}/lib:/opt/restheart/plugins/custom/lib:ro
     depends_on:
       mosquitto:
         condition: service_healthy

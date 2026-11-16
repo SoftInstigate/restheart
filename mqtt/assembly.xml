@@ -31,5 +31,24 @@
                 <include>restheart-mqtt-default-config.yml</include>
             </includes>
         </fileSet>
+        <!-- the two demos of README.md and TUTORIALS.md, so that the archive runs with
+             "docker compose up" and no build -->
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>docker-compose.yml</include>
+                <include>docker-compose-mongodb.yml</include>
+                <include>mosquitto.conf</include>
+            </includes>
+        </fileSet>
     </fileSets>
+    <files>
+        <!-- tells the compose files that the plugin is in this same directory, not in ./target -->
+        <file>
+            <source>${project.basedir}/src/assembly/archive.env</source>
+            <outputDirectory>.</outputDirectory>
+            <destName>.env</destName>
+        </file>
+    </files>
 </assembly>

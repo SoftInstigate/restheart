@@ -24,7 +24,12 @@ real, not illustrative.
 
 ## Before you start
 
-You need Docker and a JDK 25+. From this directory:
+Parts 1 to 3 need only Docker, and the module's archive: it holds the plugin and both compose
+files, so download it, unpack it and run every command below from the directory it creates.
+"Quick start" in [README.md](./README.md) has the download commands. Nothing to build.
+
+Part 4 builds a plugin against this module, and for that you need a checkout of the repository and
+a JDK 25+. In that case run everything from this directory instead, after building the module:
 
 ```
 ../mvnw -f ../pom.xml -pl mqtt -am install -DskipTests
@@ -32,14 +37,16 @@ You need Docker and a JDK 25+. From this directory:
 
 That builds `target/restheart-mqtt.jar` and `target/lib`, which the compose files mount into the
 RESTHeart container. `-am` also installs `restheart-parent`, which part 4 needs to build a plugin
-against this module. With an older JDK the build stops straight away and says so. The module is not bundled with RESTHeart — see "Not bundled" in
-[README.md](./README.md) — so nothing here works until you have built it.
+against this module. With an older JDK the build stops straight away and says so.
+
+The module is not bundled with RESTHeart — see "Not bundled" in [README.md](./README.md) — so
+nothing here works without one of the two: the archive, or a build.
 
 Both compose files bind host ports **8080** and **1883**, so run one at a time and make sure
 nothing else is using them.
 
-The container runs `softinstigate/restheart:latest`, with the module you just built mounted into
-it. If your checkout is ahead of the latest release — you are on `master`, typically — run the
+The container runs `softinstigate/restheart:latest`, with the module mounted into it. If the
+module is ahead of the latest release — the snapshot archive, or a checkout of `master` — run the
 core built from `master` instead, by putting `RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest`
 in front of every `docker compose` command below. Never use an image older than 9.9.0: per-topic ACL
 enforcement on `/mqtt-sse` is missing there, so part 1's `403` is silently a `200` instead, which

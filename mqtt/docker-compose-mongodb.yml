@@ -7,8 +7,11 @@
 #
 # Run it INSTEAD of docker-compose.yml, not alongside: both bind host ports 8080 and 1883.
 #
-#     ../mvnw -f ../pom.xml -pl mqtt -am install -DskipTests
 #     docker compose -f docker-compose-mongodb.yml up
+#
+# From the module's archive that is all. In a checkout of the repository, build the plugin first:
+#
+#     ../mvnw -f ../pom.xml -pl mqtt -am install -DskipTests
 name: restheart-mqtt-mongodb
 
 services:
@@ -59,13 +62,15 @@ services:
       #   after a crash converges on one document instead of being written twice. Publish with a
       #   "messageId" property to see it work; see "Durability" in README.md.
     volumes:
+      # MQTT_MODULE_DIR: see docker-compose.yml.
+      #
       # Mounted file by file, not the whole ./target. That directory also holds build output the
       # plugin scanner must never see - notably it-plugins/, the full copy of core's plugins the
       # mqtt-it profile stages for the integration tests. The scanner recurses two levels, so a
       # bare "./target" mount loads those too, mixing their versions with the image's own and
       # failing startup with a ClassNotFoundException that names a class nobody here asked for.
-      - ./target/restheart-mqtt.jar:/opt/restheart/plugins/custom/restheart-mqtt.jar:ro
-      - ./target/lib:/opt/restheart/plugins/custom/lib:ro
+      - ${MQTT_MODULE_DIR:-./target}/restheart-mqtt.jar:/opt/restheart/plugins/custom/restheart-mqtt.jar:ro
+      - ${MQTT_MODULE_DIR:-./target}/lib:/opt/restheart/plugins/custom/lib:ro
     depends_on:
       mosquitto:
         condition: service_healthy

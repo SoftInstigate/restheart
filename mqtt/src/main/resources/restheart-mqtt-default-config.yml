@@ -1,11 +1,18 @@
 # Sample configuration for the restheart-mqtt module.
 #
-# Use as an override file:
+# This is a RESTHeart override file. Start RESTHeart with it:
 #   java -jar restheart.jar -o restheart-mqtt-default-config.yml
 #
-# All plugin configuration keys must be top-level (there is no "plugins-args:"
-# wrapper - PluginsFactory looks up each plugin's arguments by its own name
-# directly at the root of the configuration map).
+# In an override file every key is an absolute path into the configuration,
+# so each plugin's block starts with a slash: "/mqtt-client:", not
+# "mqtt-client:". A key without the slash is not applied: RESTHeart logs
+# "invalid override, path must be absolute" and the plugin stays off.
+# A block replaces the plugin's whole configuration, so keep all the settings
+# of a plugin in one block. There is no "plugins-args:" wrapper.
+#
+# As it is, this file connects to a broker on localhost:1883 and enables
+# /mqtt-sse. Requests are still refused with 403 until you uncomment the
+# "/mqtt-topic-authorizer" block below and grant a role its topics.
 #
 # mqtt-client is the root of the module's injection graph and ships with
 # enabledByDefault = false in code, so the module is dormant when the jar is
@@ -13,7 +20,7 @@
 # mqtt-sse, mqtt-rest, mqtt-mongo-writer and mqtt-stats are separate,
 # second-tier opt-ins on top of that; enabling mqtt-client alone does not
 # expose any of them.
-mqtt-client:
+/mqtt-client:
   enabled: true
   broker-url: "tcp://localhost:1883"          # tcp:// (default), ssl:// or mqtts://, ws://, wss://
   protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0.
@@ -52,7 +59,7 @@ mqtt-client:
 # mqtt-router leaves the module with no message routing). "enabled: true"
 # below is required. last-message-cache and subscriptions below are what let
 # mqtt-rest answer immediately once it is enabled (see below).
-mqtt-router:
+/mqtt-router:
   enabled: true
   max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
   last-message-cache: true
@@ -68,7 +75,7 @@ mqtt-router:
 
 # MQTT SSE Service - Stream MQTT messages as Server-sent Events.
 # Tier 2 opt-in: enabledByDefault = false in code, enabled here explicitly.
-mqtt-sse:
+/mqtt-sse:
   enabled: true
   default-topic: "sensors/#"
   default-qos: 1
@@ -111,7 +118,7 @@ mqtt-sse:
 # "subscriptions" entry for every topic you intend to poll - otherwise this
 # service returns 404 forever, for every topic, since nothing ever primes
 # the cache.
-# mqtt-rest:
+# /mqtt-rest:
 #   enabled: true
 
 # MQTT Topic Authorizer - checks MQTT topic access against ACL entries.
@@ -122,7 +129,7 @@ mqtt-sse:
 # closed: with no "acl" configured, every request to a Tier 2 endpoint is
 # denied 403, even before you enable one. Uncomment and adjust to grant
 # access per role - a role with no entry here has NO access to any topic.
-# mqtt-topic-authorizer:
+# /mqtt-topic-authorizer:
 #   acl:
 #     iot-reader:
 #       - "sensors/#"
@@ -143,7 +150,7 @@ mqtt-sse:
 # stops delivering to this client at all - live SSE consumers included - as
 # soon as its in-flight window fills. The buffer is memory, so a SIGKILL
 # loses what is in it. See "Durability" in README.md.
-# mqtt-mongo-writer:
+# /mqtt-mongo-writer:
 #   enabled: true
 #   buffer:
 #     strategy: "blocking-queue"                # default; applies backpressure. "ring-buffer" and
@@ -198,5 +205,5 @@ mqtt-sse:
 # The same counters are also exposed as Prometheus gauges by
 # mqtt-metrics-collector (enabled by default, needs restheart-metrics) at
 # GET /metrics/mqtt_router_*; this service is for reading them without a scrape.
-# mqtt-stats:
+# /mqtt-stats:
 #   enabled: true
