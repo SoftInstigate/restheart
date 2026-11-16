@@ -97,6 +97,19 @@ public class MqttClientProvider implements Provider<MqttClient> {
     private Configuration rhConfig;
 
     /**
+     * Reads a setting whose value is a long. A YAML or JSON parser hands a number that fits in
+     * an int over as an {@link Integer}, so {@code initial-delay-ms: 1000} is not a {@link Long}
+     * and cannot be cast to one.
+     *
+     * @return the value, or {@code defaultValue} when the key is absent or is not a number
+     */
+    private static Long longArg(Map<String, Object> args, String key, Long defaultValue) {
+        return args != null && args.get(key) instanceof Number number
+                ? Long.valueOf(number.longValue())
+                : defaultValue;
+    }
+
+    /**
      * Initializes the MQTT client configuration, sets default values for missing configuration keys,
      * configures the {@link MqttClientSingleton}, and establishes the initial connection to the broker.
      * <p>
@@ -138,14 +151,14 @@ public class MqttClientProvider implements Provider<MqttClient> {
         final String tlsTrustStore = argOrDefault(config, "tls-trust-store", null);
         final String tlsTrustStorePassword = argOrDefault(config, "tls-trust-store-password", null);
 
-        final long sessionExpirySeconds = argOrDefault(config, "session-expiry-seconds", 0xFFFFFFFFL);
+        final long sessionExpirySeconds = longArg(config, "session-expiry-seconds", 0xFFFFFFFFL);
 
         // Reconnect configuration
         @SuppressWarnings("unchecked")
         final Map<String, Object> reconnectConfigMap = (Map<String, Object>) config.get("reconnect");
         final boolean reconnectEnabled = argOrDefault(reconnectConfigMap, "enabled", true);
-        final long initialDelayMs = argOrDefault(reconnectConfigMap, "initial-delay-ms", 1000L);
-        final long maxDelayMs = argOrDefault(reconnectConfigMap, "max-delay-ms", 30000L);
+        final long initialDelayMs = longArg(reconnectConfigMap, "initial-delay-ms", 1000L);
+        final long maxDelayMs = longArg(reconnectConfigMap, "max-delay-ms", 30000L);
 
         // Will message configuration
         @SuppressWarnings("unchecked")
@@ -154,8 +167,8 @@ public class MqttClientProvider implements Provider<MqttClient> {
         final String willPayload = argOrDefault(willConfigMap, "payload", null);
         final int willQos = argOrDefault(willConfigMap, "qos", 0);
         final boolean willRetain = argOrDefault(willConfigMap, "retain", false);
-        final long willDelaySeconds = argOrDefault(willConfigMap, "delay-seconds", 0L);
-        final Long willMessageExpirySeconds = argOrDefault(willConfigMap, "message-expiry-seconds", null);
+        final long willDelaySeconds = longArg(willConfigMap, "delay-seconds", 0L);
+        final Long willMessageExpirySeconds = longArg(willConfigMap, "message-expiry-seconds", null);
 
         // Build configuration objects
         MqttConfig.ReconnectConfig reconnectConfig = new MqttConfig.ReconnectConfig(
