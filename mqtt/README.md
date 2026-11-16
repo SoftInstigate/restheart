@@ -177,6 +177,24 @@ Only `mqtt-mongo-writer` uses MongoDB, and it has no connection of its own: it w
 
 Each message on `sensors/#` becomes a document of `iot.sensor-events`. The database and the collection are created on the first write, and the writer touches no other collection, apart from `mqtt-dead-letter` in the same database for the documents MongoDB refuses. "`mqtt-mongo-writer`", under "Configuration", describes the stored document and how to avoid duplicates with `id-strategy`.
 
+**Reading the stored messages through the REST API.** RESTHeart serves one database by default, its own `restheart`, so `GET /iot/sensor-events` answers `404` until `iot` is mounted too. Mounting it, rather than writing the messages into `restheart`, keeps the device data apart from RESTHeart's users and permissions:
+
+```yaml
+/mongo/mongo-mounts:
+  - what: /restheart
+    where: /
+  - what: /iot
+    where: /iot
+```
+
+The list replaces the default one, which is why its first entry is repeated here. Then:
+
+```
+curl -u admin:secret 'http://localhost:8080/iot/sensor-events'
+```
+
+The collection is now an ordinary RESTHeart resource, with filters, paging and aggregations, and the usual permissions decide who reads it. They also decide who writes to it: `admin` can, so give the clients that only consume the data a role that can only read.
+
 Two things to know on a database RESTHeart has never used:
 
 - RESTHeart keeps its users and permissions in a database of its own, `restheart`, and creates there a user `admin` with password `secret`. Change that password.
