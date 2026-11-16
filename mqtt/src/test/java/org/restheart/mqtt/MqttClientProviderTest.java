@@ -201,6 +201,30 @@ class MqttClientProviderTest {
     }
 
     @Test
+    @DisplayName("Long settings written as small numbers arrive as Integer, as from a YAML file")
+    void testLongSettingsGivenAsIntegers() throws Exception {
+        Map<String, Object> reconnect = new HashMap<>();
+        reconnect.put("initial-delay-ms", 2000);
+        reconnect.put("max-delay-ms", 60000);
+        Map<String, Object> will = new HashMap<>();
+        will.put("topic", "device/status");
+        will.put("payload", "offline");
+        will.put("delay-seconds", 30);
+        will.put("message-expiry-seconds", 3600);
+        config.put("reconnect", reconnect);
+        config.put("will", will);
+        config.put("session-expiry-seconds", 3600);
+        config.put("protocol-version", 5);
+        callInitWithoutConnection();
+
+        assertEquals(3600L, getSingletonConfig().getSessionExpirySeconds());
+        assertEquals(2000L, getSingletonConfig().getReconnectConfig().getInitialDelayMs());
+        assertEquals(60000L, getSingletonConfig().getReconnectConfig().getMaxDelayMs());
+        assertEquals(30L, getSingletonConfig().getWillConfig().getWillDelaySeconds());
+        assertEquals(3600L, getSingletonConfig().getWillConfig().getWillMessageExpirySeconds());
+    }
+
+    @Test
     @DisplayName("Test will message configuration for MQTT 3 is parsed correctly")
     void testWillMessageConfigurationMqtt3() throws Exception {
         Map<String, Object> will = new HashMap<>();

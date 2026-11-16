@@ -151,12 +151,14 @@ jobs:
             printf -- '- commit: `%s`\n' "$GITHUB_SHA"
             printf -- '- built: %s\n\n' "$(date -u +'%Y-%m-%d %H:%M UTC')"
             printf 'The `%s` git tag is a fixed anchor for a stable download URL and does not point at the commit above - the commit is recorded here instead.\n\n' "$TAG"
-            printf 'Install into a RESTHeart instance:\n\n'
+            printf 'Try it with Docker, on the RESTHeart built from `master`:\n\n'
             printf '```\n'
             printf 'curl -LO https://github.com/%s/releases/download/%s/%s\n' "$GITHUB_REPOSITORY" "$TAG" "$ZIP_NAME"
-            printf 'unzip %s -d /opt/restheart/plugins/\n' "$ZIP_NAME"
+            printf 'unzip %s\n' "$ZIP_NAME"
+            printf 'cd %s\n' "${ZIP_NAME%%.zip}"
+            printf 'RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest docker compose up\n'
             printf '```\n\n'
-            printf 'Then enable at least `mqtt-client` and `mqtt-router` - see [the module README](https://github.com/%s/blob/master/mqtt/README.md#installing).\n' "$GITHUB_REPOSITORY"
+            printf 'To install it into your own instance instead, see [the module README](https://github.com/%s/blob/master/mqtt/README.md#installing).\n' "$GITHUB_REPOSITORY"
           } > notes.md
 
           gh release edit "$TAG" --notes-file notes.md
