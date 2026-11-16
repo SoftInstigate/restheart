@@ -1076,7 +1076,10 @@ graphql:
   # Arguments are values: an argument with operators (keys starting with $), which only a
   # BsonDocument argument passed as a GraphQL variable can carry, is refused, and a string argument
   # starting with $ is bound in $literal where MongoDB would read it as a field path or a variable.
-  # Set to false for an app that lets clients pass MongoDB filters in a BsonDocument argument.
+  # An app that lets clients pass MongoDB filters in a BsonDocument argument declares that
+  # argument in its mappings, {"$arg": "filter", "operators": true}: the other arguments keep the
+  # check. Setting this to false turns the check off for every argument of every app.
+  # https://restheart.org/docs/graphql/graphql-apps#arguments-are-values
   check-operators: true
   # Exposes GraphQL apps through the MCP server (see mcpService below), on top of each app's own
   # opt-in "mcp" metadata block. Set to false to hide every GraphQL app from MCP regardless of
