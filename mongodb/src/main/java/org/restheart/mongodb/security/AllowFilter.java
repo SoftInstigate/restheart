@@ -115,9 +115,12 @@ public class AllowFilter extends BaseAllowInitializer implements Initializer {
     /** The message of the 403 for a read refused by this check, for the client. */
     static final String MESSAGE = "filter, sort and sort_by are not allowed";
 
-    /** The reason of the same 403, for the log. */
-    static final String LOG_MESSAGE = "filter, sort and sort_by are not allowed by the permission that matches the "
-            + "request: query through an aggregation, or set mongo.allowFilter on the permission";
+    /**
+     * The reason of the same 403, for the log. It is logged only when no other permission allows
+     * the request: a permission that refuses the query does not match, and the next one is tried.
+     */
+    static final String LOG_MESSAGE = "no permission of the caller allows filter, sort and sort_by on this request: "
+            + "query through an aggregation, or set mongo.allowFilter on a permission";
 
     /**
      * @return true if the request has a filter, sort or sort_by query parameter
