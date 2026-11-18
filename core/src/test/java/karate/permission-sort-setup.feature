@@ -118,3 +118,12 @@ Scenario: create the collection, its documents and the permission
     And request { "$set": { "mongo.sort": { "n": { "$var": [1] } } } }
     When method PATCH
     Then assert responseStatus == 200
+
+    # a valid permission on the same reads, with a lower priority: it would serve them, with or
+    # without a query, if the broken one were left out of the selection
+    * header Authorization = adminAuth
+    Given path '/restheart-test/acl/permissionSortBrokenWeaker'
+    And param wm = 'upsert'
+    And request { "roles": ["allow-filter-role"], "predicate": "path-prefix('/test-permission-sort/broken') and method(GET)", "priority": 50, "mongo": { "allowFilter": true } }
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200

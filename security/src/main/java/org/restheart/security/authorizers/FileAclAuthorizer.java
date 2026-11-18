@@ -51,6 +51,7 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.BaseAclPermission;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
+import org.restheart.security.MongoPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,11 +207,27 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
         } else {
             // across roles the same precedence as within one: the order of the account's roles plays no part
             machedPermissions.sort(precedence);
+            var effective = machedPermissions.get(0);
             LOGGER.debug("effective permission (roles={},predicate={},priority={})",
-                    machedPermissions.get(0).getRoles(),
-                    machedPermissions.get(0).getRequestPredicate(),
-                    machedPermissions.get(0).getPriority());
-            exchange.putAttachment(MATCHING_ACL_PERMISSION, machedPermissions.get(0));
+                    effective.getRoles(),
+                    effective.getRequestPredicate(),
+                    effective.getPriority());
+
+            // a permission whose mongo block is not valid allows nothing, as in mongoAclAuthorizer:
+            // the request is denied, rather than served by a weaker permission or failing later
+            // in an interceptor
+            try {
+                MongoPermissions.from(effective.getRaw());
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("Permission (roles={},predicate={},priority={}) is not valid and allows nothing: {}",
+                        effective.getRoles(),
+                        effective.getRequestPredicate(),
+                        effective.getPriority(),
+                        e.getMessage());
+                return false;
+            }
+
+            exchange.putAttachment(MATCHING_ACL_PERMISSION, effective);
             return true;
         }
     }

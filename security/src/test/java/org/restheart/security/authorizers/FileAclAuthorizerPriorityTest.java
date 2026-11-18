@@ -21,6 +21,8 @@
 package org.restheart.security.authorizers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -100,6 +102,24 @@ class FileAclAuthorizerPriorityTest {
             assertTrue(authorizer.isAllowed(request));
             assertSame(editors, BaseAclPermission.getRaw(request), "the order of the roles must not decide a tie: " + roles);
         }
+    }
+
+    @Test
+    void aPermissionWhoseMongoBlockIsNotValidAllowsNothing() throws Exception {
+        var notValid = permission(200);
+        notValid.put("mongo", Map.of("allowWriteMode", "no"));
+        var weaker = permission(100);
+
+        // denied, and not served by the weaker permission that would allow the request
+        var request = request(List.of(USER));
+        assertFalse(authorizer(List.of(notValid, weaker)).isAllowed(request));
+        assertNull(BaseAclPermission.getRaw(request), "no permission must be attached to a denied request");
+
+        // below a valid permission it plays no part
+        notValid.put("priority", 50);
+        request = request(List.of(USER));
+        assertTrue(authorizer(List.of(notValid, weaker)).isAllowed(request));
+        assertSame(weaker, BaseAclPermission.getRaw(request));
     }
 
     @Test

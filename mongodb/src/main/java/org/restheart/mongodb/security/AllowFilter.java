@@ -78,8 +78,11 @@ public class AllowFilter extends BaseAllowInitializer implements Initializer {
         try {
             return !Boolean.TRUE.equals(MongoPermissions.from(p).getAllowFilter());
         } catch (IllegalArgumentException e) {
-            // a malformed mongo block, e.g. "allowFilter": "no": the check applies, and refuses
-            return true;
+            // a malformed mongo block, e.g. "allowFilter": "no": no check is added, as in
+            // AllowBulkRequests. The permission keeps matching on its predicate and the authorizer,
+            // which finds it not valid, denies the request. Refusing here would take the
+            // permission out of the selection and let a weaker one serve the read
+            return false;
         }
     };
 
@@ -98,8 +101,10 @@ public class AllowFilter extends BaseAllowInitializer implements Initializer {
         try {
             allowed = MongoPermissions.from(p).isAllowFilter(MongoServiceConfiguration.get().getDefaultAllowFilter());
         } catch (IllegalArgumentException e) {
-            // fail closed: a permission whose allowFilter cannot be read does not allow filter
-            allowed = false;
+            // a permission whose mongo block is not valid allows nothing, and it is the authorizer
+            // that says so: it stays in the selection, so that the request is denied instead of
+            // being served by a weaker permission
+            return true;
         }
 
         // the reason of the 403, if no other permission allows the request; a reason already

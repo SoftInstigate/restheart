@@ -110,3 +110,18 @@ Scenario: a stored permission that is not valid allows nothing
     Given path '/test-permission-sort/broken'
     When method GET
     Then status 403
+
+Scenario: a stored permission that is not valid allows nothing to a read with a query either
+
+    # a weaker permission allows filter and sort on the same reads: it must not serve them
+    * header Authorization = user
+    Given path '/test-permission-sort/broken'
+    And param sort = '{"_id": 1}'
+    When method GET
+    Then status 403
+
+    * header Authorization = user
+    Given path '/test-permission-sort/broken'
+    And param filter = '{"n": 1}'
+    When method GET
+    Then status 403
