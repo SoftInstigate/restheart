@@ -349,7 +349,7 @@ public class RegisterService implements JsonService {
                         "email", email,
                         "frontend-url", RequestOverrides.frontendUrl(req, conf),
                         "verification-url", verifyLink);
-                var rendered = EmailRenderer.render(tmpl, vars, locale != null ? locale : conf.defaultLocale());
+                var rendered = EmailRenderer.render(tmpl, vars, locale != null ? locale : RequestOverrides.defaultLocale(req, conf));
                 emails.sendEmailAsync(req, email, firstName, rendered.subject(), rendered.htmlBody());
             }
         } catch (Exception e) {

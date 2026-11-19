@@ -208,7 +208,7 @@ public class ResendInviteService implements JsonService {
                             "role", inviteRole.substring(0, 1).toUpperCase() + inviteRole.substring(1));
                     // the invited user's locale (for a new user, the one given with the
                     // invitation) wins over the request's; the request's is never stored
-                    var lang = EmailLocale.choose(db(req).findUser(email).orElse(null), requestLocale, conf.defaultLocale());
+                    var lang = EmailLocale.choose(db(req).findUser(email).orElse(null), requestLocale, RequestOverrides.defaultLocale(req, conf));
                     var rendered = EmailRenderer.render(tmpl, vars, lang);
                     emails.sendEmailAsync(req, email, email, rendered.subject(), rendered.htmlBody());
                 }

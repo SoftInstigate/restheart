@@ -90,4 +90,21 @@ class RequestOverridesTest {
         var req = requestWithParam(RequestOverrides.ACCOUNT_PROPERTIES_CLAIMS, List.of());
         assertEquals(List.of("srvNode"), RequestOverrides.accountPropertiesClaims(req, CONF));
     }
+
+    @Test
+    void defaultLocale_fallsBackToStaticConfigWhenNotOverridden() {
+        assertEquals("en", RequestOverrides.defaultLocale(requestWithParam(RequestOverrides.DEFAULT_LOCALE, null), CONF));
+    }
+
+    @Test
+    void defaultLocale_prefersTheTenantsOverride_inLowerCase() {
+        assertEquals("it", RequestOverrides.defaultLocale(requestWithParam(RequestOverrides.DEFAULT_LOCALE, "IT"), CONF));
+    }
+
+    @Test
+    void defaultLocale_ignoresAnOverrideThatIsNotALanguageCode() {
+        assertEquals("en", RequestOverrides.defaultLocale(requestWithParam(RequestOverrides.DEFAULT_LOCALE, "it-IT"), CONF));
+        assertEquals("en", RequestOverrides.defaultLocale(requestWithParam(RequestOverrides.DEFAULT_LOCALE, ""), CONF));
+        assertEquals("en", RequestOverrides.defaultLocale(requestWithParam(RequestOverrides.DEFAULT_LOCALE, 1), CONF));
+    }
 }

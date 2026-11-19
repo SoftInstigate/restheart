@@ -97,7 +97,7 @@ public final class StripeNotifications {
             allVars.putIfAbsent("team-name", owner.displayName() != null ? owner.displayName() : "");
             allVars.putIfAbsent("billing-url", RequestOverrides.portalReturnUrl(req, conf));
 
-            var rendered = EmailRenderer.render(raw, allVars, locale(provider, owner, conf));
+            var rendered = EmailRenderer.render(raw, allVars, locale(req, provider, owner, conf));
             var recipientName = owner.displayName() != null ? owner.displayName() : owner.ownerEmail();
 
             emailSender.sendEmailAsync(req, owner.ownerEmail(), recipientName, rendered.subject(), rendered.htmlBody());
@@ -107,10 +107,12 @@ public final class StripeNotifications {
     }
 
     /**
-     * The language of an email to the entity's billing contact: theirs, else the default.
+     * The language of an email to the entity's billing contact: theirs, else the tenant's
+     * default, else the one of the configuration.
      * A provider that fails to answer must not cost the customer the email.
      */
-    private static String locale(SubscriptionOwnerProvider provider, SubscriptionOwner owner, StripeConfigData conf) {
+    private static String locale(ServiceRequest<?> req, SubscriptionOwnerProvider provider, SubscriptionOwner owner,
+                                 StripeConfigData conf) {
         try {
             if (provider != null) {
                 var chosen = provider.locale(owner).map(org.restheart.emails.EmailLocale::normalize);
@@ -121,6 +123,6 @@ public final class StripeNotifications {
         } catch (RuntimeException e) {
             LOGGER.warn("[stripe] could not read the language of entity {}: {}", owner.id(), e.getMessage());
         }
-        return conf.defaultLocale() != null ? conf.defaultLocale() : "en";
+        return RequestOverrides.defaultLocale(req, conf);
     }
 }

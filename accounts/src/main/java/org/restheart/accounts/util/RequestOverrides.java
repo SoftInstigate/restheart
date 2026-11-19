@@ -177,6 +177,12 @@ public final class RequestOverrides {
     public static final String FRONTEND_URL = "override-accounts-frontend-url";
     public static final String FRONTEND_APP_URL = "override-accounts-frontend-app-url";
 
+    /**
+     * The tenant's default language of the emails, in place of {@code accountsConfig.default-locale}:
+     * a code of 2 to 5 letters, e.g. {@code "it"}.
+     */
+    public static final String DEFAULT_LOCALE = "override-accounts-default-locale";
+
     /** Inline HTML for the email-verification template (from confs/{srvId}.accounts.templates.verification). */
     public static final String TMPL_VERIFICATION = "override-accounts-tmpl-verification";
     /** Inline HTML for the password-reset template. */
@@ -267,6 +273,16 @@ public final class RequestOverrides {
     /** Effective application name (used in email subjects / bodies). */
     public static String appName(ServiceRequest<?> req, AccountsConfigData conf) {
         return str(req, APP_NAME, conf.appName());
+    }
+
+    /**
+     * Effective default language of the emails: the one used when neither the recipient nor the
+     * request has a locale. An override that is not a language code is ignored.
+     */
+    public static String defaultLocale(ServiceRequest<?> req, AccountsConfigData conf) {
+        var v = req.attachedParam(DEFAULT_LOCALE);
+        var override = v instanceof String s ? org.restheart.emails.EmailLocale.normalize(s) : null;
+        return override != null ? override : conf.defaultLocale();
     }
 
     /** Effective frontend base URL (used in email links). */

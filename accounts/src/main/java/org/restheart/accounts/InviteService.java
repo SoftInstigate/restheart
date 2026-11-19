@@ -251,7 +251,7 @@ public class InviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", roleDisplay);
                     // an existing user's own locale wins over the request's
-                    var lang = EmailLocale.choose(existing.orElse(null), requestLocale, conf.defaultLocale());
+                    var lang = EmailLocale.choose(existing.orElse(null), requestLocale, RequestOverrides.defaultLocale(req, conf));
                     var rendered = EmailRenderer.render(tmpl, vars, lang);
                     emails.sendEmailAsync(req, invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }

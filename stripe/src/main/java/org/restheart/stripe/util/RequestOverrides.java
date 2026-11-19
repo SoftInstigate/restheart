@@ -100,6 +100,12 @@ public final class RequestOverrides {
     public static final String PORTAL_RETURN_URL = "override-stripe-portal-return-url";
 
     /**
+     * The tenant's default language of the emails, in place of {@code stripeConfig.default-locale}:
+     * a code of 2 to 5 letters, e.g. {@code "it"}.
+     */
+    public static final String DEFAULT_LOCALE = "override-stripe-default-locale";
+
+    /**
      * {@code override-stripe-tmpl-{name}} — inline HTML for a notification template.
      *
      * <p>Generic on {@code name}: it covers subscription notifications
@@ -190,6 +196,20 @@ public final class RequestOverrides {
     /** Effective {@link BillingScope} for this request, built from {@link #db} / {@link #teamsCollection}. */
     public static BillingScope scope(ServiceRequest<?> req, StripeConfigData conf) {
         return new BillingScope(db(req, conf), teamsCollection(req, conf));
+    }
+
+    /**
+     * Effective default language of the emails: the one used when neither the recipient nor the
+     * order has a locale. An override that is not a language code is ignored, and so is a
+     * configuration without one: the answer is then {@code en}.
+     */
+    public static String defaultLocale(ServiceRequest<?> req, StripeConfigData conf) {
+        var v = req != null ? req.attachedParam(DEFAULT_LOCALE) : null;
+        var override = v instanceof String s ? org.restheart.emails.EmailLocale.normalize(s) : null;
+        if (override != null) {
+            return override;
+        }
+        return conf != null && conf.defaultLocale() != null ? conf.defaultLocale() : "en";
     }
 
     /** Effective Checkout success redirect URL. */

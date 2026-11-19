@@ -214,7 +214,7 @@ public class ForgotPasswordService implements JsonService {
                     "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "reset-url", resetLink);
             // the user's own locale wins over the request's
-            var rendered = EmailRenderer.render(tmpl, vars, EmailLocale.choose(user, requestLocale, conf.defaultLocale()));
+            var rendered = EmailRenderer.render(tmpl, vars, EmailLocale.choose(user, requestLocale, RequestOverrides.defaultLocale(req, conf)));
             emails.sendEmailAsync(req, email, firstName, rendered.subject(), rendered.htmlBody());
         }
 

@@ -751,8 +751,7 @@ public class OrderEventHandler implements StripeEventHandler {
             var inline = RequestOverrides.templateInline(ctx.req(), name);
             var raw = EmailTemplateLoader.loadWithFallback(inline, notification.templatePath(), name + ".html");
             // the language chosen at checkout and kept on the order, else the default
-            var lang = EmailLocale.choose(order, null,
-                    ctx.conf().defaultLocale() != null ? ctx.conf().defaultLocale() : "en");
+            var lang = EmailLocale.choose(order, null, RequestOverrides.defaultLocale(ctx.req(), ctx.conf()));
             var rendered = EmailRenderer.render(raw, vars, lang);
 
             emailSender.sendEmailAsync(ctx.req(), email, email, rendered.subject(), rendered.htmlBody());
