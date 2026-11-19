@@ -17,6 +17,7 @@ import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.emails.EmailLocale;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -52,7 +53,12 @@ import com.mongodb.client.MongoClient;
  * whether the requested email exists, is verified, or anything else. All internal outcomes
  * are logged at DEBUG level so that sensitive details never leak via logs in production.
  *
- * <p>Expected body: {@code { "email": "user@example.com" }}
+ * <p>Expected body: {@code { "email": "user@example.com", "locale": "it" }}
+ *
+ * <p>{@code locale} is optional: the language of the email, used only when the user has no
+ * {@code locale} of their own and never stored, see {@link EmailLocale}. An invalid
+ * {@code locale} is a {@code 400} whatever the email, before the account is looked up, so the
+ * answer stays the same for a known and an unknown address.
  */
 @RegisterPlugin(
         name = "forgotPasswordService",
@@ -113,6 +119,16 @@ public class ForgotPasswordService implements JsonService {
             return;
         }
 
+        // an invalid locale is refused before the account is looked up: the same 400 for a known
+        // and an unknown email
+        String requestLocale;
+        try {
+            requestLocale = EmailLocale.ofRequest(obj);
+        } catch (IllegalArgumentException e) {
+            Errors.error(res, 400, e.getMessage());
+            return;
+        }
+
         // 2. Always respond 202 — outcome must not be visible to the caller
         res.setStatusCode(HttpStatus.SC_ACCEPTED);
 
@@ -120,7 +136,7 @@ public class ForgotPasswordService implements JsonService {
         var dbName = RequestOverrides.db(req, conf);
         var usersColl = RequestOverrides.usersCollection(req, conf);
         try {
-            processResetRequest(req, email, dbName, usersColl);
+            processResetRequest(req, email, requestLocale, dbName, usersColl);
         } catch (Exception e) {
             LOGGER.warn("forgotPassword: unexpected error during reset processing", e);
         }
@@ -136,7 +152,7 @@ public class ForgotPasswordService implements JsonService {
      * Exceptions bubble up to {@link #handle} where they are caught and logged,
      * leaving the already-set 202 response intact.
      */
-    private void processResetRequest(JsonRequest req, String email, String dbName, String usersColl) throws java.io.IOException {
+    private void processResetRequest(JsonRequest req, String email, String requestLocale, String dbName, String usersColl) throws java.io.IOException {
         // a. Locate user
         var userOpt = new DbHelper(mclient, dbName, usersColl, jsonSchemas).findUser(email);
         if (userOpt.isEmpty()) {
@@ -157,13 +173,13 @@ public class ForgotPasswordService implements JsonService {
             return;
         }
 
-        sendPasswordReset(req, email, dbName, usersColl, user);
+        sendPasswordReset(req, email, requestLocale, dbName, usersColl, user);
     }
 
     /**
      * Generate a one-shot {@code passwordResetToken} and email the reset link.
      */
-    private void sendPasswordReset(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
+    private void sendPasswordReset(JsonRequest req, String email, String requestLocale, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
         // a. Generate one-shot reset token and record its creation time
         var token = TokenUtils.generateToken();
         var now = new BsonDateTime(Instant.now().toEpochMilli());
@@ -197,7 +213,8 @@ public class ForgotPasswordService implements JsonService {
                     "email", email,
                     "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "reset-url", resetLink);
-            var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+            // the user's own locale wins over the request's
+            var rendered = EmailRenderer.render(tmpl, vars, EmailLocale.choose(user, requestLocale, conf.defaultLocale()));
             emails.sendEmailAsync(req, email, firstName, rendered.subject(), rendered.htmlBody());
         }
 

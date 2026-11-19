@@ -17,6 +17,7 @@ import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.plugins.JsonService;
+import org.restheart.emails.EmailLocale;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
@@ -131,6 +132,15 @@ public class ResendInviteService implements JsonService {
         }
         var email = jo.get("email").getAsString().trim().toLowerCase();
 
+        // the language of the email when the invited user has no locale, see EmailLocale
+        String requestLocale;
+        try {
+            requestLocale = EmailLocale.ofRequest(jo);
+        } catch (IllegalArgumentException e) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
         // 4. Find pending invitation in auth_invitations for this user in the caller's org
         var inviteOpt = db(req).findInvitation(email, callerTeam);
         if (inviteOpt.isEmpty()) {
@@ -196,7 +206,10 @@ public class ResendInviteService implements JsonService {
                             "inviter-name", inviterName != null ? inviterName : "",
                             "team-name", teamName != null ? teamName : "",
                             "role", inviteRole.substring(0, 1).toUpperCase() + inviteRole.substring(1));
-                    var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                    // the invited user's locale (for a new user, the one given with the
+                    // invitation) wins over the request's; the request's is never stored
+                    var lang = EmailLocale.choose(db(req).findUser(email).orElse(null), requestLocale, conf.defaultLocale());
+                    var rendered = EmailRenderer.render(tmpl, vars, lang);
                     emails.sendEmailAsync(req, email, email, rendered.subject(), rendered.htmlBody());
                 }
 

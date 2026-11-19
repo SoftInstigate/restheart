@@ -109,3 +109,56 @@ Feature: PATCH /auth/profile
     When method GET
     Then status 200
     And match response.profile.name == 'Owner'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — the user sets the language of their emails, stored in lower case
+  # ---------------------------------------------------------------------------
+    Given path '/auth/profile'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "locale": "IT" }
+    When method PATCH
+    Then status 200
+
+    Given path '/users/owner-test@example.com'
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == 'it'
+
+    # and changes it: the user's choice, unlike a request's guess, replaces the stored one
+    Given path '/auth/profile'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "locale": "en" }
+    When method PATCH
+    Then status 200
+
+    Given path '/users/owner-test@example.com'
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == 'en'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — an invalid locale returns 400 and changes nothing
+  # ---------------------------------------------------------------------------
+    Given path '/auth/profile'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "locale": "en" }
+    When method PATCH
+    Then status 200
+
+    Given path '/auth/profile'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "locale": "it-IT" }
+    When method PATCH
+    Then status 400
+    And match response.message contains 'locale'
+
+    Given path '/users/owner-test@example.com'
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == 'en'

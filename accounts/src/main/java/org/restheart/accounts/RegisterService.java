@@ -17,6 +17,7 @@ import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.emails.EmailSender;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
+import org.restheart.emails.EmailLocale;
 import org.restheart.emails.EmailRenderer;
 import org.restheart.emails.EmailTemplateLoader;
 
@@ -84,6 +85,9 @@ import org.restheart.plugins.security.PasswordPolicy;
  *   <tr><td>{@code lastName}</td><td>{@code profile.surname}</td></tr>
  *   <tr><td>{@code email}</td><td>{@code _id}</td></tr>
  *   <tr><td>{@code password}</td><td>{@code password} (hashed)</td></tr>
+ *   <tr><td>{@code locale}</td><td>{@code locale} (lower case): optional, the language of
+ *       the verification email and of the later emails to this user, see
+ *       {@link org.restheart.emails.EmailLocale}</td></tr>
  *   <tr><td>{@code teamName}</td><td>not stored on the user document — a team document
  *       is created by {@code createInitialTeam}</td></tr>
  * </table>
@@ -104,7 +108,7 @@ import org.restheart.plugins.security.PasswordPolicy;
  * {@code profile.surname}, {@code emailVerificationToken},
  * {@code emailVerificationCreatedAt}) are never overwritten by the body, and the
  * body fields of the mapping table above ({@code firstName}, {@code lastName},
- * {@code email}, {@code teamName}) are not carried over either — they already
+ * {@code email}, {@code teamName}, {@code locale}) are not carried over either — they already
  * reach the document, or the team, through that mapping.
  *
  * <p><strong>The document is validated as it is inserted, which is not its final shape.</strong>
@@ -243,6 +247,14 @@ public class RegisterService implements JsonService {
             return;
         }
 
+        String locale;
+        try {
+            locale = EmailLocale.ofRequest(body);
+        } catch (IllegalArgumentException e) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
         var weakPassword = passwordPolicy.rejection(password);
         if (weakPassword != null) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, weakPassword);
@@ -277,6 +289,11 @@ public class RegisterService implements JsonService {
                 .append("profile", profile)
                 .append("emailVerificationToken", new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);
+
+        // the language this user gets the emails in, the verification email first
+        if (locale != null) {
+            userDoc.append(EmailLocale.FIELD, new BsonString(locale));
+        }
 
         // ── 5b. Merge extra body properties when a JSON Schema is configured ──
         // Without a schema there is nothing to constrain additional properties,
@@ -332,7 +349,7 @@ public class RegisterService implements JsonService {
                         "email", email,
                         "frontend-url", RequestOverrides.frontendUrl(req, conf),
                         "verification-url", verifyLink);
-                var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                var rendered = EmailRenderer.render(tmpl, vars, locale != null ? locale : conf.defaultLocale());
                 emails.sendEmailAsync(req, email, firstName, rendered.subject(), rendered.htmlBody());
             }
         } catch (Exception e) {
@@ -401,7 +418,8 @@ public class RegisterService implements JsonService {
      * <p>Two groups: the document fields the service owns ({@code _id},
      * {@code password}, {@code roles}, {@code profile},
      * {@code emailVerificationToken}, {@code emailVerificationCreatedAt}), and the
-     * body fields the mapping table sends somewhere else ({@code firstName} and
+     * body fields the mapping table sends somewhere else ({@code locale}, stored validated
+     * and in lower case whether or not there is a schema, {@code firstName} and
      * {@code lastName} to {@code profile.name}/{@code profile.surname},
      * {@code email} to {@code _id}, {@code teamName} to the team document). Without
      * the second group the stored document would duplicate its own mapped fields
@@ -412,7 +430,7 @@ public class RegisterService implements JsonService {
     private static final java.util.Set<String> SERVICE_MANAGED_FIELDS = java.util.Set.of(
             "_id", "password", "roles", "profile",
             "emailVerificationToken", "emailVerificationCreatedAt",
-            "firstName", "lastName", "email", "teamName");
+            "firstName", "lastName", "email", "teamName", "locale");
 
     /**
      * Fields inside {@code profile} managed by the registration service.

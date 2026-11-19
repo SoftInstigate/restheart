@@ -190,3 +190,73 @@ Feature: POST /auth/forgot-password
     Then status 200
     And match response.passwordResetToken == '#notnull'
     And match response.passwordResetCreatedAt == '#notnull'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — a valid locale changes nothing for an unknown email (anti-enumeration)
+  # ---------------------------------------------------------------------------
+    Given path '/auth/forgot-password'
+    And request { "email": "does-not-exist@invalid-domain-xyz.example", "locale": "it" }
+    When method POST
+    Then status 202
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — an invalid locale returns 400 for a known and for an unknown email alike
+  # ---------------------------------------------------------------------------
+    * def email = 'forgot-badlocale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Test",
+        "lastName":  "User",
+        "teamName":  "Test Corp",
+        "email":     "#(email)",
+        "password":  "Password123!"
+      }
+      """
+    When method POST
+    Then status 201
+
+    Given path '/auth/forgot-password'
+    And request { "email": "#(email)", "locale": "it-IT" }
+    When method POST
+    Then status 400
+    * def known = response
+
+    Given path '/auth/forgot-password'
+    And request { "email": "does-not-exist@invalid-domain-xyz.example", "locale": "it-IT" }
+    When method POST
+    Then status 400
+    And match response == known
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — the locale of the request is never stored on the user
+  # ---------------------------------------------------------------------------
+    * def email = 'forgot-locale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Test",
+        "lastName":  "User",
+        "teamName":  "Test Corp",
+        "email":     "#(email)",
+        "password":  "Password123!"
+      }
+      """
+    When method POST
+    Then status 201
+
+    Given path '/auth/forgot-password'
+    And request { "email": "#(email)", "locale": "it" }
+    When method POST
+    Then status 202
+
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == '#notpresent'

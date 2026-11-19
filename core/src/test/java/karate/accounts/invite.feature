@@ -142,3 +142,124 @@ Feature: POST /auth/invite
     And match response[0].isNewUser == true
     And match response[0].token == '#notnull'
     And match response[0].expiresAt == '#notnull'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — inviting a new user with a locale stores it on the user it creates
+  # ---------------------------------------------------------------------------
+    * def inviteEmail = 'invite-locale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(inviteEmail)", "role": "member", "locale": "IT" }
+    When method POST
+    Then status 201
+
+    # stored in lower case
+    Given path '/users/' + inviteEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == 'it'
+
+    # a resend with another locale does not overwrite the stored one
+    Given path '/auth/resend-invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(inviteEmail)", "locale": "fr" }
+    When method POST
+    Then status 200
+
+    Given path '/users/' + inviteEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == 'it'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — inviting a new user without a locale stores none
+  # ---------------------------------------------------------------------------
+    * def inviteEmail = 'invite-nolocale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(inviteEmail)", "role": "member" }
+    When method POST
+    Then status 201
+
+    # the locale of a resend is used for that email only
+    Given path '/auth/resend-invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(inviteEmail)", "locale": "it" }
+    When method POST
+    Then status 200
+
+    Given path '/users/' + inviteEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == '#notpresent'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — inviting an existing user never changes the locale they have
+  # ---------------------------------------------------------------------------
+    * def existingEmail = 'invite-existing-locale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Erin",
+        "lastName":  "Existing",
+        "teamName":  "Erin Corp",
+        "email":     "#(existingEmail)",
+        "password":  "Password123!",
+        "locale":    "en"
+      }
+      """
+    When method POST
+    Then status 201
+
+    Given path '/auth/invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(existingEmail)", "role": "member", "locale": "it" }
+    When method POST
+    Then status 201
+
+    Given path '/users/' + existingEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == 'en'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — an invalid locale returns 400 and creates nothing
+  # ---------------------------------------------------------------------------
+    * def inviteEmail = 'invite-badlocale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(inviteEmail)", "role": "member", "locale": "it-IT" }
+    When method POST
+    Then status 400
+    And match response.message contains 'locale'
+
+    Given path '/auth/invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(inviteEmail)", "role": "member", "locale": 1 }
+    When method POST
+    Then status 400
+
+    Given path '/users/' + inviteEmail
+    And header Authorization = adminAuth
+    When method GET
+    Then status 404
+
+    Given path '/auth/resend-invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(inviteEmail)", "locale": "italian" }
+    When method POST
+    Then status 400
+    And match response.message contains 'locale'

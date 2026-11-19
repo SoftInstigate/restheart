@@ -17,6 +17,7 @@ import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
+import org.restheart.emails.EmailLocale;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.plugins.JsonService;
@@ -45,9 +46,13 @@ import org.restheart.plugins.security.PasswordPolicy;
  *
  * <p>Expected body:
  * <pre>{@code
- * { "email": "...", "role": "<memberRoleName>|<ownershipRole>" }
+ * { "email": "...", "role": "<memberRoleName>|<ownershipRole>", "locale": "it" }
  * }</pre>
  * {@code role} is optional and defaults to the configured {@code member-role-name}.
+ *
+ * <p>{@code locale} is optional: the language of the invitation email, see {@link EmailLocale}.
+ * For a new user it is also stored on the user document this endpoint creates. For an existing
+ * user it is used only when the user has no {@code locale}, and it is never stored.
  *
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
@@ -157,6 +162,14 @@ public class InviteService implements JsonService {
             }
         }
 
+        String requestLocale;
+        try {
+            requestLocale = EmailLocale.ofRequest(jo);
+        } catch (IllegalArgumentException e) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
         var membershipProvider = accountsService.getMembershipProvider(req);
 
         // 5. Check if user already exists and is already in this team
@@ -187,6 +200,10 @@ public class InviteService implements JsonService {
             userDoc.put("password", new BsonString(hashedPwd));
             userDoc.put("roles", rolesArr);
             userDoc.put("profile", new BsonDocument());
+            // the language the inviter chose for this person, until they have one of their own
+            if (requestLocale != null) {
+                userDoc.put(EmailLocale.FIELD, new BsonString(requestLocale));
+            }
 
             if (!db(req).insertUser(userDoc)) {
                 Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
@@ -233,7 +250,9 @@ public class InviteService implements JsonService {
                             "inviter-name", inviterName != null ? inviterName : "",
                             "team-name", teamName != null ? teamName : "",
                             "role", roleDisplay);
-                    var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                    // an existing user's own locale wins over the request's
+                    var lang = EmailLocale.choose(existing.orElse(null), requestLocale, conf.defaultLocale());
+                    var rendered = EmailRenderer.render(tmpl, vars, lang);
                     emails.sendEmailAsync(req, invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
 

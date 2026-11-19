@@ -136,3 +136,82 @@ Feature: POST /auth/register
     And match response.team.role == '#notpresent'
     And match response.teams == '#notpresent'
     And match response.emailVerificationToken == '#notnull'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — a registration with a locale stores it on the user, in lower case
+  # ---------------------------------------------------------------------------
+    * def email = 'reg-locale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Laura",
+        "lastName":  "Locale",
+        "teamName":  "LL Corp",
+        "email":     "#(email)",
+        "password":  "Password123!",
+        "locale":    "IT"
+      }
+      """
+    When method POST
+    Then status 201
+
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == 'it'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — a registration without a locale stores none
+  # ---------------------------------------------------------------------------
+    * def email = 'reg-nolocale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Nora",
+        "lastName":  "None",
+        "teamName":  "NN Corp",
+        "email":     "#(email)",
+        "password":  "Password123!"
+      }
+      """
+    When method POST
+    Then status 201
+
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.locale == '#notpresent'
+
+  # ---------------------------------------------------------------------------
+  Scenario: locale — an invalid locale returns 400 and registers nobody
+  # ---------------------------------------------------------------------------
+    * def email = 'reg-badlocale-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Bad",
+        "lastName":  "Locale",
+        "teamName":  "BL Corp",
+        "email":     "#(email)",
+        "password":  "Password123!",
+        "locale":    "it-IT"
+      }
+      """
+    When method POST
+    Then status 400
+    And match response.message contains 'locale'
+
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    When method GET
+    Then status 404

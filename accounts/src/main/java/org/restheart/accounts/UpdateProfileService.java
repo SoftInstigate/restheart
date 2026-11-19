@@ -37,8 +37,13 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Expected body (partial updates allowed):
  * <pre>{@code
- * { "firstName": "Alice", "lastName": "Smith" }
+ * { "firstName": "Alice", "lastName": "Smith", "locale": "it" }
  * }</pre>
+ *
+ * <p>{@code locale} is the language the user wants the emails in, stored as the top-level
+ * {@code locale} of the user document: see {@link org.restheart.emails.EmailLocale}. This
+ * endpoint is how the user's choice replaces the one a registration or an invitation made
+ * for them.
  */
 @RegisterPlugin(
         name = "updateProfileService",
@@ -111,8 +116,18 @@ public class UpdateProfileService implements JsonService {
             updates.put("profile.surname", new BsonString(lastName));
         }
 
+        try {
+            var locale = org.restheart.emails.EmailLocale.ofRequest(jo);
+            if (locale != null) {
+                updates.put(org.restheart.emails.EmailLocale.FIELD, new BsonString(locale));
+            }
+        } catch (IllegalArgumentException e) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
         if (updates.isEmpty()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "At least one of firstName or lastName is required");
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "At least one of firstName, lastName or locale is required");
             return;
         }
 
