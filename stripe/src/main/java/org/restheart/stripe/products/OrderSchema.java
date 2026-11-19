@@ -75,6 +75,7 @@ public final class OrderSchema {
                 "checkout_url": { "type": "string" },
                 "buyer_id": { "type": ["string", "null"] },
                 "buyer_email": { "type": ["string", "null"] },
+                "locale": { "type": ["string", "null"] },
                 "payer": {
                   "type": "object",
                   "required": ["type"],

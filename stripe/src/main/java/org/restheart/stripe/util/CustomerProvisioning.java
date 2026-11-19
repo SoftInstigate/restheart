@@ -85,11 +85,41 @@ public final class CustomerProvisioning {
         var customer = Customer.create(paramsBuilder.build(), opts);
         var effectiveId = provider.linkStripeCustomer(owner, customer.getId());
 
+        if (effectiveId.equals(customer.getId())) {
+            tellPreferredLocale(provider, owner, customer, apiKey);
+        }
+
         if (!effectiveId.equals(customer.getId())) {
             LOGGER.debug("[stripe] ensureCustomer lost the link race for owner {}: created {} but {} is now linked",
                     ownerId, customer.getId(), effectiveId);
         }
 
         return effectiveId;
+    }
+
+    /**
+     * Tells Stripe the language of the billing contact, so the receipts and invoices Stripe
+     * sends are in the language of the emails the plugin sends.
+     *
+     * <p>A separate update, after the creation: the creation is sent under an idempotency key
+     * made of the owner's id alone, and Stripe refuses a key that comes back with other
+     * parameters. With the language among them, a retry after the contact changed language
+     * would fail for as long as Stripe remembers the key.
+     *
+     * <p>Never fatal: the Customer exists and the checkout goes ahead without it.
+     */
+    private static void tellPreferredLocale(SubscriptionOwnerProvider provider, SubscriptionOwner owner,
+                                            Customer customer, String apiKey) {
+        try {
+            var locale = provider.locale(owner).map(org.restheart.emails.EmailLocale::normalize);
+            if (locale.isEmpty()) {
+                return;
+            }
+            customer.update(
+                    com.stripe.param.CustomerUpdateParams.builder().addPreferredLocale(locale.get()).build(),
+                    RequestOptions.builder().setApiKey(apiKey).build());
+        } catch (StripeException | RuntimeException e) {
+            LOGGER.warn("[stripe] could not set the preferred language of Customer {}: {}", customer.getId(), e.getMessage());
+        }
     }
 }

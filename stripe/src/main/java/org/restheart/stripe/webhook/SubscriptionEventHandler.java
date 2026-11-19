@@ -136,7 +136,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
         vars.put("seats-limit", limit != null ? String.valueOf(limit) : "∞");
         vars.put("seats-licensed", String.valueOf(licensedCount));
 
-        StripeNotifications.send(emailSender, ctx.req(), ctx.conf(), NotificationConfig.OVER_LIMIT, owner, vars);
+        StripeNotifications.send(emailSender, ctx.req(), ctx.conf(), NotificationConfig.OVER_LIMIT, owner, ctx.provider(), vars);
     }
 
     private void handleSubscriptionDeleted(Event event, StripeEventContext ctx) {
@@ -167,7 +167,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
                 notifyOverLimit(ctx, owner, newState, licensedCount);
             }
             var vars = Map.of("plan", previous.plan() != null ? previous.plan() : "");
-            StripeNotifications.send(emailSender, ctx.req(), ctx.conf(), NotificationConfig.SUBSCRIPTION_CANCELED, owner, vars);
+            StripeNotifications.send(emailSender, ctx.req(), ctx.conf(), NotificationConfig.SUBSCRIPTION_CANCELED, owner, ctx.provider(), vars);
         }
     }
 
@@ -195,7 +195,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
         var vars = new HashMap<String, String>();
         vars.put("plan", ctx.conf().byPriceId(firstPriceId(subscription)).map(PriceAttribution::planId).orElse(""));
         vars.put("trial-end-date", trialEnd != null ? trialEnd.toString() : "");
-        StripeNotifications.send(emailSender, ctx.req(), ctx.conf(), NotificationConfig.TRIAL_WILL_END, owner, vars);
+        StripeNotifications.send(emailSender, ctx.req(), ctx.conf(), NotificationConfig.TRIAL_WILL_END, owner, ctx.provider(), vars);
     }
 
     private void handleInvoicePaymentSucceeded(Event event, StripeEventContext ctx) {
@@ -232,7 +232,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
         if (applied) {
             var state = ctx.provider().readSubscription(owner, ctx.defaultPlanId());
             var vars = Map.of("plan", state.plan() != null ? state.plan() : "");
-            StripeNotifications.send(emailSender, ctx.req(), ctx.conf(), NotificationConfig.PAYMENT_FAILED, owner, vars);
+            StripeNotifications.send(emailSender, ctx.req(), ctx.conf(), NotificationConfig.PAYMENT_FAILED, owner, ctx.provider(), vars);
         }
     }
 

@@ -25,7 +25,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.restheart.emails.EmailLocale;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.stripe.BillingScope;
 import org.restheart.plugins.stripe.LicenseGrantResult;
@@ -73,8 +76,10 @@ public class DefaultSubscriptionOwnerProvider implements SubscriptionOwnerProvid
     public static final String DEFAULT_OWNERSHIP_ROLE = "owner";
 
     private final TeamRepository repo;
+    private final MongoClient mclient;
     private final String teamClaimName;
     private final String ownershipRole;
+    private final String usersCollection;
 
     /**
      * @param mclient       RESTHeart-managed MongoDB client
@@ -84,6 +89,23 @@ public class DefaultSubscriptionOwnerProvider implements SubscriptionOwnerProvid
      *                      {@value #DEFAULT_OWNERSHIP_ROLE} if {@code null}
      */
     public DefaultSubscriptionOwnerProvider(MongoClient mclient, String teamClaimName, String ownershipRole) {
+        this(mclient, teamClaimName, ownershipRole, null);
+    }
+
+    /**
+     * @param mclient         RESTHeart-managed MongoDB client
+     * @param teamClaimName   the JWT/session claim carrying the active team; falls back to
+     *                        {@value #DEFAULT_TEAM_CLAIM_NAME} if {@code null}
+     * @param ownershipRole   the team role allowed to manage billing; falls back to
+     *                        {@value #DEFAULT_OWNERSHIP_ROLE} if {@code null}
+     * @param usersCollection the users collection of {@code restheart-accounts}, where the
+     *                        billing contact's {@code locale} is read; {@code null} when
+     *                        {@code accountsConfig} is not there, and then no locale is known
+     */
+    public DefaultSubscriptionOwnerProvider(MongoClient mclient, String teamClaimName, String ownershipRole,
+                                            String usersCollection) {
+        this.mclient = mclient;
+        this.usersCollection = usersCollection != null && !usersCollection.isBlank() ? usersCollection : null;
         this.repo = new TeamRepository(mclient);
         this.teamClaimName = teamClaimName != null && !teamClaimName.isBlank() ? teamClaimName : DEFAULT_TEAM_CLAIM_NAME;
         this.ownershipRole = ownershipRole != null && !ownershipRole.isBlank() ? ownershipRole : DEFAULT_OWNERSHIP_ROLE;
@@ -167,6 +189,26 @@ public class DefaultSubscriptionOwnerProvider implements SubscriptionOwnerProvid
     @Override
     public boolean isLicensed(SubscriptionOwner owner, String userId) {
         return repo.isLicensed(owner.scope(), owner.id(), userId);
+    }
+
+    // ── language ─────────────────────────────────────────────────────────────
+
+    /**
+     * The {@code locale} of the user the billing emails go to: the team's creator, whose user
+     * document is in the same database as the team.
+     */
+    @Override
+    public Optional<String> locale(SubscriptionOwner owner) {
+        if (usersCollection == null || owner == null || owner.scope() == null
+                || owner.ownerEmail() == null || owner.ownerEmail().isBlank()) {
+            return Optional.empty();
+        }
+        var user = mclient.getDatabase(owner.scope().db())
+                .getCollection(usersCollection, BsonDocument.class)
+                .find(new BsonDocument("_id", new BsonString(owner.ownerEmail())))
+                .projection(new BsonDocument(EmailLocale.FIELD, new BsonInt32(1)))
+                .first();
+        return Optional.ofNullable(EmailLocale.ofUser(user));
     }
 
     /** Exposed so {@code stripeInitializer} can create the {@code stripe_customer_id} index. */

@@ -20,6 +20,7 @@
 package org.restheart.stripe;
 
 import org.bson.BsonDocument;
+import org.restheart.emails.EmailLocale;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
 import org.restheart.plugins.BsonService;
@@ -29,6 +30,7 @@ import org.restheart.plugins.stripe.SeatsMode;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.stripe.util.CustomerProvisioning;
 import org.restheart.stripe.util.RequestOverrides;
+import org.restheart.stripe.util.StripeLocales;
 import org.restheart.stripe.util.StripeIds;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
@@ -111,6 +113,15 @@ public class StripeCheckoutService implements BsonService {
             return;
         }
 
+        // optional: the language of the page the caller is on, for the Checkout page
+        String requestLocale;
+        try {
+            requestLocale = EmailLocale.ofRequest(body);
+        } catch (IllegalArgumentException e) {
+            res.setInError(HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
         var provider = stripeService.getSubscriptionOwnerProvider();
         var scope = RequestOverrides.scope(req, conf);
 
@@ -180,6 +191,13 @@ public class StripeCheckoutService implements BsonService {
                 .putMetadata("owner_id", ownerId)
                 .putMetadata("plan", planId);
 
+        // The Checkout page is shown now, to the caller: the language the client names for this
+        // request comes first, then the one of the billing contact. With neither, nothing is
+        // set and Stripe follows the browser, as before.
+        var checkoutLocale = StripeLocales.checkout(
+                requestLocale != null ? requestLocale : provider.locale(owner).orElse(null));
+        checkoutLocale.ifPresent(sessionBuilder::setLocale);
+
         var trialDays = conf.effectiveTrialPeriodDays(planId);
         if (trialDays > 0) {
             sessionBuilder.setSubscriptionData(
@@ -192,7 +210,10 @@ public class StripeCheckoutService implements BsonService {
 
         var opts = RequestOptions.builder()
                 .setApiKey(apiKey)
-                .setIdempotencyKey("stripe-checkout-" + ownerId + "-" + planId + "-" + interval)
+                // the language is part of the key: Stripe refuses a key that comes back with
+                // other parameters, and the same checkout may be retried in another language
+                .setIdempotencyKey("stripe-checkout-" + ownerId + "-" + planId + "-" + interval
+                        + checkoutLocale.map(l -> "-" + l.getValue()).orElse(""))
                 .build();
 
         Session session;

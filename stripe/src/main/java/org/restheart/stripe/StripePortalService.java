@@ -19,6 +19,8 @@
  */
 package org.restheart.stripe;
 
+import org.bson.BsonDocument;
+import org.restheart.emails.EmailLocale;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
 import org.restheart.plugins.BsonService;
@@ -26,6 +28,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.stripe.util.RequestOverrides;
+import org.restheart.stripe.util.StripeLocales;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -96,6 +99,16 @@ public class StripePortalService implements BsonService {
             res.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             return;
         }
+        // The body is optional, and so is its only field: the language of the page the caller
+        // is on, for the portal.
+        String requestLocale;
+        try {
+            requestLocale = req.getContent() instanceof BsonDocument body ? EmailLocale.ofRequest(body) : null;
+        } catch (IllegalArgumentException e) {
+            res.setInError(HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
         var provider = stripeService.getSubscriptionOwnerProvider();
         var scope = RequestOverrides.scope(req, conf);
 
@@ -137,10 +150,17 @@ public class StripePortalService implements BsonService {
             return;
         }
 
-        var params = SessionCreateParams.builder()
+        var paramsBuilder = SessionCreateParams.builder()
                 .setCustomer(owner.stripeCustomerId())
-                .setReturnUrl(returnUrl)
-                .build();
+                .setReturnUrl(returnUrl);
+
+        // The same rule as the Checkout page: the language the client names for this request,
+        // then the one of the billing contact. With neither, nothing is set and Stripe follows
+        // the Customer's preferred_locales or the browser, as before.
+        StripeLocales.portal(requestLocale != null ? requestLocale : provider.locale(owner).orElse(null))
+                .ifPresent(paramsBuilder::setLocale);
+
+        var params = paramsBuilder.build();
 
         var opts = RequestOptions.builder().setApiKey(apiKey).build();
 

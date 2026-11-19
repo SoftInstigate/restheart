@@ -30,6 +30,7 @@ import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.types.ObjectId;
+import org.restheart.emails.EmailLocale;
 import org.restheart.emails.EmailRenderer;
 import org.restheart.emails.EmailSender;
 import org.restheart.emails.EmailTemplateLoader;
@@ -749,7 +750,10 @@ public class OrderEventHandler implements StripeEventHandler {
             // dedicated wiring — see RequestOverrides.templateInline().
             var inline = RequestOverrides.templateInline(ctx.req(), name);
             var raw = EmailTemplateLoader.loadWithFallback(inline, notification.templatePath(), name + ".html");
-            var rendered = EmailRenderer.render(raw, vars, "en");
+            // the language chosen at checkout and kept on the order, else the default
+            var lang = EmailLocale.choose(order, null,
+                    ctx.conf().defaultLocale() != null ? ctx.conf().defaultLocale() : "en");
+            var rendered = EmailRenderer.render(raw, vars, lang);
 
             emailSender.sendEmailAsync(ctx.req(), email, email, rendered.subject(), rendered.htmlBody());
             LOGGER.info("[stripe] sent '{}' notification for order {}", name, orderId);

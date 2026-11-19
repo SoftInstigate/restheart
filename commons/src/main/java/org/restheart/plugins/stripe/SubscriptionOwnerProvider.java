@@ -205,4 +205,21 @@ public interface SubscriptionOwnerProvider {
      * @return {@code true} if that member currently holds a seat licence
      */
     boolean isLicensed(SubscriptionOwner owner, String userId);
+
+    // ── language ─────────────────────────────────────────────────────────────
+
+    /**
+     * The language the entity's billing contact chose: the emails to
+     * {@link SubscriptionOwner#ownerEmail()} are written in it, and Stripe is told about it.
+     *
+     * <p>Asked only when an email is about to be sent or a Stripe Customer created, never on
+     * the path of an ordinary request: an implementation may read the database here.
+     *
+     * @param owner the entity
+     * @return a language code of 2 to 5 letters, or empty when the contact has none; the
+     *         default implementation knows none
+     */
+    default Optional<String> locale(SubscriptionOwner owner) {
+        return Optional.empty();
+    }
 }

@@ -30,6 +30,7 @@ import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.plugins.stripe.SubscriptionOwner;
+import org.restheart.plugins.stripe.SubscriptionOwnerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,11 +64,14 @@ public final class StripeNotifications {
      * @param conf        the effective configuration
      * @param name        the notification name — see {@link org.restheart.plugins.stripe.NotificationConfig}
      * @param owner       the entity to notify
+     * @param provider    asked for the language of the entity's billing contact; the email is
+     *                    in that language, else in {@code default-locale} of {@code stripeConfig}
      * @param vars        template variables beyond {@code app-name}/{@code year}/{@code team-name}/
      *                    {@code billing-url}, which are filled in here
      */
     public static void send(EmailSender emailSender, ServiceRequest<?> req, StripeConfigData conf,
-                            String name, SubscriptionOwner owner, Map<String, String> vars) {
+                            String name, SubscriptionOwner owner, SubscriptionOwnerProvider provider,
+                            Map<String, String> vars) {
         if (!RequestOverrides.notificationEnabled(req, conf, name)) {
             return;
         }
@@ -93,12 +97,30 @@ public final class StripeNotifications {
             allVars.putIfAbsent("team-name", owner.displayName() != null ? owner.displayName() : "");
             allVars.putIfAbsent("billing-url", RequestOverrides.portalReturnUrl(req, conf));
 
-            var rendered = EmailRenderer.render(raw, allVars, "en");
+            var rendered = EmailRenderer.render(raw, allVars, locale(provider, owner, conf));
             var recipientName = owner.displayName() != null ? owner.displayName() : owner.ownerEmail();
 
             emailSender.sendEmailAsync(req, owner.ownerEmail(), recipientName, rendered.subject(), rendered.htmlBody());
         } catch (IOException e) {
             LOGGER.error("[stripe] failed to load '{}' notification template: {}", name, e.getMessage());
         }
+    }
+
+    /**
+     * The language of an email to the entity's billing contact: theirs, else the default.
+     * A provider that fails to answer must not cost the customer the email.
+     */
+    private static String locale(SubscriptionOwnerProvider provider, SubscriptionOwner owner, StripeConfigData conf) {
+        try {
+            if (provider != null) {
+                var chosen = provider.locale(owner).map(org.restheart.emails.EmailLocale::normalize);
+                if (chosen.isPresent()) {
+                    return chosen.get();
+                }
+            }
+        } catch (RuntimeException e) {
+            LOGGER.warn("[stripe] could not read the language of entity {}: {}", owner.id(), e.getMessage());
+        }
+        return conf.defaultLocale() != null ? conf.defaultLocale() : "en";
     }
 }

@@ -82,7 +82,15 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 db(),
                 configVal(config, "teams-collection", "teams"),
                 subscriptions,
-                products);
+                products,
+                defaultLocale());
+    }
+
+    /** {@code default-locale}, or {@code en} when it is absent or is not a language code. */
+    private String defaultLocale() {
+        var configured = configVal(config, "default-locale", "en");
+        var locale = org.restheart.emails.EmailLocale.normalize(configured);
+        return locale != null ? locale : "en";
     }
 
     /**

@@ -68,7 +68,24 @@ public record StripeConfigData(
         SubscriptionsConfig subscriptions,
 
         /** Products mode configuration. */
-        ProductsConfig products) {
+        ProductsConfig products,
+
+        // ── Emails ──────────────────────────────────────────────────────────
+
+        /**
+         * Default language of the emails (a code of 2 to 5 letters, e.g. {@code "en"}).
+         * Used when neither the recipient nor the request has a locale.
+         */
+        String defaultLocale) {
+
+    /**
+     * Compatibility constructor for callers written before {@code defaultLocale}: the emails
+     * default to English, as they were before it.
+     */
+    public StripeConfigData(String secretKey, String webhookSecret, String db, String teamsCollection,
+                            SubscriptionsConfig subscriptions, ProductsConfig products) {
+        this(secretKey, webhookSecret, db, teamsCollection, subscriptions, products, "en");
+    }
 
     /** @return {@code true} if {@link #secretKey()} is a live-mode key ({@code sk_live_...}). */
     public boolean isLiveMode() {

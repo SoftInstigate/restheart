@@ -83,7 +83,8 @@ public class StripeService implements Provider<StripeService>, SubscriptionOwner
     @OnInit
     public void onInit() {
         this.subscriptionOwnerProvider = accountsConf != null
-                ? new DefaultSubscriptionOwnerProvider(mclient, accountsConf.teamClaimName(), accountsConf.ownershipRole())
+                ? new DefaultSubscriptionOwnerProvider(mclient, accountsConf.teamClaimName(), accountsConf.ownershipRole(),
+                        accountsConf.usersCollection())
                 : new DefaultSubscriptionOwnerProvider(mclient, null, null);
 
         LOGGER.info("StripeService initialized with DefaultSubscriptionOwnerProvider (accountsConfig {})",

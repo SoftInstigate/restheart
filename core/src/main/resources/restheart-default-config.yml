@@ -644,6 +644,10 @@ stripeConfig:
   # restheart-accounts writes them.
   teams-collection: teams
 
+  # Language of the emails when neither the recipient nor the request has a
+  # locale. The built-in templates come in en, it, es, fr, de, nl, pt, pl.
+  default-locale: en
+
   subscriptions:
     enabled: true
     # Plan id assigned to an entity with no subscription. Must name a key

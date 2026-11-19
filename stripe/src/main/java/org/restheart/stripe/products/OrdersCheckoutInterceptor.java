@@ -37,6 +37,7 @@ import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.types.ObjectId;
+import org.restheart.emails.EmailLocale;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.Inject;
@@ -48,6 +49,7 @@ import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.stripe.StripeService;
 import org.restheart.stripe.util.CustomerProvisioning;
 import org.restheart.stripe.util.RequestOverrides;
+import org.restheart.stripe.util.StripeLocales;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,13 +132,21 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             return;
         }
 
-        // Reject any field other than 'items' (and 'email' for guests)
+        // Reject any field other than 'items', 'locale' (and 'email' for guests)
         for (var key : body.keySet()) {
-            if (!"items".equals(key) && !"email".equals(key)) {
+            if (!"items".equals(key) && !"email".equals(key) && !EmailLocale.FIELD.equals(key)) {
                 reject(response, HttpStatus.SC_BAD_REQUEST,
-                        "unexpected field '%s' — only 'items' (and 'email' for guests) are allowed".formatted(key));
+                        "unexpected field '%s' — only 'items', 'locale' (and 'email' for guests) are allowed".formatted(key));
                 return;
             }
+        }
+
+        String requestLocale;
+        try {
+            requestLocale = EmailLocale.ofRequest(body);
+        } catch (IllegalArgumentException e) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
         }
 
         if (!body.containsKey("items") || !body.get("items").isArray()) {
@@ -299,6 +309,13 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         var buyerId = resolveBuyerId(request);
         var buyerEmail = resolveBuyerEmail(request, body, products);
 
+        // The language of this order: the Checkout page, and the emails about the order. A
+        // signed-in buyer's own locale wins over the request's; a guest has only the request's.
+        // With neither it stays unset: Checkout follows the browser and the emails are in
+        // default-locale.
+        var buyerLocale = resolveBuyerLocale(request);
+        var orderLocale = buyerLocale != null ? buyerLocale : requestLocale;
+
         // 5b. Mint the order identity up front.
         //
         // Both of these are generated locally — an ObjectId needs no round trip
@@ -317,6 +334,8 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 .setSuccessUrl(interpolateOrderRef(products.successUrl(), orderId, secret))
                 .setCancelUrl(products.cancelUrl())
                 .putMetadata("order_source", "restheart-products");
+
+        StripeLocales.checkout(orderLocale).ifPresent(sessionBuilder::setLocale);
 
         if (buyerId != null) {
             sessionBuilder.setClientReferenceId(buyerId);
@@ -502,6 +521,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 .append("checkout_url", new BsonString(session.getUrl()))
                 .append("buyer_id", buyerId != null ? new BsonString(buyerId) : BsonNull.VALUE)
                 .append("buyer_email", buyerEmail != null ? new BsonString(buyerEmail) : BsonNull.VALUE)
+                .append(EmailLocale.FIELD, orderLocale != null ? new BsonString(orderLocale) : BsonNull.VALUE)
                 .append("payer", buildPayerDocument(request))
                 .append("metadata", orderMetadata)
                 .append("status", new BsonString("pending_payment"))
@@ -583,6 +603,21 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             var props = withProperties.propertiesAsMap();
             if (props != null && props.get("_id") != null) {
                 return props.get("_id").toString();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The {@code locale} of a signed-in buyer, read off the account as the email is: present
+     * when the account carries the user document's properties, absent for a guest and for a
+     * token that has no such claim.
+     */
+    private String resolveBuyerLocale(MongoRequest request) {
+        if (request.getAuthenticatedAccount() instanceof org.restheart.security.WithProperties<?> withProperties) {
+            var props = withProperties.propertiesAsMap();
+            if (props != null && props.get(EmailLocale.FIELD) instanceof String locale) {
+                return EmailLocale.normalize(locale);
             }
         }
         return null;
