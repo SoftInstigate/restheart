@@ -1,0 +1,113 @@
+name: Republish Docker image
+
+# Rebuilds the JVM Docker image of a version that is already released, and publishes it under the
+# same tags. For a change that is only in the image, such as a JVM flag in core/Dockerfile or a
+# new base image: RESTHeart itself is not rebuilt, the jars are the ones of the GitHub release.
+#
+# Run it on the branch of the version, whose core/Dockerfile is the one used:
+#
+#   gh workflow run docker-republish.yml --ref 9.x -f version=9.17.1
+#
+# The native image is not rebuilt by this workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Released version to republish, e.g. 9.17.1"
+        required: true
+        type: string
+      push:
+        description: "Push the image. Unchecked, the image is only built, to try the workflow."
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-republish-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  republish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check the version against the branch
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+            || { echo "::error::'$VERSION' is not a version like 9.17.1"; exit 1; }
+          # the Dockerfile must be the one of the version's line: master is the next major
+          BRANCH_VERSION=$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' pom.xml | head -1)
+          [ "${BRANCH_VERSION%%.*}" = "${VERSION%%.*}" ] \
+            || { echo "::error::this branch is at $BRANCH_VERSION: run the workflow on the branch of $VERSION"; exit 1; }
+
+      - name: Set the Docker tags
+        run: |
+          set -euo pipefail
+          MAJOR=$(echo "$VERSION" | cut -d. -f1); MINOR=$(echo "$VERSION" | cut -d. -f2)
+          # a moving tag follows this version only if it is the highest release it can point to
+          RELEASES=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            -q '.[] | select(.draft or .prerelease | not) | .tag_name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$')
+          echo "$RELEASES" | grep -qx "$VERSION" \
+            || { echo "::error::$VERSION is not a published release"; exit 1; }
+          highest() { echo "$RELEASES" | grep -E "^$1" | sort -V | tail -1; }
+          TAGS="softinstigate/restheart:$VERSION"
+          [ "$(highest "$MAJOR\.$MINOR\.")" = "$VERSION" ] && TAGS="$TAGS,softinstigate/restheart:$MAJOR.$MINOR"
+          [ "$(highest "$MAJOR\.")" = "$VERSION" ] && TAGS="$TAGS,softinstigate/restheart:$MAJOR"
+          [ "$(highest "")" = "$VERSION" ] && TAGS="$TAGS,softinstigate/restheart:latest"
+          echo "TAGS=$TAGS" >> "$GITHUB_ENV"
+          echo "Tags: $TAGS"
+
+      - name: Download the jars of the release
+        # restheart.tar.gz holds restheart.jar, lib/ and plugins/, as core/Dockerfile copies them
+        run: |
+          set -euo pipefail
+          gh release download "$VERSION" --repo "$GITHUB_REPOSITORY" --pattern restheart.tar.gz --dir "$RUNNER_TEMP"
+          mkdir -p core/target
+          tar -xzf "$RUNNER_TEMP/restheart.tar.gz" -C core/target --strip-components=1
+          ls core/target/restheart.jar core/target/lib core/target/plugins/lib > /dev/null
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to DockerHub
+        if: inputs.push
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and Push multi-arch Docker images
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: ./core/
+          platforms: |
+            linux/amd64,
+            linux/arm64
+          push: ${{ inputs.push }}
+          pull: true
+          tags: ${{ env.TAGS }}
+
+      - name: Summary
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          PUSHED: ${{ inputs.push }}
+        run: |
+          {
+            echo "### RESTHeart $VERSION, Docker image"
+            echo "- core/Dockerfile of \`$GITHUB_REF_NAME\` at \`${GITHUB_SHA:0:9}\`"
+            echo "- tags: \`${TAGS//,/\`, \`}\`"
+            echo "- pushed: $PUSHED"
+            echo "- digest: \`${DIGEST:-none}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
