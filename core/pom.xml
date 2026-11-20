@@ -135,12 +135,6 @@
 
   <build>
     <finalName>${project.artifactId}</finalName>
-    <extensions>
-      <extension>
-        <groupId>org.springframework.build</groupId>
-        <artifactId>aws-maven</artifactId>
-      </extension>
-    </extensions>
     <testResources>
       <testResource>
         <directory>src/test/java</directory>
