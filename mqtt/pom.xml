@@ -103,7 +103,7 @@
         </executions>
       </plugin>
       <!--
-        This produces mqtt/target/restheart-mqtt-<version>.{zip,tar.gz}: a release asset bundling
+        This produces mqtt/target/restheart-mqtt.{zip,tar.gz}: a release asset bundling
         restheart-mqtt.jar, lib/ (hivemq-mqtt-client and its transitives), the sample config, both
         licence files and the two docker compose demos, which run from the unpacked directory. attach=false keeps it out of the artifacts published to Maven Central.
 
@@ -111,8 +111,13 @@
         RESTHeart distribution - MQTT is far from RESTHeart's habitual use cases, so the module
         lives in this monorepo but ships separately, and core does not reference it anywhere.
         Unpacked into an instance's plugins/ directory it yields
-        plugins/restheart-mqtt-<version>/{restheart-mqtt.jar,lib/*.jar}: the per-module layout,
+        plugins/restheart-mqtt/{restheart-mqtt.jar,lib/*.jar}: the per-module layout,
         which keeps its netty and rxjava out of the shared plugins/lib (see restheart#724).
+
+        No version in the name of the archive or of its directory, as for restheart.zip: the
+        release it is attached to gives the version, and
+        releases/latest/download/restheart-mqtt.zip stays a valid address from one release to
+        the next.
 
         Two workflows upload it. On master, mqtt.yml publishes it to the rolling "mqtt-snapshot"
         pre-release. On a release branch, tags.yml (the release workflow, which exists only there:
@@ -131,7 +136,7 @@
               <goal>single</goal>
             </goals>
             <configuration>
-              <finalName>restheart-mqtt-${project.version}</finalName>
+              <finalName>restheart-mqtt</finalName>
               <appendAssemblyId>false</appendAssemblyId>
               <descriptors>
                 <descriptor>assembly.xml</descriptor>

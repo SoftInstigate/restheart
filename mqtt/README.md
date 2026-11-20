@@ -16,13 +16,13 @@ The module is not bundled with RESTHeart: you add it to an instance. "Quick star
 You need Docker and nothing else. The module's archive carries the plugin together with a two-container demo — RESTHeart and a Mosquitto broker, no MongoDB — where the module is already enabled and an ACL is in place. There is nothing to build and nothing to configure:
 
 ```
-curl -LO https://github.com/SoftInstigate/restheart/releases/download/mqtt-snapshot/restheart-mqtt-10.0.0-SNAPSHOT.zip
-unzip restheart-mqtt-10.0.0-SNAPSHOT.zip
-cd restheart-mqtt-10.0.0-SNAPSHOT
-RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest docker compose up
+curl -LO https://github.com/SoftInstigate/restheart/releases/latest/download/restheart-mqtt.zip
+unzip restheart-mqtt.zip
+cd restheart-mqtt
+docker compose up
 ```
 
-The module is a preview: **no RESTHeart release includes it yet**. What you download is the latest build of the `master` branch, and `RESTHEART_IMAGE` runs it on the RESTHeart built from that same branch. The notes of the [`mqtt-snapshot`](https://github.com/SoftInstigate/restheart/releases/tag/mqtt-snapshot) pre-release give the exact file name, should the version have changed.
+That is the module of the latest RESTHeart release, and the demo runs it on `softinstigate/restheart:latest`, the same release. The module is part of RESTHeart releases from 9.17.1.
 
 Wait for `RESTHeart started`, and find this line a little above it:
 
@@ -58,27 +58,27 @@ The demo brings its own broker and has no database. To connect the module to the
 
 ## Installing
 
-To add the module to your own RESTHeart, download the archive and unpack it into the instance's plugins directory:
+To add the module to your own RESTHeart, download the archive **of the same release as your RESTHeart** and unpack it into the instance's plugins directory:
 
 ```
-curl -LO https://github.com/SoftInstigate/restheart/releases/download/mqtt-snapshot/restheart-mqtt-10.0.0-SNAPSHOT.zip
-unzip restheart-mqtt-10.0.0-SNAPSHOT.zip -d /opt/restheart/plugins/
+curl -LO https://github.com/SoftInstigate/restheart/releases/latest/download/restheart-mqtt.zip
+unzip restheart-mqtt.zip -d /opt/restheart/plugins/
 ```
+
+That address is the latest release. For another one, put its version in place of `latest/download`: `https://github.com/SoftInstigate/restheart/releases/download/9.17.1/restheart-mqtt.zip`.
 
 With the Docker image, unpack it anywhere and mount the directory as a subdirectory of the image's plugins directory:
 
 ```
 docker run -p 8080:8080 \
-  -v "$PWD/restheart-mqtt-10.0.0-SNAPSHOT:/opt/restheart/plugins/restheart-mqtt:ro" \
-  softinstigate/restheart-snapshot:latest
+  -v "$PWD/restheart-mqtt:/opt/restheart/plugins/restheart-mqtt:ro" \
+  softinstigate/restheart
 ```
-
-The archive is a build of `master`, so the RESTHeart to put it into is the one built from `master`: see "Which archive".
 
 Either way you get:
 
 ```
-plugins/restheart-mqtt-10.0.0-SNAPSHOT/
+plugins/restheart-mqtt/
 ├── restheart-mqtt.jar
 ├── lib/                              hivemq-mqtt-client and its 13 transitives
 ├── restheart-mqtt-default-config.yml the sample configuration, every key commented
@@ -204,20 +204,27 @@ Both together, with the Docker image, the broker and the database being on the D
 
 ```
 docker run -p 8080:8080 \
-  -v "$PWD/restheart-mqtt-10.0.0-SNAPSHOT:/opt/restheart/plugins/restheart-mqtt:ro" \
+  -v "$PWD/restheart-mqtt:/opt/restheart/plugins/restheart-mqtt:ro" \
   -e RHO='/http-listener/host->"0.0.0.0";/mclient/connection-string->"mongodb://host.docker.internal:27017";/mqtt-client/enabled->true;/mqtt-client/broker-url->"tcp://host.docker.internal:1883";/mqtt-client/username->"iot";/mqtt-client/password->"s3cret";/mqtt-router/enabled->true;/mqtt-sse/enabled->true;/mqtt-mongo-writer/enabled->true;/mqtt-mongo-writer/mongo-sink->[{"topic":"sensors/#","database":"iot","collection":"sensor-events"}];/mqtt-topic-authorizer/acl->{"admin":["sensors/#"]}' \
-  softinstigate/restheart-snapshot:latest
+  softinstigate/restheart
 ```
 
 ### Which archive
 
-No RESTHeart release includes the module yet. The archive is a snapshot build, under the [`mqtt-snapshot`](https://github.com/SoftInstigate/restheart/releases/tag/mqtt-snapshot) pre-release. [`.github/workflows/mqtt.yml`](../.github/workflows/mqtt.yml) refreshes it on every push to `master`, and **only after this module's integration tests have passed** against the core built alongside it. The notes of the pre-release record the commit each build came from and the exact file name to download.
+Every RESTHeart release from 9.17.1 carries the module's archive, `restheart-mqtt.zip` and `restheart-mqtt.tar.gz`, on its [GitHub release](https://github.com/SoftInstigate/restheart/releases), next to `restheart.zip`. The release workflow attaches it **only after the module's integration tests have passed** against the core of that release. The name has no version in it, like `restheart.zip`: the release it belongs to gives the version.
 
-The release workflow of the `9.x` branch is set up to run the same tests and attach the archive to a RESTHeart release, next to `restheart.zip`. It has not run yet: until a release carries the archive, the snapshot is the only build there is.
+To try what is on `master` before it is released, there is a snapshot build under the [`mqtt-snapshot`](https://github.com/SoftInstigate/restheart/releases/tag/mqtt-snapshot) pre-release. [`.github/workflows/mqtt.yml`](../.github/workflows/mqtt.yml) refreshes it on every push to `master`, under the same condition, and the notes of the pre-release record the commit it came from. It belongs in a RESTHeart built from `master`, which `softinstigate/restheart-snapshot:latest` is as a Docker image:
+
+```
+curl -LO https://github.com/SoftInstigate/restheart/releases/download/mqtt-snapshot/restheart-mqtt.zip
+unzip restheart-mqtt.zip
+cd restheart-mqtt
+RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest docker compose up
+```
 
 To build it yourself instead — necessarily, if you are working on the module — see "Building".
 
-**Install it into a RESTHeart built from `master`.** The archive has only been tested against the core built alongside it; `softinstigate/restheart-snapshot:latest` is that core as a Docker image. There is also a specific security reason never to put it into an old release. Per-topic authorization on `/mqtt-sse` needs RESTHeart to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`), and **RESTHeart has that from 9.9.0: 9.8.x and every earlier version lack it.** On a RESTHeart without it, `mqtt-topic-authorizer` resolves but is never invoked on `/mqtt-sse`, so the endpoint is authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
+**Install it into the RESTHeart of the same release.** Each archive has only been tested against the core built alongside it. There is also a specific security reason never to put it into an older one. Per-topic authorization on `/mqtt-sse` needs RESTHeart to run the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`), and **RESTHeart has that from 9.9.0: 9.8.x and every earlier version lack it.** On a RESTHeart without it, `mqtt-topic-authorizer` resolves but is never invoked on `/mqtt-sse`, so the endpoint is authenticated but not authorized per topic — a topic outside the ACL is silently accepted instead of rejected with `403`. See "Operational notes".
 
 ## What you get
 
@@ -791,7 +798,7 @@ The module still lives in the RESTHeart monorepo, and its integration tests run 
 
 ```
 ./mvnw -pl mqtt -am test                  # this module's unit tests, no Docker needed
-./mvnw -pl mqtt -am package               # also produces the installable archive, mqtt/target/restheart-mqtt-<version>.zip
+./mvnw -pl mqtt -am package               # also produces the installable archive, mqtt/target/restheart-mqtt.zip
 ```
 
 The two compose files run on what you built: from the `mqtt` directory, `docker compose up` mounts `target/restheart-mqtt.jar` and `target/lib` into the container. It runs `softinstigate/restheart:latest`; when your checkout is ahead of the latest release — on `master`, typically — run the core built from `master` instead, with `RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest docker compose up`. That is for trying a change out, not for testing it: the integration tests below launch the core you just built rather than a published image.
@@ -834,9 +841,9 @@ If you were following [TUTORIALS.md](./TUTORIALS.md), say which part. And if the
 Dual-licensed, like every other RESTHeart module: AGPL-3.0 (see [LICENSE.txt](../LICENSE.txt)), or the RESTHeart COMMERCIAL LICENSE (see [COMM-LICENSE.txt](../COMM-LICENSE.txt)) for those who need it.
 
 > [!WARNING]
-> **Experimental.** `restheart-mqtt` is a preview: no RESTHeart release includes it yet, and it
-> has seen little use outside its own tests. Configuration keys, the SSE envelope, the REST response
-> and the shape of stored documents may still change from one build to the next, and it is not
+> **Experimental.** `restheart-mqtt` is released with RESTHeart from 9.17.1, but it is new and has
+> seen little use outside its own tests. Configuration keys, the SSE envelope, the REST response
+> and the shape of stored documents may still change from one release to the next, and it is not
 > recommended for production use yet.
 >
 > That is also why feedback matters now: it can still change the design. Please report bugs and

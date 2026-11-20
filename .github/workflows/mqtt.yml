@@ -81,8 +81,8 @@ jobs:
         with:
           name: restheart-mqtt-archive
           path: |
-            mqtt/target/restheart-mqtt-*.zip
-            mqtt/target/restheart-mqtt-*.tar.gz
+            mqtt/target/restheart-mqtt.zip
+            mqtt/target/restheart-mqtt.tar.gz
           if-no-files-found: error
 
   publish-snapshot:
@@ -123,8 +123,7 @@ jobs:
           set -euo pipefail
           TAG=mqtt-snapshot
 
-          ZIP=$(ls dist/restheart-mqtt-*.zip | head -1)
-          ZIP_NAME=$(basename "$ZIP")
+          ZIP_NAME=restheart-mqtt.zip
 
           # Create the release once, then only ever replace its assets. Deleting and
           # recreating it each time would leave a window in which the documented download
@@ -137,6 +136,16 @@ jobs:
           fi
 
           gh release upload "$TAG" dist/* --clobber
+
+          # The pre-release holds the latest build and nothing else. Archives of earlier builds
+          # that had another name - the version was in it once - are not replaced by the upload
+          # above, and would stay there looking current.
+          gh release view "$TAG" --json assets --jq '.assets[].name' | while read -r NAME; do
+            case "$NAME" in
+              restheart-mqtt.zip|restheart-mqtt.tar.gz) ;;
+              *) gh release delete-asset "$TAG" "$NAME" --yes ;;
+            esac
+          done
 
           # The git tag stays where the release was first cut and does NOT track master: gh
           # cannot move the tag of a published release. The notes carry the provenance
@@ -155,7 +164,7 @@ jobs:
             printf '```\n'
             printf 'curl -LO https://github.com/%s/releases/download/%s/%s\n' "$GITHUB_REPOSITORY" "$TAG" "$ZIP_NAME"
             printf 'unzip %s\n' "$ZIP_NAME"
-            printf 'cd %s\n' "${ZIP_NAME%%.zip}"
+            printf 'cd restheart-mqtt\n'
             printf 'RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest docker compose up\n'
             printf '```\n\n'
             printf 'To install it into your own instance instead, see [the module README](https://github.com/%s/blob/master/mqtt/README.md#installing).\n' "$GITHUB_REPOSITORY"

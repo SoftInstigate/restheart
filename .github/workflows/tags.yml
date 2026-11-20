@@ -115,8 +115,8 @@ jobs:
         with:
           name: restheart-mqtt-archive
           path: |
-            mqtt/target/restheart-mqtt-*.zip
-            mqtt/target/restheart-mqtt-*.tar.gz
+            mqtt/target/restheart-mqtt.zip
+            mqtt/target/restheart-mqtt.tar.gz
           if-no-files-found: error
 
   # Release the project on GitHub
@@ -162,8 +162,8 @@ jobs:
           files: |
             core/target/restheart.tar.gz
             core/target/restheart.zip
-            mqtt/target/restheart-mqtt-*.tar.gz
-            mqtt/target/restheart-mqtt-*.zip
+            mqtt/target/restheart-mqtt.tar.gz
+            mqtt/target/restheart-mqtt.zip
           draft: true
           prerelease: false
 
