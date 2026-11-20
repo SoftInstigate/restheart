@@ -1,8 +1,8 @@
 # restheart-mqtt, four steps at a time
 
 > [!WARNING]
-> **Experimental.** The module is a preview: no RESTHeart release includes it yet, and details may
-> still change from one build to the next. See [README.md](./README.md) for its status and how
+> **Experimental.** The module is released with RESTHeart from 9.17.1, but it is new, and details
+> may still change from one release to the next. See [README.md](./README.md) for its status and how
 > to report what you find.
 
 This is one walkthrough in four parts, not four independent recipes. Each part starts from the
@@ -45,17 +45,17 @@ nothing here works without one of the two: the archive, or a build.
 Both compose files bind host ports **8080** and **1883**, so run one at a time and make sure
 nothing else is using them.
 
-The archive is a build of the `master` branch, so run it on the RESTHeart built from that branch.
-Set this once in each terminal you use, before any `docker compose` command:
+The compose files run `softinstigate/restheart:latest`, the release the archive belongs to. With
+the snapshot archive, or with a module you built from a checkout of `master`, run the RESTHeart
+built from `master` instead. Set this once in each terminal you use, before any `docker compose`
+command:
 
 ```
 export RESTHEART_IMAGE=softinstigate/restheart-snapshot:latest
 ```
 
-Without it the compose files run `softinstigate/restheart:latest`, a release the archive was not
-tested against. The same goes for a module you built from a checkout of `master`. Never use an
-image older than 9.9.0: per-topic ACL enforcement on `/mqtt-sse` is missing there, so part 1's
-`403` is silently a `200` instead, which would teach you the opposite of the truth.
+Never use an image older than 9.9.0: per-topic ACL enforcement on `/mqtt-sse` is missing there, so
+part 1's `403` is silently a `200` instead, which would teach you the opposite of the truth.
 
 You will want three terminals: one for the server's logs, one holding a stream open, one to publish
 on. Commands below say which.
@@ -414,10 +414,10 @@ Three things to take from the real file rather than from this excerpt:
 
 - **`@Inject("config")` is an empty map when your plugin has no configuration block**, which is
   the ordinary case for a plugin that is enabled by default and has working defaults, so
-  `config.getOrDefault(...)` is enough. It was not always so: up to RESTHeart 9.17 it was `null`,
+  `config.getOrDefault(...)` is enough. It was not always so: up to RESTHeart 9.17.0 it was `null`,
   and since a plugin that throws inside `@OnInit` aborts plugin instantiation, this very example
   stopped the whole server from starting when dropped in with no block. Writing this tutorial found
-  that out; it is fixed in core
+  that out; it is fixed in core from 9.17.1
   ([#732](https://github.com/SoftInstigate/restheart/issues/732)). If you target an older
   RESTHeart, null-check it.
 - **`subscribe` is for live consumers.** Your listener never holds up an acknowledgement to the
