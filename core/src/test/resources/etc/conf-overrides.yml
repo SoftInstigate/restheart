@@ -196,6 +196,23 @@
         mergeRequest: >
           {"team": "@team._id"}
 
+    # #832: @teams, all the caller's teams. An insert names its team in the body and passes only
+    # for a team the caller owns; a read sees the documents of every team the caller is in,
+    # whichever is active. Exercised by teams-variable.feature.
+    - role: user
+      predicate: >
+        path-prefix[path="/restheart-test/teams-scoped"] and method[value="POST"]
+        and in(value=@request.body.team, array=@teams.owner)
+      priority: 100
+
+    - role: user
+      predicate: >
+        path-prefix[path="/restheart-test/teams-scoped"] and method[value="GET"]
+      priority: 100
+      mongo:
+        readFilter: >
+          {"team": {"$in": "@teams._id"}}
+
     # #754: `test` may write to this bucket and nowhere near the chunks collections its rules
     # fill; karate/ai/chunking-rules.feature proves the chunks are written anyway
     - role: test

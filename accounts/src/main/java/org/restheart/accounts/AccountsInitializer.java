@@ -15,6 +15,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.acl.TeamVarResolver;
+import org.restheart.accounts.acl.TeamsVarResolver;
 import org.restheart.accounts.spi.MembershipMigration;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.AclVarsRegistry;
@@ -118,6 +119,9 @@ public class AccountsInitializer implements Initializer {
         // jwtConfigProvider/account-properties-claims, which makes POST /token carry the same claim
         // the accounts endpoints issue, whatever the membership provider stores (#765)
         aclVarsRegistry.register(new TeamVarResolver(accountsService, conf.teamClaimName()));
+        // @teams: all the caller's teams, for a credential that acts in every team of its user, with
+        // the team kept in the document and checked against them (#832)
+        aclVarsRegistry.register(new TeamsVarResolver(accountsService, conf.teamClaimName() + "s"));
 
         // Generic REST writes to /users are restricted to self-service profile/app-level
         // edits — see USER_WRITE_DENYLIST above for why this is safe to enforce
