@@ -52,12 +52,6 @@ Distributed as a Docker image and a GraalVM native binary. Built on Java 25, Und
 
 ### Running it
 
-Managed, on [Ulabase](https://ulabase.com), the platform built on RESTHeart: nothing to install, a free plan to start.
-
-[![Try Ulabase for free](https://restheart.org/images/ulabase-button.svg)](https://ulabase.com/auth/signup)
-
-Or self-hosted, since the core is free and open source:
-
 ```bash
 curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
   --output docker-compose.yml && docker compose up --attach restheart
@@ -82,8 +76,8 @@ Full documentation: https://restheart.org/docs/
 
 ## License
 
-RESTHeart core is licensed under the GNU AGPL v3.
+RESTHeart core is licensed under the open source GNU AGPL v3.
 
-`restheart-commons`, the Maven artifact plugins depend on to reach the Approved Interfaces, is licensed under the Apache License 2.0. Plugins that depend only on `restheart-commons`, without linking against RESTHeart's AGPL-licensed core, can be distributed under any license, including proprietary ones. See [PLUGIN_EXCEPTION.md](PLUGIN_EXCEPTION.md) for the exact terms of this permission.
+`restheart-commons`, the Maven artifact plugins depend on to reach the Approved Interfaces, is licensed under the open source Apache License 2.0. Plugins that depend only on `restheart-commons`, without linking against RESTHeart's AGPL-licensed core, can be distributed under any license, including proprietary ones. See [PLUGIN_EXCEPTION.md](PLUGIN_EXCEPTION.md) for the exact terms of this permission.
 
 ---
